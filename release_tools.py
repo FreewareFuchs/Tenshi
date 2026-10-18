@@ -126,7 +126,9 @@ def verify_portable(path: str | Path) -> str:
                 digest.update(chunk)
         if digest.hexdigest() != match.group(1):
             raise ValueError('SHA-256-Pruefsumme der Tenshi.exe stimmt nicht.')
-        license_text = archive.read('LICENSE').decode('utf-8')
+        # Git for Windows may check out LICENSE with CRLF. The actual MIT
+        # license text must be valid regardless of the checkout line endings.
+        license_text = archive.read('LICENSE').decode('utf-8').replace('\r\n', '\n')
         if not license_text.startswith('MIT License\n') or 'Copyright (c)' not in license_text:
             raise ValueError('MIT-Lizenzdatei im Portable-ZIP fehlt oder ist ungueltig.')
         info = archive.read('PORTABLE_START.txt').decode('utf-8')
