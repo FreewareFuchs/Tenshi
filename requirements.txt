@@ -1,0 +1,2 @@
+# Runtime: Python standard library only.
+# Packaging: pyinstaller>=6.0

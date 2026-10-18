@@ -1,0 +1,699 @@
+"""Tenshi user-interface localization. The data engine keeps canonical values.
+
+Translation is confined to UI labels, headings, dialog copy and display-only
+StringVars. Disk paths, file names, search expressions and persisted export
+metadata remain untouched. Unknown technical errors are shown verbatim.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import tempfile
+import tkinter as tk
+from pathlib import Path
+from tkinter import ttk
+
+LANGUAGES = {
+    'de': 'Deutsch',
+    'en': 'English',
+    'es': 'Español',
+    'zh': '中文（简体）',
+    'ru': 'Русский',
+    'ja': '日本語',
+}
+
+# German source -> English, Spanish, Simplified Chinese, Russian, Japanese.
+# Keep these entries human-reviewable rather than translating filenames or
+# filesystem metadata with an online service.
+TRANSLATIONS = {}
+
+def add(de, en, es, zh, ru, ja):
+    TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
+
+# Online-independent help access (Tenshi 3.0.0)
+add('? Hilfe', '? Help', '? Ayuda', '? 帮助', '? Справка', '? ヘルプ')
+
+# Imaging controls (Tenshi 2.7.0)
+add('Leseversuche:', 'Read retries:', 'Reintentos:', '重试读取：', 'Повторы чтения:', '再読み取り回数:')
+add('Bei Medienfehler:', 'On media error:', 'Ante error del medio:', '介质错误时：', 'При ошибке носителя:', '媒体エラー時:')
+add('Nullen + protokollieren', 'Fill with zeros + log', 'Rellenar ceros y registrar', '填零并记录', 'Заполнить нулями и записать', 'ゼロで埋めて記録')
+add('Sicher anhalten', 'Stop safely', 'Detener con seguridad', '安全停止', 'Безопасно остановить', '安全に停止')
+add('Fehlerstellen-Bericht', 'Bad-sector report', 'Informe de sectores defectuosos', '坏扇区报告', 'Отчёт о сбойных секторах', '不良セクターのレポート')
+add('Bericht speichern', 'Save report', 'Guardar informe', '保存报告', 'Сохранить отчёт', 'レポートを保存')
+add('Bericht gespeichert.', 'Report saved.', 'Informe guardado.', '报告已保存。', 'Отчёт сохранён.', 'レポートを保存しました。')
+add('Tenshi – Fehlerstellen-Bericht', 'Tenshi – Bad-sector report', 'Tenshi – Informe de sectores defectuosos', 'Tenshi – 坏扇区报告', 'Tenshi – Отчёт о сбойных секторах', 'Tenshi – 不良セクターのレポート')
+add('Optional 0–3 erneute Leseversuche an defekten Sektoren; jeder Versuch belastet das Medium. Bei Nullen entstehen Datenlücken; sicherer Stopp belässt den letzten gültigen Prüfpunkt.',
+    'Optional 0–3 retries on failed sectors; every attempt stresses the medium. Zero fill causes data gaps; a safe stop preserves the last checkpoint.',
+    'De 0 a 3 reintentos opcionales en sectores defectuosos; cada intento carga la unidad. Los ceros causan lagunas; la parada segura conserva el último punto de control.',
+    '故障扇区可选择重试 0–3 次；每次重试都会增加磁盘负担。填零会产生数据缺口；安全停止会保留最后的检查点。',
+    'По желанию 0–3 повтора для сбойных секторов; каждая попытка нагружает носитель. Нули создают пробелы; безопасная остановка сохраняет последнюю контрольную точку.',
+    '不良セクターの再読み取りは0～3回。試行は媒体に負荷をかけます。ゼロ埋めは欠損を生み、安全停止は直前のチェックポイントを保持します。')
+
+# Session persistence (Tenshi 2.6.0)
+add('Analysesitzung', 'Analysis session', 'Sesión de análisis', '分析会话', 'Сеанс анализа', '解析セッション')
+add('Sitzung speichern', 'Save session', 'Guardar sesión', '保存会话', 'Сохранить сеанс', 'セッションを保存')
+add('Sitzung laden', 'Load session', 'Cargar sesión', '加载会话', 'Загрузить сеанс', 'セッションを読み込む')
+add('Analysesitzung speichern', 'Save analysis session', 'Guardar sesión de análisis', '保存分析会话', 'Сохранить сеанс анализа', '解析セッションを保存')
+add('Analysesitzung laden', 'Load analysis session', 'Cargar sesión de análisis', '加载分析会话', 'Загрузить сеанс анализа', '解析セッションを読み込む')
+add('Sitzung und Quell-Image werden geprüft …', 'Checking session and source image …', 'Comprobando sesión e imagen de origen …', '正在验证会话和源镜像…', 'Проверка сеанса и исходного образа …', 'セッションと元のイメージを検証中…')
+add('Analysesitzung wird gespeichert …', 'Saving analysis session …', 'Guardando sesión de análisis …', '正在保存分析会话…', 'Сохранение сеанса анализа …', '解析セッションを保存中…')
+add('Analysesitzung gespeichert. Beim Laden wird das Image erneut geprüft.', 'Session saved. The image will be checked again when loaded.', 'Sesión guardada. La imagen se comprobará al cargarla.', '会话已保存。加载时将再次验证镜像。', 'Сеанс сохранён. При загрузке образ будет проверен заново.', 'セッションを保存しました。読み込み時にイメージを再検証します。')
+add('Analysesitzung geladen und Image geprüft. Dateiinhalte bleiben ungeprüft.', 'Session loaded and image checked. File contents remain unverified.', 'Sesión cargada e imagen comprobada. No se ha verificado el contenido de los archivos.', '会话已加载且镜像已验证，文件内容尚未验证。', 'Сеанс загружен, образ проверен. Содержимое файлов не проверено.', 'セッションを読み込み、イメージを検証しました。ファイル内容は未検証です。')
+add('Bitte laufende Vorgänge zuerst abschließen.', 'Please finish running operations first.', 'Finalice primero las operaciones en curso.', '请先完成正在运行的操作。', 'Сначала завершите выполняющиеся операции.', 'まず実行中の処理を完了してください。')
+add('Ursprüngliches Image fehlt – identisches Image auswählen', 'Original image missing – select identical image', 'Falta la imagen original: seleccione una idéntica', '原始镜像缺失——请选择相同镜像', 'Исходный образ отсутствует — выберите идентичный', '元のイメージがありません。同一のイメージを選択してください')
+
+# More precise recovery warnings (Tenshi 2.8.0)
+add('NTFS-Datenstrom enthält überlappende physische Clusterbereiche.',
+    'NTFS stream has overlapping physical cluster ranges.',
+    'El flujo NTFS contiene rangos de clústeres físicos superpuestos.',
+    'NTFS 数据流包含重叠的物理簇范围。',
+    'Поток NTFS содержит пересекающиеся физические кластеры.',
+    'NTFS データストリームに物理クラスタの重複があります。')
+add('NTFS-Cluster der gelöschten Datei werden laut aktuellen MFT-Metadaten bereits von einer vorhandenen Datei genutzt. Der ursprüngliche Dateiinhalt ist an diesen Stellen nicht zuverlässig zuordenbar.',
+    'Current MFT metadata shows that an existing file already uses clusters of the deleted file. The original contents cannot be reliably assigned at those locations.',
+    'Los metadatos MFT actuales indican que un archivo existente ya usa clústeres del archivo borrado. El contenido original no puede atribuirse de forma fiable en esos sectores.',
+    '当前 MFT 元数据显示，已存在的文件占用了被删除文件的簇。无法可靠确认这些位置的原始内容。',
+    'Текущие метаданные MFT показывают, что кластеры удалённого файла заняты существующим файлом. Исходные данные в этих областях нельзя надёжно установить.',
+    '現在の MFT メタデータでは、削除ファイルのクラスタが既存ファイルに使用されています。該当範囲の元データは確実に特定できません。')
+add('Gelöscht: freie Cluster können bereits überschrieben sein.',
+    'Deleted: previously allocated clusters may already have been overwritten.',
+    'Eliminado: los clústeres pueden haberse sobrescrito.',
+    '已删除：原簇可能已被覆盖。',
+    'Удалено: кластеры могли быть перезаписаны.',
+    '削除済み：クラスタは上書きされた可能性があります。')
+add('Metadaten plausibel; Dateiinhalt bleibt ungeprüft.',
+    'Metadata plausible; file contents remain unverified.',
+    'Metadatos plausibles; el contenido sigue sin verificarse.',
+    '元数据合理，但文件内容未经验证。',
+    'Метаданные правдоподобны; содержимое не проверено.',
+    'メタデータは妥当ですが、ファイル内容は未検証です。')
+add('Gesperrt', 'Blocked', 'Bloqueado', '已阻止', 'Заблокировано', 'ブロック')
+add('Warnung', 'Warning', 'Advertencia', '警告', 'Предупреждение', '警告')
+add('Bereit', 'Ready', 'Listo', '就绪', 'Готово', '準備完了')
+add('Ordner', 'Folder', 'Carpeta', '文件夹', 'Папка', 'フォルダー')
+
+# Recovery preflight (Tenshi 2.3.0)
+add('Export prüfen','Check export','Comprobar exportación','检查导出','Проверить экспорт','エクスポートを検査')
+add('Export-Vorabprüfung','Export preflight','Comprobación previa','导出前检查','Предварительная проверка экспорта','エクスポート事前検査')
+add('Tenshi – Export-Vorabprüfung','Tenshi – Export preflight','Tenshi – Comprobación previa','Tenshi – 导出前检查','Tenshi – Предварительная проверка','Tenshi – エクスポート事前検査')
+add('Export-Vorabprüfung (ohne Dateiinhalte zu lesen)','Export preflight (without reading file contents)','Comprobación previa (sin leer los archivos)','导出前检查（不读取文件内容）','Предварительная проверка (без чтения содержимого)','エクスポート事前検査（内容は読み込まない）')
+add('Prüfbericht speichern','Save check report','Guardar informe de comprobación','保存检查报告','Сохранить отчёт проверки','検査レポートを保存')
+add('Bewertung','Assessment','Evaluación','评估','Оценка','評価')
+add('Hinweise','Notes','Notas','提示','Примечания','注意事項')
+add('Bitte Dateien oder Ordner in der rechten Liste markieren.','Select files or folders from the right-hand list.','Seleccione archivos o carpetas en la lista derecha.','请在右侧列表中选择文件或文件夹。','Выберите файлы или папки в списке справа.','右側の一覧でファイルかフォルダーを選んでください。')
+add('Quelle wurde gewechselt. Ergebnis verworfen.','Source changed. Results discarded.','Cambió el origen. Se descartaron los resultados.','源已改变，结果已丢弃。','Источник изменился. Результат отброшен.','ソースが変更されたため結果を破棄しました。')
+add('Bericht erfolgreich gespeichert.','Report saved.','Informe guardado.','报告已保存。','Отчёт сохранён.','レポートを保存しました。')
+
+
+# Appearance controls (Tenshi 2.4.0)
+add('Darstellung', 'Appearance', 'Apariencia', '外观', 'Оформление', '外観')
+add('◐  Darstellung', '◐  Appearance', '◐  Apariencia', '◐  外观', '◐  Оформление', '◐  外観')
+add('Hell', 'Light', 'Claro', '浅色', 'Светлая', 'ライト')
+add('Dunkel', 'Dark', 'Oscuro', '深色', 'Тёмная', 'ダーク')
+add('Hohe Plausibilität', 'High confidence', 'Alta confianza', '高可信度', 'Высокая достоверность', '確度が高い')
+add('Mittlere Plausibilität', 'Medium confidence', 'Confianza media', '中等可信度', 'Средняя достоверность', '確度が中程度')
+add('Geringe Plausibilität', 'Low confidence', 'Baja confianza', '低可信度', 'Низкая достоверность', '確度が低い')
+add('Auffällige Partitionen', 'Flagged partitions', 'Particiones con avisos', '异常分区', 'Подозрительные разделы', '注意が必要なパーティション')
+
+# Main window, sections and menus
+add('Tenshi — Datenrettung', 'Tenshi — Data Recovery', 'Tenshi — Recuperación de datos', 'Tenshi — 数据恢复', 'Tenshi — Восстановление данных', 'Tenshi — データ復旧')
+add('Datenrettung & schreibgeschützte Datenträgeranalyse', 'Data recovery & read-only disk analysis', 'Recuperación y análisis de discos de solo lectura', '数据恢复与只读磁盘分析', 'Восстановление данных и анализ дисков только для чтения', 'データ復旧と読み取り専用ディスク解析')
+add('Partitionen · Dateien & Ordner', 'Partitions · Files & Folders', 'Particiones · Archivos y carpetas', '分区 · 文件与文件夹', 'Разделы · Файлы и папки', 'パーティション · ファイルとフォルダー')
+add('▦  Partitionen', '▦  Partitions', '▦  Particiones', '▦  分区', '▦  Разделы', '▦  パーティション')
+add('📁  Dateien & Ordner', '📁  Files & Folders', '📁  Archivos y carpetas', '📁  文件与文件夹', '📁  Файлы и папки', '📁  ファイルとフォルダー')
+add('Partitionen', 'Partitions', 'Particiones', '分区', 'Разделы', 'パーティション')
+add('Dateien & Ordner', 'Files & Folders', 'Archivos y carpetas', '文件与文件夹', 'Файлы и папки', 'ファイルとフォルダー')
+add('Ausgewählte Quelle:', 'Selected source:', 'Origen seleccionado:', '所选来源：', 'Выбранный источник:', '選択したソース:')
+add('Image auswählen', 'Select image', 'Seleccionar imagen', '选择镜像', 'Выбрать образ', 'イメージを選択')
+add('Physischer Datenträger auswählen', 'Select physical disk', 'Seleccionar disco físico', '选择物理磁盘', 'Выбрать физический диск', '物理ディスクを選択')
+add('Laufwerk auswählen', 'Select volume', 'Seleccionar unidad', '选择卷', 'Выбрать том', 'ドライブを選択')
+add('Image erstellen / fortsetzen', 'Create / resume image', 'Crear / reanudar imagen', '创建／继续镜像', 'Создать / продолжить образ', 'イメージ作成／再開')
+add('Bereit. Quelldatenträger werden nur lesend geöffnet.', 'Ready. Source disks are opened read-only.', 'Listo. Los discos de origen se abren en modo de solo lectura.', '就绪。源磁盘以只读方式打开。', 'Готово. Исходные диски открываются только для чтения.', '準備完了。ソースディスクは読み取り専用で開きます。')
+add('Bei Hardwaredefekt weitere Lesezugriffe minimieren und möglichst ein schonendes Image erstellen. Gerettete Daten nur auf einem anderen physischen Datenträger speichern.',
+    'If hardware may be failing, minimize further reads and create an image using a gentle recovery process. Save recovered data on a different physical drive.',
+    'Si el hardware puede fallar, reduzca las lecturas y cree una imagen con un método cuidadoso. Guarde los datos recuperados en otra unidad física.',
+    '如果硬件可能故障，请减少读取并采用谨慎方式制作镜像。将恢复的数据保存到另一块物理磁盘。',
+    'При аппаратной неисправности ограничьте чтение и создайте образ щадящим способом. Сохраняйте восстановленные данные на другом физическом диске.',
+    'ハードウェア故障が疑われる場合は追加の読み取りを抑え、安全性に配慮してイメージを作成してください。復旧データは別の物理ドライブに保存してください。')
+
+add('Fehlerprotokoll', 'Error log', 'Registro de errores', '错误日志', 'Журнал ошибок', 'エラーログ')
+add('Noch keine Fehler protokolliert.', 'No errors recorded yet.', 'Todavía no se han registrado errores.', '尚未记录错误。', 'Ошибки пока не записаны.', 'エラーはまだ記録されていません。')
+add('Fehlerprotokoll kann nicht geöffnet werden.', 'The error log cannot be opened.', 'No se puede abrir el registro de errores.', '无法打开错误日志。', 'Не удаётся открыть журнал ошибок.', 'エラーログを開けません。')
+add('Sprache', 'Language', 'Idioma', '语言', 'Язык', '言語')
+add('Sprache auswählen', 'Choose language', 'Seleccionar idioma', '选择语言', 'Выбор языка', '言語を選択')
+add('Doppelklick auf eine Partition: Dateisystem automatisch einlesen.',
+    'Double-click a partition to load its file system automatically.',
+    'Haga doble clic en una partición para cargar su sistema de archivos.',
+    '双击分区可自动读取文件系统。',
+    'Дважды щёлкните раздел, чтобы автоматически прочитать файловую систему.',
+    'パーティションをダブルクリックするとファイルシステムを自動的に読み込みます。')
+# Automatic read-only quick scan after source selection (Tenshi 3.0.2).
+add('Quelle auswählen: Schnellanalyse startet automatisch.',
+    'Select a source: a quick scan starts automatically.',
+    'Seleccione un origen: el análisis rápido se iniciará automáticamente.',
+    '选择数据源后将自动开始快速扫描。',
+    'Выберите источник: быстрый анализ начнётся автоматически.',
+    'ソースを選択するとクイックスキャンが自動で始まります。')
+add('Neue Quelle ausgewählt. Schnellanalyse startet automatisch.',
+    'New source selected. Quick scan starts automatically.',
+    'Nuevo origen seleccionado. El análisis rápido comienza automáticamente.',
+    '已选择新数据源。快速扫描即将自动开始。',
+    'Выбран новый источник. Быстрый анализ запускается автоматически.',
+    '新しいソースを選択しました。クイックスキャンを自動で開始します。')
+
+# Partition analysis
+add('Schnellanalyse (64 MiB)', 'Quick scan (64 MiB)', 'Análisis rápido (64 MiB)', '快速扫描（64 MiB）', 'Быстрый анализ (64 МиБ)', 'クイックスキャン (64 MiB)')
+add('Tiefensuche starten', 'Start deep scan', 'Iniciar búsqueda profunda', '开始深度扫描', 'Начать глубокий поиск', '詳細スキャン開始')
+add('Limit (MiB, 0 = alles):', 'Limit (MiB, 0 = all):', 'Límite (MiB, 0 = todo):', '限制（MiB，0＝全部）：', 'Лимит (МиБ, 0 = всё):', '上限 (MiB、0=すべて):')
+add('Sektorgröße:', 'Sector size:', 'Tamaño del sector:', '扇区大小：', 'Размер сектора:', 'セクターサイズ:')
+add('Ausgewählte Partition prüfen', 'Inspect selected partition', 'Examinar partición seleccionada', '检查所选分区', 'Проверить выбранный раздел', '選択したパーティションを検査')
+add('Partitionsbericht speichern', 'Save partition report', 'Guardar informe de partición', '保存分区报告', 'Сохранить отчёт о разделе', 'パーティションレポートを保存')
+add('Nur Metadatenprüfung – keine Reparatur oder Vollprüfung', 'Metadata check only — no repair or full verification', 'Solo metadatos; no repara ni comprueba todo', '仅检查元数据，不进行修复或完整检查', 'Только проверка метаданных — без исправления', 'メタデータ確認のみ。修復や完全検査ではありません')
+add('Speicherbelegung: unbekannt – Partition auswählen und prüfen.', 'Space usage: unknown — select and inspect a partition.', 'Espacio usado: desconocido; seleccione una partición.', '空间使用情况：未知，请选择并检查分区。', 'Использование: неизвестно — выберите и проверьте раздел.', '使用容量: 不明。パーティションを選択して検査してください。')
+add('Speicherbelegung: unbekannt (keine vollständigen Metadaten).', 'Space usage: unknown (incomplete metadata).', 'Espacio usado: desconocido (metadatos incompletos).', '空间使用情况：未知（元数据不完整）。', 'Использование: неизвестно (неполные метаданные).', '使用容量: 不明 (メタデータが不完全)。')
+add('Image auswählen und Schnellanalyse starten.', 'Select an image and start a quick scan.', 'Seleccione una imagen e inicie el análisis rápido.', '选择镜像并开始快速扫描。', 'Выберите образ и запустите быстрый анализ.', 'イメージを選択しクイックスキャンを開始してください。')
+add('Gefundene Bootsektoren ohne Partitionstabelle sind Kandidaten, keine bestätigten Partitionen.', 'Boot sectors found without a partition table are candidates, not confirmed partitions.', 'Los sectores de arranque sin tabla son candidatos, no particiones confirmadas.', '未找到分区表时检测到的引导扇区仅为候选，不是已确认分区。', 'Найденные без таблицы разделов загрузочные секторы — лишь кандидаты.', 'パーティションテーブルなしで見つかったブートセクターは候補であり、確定ではありません。')
+add('Fundliste speichern', 'Save findings list', 'Guardar hallazgos', '保存分区发现', 'Сохранить найденные разделы', '検出結果を保存')
+add('Partition auswählen und „Ausgewählte Partition prüfen“ anklicken.', 'Select a partition and click “Inspect selected partition”.', 'Seleccione una partición y pulse «Examinar partición seleccionada».', '选择分区并点击“检查所选分区”。', 'Выберите раздел и нажмите «Проверить выбранный раздел».', 'パーティションを選択し「選択したパーティションを検査」を押してください。')
+for vals in [
+('Nr.','No.','N.º','编号','№','番号'),('Erkennung','Detected by','Detección','检测方式','Обнаружение','検出方法'),
+('Byte-Offset','Byte offset','Desplazamiento','字节偏移','Смещение, байт','バイトオフセット'),('Größe','Size','Tamaño','大小','Размер','サイズ'),
+('Dateisystem','File system','Sistema de archivos','文件系统','Файловая система','ファイルシステム'),
+('Belegt*','Used*','Usado*','已用*','Занято*','使用済*'),('Struktur','Structure','Estructura','结构','Структура','構造'),
+('Sektor','Sector','Sector','扇区','Сектор','セクター'),('Typ/GUID','Type/GUID','Tipo/GUID','类型/GUID','Тип/GUID','種類/GUID'),
+('Plausibilität','Plausibility','Plausibilidad','可信度','Достоверность','信頼度'),
+('Hoch','High','Alta','高','Высокая','高'),
+('Mittel','Medium','Media','中','Средняя','中'),
+('Niedrig','Low','Baja','低','Низкая','低'),
+('Ungeprüft','Unchecked','Sin comprobar','未检查','Не проверено','未確認'),
+('Name','Name','Nombre','名称','Имя','名前'),('Nicht geprüft','Not checked','Sin comprobar','未检查','Не проверено','未検査'),
+('Nicht zugeordnet','Unassigned','Sin asignar','未分配','Не распределено','未割り当て'),
+('Status','Status','Estado','状态','Статус','状態'),('Rettbarkeit','Recoverability','Recuperabilidad','可恢复性','Возможность восстановления','復旧可能性'),
+('Eintrags-ID','Entry ID','ID de entrada','条目 ID','ID записи','エントリー ID'),('Endung','Extension','Extensión','扩展名','Расширение','拡張子'),
+('Geändert (UTC)','Modified (UTC)','Modificado (UTC)','修改时间（UTC）','Изменён (UTC)','更新日時 (UTC)'),('Pfad','Path','Ruta','路径','Путь','パス'),
+('Typ','Type','Tipo','类型','Тип','種類'),('Datei / Ordner','File / Folder','Archivo / carpeta','文件／文件夹','Файл / папка','ファイル／フォルダー'),
+('Ergebnis / Fehler','Result / Error','Resultado / error','结果／错误','Результат / ошибка','結果／エラー'),
+('Laufwerk','Volume','Unidad','卷','Том','ドライブ'),('Laufwerke','Volumes','Unidades','卷','Тома','ドライブ'),
+('Physischer Datenträger','Physical disk','Disco físico','物理磁盘','Физический диск','物理ディスク'),
+('Größe (GiB)','Size (GiB)','Tamaño (GiB)','大小（GiB）','Размер (ГиБ)','サイズ (GiB)'),
+('Frei (GiB)','Free (GiB)','Libre (GiB)','可用（GiB）','Свободно (ГиБ)','空き (GiB)'),
+]: add(*vals)
+# Paging controls for very large file lists (Tenshi 2.2.0)
+add('◀ Vorherige Seite', '◀ Previous page', '◀ Página anterior', '◀ 上一页', '◀ Предыдущая страница', '◀ 前のページ')
+add('Nächste Seite ▶', 'Next page ▶', 'Página siguiente ▶', '下一页 ▶', 'Следующая страница ▶', '次のページ ▶')
+# File browser and searching
+add('Partitionsoffset (Byte):','Partition offset (bytes):','Desplazamiento de partición (bytes):','分区偏移（字节）：','Смещение раздела (байт):','パーティションオフセット (バイト):')
+add('Partition übernehmen','Use partition','Usar partición','使用该分区','Использовать раздел','パーティションを使用')
+add('MFT-Limit (0=alle):','MFT limit (0=all):','Límite MFT (0=todos):','MFT 限制（0＝全部）：','Лимит MFT (0=все):','MFT上限 (0=すべて):')
+add('Dateisystem einlesen','Read file system','Leer sistema de archivos','读取文件系统','Прочитать файловую систему','ファイルシステムを読み取る')
+add('Scan abbrechen','Cancel scan','Cancelar análisis','取消扫描','Отменить анализ','スキャン中止')
+add('Diagnose…','Diagnostics…','Diagnóstico…','诊断…','Диагностика…','診断…')
+add('Fehlertolerante Suche (nur Images)','Fault-tolerant scan (images only)','Análisis tolerante a fallos (solo imágenes)','容错扫描（仅镜像）','Поиск с пропуском ошибок (только образы)','エラー許容スキャン (イメージのみ)')
+add('Analysebericht speichern','Save analysis report','Guardar informe del análisis','保存分析报告','Сохранить отчёт анализа','解析レポートを保存')
+add('Gelöschte Einträge anzeigen','Show deleted entries','Mostrar elementos eliminados','显示已删除条目','Показать удалённые записи','削除済み項目を表示')
+add('Stapel-Export / fortsetzen','Batch export / resume','Exportación por lotes / reanudar','批量导出／继续','Пакетный экспорт / продолжить','一括エクスポート／再開')
+add('Vorschau','Preview','Vista previa','预览','Предпросмотр','プレビュー')
+add('Datei prüfen','Verify file','Verificar archivo','检查文件','Проверить файл','ファイルを検査')
+add('Suche (alle Dateinamen):','Search (all filenames):','Buscar (todos los nombres):','搜索（所有文件名）：','Поиск (все имена файлов):','検索 (すべてのファイル名):')
+add('Suchen','Search','Buscar','搜索','Поиск','検索')
+add('Erweiterte Suche…','Advanced search…','Búsqueda avanzada…','高级搜索…','Расширенный поиск…','詳細検索…')
+add('Zurück zum Ordner','Back to folder','Volver a la carpeta','返回文件夹','Вернуться к папке','フォルダーに戻る')
+add('Rettbarkeitsfilter:','Recoverability filter:','Filtro de recuperación:','可恢复性筛选：','Фильтр восстановления:','復旧可能性フィルター:')
+add('TMP anzeigen (nur Ansicht)','Show TMP (view only)','Mostrar TMP (solo vista)','显示 TMP（仅界面）','Показать TMP (только вид)','TMPを表示 (表示のみ)')
+add('TMP-Einträge sind nur ausgeblendet; beim Export ganzer Ordner können sie enthalten sein.',
+    'TMP entries are hidden only; exporting a whole folder may still include them.',
+    'Las entradas TMP solo están ocultas; al exportar carpetas completas podrían incluirse.',
+    'TMP 条目仅被隐藏；导出整个文件夹时可能仍会包含。',
+    'Записи TMP лишь скрыты; при экспорте папки целиком они могут войти в результат.',
+    'TMP項目は非表示になるだけです。フォルダー全体の書き出しには含まれる場合があります。')
+add('Ordnerstruktur','Folder tree','Árbol de carpetas','文件夹树','Дерево папок','フォルダーツリー')
+add('Dateien und Unterordner','Files and subfolders','Archivos y subcarpetas','文件及子文件夹','Файлы и подпапки','ファイルとサブフォルダー')
+add('⚠ = Metadaten-Hinweis; kein Nachweis beschädigter Inhalte.','⚠ = Metadata warning; not proof of corrupted contents.','⚠ = Aviso de metadatos; no confirma daños en los archivos.','⚠＝元数据警告，不代表内容已损坏。','⚠ = Предупреждение о метаданных, не о содержимом.','⚠＝メタデータに関する警告。内容の破損は未確認。')
+add('Noch kein Dateisystem eingelesen.','No file system loaded yet.','Aún no se ha leído un sistema de archivos.','尚未加载文件系统。','Файловая система ещё не прочитана.','ファイルシステムはまだ読み込まれていません。')
+add('Wiederherstellungswarteschlange','Recovery queue','Cola de recuperación','恢复队列','Очередь восстановления','復旧キュー')
+add('Dateistatus anzeigen','Show file status','Mostrar estado de archivos','显示文件状态','Показать состояние файлов','ファイル状態を表示')
+add('Dateistatus ausblenden','Hide file status','Ocultar estado de archivos','隐藏文件状态','Скрыть состояние файлов','ファイル状態を非表示')
+add('Ergebnisbericht','Results report','Informe de resultados','结果报告','Отчёт о результатах','結果レポート')
+add('Erweiterte Dateisuche','Advanced file search','Búsqueda avanzada de archivos','高级文件搜索','Расширенный поиск файлов','詳細ファイル検索')
+add('Dateiendungen (z. B. pdf, .docx, *.jpg; mehrere mit Komma)','Extensions (e.g. pdf, .docx, *.jpg; separate with commas)','Extensiones (p. ej., pdf, .docx, *.jpg; separadas por comas)','扩展名（如 pdf、.docx、*.jpg；多个用逗号分隔）','Расширения (например, pdf, .docx, *.jpg; через запятую)','拡張子 (例: pdf、.docx、*.jpg。複数はカンマ区切り)')
+add('Dateitypen hinzufügen:','Add file types:','Agregar tipos de archivo:','添加文件类型：','Добавить типы файлов:','ファイル形式を追加:')
+add('Bilder','Images','Imágenes','图片','Изображения','画像')
+add('Videos','Videos','Vídeos','视频','Видео','動画')
+add('Audio','Audio','Audio','音频','Аудио','音声')
+add('Dokumente','Documents','Documentos','文档','Документы','文書')
+add('Archive','Archives','Archivos comprimidos','压缩包','Архивы','アーカイブ')
+add('Mehrere Kategorien kombinierbar · bestehende Endungen bleiben erhalten','Combine categories · existing extensions are preserved','Combine categorías · se mantienen las extensiones existentes','可组合多个类别 · 保留已有扩展名','Можно сочетать категории · текущие расширения сохраняются','カテゴリを組み合わせ可能 · 既存の拡張子は保持')
+add('Min. MiB:','Min. MiB:','Mín. MiB:','最小 MiB：','Мин. МиБ:','最小 MiB:')
+add('Max. MiB:','Max. MiB:','Máx. MiB:','最大 MiB：','Макс. МиБ:','最大 MiB:')
+add('Eintragstyp','Entry type','Tipo de elemento','条目类型','Тип элемента','項目の種類')
+add('Alle','All','Todos','全部','Все','すべて')
+add('Nur Dateien','Files only','Solo archivos','仅文件','Только файлы','ファイルのみ')
+add('Nur Ordner','Folders only','Solo carpetas','仅文件夹','Только папки','フォルダーのみ')
+add('Dateinamen und ursprünglichen Ordnerpfad durchsuchen','Search filenames and original folder paths','Buscar nombres y rutas originales de carpetas','搜索文件名和原始文件夹路径','Поиск по именам и исходным путям','ファイル名と元のフォルダーパスを検索')
+add('Zurücksetzen','Reset','Restablecer','重置','Сбросить','リセット')
+add('Alle Einträge','All entries','Todos los elementos','所有条目','Все записи','すべての項目')
+add('Auffällige Einträge','Flagged entries','Elementos con avisos','异常条目','Проблемные записи','注意が必要な項目')
+add('Export möglich','Export possible','Exportación posible','可导出','Экспорт возможен','エクスポート可能')
+add('Gelöscht / unsicher','Deleted / uncertain','Eliminados / inciertos','已删除／不确定','Удалено / ненадёжно','削除済み／不確実')
+add('Eingeschränkt','Limited','Limitado','受限','Ограничено','制限あり')
+add('Nicht exportierbar','Cannot export','No exportable','无法导出','Нельзя экспортировать','エクスポート不可')
+add('Nur Namenshinweise','Name hints only','Solo nombres recuperados','仅名称线索','Только подсказки имён','名前の手掛かりのみ')
+add('Ordner öffnen','Open folder','Abrir carpeta','打开文件夹','Открыть папку','フォルダーを開く')
+add('Pfad kopieren','Copy path','Copiar ruta','复制路径','Копировать путь','パスをコピー')
+add('Scan-Einstellungen und Diagnose','Scan settings and diagnostics','Opciones de análisis y diagnóstico','扫描设置与诊断','Настройки анализа и диагностика','スキャン設定と診断')
+# Generic dialogs, imaging, verification
+add('Schließen','Close','Cerrar','关闭','Закрыть','閉じる')
+add('Abbrechen','Cancel','Cancelar','取消','Отмена','キャンセル')
+add('Auswahl übernehmen (nur lesen)','Confirm selection (read-only)','Confirmar selección (solo lectura)','确认选择（只读）','Подтвердить (только чтение)','選択を確定 (読み取り専用)')
+add('Auswahl fehlt','No selection','Falta selección','未选择','Ничего не выбрано','未選択')
+add('Laufwerk auswählen – nur lesen','Select volume — read-only','Seleccionar unidad — solo lectura','选择卷 — 只读','Выбор тома — только чтение','ドライブ選択 — 読み取り専用')
+add('Physischen Datenträger auswählen – nur lesen','Select physical disk — read-only','Seleccionar disco físico — solo lectura','选择物理磁盘 — 只读','Выбор диска — только чтение','物理ディスクを選択 — 読み取り専用')
+add('Quelle (nur lesen):','Source (read-only):','Origen (solo lectura):','源（只读）：','Источник (только чтение):','ソース (読み取り専用):')
+add('Ziel-Image:','Destination image:','Imagen de destino:','目标镜像：','Образ назначения:','保存先イメージ:')
+add('Durchsuchen …','Browse…','Examinar…','浏览…','Обзор…','参照…')
+add('Blockgröße:','Block size:','Tamaño de bloque:','块大小：','Размер блока:','ブロックサイズ:')
+add('Unterbrechen','Pause','Pausar','暂停','Приостановить','一時停止')
+add('Image erstellen','Create image','Crear imagen','创建镜像','Создать образ','イメージ作成')
+add('Noch nicht gestartet.','Not started yet.','Aún no iniciado.','尚未开始。','Ещё не начато.','未開始。')
+add('Dateivorschau – ','File preview — ','Vista previa — ','文件预览 — ','Предпросмотр — ','ファイルプレビュー — ')
+add('Dateiprüfung – ','File verification — ','Verificación — ','文件检查 — ','Проверка файла — ','ファイル検査 — ')
+add('Datei vor der Wiederherstellung prüfen','Verify file before recovery','Verificar archivo antes de recuperar','恢复前检查文件','Проверить файл до восстановления','復旧前にファイルを検査')
+add('Vollständig lesend prüfen','Verify full readability','Comprobar lectura completa','检查完整可读性','Проверить полную читаемость','全体を読み取り検査')
+add('Prüfung abbrechen','Cancel verification','Cancelar verificación','取消检查','Прервать проверку','検査を中止')
+add('Tenshi – Image erstellen / fortsetzen','Tenshi – Create / resume image','Tenshi – Crear / reanudar imagen','Tenshi – 创建／继续镜像','Tenshi – Создать / продолжить образ','Tenshi – イメージ作成／再開')
+add('Tenshi – Exportergebnisse','Tenshi – Export results','Tenshi – Resultados de exportación','Tenshi – 导出结果','Tenshi – Результаты экспорта','Tenshi – エクスポート結果')
+add('Erweiterte Suche','Advanced search','Búsqueda avanzada','高级搜索','Расширенный поиск','詳細検索')
+add('Partitionsanalyse','Partition analysis','Análisis de particiones','分区分析','Анализ разделов','パーティション解析')
+add('Partitionsprüfung','Partition inspection','Inspección de partición','分区检查','Проверка раздела','パーティション検査')
+add('Partitionsbericht','Partition report','Informe de partición','分区报告','Отчёт о разделе','パーティションレポート')
+add('Analysebericht','Analysis report','Informe de análisis','分析报告','Отчёт об анализе','解析レポート')
+add('Export','Export','Exportar','导出','Экспорт','エクスポート')
+add('Stapel-Export','Batch export','Exportación por lotes','批量导出','Пакетный экспорт','一括エクスポート')
+add('Sicherer Export','Safe export','Exportación segura','安全导出','Безопасный экспорт','安全なエクスポート')
+add('Dateiprüfung','File verification','Verificación de archivos','文件检查','Проверка файла','ファイル検査')
+add('Einzelergebnis','Item result','Resultado individual','单项结果','Результат элемента','項目の結果')
+add('NTFS-Ordneransicht','NTFS folder view','Carpetas NTFS','NTFS 文件夹视图','Папки NTFS','NTFSフォルダー表示')
+add('NTFS-Analyse unvollständig','NTFS analysis incomplete','Análisis NTFS incompleto','NTFS 分析未完成','Анализ NTFS неполон','NTFS解析が不完全です')
+add('Dateisystem nur teilweise gelesen','File system partially read','Sistema de archivos leído parcialmente','文件系统读取不完整','Файловая система прочитана частично','ファイルシステムを一部のみ読み取り')
+add('Dateisystem', 'File system', 'Sistema de archivos', '文件系统', 'Файловая система', 'ファイルシステム')
+add('Suche', 'Search', 'Búsqueda', '搜索', 'Поиск', '検索')
+add('Partition', 'Partition', 'Partición', '分区', 'Раздел', 'パーティション')
+add('Vorschau fehlgeschlagen: ', 'Preview failed: ', 'Falló la vista previa: ', '预览失败：', 'Ошибка предпросмотра: ', 'プレビューに失敗: ')
+add('Bildvorschau (Originalgröße, ggf. abgeschnitten)','Image preview (original size, possibly clipped)','Vista previa de imagen (tamaño original, quizá recortada)','图片预览（原始大小，可能被裁剪）','Просмотр изображения (оригинальный размер, может обрезаться)','画像プレビュー (元のサイズ、切り取られる場合あり)')
+# Safeguards; these contain no filenames and may appear in dialogs
+add('Bitte zuerst ein Laufwerk markieren.','Select a volume first.','Seleccione primero una unidad.','请先选择一个卷。','Сначала выберите том.','先にドライブを選択してください。')
+add('Bitte eine Partition markieren.','Select a partition.','Seleccione una partición.','请选择一个分区。','Выберите раздел.','パーティションを選択してください。')
+add('Bitte genau eine Datei auswählen.','Select exactly one file.','Seleccione exactamente un archivo.','请选择一个文件。','Выберите ровно один файл.','ファイルを1つだけ選択してください。')
+add('Zuerst ein Dateisystem einlesen.','Read a file system first.','Lea primero un sistema de archivos.','请先读取文件系统。','Сначала прочитайте файловую систему.','先にファイルシステムを読み込んでください。')
+add('Bericht erfolgreich gespeichert.','Report saved successfully.','Informe guardado correctamente.','报告已保存。','Отчёт успешно сохранён.','レポートを保存しました。')
+add('Prüfung läuft', 'Verifying', 'Verificando', '正在检查', 'Проверка', '検査中')
+add('Fehler', 'Error', 'Error', '错误', 'Ошибка', 'エラー')
+add('Abbruch', 'Cancelled', 'Cancelado', '已取消', 'Отменено', 'キャンセル')
+add('Keine zusätzlichen Hinweise.', 'No additional notes.', 'Sin observaciones adicionales.', '没有其他提示。', 'Дополнительных замечаний нет.', '追加の注意事項はありません。')
+
+# Common dynamic German fragments, only on UI output, never on disk data.
+_FRAGMENTS = [
+    ('Gesamtgröße:', 'Total size:', 'Tamaño total:', '总大小：', 'Общий размер:', '合計サイズ:'),
+    ('Ausgewählt:', 'Selected:', 'Seleccionado:', '已选择：', 'Выбрано:', '選択済み:'),
+    ('Dateigröße:', 'File size:', 'Tamaño del archivo:', '文件大小：', 'Размер файла:', 'ファイルサイズ:'),
+    ('Dateisystemsuche:', 'File system scan:', 'Análisis del sistema:', '文件系统扫描：', 'Поиск файловой системы:', 'ファイルシステム検索:'),
+    ('Partitionsanalyse abgeschlossen:', 'Partition scan complete:', 'Análisis de particiones finalizado:', '分区扫描完成：', 'Анализ разделов завершён:', 'パーティション解析が完了:'),
+    ('Nicht lesbar:', 'Unreadable:', 'Ilegible:', '不可读取：', 'Не читается:', '読み取り不可:'),
+    ('nicht lesbar:', 'unreadable:', 'ilegible:', '不可读取：', 'не читается:', '読み取り不可:'),
+    ('Restzeit', 'remaining', 'restante', '剩余时间', 'осталось', '残り時間'),
+    ('Einträge', 'entries', 'elementos', '条目', 'записей', '項目'),
+    ('gefunden', 'found', 'encontrados', '已找到', 'найдено', '検出'),
+    ('gelesen', 'read', 'leído', '已读取', 'прочитано', '読み取り済み'),
+    ('Speicherbelegung:', 'Space usage:', 'Uso de espacio:', '空间使用：', 'Использование места:', '使用容量:'),
+    ('Bereich/e', 'range(s)', 'rango(s)', '区域', 'диапазон(ы)', '範囲'),
+    ('Wiederherstellung', 'Recovery', 'Recuperación', '恢复', 'Восстановление', '復旧'),
+    ('abgeschlossen', 'completed', 'finalizado', '已完成', 'завершено', '完了'),
+]
+for row in _FRAGMENTS:
+    if row[0] not in TRANSLATIONS:
+        add(*row)
+
+# Text is translated only if it is an actual UI phrase, or contains a
+# multi-character German phrase known in the catalog. Never perform word-level
+# replacements in arbitrary paths, filenames or hexdumps.
+_PARTIAL = [s for s in TRANSLATIONS if len(s) >= 9 and (s.endswith(':') or s.endswith(' ') or s in {'Restzeit', 'Einträge', 'gefunden', 'gelesen', 'abgeschlossen'})]
+_PARTIAL.sort(key=len, reverse=True)
+
+def translate(text: str, language: str = 'de') -> str:
+    if language == 'de' or not text or not isinstance(text, str):
+        return text
+    match = TRANSLATIONS.get(text)
+    if match:
+        return match.get(language, text)
+    if '\n' in text:
+        return '\n'.join(translate(line, language) for line in text.split('\n'))
+    # A display-only status string with embedded numbers, not a file path.
+    if ('\\' in text or '/' in text or '\x00' in text) and not text.startswith('Tenshi'):
+        return text
+    result = text
+    for source in _PARTIAL:
+        if source in result:
+            result = result.replace(source, TRANSLATIONS[source].get(language, source))
+    return result
+
+
+def canonical_choice(value: str, options: tuple[str, ...], lang: str) -> str:
+    """Map a translated dropdown choice back to its original internal key."""
+    for option in options:
+        if value == option or value == translate(option, lang):
+            return option
+    return options[0]
+
+
+def settings_path() -> Path:
+    override = os.environ.get('TENSHI_SETTINGS_FILE')
+    if override:
+        return Path(override)
+    root = os.environ.get('APPDATA') or os.environ.get('XDG_CONFIG_HOME')
+    if root:
+        return Path(root) / 'Tenshi' / 'settings.json'
+    return Path.home() / '.config' / 'Tenshi' / 'settings.json'
+
+
+def load_language() -> str:
+    try:
+        loaded = json.loads(settings_path().read_text(encoding='utf-8'))
+        language = loaded.get('language', 'de')
+        return language if language in LANGUAGES else 'de'
+    except (OSError, ValueError, TypeError, AttributeError):
+        return 'de'
+
+
+def save_language(language: str) -> None:
+    if language not in LANGUAGES:
+        raise ValueError('Unsupported language')
+    dest = settings_path()
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    # No dependence on current working directory or a recovery source device.
+    fd, staging = tempfile.mkstemp(prefix='tenshi-settings-', suffix='.tmp', dir=str(dest.parent))
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as out:
+            try:
+                existing = json.loads(dest.read_text(encoding='utf-8'))
+                if not isinstance(existing, dict):
+                    existing = {}
+            except (OSError, ValueError, TypeError):
+                existing = {}
+            existing['language'] = language
+            json.dump(existing, out, ensure_ascii=False, indent=2)
+        os.replace(staging, dest)
+    finally:
+        try:
+            os.unlink(staging)
+        except FileNotFoundError:
+            pass
+
+
+class DialogProxy:
+    """Translate native messagebox and file dialog copy without changing data."""
+    def __init__(self, wrapped, get_language, is_file_dialog=False):
+        self.wrapped = wrapped
+        self.get_language = get_language
+        self.is_file_dialog = is_file_dialog
+
+    def __getattr__(self, name):
+        original = getattr(self.wrapped, name)
+        if not callable(original):
+            return original
+        def call(*args, **kwargs):
+            lang = self.get_language()
+            mapped_args = list(args)
+            if name in ('showerror', 'showinfo', 'showwarning', 'askyesno', 'askokcancel', 'askquestion', 'askretrycancel', 'askyesnocancel'):
+                mapped_args = [translate(item, lang) if isinstance(item, str) else item for item in mapped_args]
+            for key in ('title', 'message', 'detail'):
+                if key in kwargs:
+                    kwargs[key] = translate(kwargs[key], lang)
+            if 'filetypes' in kwargs:
+                kwargs['filetypes'] = [(translate(label, lang), pattern) for label, pattern in kwargs['filetypes']]
+            return original(*mapped_args, **kwargs)
+        return call
+
+
+class UITranslator:
+    """Update current and future Tk widgets while retaining canonical text."""
+    def __init__(self, root: tk.Tk, language='de'):
+        self.root = root
+        self.language = language if language in LANGUAGES else 'de'
+        self.widget_data = {}
+        self.var_data = {}
+        self._in_var_change = False
+        self._after_id = None
+
+    def set_language(self, language: str):
+        if language not in LANGUAGES:
+            raise ValueError('Unknown language')
+        self.language = language
+        self.refresh()
+
+    def start(self):
+        self.refresh()
+        self._schedule()
+
+    def stop(self):
+        if self._after_id:
+            try:
+                self.root.after_cancel(self._after_id)
+            except tk.TclError:
+                pass
+            self._after_id = None
+
+    def _schedule(self):
+        try:
+            if self.root.winfo_exists():
+                self._after_id = self.root.after(320, self._pulse)
+        except tk.TclError:
+            return
+
+    def _pulse(self):
+        self._after_id = None
+        try:
+            if self.root.winfo_exists():
+                self.refresh()
+                self._schedule()
+        except tk.TclError:
+            pass
+
+    def _walk(self, widget):
+        yield widget
+        try:
+            children = widget.winfo_children()
+        except tk.TclError:
+            return
+        for child in children:
+            yield from self._walk(child)
+
+    def _capture_text(self, widget, key, current, apply):
+        ident = (widget, key)
+        stored = self.widget_data.get(ident)
+        if stored is None or current not in (stored[0], stored[1]):
+            stored = (current, current)
+        base = stored[0]
+        wanted = translate(base, self.language)
+        if current != wanted:
+            try:
+                apply(wanted)
+            except tk.TclError:
+                pass
+        self.widget_data[ident] = (base, wanted)
+
+    def _bind_var(self, var_name):
+        if not var_name or var_name in self.var_data:
+            return
+        var = tk.StringVar(master=self.root, name=var_name)
+        source = var.get()
+        row = {'var':var, 'source':source, 'last':source}
+        self.var_data[var_name] = row
+        def on_write(*args):
+            if self._in_var_change:
+                return
+            new = var.get()
+            if new != row['last']:
+                row['source'] = new
+            self._apply_var(row)
+        var.trace_add('write', on_write)
+        row['trace'] = on_write
+
+    def _apply_var(self, row):
+        value = translate(row['source'], self.language)
+        row['last'] = value
+        if row['var'].get() != value:
+            self._in_var_change = True
+            try:
+                row['var'].set(value)
+            finally:
+                self._in_var_change = False
+
+    def refresh(self):
+        for widget in self._walk(self.root):
+            try:
+                if isinstance(widget, (tk.Tk, tk.Toplevel)):
+                    self._capture_text(widget, 'title', widget.title(), widget.title)
+                options = widget.keys() if hasattr(widget, 'keys') else ()
+                if 'text' in options:
+                    value = widget.cget('text')
+                    self._capture_text(widget, 'text', value,
+                                       lambda t, w=widget: w.configure(text=t))
+                if 'textvariable' in options and isinstance(widget, (tk.Label, ttk.Label)):
+                    self._bind_var(widget.cget('textvariable'))
+                if isinstance(widget, ttk.Treeview):
+                    for column in ('#0',) + tuple(widget['columns']):
+                        heading = widget.heading(column)['text']
+                        self._capture_text(widget, f'heading:{column}', heading,
+                                           lambda t, w=widget, c=column: w.heading(c, text=t))
+                if isinstance(widget, tk.Text) and widget in (
+                    getattr(self.root, 'partition_detail_text', None),
+                    getattr(self.root, 'partition_warnings', None)):
+                    contents = widget.get('1.0', 'end-1c')
+                    def apply_text(value, w=widget):
+                        old_state = str(w.cget('state'))
+                        w.configure(state='normal')
+                        try:
+                            w.delete('1.0', 'end')
+                            w.insert('1.0', value)
+                        finally:
+                            w.configure(state=old_state)
+                    self._capture_text(widget, 'read_only_text', contents, apply_text)
+                if isinstance(widget, tk.Menu):
+                    end = widget.index('end')
+                    if end is not None:
+                        for index in range(end+1):
+                            if widget.type(index) not in ('command', 'cascade', 'checkbutton', 'radiobutton'):
+                                continue
+                            label = widget.entrycget(index, 'label')
+                            self._capture_text(widget, f'menu:{index}', label,
+                                               lambda t, w=widget, i=index: w.entryconfigure(i, label=t))
+            except (tk.TclError, ValueError):
+                continue
+        for row in list(self.var_data.values()):
+            self._apply_var(row)
+
+# Descriptions and safety notices shown in the main file browser and scan dialog.
+add('NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitions · Files & Folders',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Particiones · Archivos y carpetas',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  分区 · 文件与文件夹',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Разделы · Файлы и папки',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  パーティション · ファイルとフォルダー')
+add('Dateiansicht: NTFS, FAT32, exFAT, ext2/3/4 sowie eingeschränkt Btrfs und XFS. Gelöschte Dateien: NTFS, FAT32, exFAT und ext2/3/4 teilweise rettbar; Btrfs/XFS nur nicht exportierbare Metadatenhinweise. Ein Export garantiert keine intakten Inhalte.',
+    'File browser: NTFS, FAT32, exFAT, ext2/3/4, with limited Btrfs/XFS support. Deleted files: partial recovery for NTFS, FAT32, exFAT and ext2/3/4; Btrfs/XFS provide non-exportable metadata hints only. An export does not guarantee intact contents.',
+    'Explorador: NTFS, FAT32, exFAT, ext2/3/4 y Btrfs/XFS con limitaciones. Borrados: recuperación parcial en NTFS, FAT32, exFAT y ext2/3/4; Btrfs/XFS solo muestran pistas de metadatos no exportables. La exportación no garantiza archivos íntegros.',
+    '文件浏览：NTFS、FAT32、exFAT、ext2/3/4；Btrfs/XFS 功能有限。已删除文件：前四类文件系统可部分恢复，Btrfs/XFS 仅提供无法导出的元数据线索。导出并不保证内容完好。',
+    'Просмотр: NTFS, FAT32, exFAT, ext2/3/4, ограниченная поддержка Btrfs/XFS. Удалённые файлы: частичное восстановление на NTFS, FAT32, exFAT, ext2/3/4; для Btrfs/XFS — только неэкспортируемые метаданные. Экспорт не гарантирует целостность.',
+    'ファイル表示：NTFS、FAT32、exFAT、ext2/3/4、制限付きの Btrfs/XFS に対応。削除済みファイルは NTFS/FAT32/exFAT/ext2/3/4 で一部復旧可能。Btrfs/XFS は書き出せないメタデータの手掛かりのみ。エクスポートしても内容の完全性は保証されません。')
+
+add('Noch kein Stapel-Export gestartet.','No batch export started.','Aún no se inició ninguna exportación.', '尚未开始批量导出。','Пакетный экспорт ещё не запущен.','一括エクスポートは未開始です。')
+add('Überspringt unlesbare Datensätze/Unterordner. Die Ergebnisse können unvollständig bleiben.',
+    'Skips unreadable records and subfolders. Results may be incomplete.',
+    'Omite registros y subcarpetas ilegibles. Los resultados pueden ser incompletos.',
+    '跳过无法读取的记录和子文件夹，结果可能不完整。',
+    'Пропускает нечитаемые записи и подпапки. Результаты могут быть неполными.',
+    '読み取れないレコードやサブフォルダーをスキップします。結果は不完全な場合があります。')
+add('Überspringt unlesbare NTFS-Datensätze bzw. Unterordner; Ergebnis kann unvollständig sein.',
+    'Skips unreadable NTFS records and subfolders; the result may be incomplete.',
+    'Omite registros NTFS y subcarpetas ilegibles; los resultados pueden ser incompletos.',
+    '跳过无法读取的 NTFS 记录及子文件夹，结果可能不完整。',
+    'Пропускает нечитаемые записи NTFS и подпапки; результат может быть неполным.',
+    '読み取れないNTFSレコードとサブフォルダーを飛ばします。結果は不完全な場合があります。')
+add('Schreibzugriffe erfolgen nur auf die Image-Zieldatei (neu oder fortgesetzt) und ihre Statusdateien, nicht auf das Quellmedium. Für mechanisch defekte Laufwerke spezialisierte, schonende Imaging-Verfahren verwenden.',
+    'Writes affect only the destination image (new or resumed) and its checkpoint files, never the source. For physically failing drives use specialist low-impact imaging.',
+    'Solo se escriben la imagen de destino (nueva o reanudada) y sus estados, nunca el origen. Para discos defectuosos use métodos de imagen especializados.',
+    '仅向目标镜像（新建或续传）及其状态文件写入，不写入源介质。对物理故障硬盘应使用专业的低负载镜像工具。',
+    'Запись идёт только в целевой образ (новый или продолжаемый) и файлы состояния, но не в источник. Для неисправных дисков используйте специализированные щадящие средства.',
+    '書き込み先は保存先イメージ（新規・再開）と状態ファイルのみで、元の媒体には書き込みません。物理的な故障時は専門的な低負荷イメージ作成手段を使用してください。')
+add('Unlesbare Bereiche werden mit Nullen ersetzt und als Fehlstellen protokolliert; das Image kann dadurch Datenlücken enthalten.',
+    'Unreadable areas are filled with zeros and logged; the image may therefore contain missing data.',
+    'Las áreas ilegibles se rellenan con ceros y se registran; la imagen puede contener datos faltantes.',
+    '无法读取的区域会填零并记录；因此镜像可能缺失数据。',
+    'Нечитаемые участки заменяются нулями и отмечаются; образ может содержать пропуски данных.',
+    '読み取れない領域はゼロで埋めて記録します。そのためイメージに欠落部分が残る可能性があります。')
+add('Achtung: Schon das Lesen kann eine physisch defekte Festplatte zusätzlich belasten. Für beschädigte Hardware zuerst ein sektorweises Abbild erstellen.',
+    'Caution: Even read-only access can further stress a physically failing drive. Image it first.',
+    'Atención: incluso leer puede afectar a un disco dañado. Cree primero una imagen.',
+    '注意：即使只读访问也可能加重故障硬盘负担。请先制作镜像。',
+    'Внимание: даже чтение может ухудшить состояние неисправного диска. Сначала создайте образ.',
+    '注意：読み取りだけでも故障ドライブに負担がかかる場合があります。先にイメージを作成してください。')
+add('Achtung: Schon das Lesen kann eine physisch defekte Festplatte zusätzlich belasten. Weitere Zugriffe möglichst vermeiden und zuerst ein schonendes Image mit geeigneten Werkzeugen erstellen.',
+    'Caution: Even reading can further damage a failing drive. Minimize access; first create an image using suitable low-impact tools.',
+    'Atención: incluso leer puede empeorar un disco defectuoso. Reduzca accesos y cree una imagen con herramientas adecuadas.',
+    '注意：读取也可能加重故障磁盘损坏。尽量减少访问，先使用合适工具进行低负载镜像。',
+    'Внимание: даже чтение может ухудшить состояние диска. Ограничьте доступ и сначала создайте образ щадящими средствами.',
+    '注意：読み取りだけでも故障ドライブの状態が悪化する場合があります。アクセスを最小限にし、適切なツールで低負荷のイメージを先に作成してください。')
+
+
+# Display-only file metadata and export queue states. These never replace the
+# canonical state used by recovery decisions or the resume manifest.
+add('Datei', 'File', 'Archivo', '文件', 'Файл', 'ファイル')
+add('Ordner', 'Folder', 'Carpeta', '文件夹', 'Папка', 'フォルダー')
+add('Vorhanden', 'Existing', 'Existente', '现有', 'Существует', '存在')
+add('Gelöscht', 'Deleted', 'Eliminado', '已删除', 'Удалено', '削除済み')
+add('Ordner eingeschränkt', 'Folder (limited)', 'Carpeta (limitada)', '文件夹（受限）', 'Папка (ограничено)', 'フォルダー (制限あり)')
+add('Nur Namenshinweis', 'Name hint only', 'Solo pista del nombre', '仅名称线索', 'Только имя', '名前の手掛かりのみ')
+add('Gelöscht · unsicher', 'Deleted · uncertain', 'Eliminado · incierto', '已删除 · 不确定', 'Удалено · ненадёжно', '削除済み · 不確実')
+add('Export möglich · ungeprüft', 'Export possible · unchecked', 'Exportable · sin verificar', '可导出 · 未验证', 'Экспорт возможен · не проверено', 'エクスポート可能 · 未検証')
+add('Wartend', 'Waiting', 'En espera', '等待中', 'Ожидание', '待機中')
+add('Läuft', 'Running', 'En curso', '进行中', 'Выполняется', '実行中')
+add('Erfolgreich', 'Successful', 'Correcto', '成功', 'Успешно', '成功')
+add('Übersprungen', 'Skipped', 'Omitido', '已跳过', 'Пропущено', 'スキップ')
+add('Abgebrochen', 'Cancelled', 'Cancelado', '已取消', 'Отменено', 'キャンセル')
+add('Beendet', 'Finished', 'Finalizado', '已完成', 'Завершено', '完了')
+add('Verifiziert', 'Verified', 'Verificado', '已验证', 'Проверено', '検証済み')
+add('Keine Dateidaten', 'No file data', 'Sin datos de archivo', '无文件数据', 'Нет данных файла', 'ファイルデータなし')
+
+
+def display_kind_text(kind: str, language: str) -> str:
+    """Translate file kind labels while leaving filename extensions intact."""
+    if kind.endswith('-Datei'):
+        suffix = {'de':'-Datei', 'en':' file', 'es':' archivo', 'zh':' 文件',
+                  'ru':' файл', 'ja':' ファイル'}[language]
+        return kind[:-len('-Datei')] + suffix
+    return translate(kind, language)
+
+# Frequent modal notifications and preview field names.
+add('Bitte zuerst ein Datenträgerabbild auswählen.',
+    'Select a disk image first.', 'Seleccione primero una imagen de disco.',
+    '请先选择磁盘镜像。', 'Сначала выберите образ диска.', '先にディスクイメージを選択してください。')
+add('Bitte eine geprüfte Partition auswählen.',
+    'Select an inspected partition.', 'Seleccione una partición examinada.',
+    '请选择已检查的分区。', 'Выберите проверенный раздел.', '検査済みのパーティションを選択してください。')
+add('Bitte zuerst ein Dateisystem einlesen.',
+    'Read a file system first.', 'Lea primero un sistema de archivos.',
+    '请先读取文件系统。', 'Сначала прочитайте файловую систему.', '先にファイルシステムを読み込んでください。')
+add('Bitte einen Zielpfad auswählen.',
+    'Select a destination path.', 'Seleccione una ruta de destino.',
+    '请选择目标路径。', 'Выберите путь назначения.', '保存先パスを選択してください。')
+add('Noch kein vollständiger Exportbericht vorhanden.',
+    'No complete export report available yet.', 'Aún no hay un informe completo de exportación.',
+    '尚无完整的导出报告。', 'Полный отчёт об экспорте пока недоступен.', '完全なエクスポートレポートはまだありません。')
+add('Ein Export läuft bereits.',
+    'An export is already running.', 'Ya hay una exportación en curso.',
+    '导出已在进行中。', 'Экспорт уже выполняется.', 'エクスポートはすでに実行中です。')
+add('Rechts Dateien/Ordner auswählen (Strg/Umschalt für mehrere).',
+    'Select files or folders on the right (Ctrl/Shift for multiple selections).',
+    'Seleccione archivos o carpetas a la derecha (Ctrl/Mayús para varios).',
+    '请在右侧选择文件或文件夹（Ctrl/Shift 可多选）。',
+    'Выберите справа файлы или папки (Ctrl/Shift для нескольких).',
+    '右側でファイルまたはフォルダーを選択してください (Ctrl/Shiftで複数選択)。')
+add('Keine verwendbaren Windows-Laufwerke gefunden.',
+    'No usable Windows volumes found.', 'No se encontraron unidades Windows utilizables.',
+    '未找到可用的 Windows 卷。', 'Не найдены доступные тома Windows.', '利用できるWindowsドライブが見つかりません。')
+add('Keine Wiederherstellung auf die Quelle speichern.',
+    'Never save recovered data to the source.', 'Nunca guarde los datos recuperados en el origen.',
+    '不要将恢复的数据保存到源磁盘。', 'Не сохраняйте данные на исходный диск.', '復旧データを元のディスクへ保存しないでください。')
+for row in [
+    ('Name:', 'Name:', 'Nombre:', '名称：', 'Имя:', '名前:'),
+    ('Status:', 'Status:', 'Estado:', '状态：', 'Статус:', '状態:'),
+    ('Rettbarkeit:', 'Recoverability:', 'Recuperabilidad:', '可恢复性：', 'Возможность восстановления:', '復旧可能性:'),
+    ('Vorschau:', 'Preview:', 'Vista previa:', '预览：', 'Предпросмотр:', 'プレビュー:'),
+    ('Dateisystem:', 'File system:', 'Sistema de archivos:', '文件系统：', 'Файловая система:', 'ファイルシステム:'),
+    ('Info:', 'Info:', 'Información:', '信息：', 'Сведения:', '情報:'),
+]: add(*row)
+# Keep partial substitutions conservative: only anchored field labels and
+# fixed status fragments are eligible; do not translate a raw filename.
+_PARTIAL = sorted(set(_PARTIAL + [s for s in TRANSLATIONS if s.endswith(':') and len(s)>=5]),
+                  key=len, reverse=True)

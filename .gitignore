@@ -1,0 +1,43 @@
+# Build outputs, environments, caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+build/*.spec
+Tenshi.spec
+dist/
+portable_output/
+installer_output/
+VEROEFFENTLICHUNG/UPLOAD/
+# Keep build/version_info.txt tracked
+# Local state, diagnostics, user exports and recovery data
+*.log
+*.log.*
+tenshi-windows-check.json
+*.tenshi-session
+RecoveryDesk_Export_*/
+Tenshi_Export_*/
+*_Export_*/
+*.raw
+*.img
+*.dd
+*.vhd
+*.vhdx
+*.iso
+*.bin
+*.part
+*.checkpoint
+*.tmp
+# Generated archives/installers
+*.exe
+*.msi
+*.zip
+SHA256SUMS.txt
+release_manifest.json
+# Local OS/editor state
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

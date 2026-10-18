@@ -1,0 +1,72 @@
+name: Tenshi Windows release verification
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Test suite (isolated settings and logs)
+        shell: pwsh
+        run: |
+          $env:TENSHI_SETTINGS_FILE = Join-Path $env:RUNNER_TEMP 'tenshi-test-settings.json'
+          $env:TENSHI_LOG_DIR = Join-Path $env:RUNNER_TEMP 'tenshi-test-logs'
+          python -m unittest discover -s tests -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Windows preflight without raw disk access
+        shell: pwsh
+        run: |
+          cmd /c check_windows.bat --no-pause
+          if ($LASTEXITCODE -ne 0) { Get-Content tenshi-windows-check.log; exit $LASTEXITCODE }
+      - name: Build Tenshi.exe with the same script as users
+        shell: pwsh
+        run: |
+          cmd /c build_windows.bat --no-pause
+          if ($LASTEXITCODE -ne 0) { Get-Content tenshi-build.log -Tail 60; exit $LASTEXITCODE }
+      - name: Run packaged executable smoke test (no disk access)
+        shell: pwsh
+        run: |
+          $proc = Start-Process -FilePath (Resolve-Path 'dist/Tenshi.exe') -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "Tenshi.exe smoke test failed with exit code $($proc.ExitCode)" }
+      - name: Check EXE version metadata
+        shell: pwsh
+        run: |
+          $v = (Get-Item 'dist/Tenshi.exe').VersionInfo
+          if ($v.FileVersion -ne '3.0.2.0') { throw "Unexpected file version: $($v.FileVersion)" }
+      - name: Build and verify portable package
+        shell: pwsh
+        run: |
+          cmd /c build_portable.bat --no-pause
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python release_tools.py verify portable_output/Tenshi_Portable_3.0.2_Win64.zip
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install Inno Setup 6 when needed
+        shell: pwsh
+        run: |
+          $iscc = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe")
+          if (-not ($iscc | Where-Object { Test-Path $_ })) { choco install innosetup --yes --no-progress }
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          cmd /c build_installer.bat --no-pause
+          if ($LASTEXITCODE -ne 0) {
+            if (Test-Path tenshi-installer-build.log) { Get-Content tenshi-installer-build.log -Tail 60 }
+            exit $LASTEXITCODE
+          }
+      - name: Upload Windows release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tenshi-3.0.2-Windows-release
+          path: |
+            dist/Tenshi.exe
+            portable_output/Tenshi_Portable_3.0.2_Win64.zip
+            installer_output/Tenshi_Setup_3.0.2.exe
+          if-no-files-found: error

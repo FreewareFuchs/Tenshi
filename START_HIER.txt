@@ -1,0 +1,41 @@
+Tenshi 3.0.2 - Windows 10/11 (64 Bit)
+
+1. Python 3.11+ (64 Bit) installieren.
+2. build_windows.bat starten. Ergebnis: dist\Tenshi.exe.
+3. Optional build_portable.bat ausfuehren (ZIP ohne Installer).
+4. Optional Inno Setup 6.3+ installieren und build_installer.bat ausfuehren.
+5. Optional check_windows.bat ausfuehren (keine physischen Laufwerke).
+6. Optional run_tests.bat ausfuehren (separate Tests und tenshi-tests.log).
+
+Bei Problemen: tenshi-build.log bzw. tenshi-installer-build.log pruefen.
+Das Quell-ZIP enthaelt noch keine vorkompilierte Windows-EXE.
+Quellen nur lesend analysieren. Daten auf andere physische Datentraeger exportieren.
+Zuerst mit Testimages arbeiten und Risiken bei defekten Medien beachten.
+
+Neu: Im Hauptfenster ueber "Analysesitzung" eine Sitzung speichern oder laden.
+Dies funktioniert nur mit regulaeren Image-Dateien. Beim Laden wird die Quelle geprueft.
+Ein Sitzungsarchiv ist kein Backup von Dateiinhalten und kann Dateinamen enthalten.
+
+Neu: Imaging-Dialog bietet 0-3 zusaetzliche Leseversuche, Stoppen statt Nullfuellung
+und Fehlerstellen-Bericht. Bei defekter Hardware moeglichst keine Wiederholungen.
+
+Neu in 2.8.0: Vor "Stapel-Export" ueber "Export pruefen" kontrollieren,
+ob geloeschte NTFS-Dateien Cluster anderer vorhandener Dateien referenzieren.
+Ein positiver Treffer blockiert den Export; ein negativer ist KEINE Garantie.
+
+Seit 2.9.0: Abbruch bei unerwartet kurzen USB-Leseantworten.
+Windows-Vorabpruefung: check_windows.bat, Ergebnis tenshi-windows-check.log.
+Keine echten Geraetelesetests durch die Vorabpruefung.
+
+Neu seit Tenshi 3.0.0:
+- Offline-Hilfe ueber "? Hilfe" oder F1 (passend zum aktuellen Hauptregister).
+- Neun suchbare Kapitel in allen sechs Oberflaechensprachen.
+- HILFE_3.0.0.md: schrittweise Bedienung und wichtige Einschraenkungen.
+- WINDOWS_ABNAHME_3.0.0.md: sichere manuelle Windows-Pruefliste.
+Die Versionsnummer ist keine Freigabe fuer beschaedigte Originaldatentraeger.
+
+Hotfix 3.0.2: Geplante Tkinter-Callbacks werden beim Schliessen
+von Hauptfenster und Dialogen abgemeldet. Regressionstests hinzugefuegt.
+
+Neu in 3.0.2: Quellenwahl -> Partitionen und automatische Schnellanalyse.
+Neue Exportordner: Tenshi_Export_<Signatur>. Vorhandene RecoveryDesk_Export_*-Auftraege bleiben wiederaufnehmbar.

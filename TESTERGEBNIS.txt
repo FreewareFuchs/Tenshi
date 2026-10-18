@@ -1,0 +1,22 @@
+Tenshi 3.0.2 – Testergebnis (2026-10-18)
+
+441 automatisierte Tests erfolgreich unter Linux/Xvfb in isolierter
+Testumgebung, ohne Fehlermeldung. 0 fehlgeschlagen.
+
+Aufruf:
+TENSHI_SETTINGS_FILE=/tmp/tenshi-302-full2.json \
+TENSHI_LOG_DIR=/tmp/tenshi-302-full-logs \
+xvfb-run -a python -m unittest discover -s tests -v
+
+Neue Tests:
+- tests/test_source_autoscan_302.py (8): automatische Schnellanalyse,
+  Tab-Wechsel, Quelländerung bei laufendem Scan, veraltete Ergebnisse,
+  unveränderte Image-Daten, Sitzungswiederherstellung.
+- tests/test_export_brand_302.py (4): neue Tenshi_Export_*-Namen,
+  SHA256-basierte Wiederaufnahme, alte RecoveryDesk_Export_*-Aufträge,
+  sichere Behandlung ungültiger alter Statusdateien.
+
+Die neue EXE / der neue Installer kann hier nicht direkt auf Windows
+gebaut werden. Frühere Windows-Tests von Tenshi 3.0.1 wurden vom Nutzer
+als erfolgreich gemeldet, einschließlich USB-/Gerätezugriff und Imaging.
+Vor der Veröffentlichung den neuen Build unter Windows erneut prüfen.
