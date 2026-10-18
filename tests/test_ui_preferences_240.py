@@ -86,8 +86,13 @@ class AppearanceGuiTests(unittest.TestCase):
         pane.sashpos(0, 455)
         self.app.file_tree.column('status', width=258)
         self.app.part_tree.column('name', width=183)
-        self.app.geometry('1260x820+50+50')
+        # Windows CI runners may use a virtual screen too small for 1260x820.
+        # Compare the actual usable geometry, not a size the WM may clamp.
+        target_w = max(1024, min(1260, self.app.winfo_screenwidth() - 80))
+        target_h = max(650, min(820, self.app.winfo_screenheight() - 100))
+        self.app.geometry(f'{target_w}x{target_h}+20+20')
         self.app.update()
+        actual_geometry = self.app.geometry()
         first_ratio = pane.sashpos(0) / pane.winfo_width()
         self.app.change_language('en')
         self.app.change_theme('dark')
@@ -99,7 +104,10 @@ class AppearanceGuiTests(unittest.TestCase):
         self.assertEqual(self.app.theme,'dark')
         self.assertEqual(self.app.file_tree.column('status','width'),258)
         self.assertEqual(self.app.part_tree.column('name','width'),183)
-        self.assertTrue(self.app.geometry().startswith('1260x820'))
+        restored = self.app.geometry()
+        # A different WM may adjust the offset but should preserve size.
+        self.assertEqual(restored.split('+')[0].split('-')[0],
+                         actual_geometry.split('+')[0].split('-')[0])
         self.app._select_main_tab('files')
         self.app.update()
         self.assertAlmostEqual(self.app.browser_paned.sashpos(0) / self.app.browser_paned.winfo_width(),first_ratio,delta=.035)
