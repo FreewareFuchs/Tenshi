@@ -1,0 +1,91 @@
+name: "Fehler melden / Bug report"
+description: "Ein Problem mit Tenshi nachvollziehbar beschreiben / Report a reproducible Tenshi problem."
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bitte zuerst die [bestehenden Meldungen](https://github.com/FreewareFuchs/Tenshi/issues) und die [FAQ](https://freewarefuchs.de/tenshi/faq/) prüfen.
+        Please check [existing issues](https://github.com/FreewareFuchs/Tenshi/issues) and the [FAQ](https://freewarefuchs.de/en/tenshi/faq/) first.
+
+        **Diese Meldung ist öffentlich / This report is public.**
+        Keine privaten Dateien, Laufwerksabbilder, Seriennummern oder ungeprüften Protokolle veröffentlichen.
+        Do not include private files, disk images, serial numbers or unchecked logs.
+        Bei beschädigter Hardware keine zusätzlichen Versuche nur für diese Meldung durchführen.
+        Do not perform extra operations on damaged hardware just to reproduce an issue.
+
+        Sicherheitslücken bitte gemäß [SECURITY.md](https://github.com/FreewareFuchs/Tenshi/blob/main/SECURITY.md) melden.
+        For vulnerabilities, follow [SECURITY.md](https://github.com/FreewareFuchs/Tenshi/blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: "Tenshi-Version / Tenshi version"
+      description: "Vollständige Version einschließlich Beta-Zusatz / Full version including beta suffix."
+      placeholder: "3.0.2 Beta.1"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: "Windows-Version / Windows version"
+      description: "Windows-Version und nach Möglichkeit Build-Nummer / Windows version and build number if known."
+      placeholder: "Windows 11, 64-Bit, 24H2"
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: "Ausgabe / Package"
+      options:
+        - "Windows-Installer / Installer"
+        - "Portable ZIP"
+        - "Aus Quellcode gestartet / Running from source"
+        - "Unbekannt / Unknown"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Betroffener Bereich / Affected area"
+      options:
+        - "Start oder Installation / Startup or installation"
+        - "Partitionen / Partitions"
+        - "Dateien und Ordner / Files and folders"
+        - "Export"
+        - "Image erstellen / Imaging"
+        - "Analysesitzungen / Analysis sessions"
+        - "Hilfe oder Darstellung / Help or appearance"
+        - "Sonstiges / Other"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Schritte zum Fehler / Steps to reproduce"
+      description: "Nur bereits beobachtete Schritte beschreiben / Describe steps you have already observed."
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Erwartetes Verhalten / Expected behavior"
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Tatsächliches Verhalten / Actual behavior"
+      description: "Fehlermeldung möglichst wörtlich, aber ohne private Angaben / Include the error message without private information."
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: "Zusätzliche Angaben / Additional context"
+      description: "Optional: Installer oder Python-Umgebung, Image-Datei oder physisches Gerät, Dateisystem und geschwärzte Screenshots. Keine vollständigen Images hochladen. / Optional: Python environment, image file or physical device, file system and redacted screenshots. Do not upload full disk images."
+    validations:
+      required: false
