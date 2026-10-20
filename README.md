@@ -42,7 +42,7 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 | ext2 / ext3 / ext4 | Vorhandene Dateien und experimentelle Wiederherstellung einzelner gelöschter Dateien. |
 | Btrfs / XFS | Eingeschränkte Navigation und Export unterstützter vorhandener Dateistrukturen; Löschhinweise sind nicht exportierbar. |
 
-„Bereit“ in der Exportprüfung bewertet plausible Metadaten, nicht die Unversehrtheit der Dateiinhalte. Überschriebene Daten lassen sich dadurch nicht zurückholen. Exportierte Dateien anschließend selbst prüfen.
+„Bereit“ in der Exportprüfung bewertet plausible Metadaten, nicht die Unversehrtheit der Dateiinhalte. Überschriebene Daten lassen sich dadurch nicht zurückholen. Ein erfolgreicher Export garantiert **keine fehlerfreien Daten**. Exportierte Dateien anschließend selbst prüfen.
 
 ## Erste Schritte
 
@@ -60,7 +60,7 @@ Die Quelle wird nur lesend geöffnet. Bei mechanischen Auffälligkeiten oder wer
 
 Tenshi bleibt experimentelle Beta-Software. Automatisierte Tests mit synthetischen Images und simulierten Fehlerfällen ersetzen keine Prüfung auf beschädigter Hardware.
 
-Nach den bisherigen Projektangaben wurden für **3.0.1** Windows-Praxistests gemeldet: Installation und Deinstallation, physischer Laufwerks- und USB-Zugriff, neun exportierte Prüffälle mit SHA-256-Abgleich sowie bitgenaues 4-MiB-Imaging. Für die Änderungen in **3.0.2** ist im bisherigen README noch kein Windows-Praxistest dokumentiert. Tatsächlich defekte Laufwerke wurden laut diesem Stand nicht geprüft.
+Nach den bisherigen Projektangaben wurden für **3.0.1** Windows-Praxistests gemeldet: Installation und Deinstallation, physischer Laufwerks- und USB-Zugriff, neun exportierte Prüffälle mit SHA-256-Abgleich sowie bitgenaues 4-MiB-Imaging. Für die Änderungen in **3.0.2** ist im bisherigen README noch kein Windows-Praxistest dokumentiert. Tatsächlich defekte Laufwerke wurden laut diesem Stand nicht geprüft. **Windows-Hardwaretest steht aus.**
 
 Der [Windows-Abnahmeplan](WINDOWS_ABNAHME_3.0.0.md) ist ein Prüfplan, kein Nachweis einer abgeschlossenen Abnahme. Historische Testergebnisse beziehen sich jeweils auf die dort genannte Version.
 
