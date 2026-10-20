@@ -4,7 +4,7 @@ Dieses Archiv bewahrt die bisherigen Entwicklungsdetails. Versions- und Testanga
 
 # Tenshi 3.0.2 – Datenrettung für Windows
 
-**Vorgesehene Open-Source-Lizenz: MIT.** Die Datei [`LICENSE`](LICENSE) nennt `FreewareFuchs` als Entwickler-Pseudonym. Vor der öffentlichen Freigabe sind die Rechte an Logos, Assets und Drittkomponenten sowie die Berechtigung zur Lizenzierung zu klären. Siehe [`OPEN\_SOURCE\_START\_HIER.md`](OPEN_SOURCE_START_HIER.md) und [`THIRD\_PARTY\_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+**Vorgesehene Open-Source-Lizenz: MIT.** Die Datei [`LICENSE`](../LICENSE) nennt `FreewareFuchs` als Entwickler-Pseudonym. Vor der öffentlichen Freigabe sind die Rechte an Logos, Assets und Drittkomponenten sowie die Berechtigung zur Lizenzierung zu klären. Siehe [`OPEN\_SOURCE\_START\_HIER.md`](../OPEN_SOURCE_START_HIER.md) und [`THIRD\_PARTY\_NOTICES.md`](../THIRD_PARTY_NOTICES.md).
 
 ## Neu in Tenshi 3.0.2 – Quellenwechsel und Exportnamen
 
