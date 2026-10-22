@@ -62,7 +62,9 @@ class WindowsCheckpointAccessDeniedTests(unittest.TestCase):
         self.assertEqual(complete['state'], 'complete')
         self.assertEqual(self.target.read_bytes(), self.data)
         self.assertTrue(j.read_bytes().endswith(b'\n'))
-        self.assertEqual(len(j.read_bytes().splitlines()), 3)
+        final, _ = _read_journal(str(j))
+        self.assertEqual(final['state'], 'complete')
+        self.assertEqual(final['verification']['status'], 'verified')
 
     def test_tampered_committed_journal_record_rejected(self):
         canceled = [False]
