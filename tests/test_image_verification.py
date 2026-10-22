@@ -87,6 +87,49 @@ class FullImagingVerificationTests(unittest.TestCase):
         self.assertEqual(after['verification']['status'], 'verified')
         self.assertEqual(self.dest.read_bytes(), self.payload)
 
+    def test_resume_detects_silent_corruption_in_earlier_committed_block(self):
+        """A bad interior block can evade first/last checkpoint hashes.
+
+        Mimic the original 8-GiB incident on disposable files: pause after
+        three blocks, corrupt bytes in the second block (neither first nor
+        last), then resume. Full verification must reject completion.
+        """
+        mib = 1024 * 1024
+        payload = bytes(range(256)) * (4 * 4096)
+        self.src.write_bytes(payload * 4 + b'last')
+
+        cancelled = [False]
+        def pause_at_three_blocks(progress):
+            if progress.state == 'running' and progress.processed >= 3 * mib:
+                cancelled[0] = True
+
+        paused = imaging.create_image(
+            str(self.src), str(self.dest), block_size=mib,
+            cancel=lambda: cancelled[0], progress=pause_at_three_blocks)
+        self.assertEqual(paused['state'], 'paused')
+        self.assertEqual(paused['processed'], 3 * mib)
+
+        bad_positions = [mib + 1002, mib + 1010, mib + 2034]
+        with self.dest.open('r+b') as result:
+            for offset, value in zip(bad_positions, (0x08, 0x10, 0x08)):
+                result.seek(offset)
+                result.write(bytes([value]))
+            result.flush()
+            os.fsync(result.fileno())
+
+        self.assertEqual(self.src.read_bytes()[bad_positions[0]], 0x00)
+        self.assertEqual(self._state()['last']['start'], 2 * mib)
+        with self.assertRaisesRegex(imaging.ImagingError,
+                                    'INTEGRITÄTSFEHLER.*Byteoffset'):
+            imaging.create_image(str(self.src), str(self.dest),
+                                 resume=True, verify=True)
+        failed = self._state()
+        self.assertEqual(failed['state'], 'integrity_failed')
+        self.assertEqual(failed['verification']['status'], 'failed')
+        self.assertIn(f'Byteoffset {bad_positions[0]}',
+                      failed['verification']['message'])
+        self.assertEqual(self.src.read_bytes(), payload * 4 + b'last')
+
     def test_explicit_opt_out_records_unverified(self):
         result = imaging.create_image(str(self.src), str(self.dest), verify=False)
         self.assertEqual(result['state'], 'complete')
