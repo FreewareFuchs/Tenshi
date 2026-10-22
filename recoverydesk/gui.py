@@ -604,6 +604,8 @@ class RecoveryDeskApp(tk.Tk):
             return
         self._compact_layout = compact
         if compact:
+            if not self.export_running and not self.export_queue_collapsed:
+                self._toggle_export_queue()
             self._header_description.pack_forget()
             self.logo_label.configure(image=self._compact_brand_logo)
         else:
@@ -2505,7 +2507,13 @@ class RecoveryDeskApp(tk.Tk):
         # widgets remain unmapped (even though the export continues).
         frame.pack(fill='x', pady=(4, 4), before=self.browser_paned)
         self.export_queue_frame = frame
-        head = ttk.Frame(frame)
+        self.export_queue_collapsed = False
+        self.export_queue_toggle = ttk.Button(frame, text='Warteschlange einklappen',
+                                               command=self._toggle_export_queue)
+        self.export_queue_toggle.pack(anchor='e')
+        self.export_queue_contents = ttk.Frame(frame)
+        self.export_queue_contents.pack(fill='x')
+        head = ttk.Frame(self.export_queue_contents)
         head.pack(fill='x')
         self.export_queue_summary = tk.StringVar(value='Noch kein Stapel-Export gestartet.')
         ttk.Label(head, textvariable=self.export_queue_summary, style='Sub.TLabel').pack(side='left', fill='x', expand=True)
@@ -2521,7 +2529,7 @@ class RecoveryDeskApp(tk.Tk):
         self.export_details_button = ttk.Button(head, text='Dateistatus anzeigen',
                                                command=self._toggle_export_details)
         self.export_details_button.pack(side='right', padx=(4, 4))
-        progress_row = ttk.Frame(frame)
+        progress_row = ttk.Frame(self.export_queue_contents)
         progress_row.pack(fill='x', pady=(3, 3))
         self.export_queue_bar = ttk.Progressbar(progress_row, mode='determinate', maximum=100, value=0)
         self.export_queue_bar.pack(side='left', fill='x', expand=True)
@@ -2531,7 +2539,7 @@ class RecoveryDeskApp(tk.Tk):
         columns = ('state', 'size', 'detail')
         # The detailed list is expandable, to keep the main file browser visible
         # on smaller laptops and at 125–200% Windows display scaling.
-        self.export_queue_details = ttk.Frame(frame)
+        self.export_queue_details = ttk.Frame(self.export_queue_contents)
         self.export_queue_details_open = False
         self.export_queue_tree = ttk.Treeview(self.export_queue_details, columns=columns,
                                                show='tree headings', height=3)
@@ -2548,6 +2556,17 @@ class RecoveryDeskApp(tk.Tk):
         self.export_queue_tree.pack(fill='x')
         self.export_queue_tree.bind('<Double-1>', self._export_row_details)
         # Full details, including entries not visible in the compact list, stay in the report.
+
+    def _toggle_export_queue(self):
+        """Collapse only the queue contents; export work and state continue."""
+        if self.export_queue_collapsed:
+            self.export_queue_contents.pack(fill='x')
+            self.export_queue_toggle.configure(text='Warteschlange einklappen')
+            self.export_queue_collapsed = False
+        else:
+            self.export_queue_contents.pack_forget()
+            self.export_queue_toggle.configure(text='Warteschlange ausklappen')
+            self.export_queue_collapsed = True
 
     def _toggle_export_details(self):
         if self.export_queue_details_open:
