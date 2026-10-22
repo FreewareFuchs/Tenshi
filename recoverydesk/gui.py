@@ -604,8 +604,6 @@ class RecoveryDeskApp(tk.Tk):
             return
         self._compact_layout = compact
         if compact:
-            if not self.export_running and not self.export_queue_collapsed:
-                self._toggle_export_queue()
             self._header_description.pack_forget()
             self.logo_label.configure(image=self._compact_brand_logo)
         else:
