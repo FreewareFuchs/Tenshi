@@ -64,6 +64,12 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - GitHub Actions: Linux-Spezialtests: 35 ausgeführt (32 bestanden, drei ohne Display übersprungen); gesamte Python-Suite: 475 Tests erfolgreich, zusätzlich echter ext4-Image-Test und virtuelles X11 1024×650 erfolgreich (Commit `8bda3ffd`). Windows-Tests separat.
 - **Grenzen:** Lesend geöffnete, aber gleichzeitig durch Linux veränderte Dateisysteme können inkonsistente Daten liefern. Die neu eingeführten Deskriptorprüfungen schützen wichtige Image-/Export-Schreibpfade, jedoch noch nicht jede Status-/Berichtsdatei und jeden Pfadwechsel. Weitere Abnahme von Mount-Topologien und kritischen Rennen erforderlich; niemals hierfür wichtige Originaldatenträger verwenden.
 
+## GUI-Tkinter-Threading-Fehler im neuen Test entdeckt und korrigiert (22.10.2026)
+
+- Linux-Mint-Gegenprobe `python3 -m unittest discover -s tests -p 'test_imaging_gui.py' -v`: **2 Tests fehlgeschlagen**. Ein Test protokollierte `main thread is not in main loop`, statt des absichtlich induzierten `INTEGRITÄTSFEHLER`; beim Erfolgsfall blieb `messagebox.showinfo` aus.
+- Ursache in `recoverydesk/gui.py`: Der Imaging-Hintergrundthread führte `verify_var.get()` direkt auf einer Tkinter-Variable aus. Das ist bei Tests mit `app.update()` ohne dauerhaft laufendes `mainloop()` nicht zulässig und auch als GUI-Threading-Verhalten unnötig riskant.
+- Korrektur (Commit `2ff17356`): `verify_requested = bool(verify_var.get())` wird **im GUI-Hauptthread vor dem Start** erfasst; der Worker erhält nur noch den unveränderlichen Python-Wert. Imaging-Integritätslogik wurde nicht geändert. **Die zwei GUI-Tests müssen nach dieser Änderung erneut unter Linux Mint laufen; Ergebnis noch ausstehend.**
+
 ## CI-Entstauung und automatischer GUI-Negativtest (22.10.2026)
 
 - **Auffälliger Actions-Status:** Zahlreiche ältere `feature/linux-readonly-port`-Läufe stehen seit längerer Zeit auf `in_progress` in den kompletten GUI-/Regressionstests; nachfolgende Workflows wurden `queued`. Eine tatsächliche Testursache ist anhand der noch nicht abrufbaren Joblogs nicht bestätigt.
