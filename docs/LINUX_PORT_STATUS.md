@@ -26,6 +26,21 @@ bash start_linux.sh
 
 Das Testen des normalen Startbefehls und der Linux-Volumenauswahl erfolgt ohne `sudo` oder Änderungen der Gerätegruppen. Fehlt die Leseerlaubnis für ein Blockgerät, muss Tenshi den Zugriff ablehnen; stattdessen ein vorher erstelltes RAW-Image verwenden.
 
+## Image-basierte Dateisystem-Abnahme ohne Hardware
+
+- **ext4 (neu):** `tests/test_real_ext4_image.py` erzeugt ein echtes 64-MiB-ext4-Dateisystem mit `mke2fs -d` in einem zuvor neu angelegten **regulären** temporären Image, ohne Loopgerät, Mount oder sudo. Prüft Dateisystemerkennung, Ordnerbaum, Datei-Vorschau, verschachtelten Export, exakten Bytevergleich und unveränderte Quelle. Für die Linux-CI wird `e2fsprogs` installiert. Dies ist ein Test aktueller Dateien, **kein** Beweis allgemeiner ext4-Löschrettung.
+- **Btrfs/XFS:** Bisherige `tests/test_linux_advanced.py` decken parserkonforme **handkonstruierte** Verzeichnis-/Extent-Metadaten und Dateiexporte sowie einige Fehlerfälle ab. Es fehlt weiterhin ein Importtest mit real mittels `mkfs.btrfs` bzw. `mkfs.xfs` erzeugten, gefüllten Datenträger-Images. Insbesondere moderne Btrfs-/XFS-Varianten und Btrfs mit mehreren Geräten sind **nicht allgemein freigegeben**.
+
+Für den echten ext4-Test unter Linux Mint:
+
+```bash
+sudo apt install e2fsprogs
+python3 -m unittest discover -s tests -p 'test_real_ext4_image.py' -v
+python3 -m unittest discover -s tests -p 'test_linux_advanced.py' -v
+```
+
+Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschließlich mit einem neu erstellten Image-Pfad unter `TemporaryDirectory` aufgerufen. Ein Exitstatus ungleich null muss als Fehler behandelt werden.
+
 ## Bereits manuell nachvollzogen
 
 - Linux Mint Cinnamon/X11: kompakte Oberfläche und einklappbare Warteschlange bei 1024×650 (Screenshots).
