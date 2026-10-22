@@ -72,6 +72,7 @@ def _source_identity(source: str, total: int, sector: int) -> dict:
 # replace an existing .recovery.json (often a lock from antivirus/indexers).
 # The original checkpoint is not modified in this fallback mode.
 JOURNAL_INTERVAL = 16 * 1024 * 1024
+MAX_JOURNAL_RECORD_BYTES = 32 * 1024 * 1024
 REPLACE_RETRY_DELAYS = (0.04, 0.12, 0.30, 0.60)
 
 
@@ -138,22 +139,23 @@ def _read_journal(path: str, *, source: str | None = None) -> tuple[dict | None,
     reader = open_regular_input(path, source) if source is not None else open(path, 'rb')
     with reader as f:
         while True:
-            line = f.readline()
+            line = f.readline(MAX_JOURNAL_RECORD_BYTES + 1)
             if not line:
                 break
+            if len(line) > MAX_JOURNAL_RECORD_BYTES:
+                raise ImagingError('Prüfpunkt-Journal enthält einen übergroßen Eintrag.')
             if not line.endswith(b'\n'):
                 break  # torn trailing journal record, safe to ignore
-            if len(line) > 32 * 1024 * 1024:
-                raise ImagingError('Prüfpunkt-Journal enthält einen übergroßen Eintrag.')
             try:
                 record = json.loads(line)
                 state = record['checkpoint']
+                if (not isinstance(state, dict) or
+                        type(state.get('processed')) is not int or state['processed'] < 0):
+                    raise ValueError('bad checkpoint')
                 payload = json.dumps(state, ensure_ascii=False, sort_keys=True,
                                      separators=(',', ':')).encode('utf-8')
                 if sha256(payload).hexdigest() != record['sha256']:
                     raise ValueError('bad checksum')
-                if not isinstance(state, dict) or not isinstance(state.get('processed'), int):
-                    raise ValueError('bad checkpoint')
                 if last is not None and state['processed'] < last['processed']:
                     raise ValueError('nonmonotonic checkpoint')
             except (ValueError, KeyError, TypeError, UnicodeError) as exc:
