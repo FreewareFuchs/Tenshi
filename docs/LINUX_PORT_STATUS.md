@@ -69,7 +69,8 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - Partition `/dev/sda1` vor dem Test über `udisksctl unmount -b /dev/sda1` ausgehängt. Nur für `/dev/sda` wurde dem normalen Nutzer per ACL Leserecht ohne Schreibrecht eingeräumt. `test -r` ergab **JA**, `test -w` **NEIN**. Diese ACL ist keine hardwareseitige Schreibsperre und soll nach Abschluss entfernt werden.
 - `strace -f -e trace=open,openat,openat2,ioctl` überwachte `open_source('/dev/sda')` nach ausdrücklichem Modell-/USB-Identitätscheck. Es wurden erfolgreich **512 Bytes** gelesen; `reader.writable()` war `False`.
 - Im gefilterten Trace zeigten die **drei** Öffnungen von `/dev/sda` nur `O_RDONLY|O_CLOEXEC` bzw. `O_RDONLY|O_NONBLOCK|O_CLOEXEC`, keine schreibenden Öffnungsflags. Dies ist ein **realer Hardware-Nachweis** für diesen konkreten 512-Byte-Quellenzugriff, nicht für alle Programmwege.
-- Noch offen: längere/sektorausgerichtete Leselast, echte Hardware-Lese-/USB-Abbruchfehler, Imaging mit Pause/Fortsetzen, physische Quelle/Zieltrennung an separaten Geräten sowie Prüfung der ACL-Rücknahme. Die Originalquellen weiterer Datenträger bleiben unangetastet.
+- Zusätzlicher Hardware-Lesetest unter Linux Mint vom 22.10.2026: Das bestätigte LITEON-USB-Gerät meldete 128.035.676.160 Bytes und **512 Bytes logische Sektorgröße**. Mit `open_source('/dev/sda')` wurden jeweils 512 Bytes an den Offsets **0, 511, 1031 und 128035675136** gelesen, inklusive ungerader Sektorgrenzen und nahe dem Ende. `quelle.writable()` war `False`; Abschlussmeldung `ALLE LESETESTS ERFOLGREICH`. Quelle war nicht eingehängt; der Test führte keine Schreiboperationen aus.
+- Noch offen: längere Leselast, echte Hardware-Lese-/USB-Abbruchfehler, Imaging mit Pause/Fortsetzen, physische Quelle/Zieltrennung an separaten Geräten sowie Prüfung der ACL-Rücknahme. Die Originalquellen weiterer Datenträger bleiben unangetastet.
 
 ## Ausstehende Pflichtprüfungen auf Linux-Cinnamon/X11
 
