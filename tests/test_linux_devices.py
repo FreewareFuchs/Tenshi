@@ -32,6 +32,18 @@ class LinuxDeviceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'demselben'):
                 linux_devices.ensure_separate_device('/dev/sda', '/tmp/tenshi-test.img')
 
+    def test_linux_block_info_permission_denial_is_actionable(self):
+        with mock.patch.object(linux_devices, 'block_path', return_value=True), \
+             mock.patch.object(linux_devices.os, 'open',
+                               side_effect=PermissionError(13, 'Permission denied')) as opened:
+            with self.assertRaises(PermissionError) as caught:
+                linux_devices.block_info('/dev/fake-test-device')
+        self.assertIn('Linux-Blockgerät', str(caught.exception))
+        self.assertIn('Geräteberechtigungen', str(caught.exception))
+        self.assertNotIn('Windows', str(caught.exception))
+        opened.assert_called_once()
+        self.assertEqual(opened.call_args.args[1] & os.O_ACCMODE, os.O_RDONLY)
+
     def test_windows_import_still_available(self):
         self.assertTrue(hasattr(sources, 'open_source'))
 
