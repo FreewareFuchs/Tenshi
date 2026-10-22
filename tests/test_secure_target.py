@@ -112,9 +112,9 @@ class LinuxDestinationHandleTests(unittest.TestCase):
                 return real_stat(path, *args, **kwargs)
 
             with mock.patch('recoverydesk.linux_devices.block_path',
-                            side_effect=lambda p: p == src), \\
+                            side_effect=lambda p: p == src), \
                  mock.patch('recoverydesk.secure_target.os.stat',
-                            side_effect=fake_stat), \\
+                            side_effect=fake_stat), \
                  mock.patch('recoverydesk.linux_devices._backing_disks',
                             return_value={'same-physical-drive'}):
                 with self.assertRaisesRegex(ValueError, 'demselben physischen'):
