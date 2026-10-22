@@ -4,6 +4,14 @@ on:
   push:
     branches: [main]
   pull_request:
+    paths:
+      - '**/*.py'
+      - '**/*.bat'
+      - '**/*.iss'
+      - '**/*.spec'
+      - 'requirements*.txt'
+      - 'assets/**'
+      - '.github/workflows/windows-check.yml'
 
 concurrency:
   group: windows-check-${{ github.event.pull_request.head.ref || github.ref_name }}
