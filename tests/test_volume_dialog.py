@@ -104,6 +104,18 @@ class VolumeDialogTests(unittest.TestCase):
                     f'{[str(w.cget("text")) for w in buttons]!r}')
         return tree, button
 
+    def test_confirm_button_is_locatable_in_all_supported_languages(self):
+        """The UI translates captions asynchronously; selection must survive."""
+        dlg = self.app._show_volume_dialog(self.volumes)
+        for lang in LANGUAGES:
+            with self.subTest(language=lang):
+                self.app._i18n.set_language(lang)
+                tree, button = self.widgets(dlg)
+                self.assertEqual(str(button.cget('text')),
+                                 translate('Auswahl übernehmen (nur lesen)', lang))
+                self.assertEqual(tuple(tree.selection()), ('C:\\\\',))
+        dlg.destroy()
+
     def test_confirm_selection_sets_volume_and_byte_offset_zero(self):
         dlg = self.app._show_volume_dialog(self.volumes)
         self.app.update()
