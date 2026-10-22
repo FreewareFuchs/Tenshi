@@ -6,7 +6,7 @@
 - **Windows-spezifisch:** CreateFileW, DeviceIoControl, physische Laufwerksnummern, Laufwerksbuchstaben, Windows-Builds/Installer.
 - **Linux-Backend (neu):** Blockgeräte aus sysfs, O_RDONLY für Quellen, BLKGETSIZE64 und BLKSSZGET, Quell-/Zielgerät über sysfs-Abstammung trennen. Ungeklärte Abbildung wird abgewiesen.
 - **GUI:** Linux-Blockgeräte über vorhandenen Auswahldialog; fünf Quellenaktionen in einer Zeile; kompakter Kopfbereich und einklappbare Wiederherstellungswarteschlange. Bei 1024×650 unter Cinnamon/X11 anhand von Anwender-Screenshots visuell geprüft, weitere Skalierungen offen.
-- **Linux-Laufwerksauswahl (neu):** `Laufwerk auswählen` listet eingehängte Blockpartitionen über `lsblk` (util-linux) und öffnet bei Auswahl das zugrunde liegende `/dev/...` ausschließlich lesend. Linux-Geräteberechtigungen werden nicht verändert. Gemountete, beschreibbare Dateisysteme können durch **andere Prozesse** weiter verändert werden; für zuverlässige Rettung bevorzugt Offline-Image. `Physischer Datenträger` listet weiterhin ganze Blockgeräte.
+- **Linux-Laufwerksauswahl (neu):** `Laufwerk auswählen` listet eingehängte Blockpartitionen über `lsblk` (util-linux) und öffnet nach **ausdrücklicher Auswahl und Bestätigung** das zugrunde liegende `/dev/...` ausschließlich lesend. Die Gerätedatei wird vollständig angezeigt; unter Linux ist aus Sicherheitsgründen zunächst keine Zeile vorgewählt. Linux-Geräteberechtigungen werden nicht verändert. Gemountete, beschreibbare Dateisysteme können durch **andere Prozesse** weiter verändert werden; für zuverlässige Rettung bevorzugt Offline-Image. `Physischer Datenträger` listet weiterhin ganze Blockgeräte.
 
 ## Tests (ohne Hardware)
 ```bash
