@@ -13,7 +13,9 @@
 python3 -m unittest discover -s tests -p 'test_linux*.py' -v
 python3 main.py --smoke-test
 ```
-Die Linux-Geräteliste wird ausschließlich aus sysfs-Metadaten erstellt und öffnet dabei keine Blockgeräte. Unter Linux ist auch beim physischen Datenträger **keine Vorauswahl** gesetzt: ein Zugriff erfordert die ausdrückliche Markierung und Bestätigung. Fehlende Leserechte werden nicht verändert.\n\nDie Linux-CI führt die vollständige Python-Testsuite unter virtuellem X11 sowie zusätzliche Geräte- und Layouttests bei 1024×650 aus. Geprüft werden nur simulierte Geräte: gleiches/anderes Zielmedium, überlappende Geräteverbünde, unklare Abbildung, blockierte Imagerstellung/Export vor Dateianlage, die O_RDONLY-Geräteabfrage und sysfs-Partition-/Virtuellgeräte-Zuordnung. CI-Ergebnisse je Commit unter GitHub Actions prüfen.
+Die Linux-Geräteliste wird ausschließlich aus sysfs-Metadaten erstellt und öffnet dabei keine Blockgeräte. Unter Linux ist auch beim physischen Datenträger **keine Vorauswahl** gesetzt: ein Zugriff erfordert die ausdrückliche Markierung und Bestätigung. Fehlende Leserechte werden nicht verändert.
+
+Die Linux-CI führt die vollständige Python-Testsuite unter virtuellem X11 sowie zusätzliche Geräte- und Layouttests bei 1024×650 aus. Geprüft werden nur simulierte Geräte: gleiches/anderes Zielmedium, überlappende Geräteverbünde, unklare Abbildung, blockierte Imagerstellung/Export vor Dateianlage, die O_RDONLY-Geräteabfrage und sysfs-Partition-/Virtuellgeräte-Zuordnung. CI-Ergebnisse je Commit unter GitHub Actions prüfen.
 
 ## Reproduzierbarer Linux-Start und Tests
 
@@ -28,8 +30,8 @@ Das Testen des normalen Startbefehls und der Linux-Volumenauswahl erfolgt ohne `
 
 ## Image-basierte Dateisystem-Abnahme ohne Hardware
 
-- **ext4 (neu):** `tests/test_real_ext4_image.py` erzeugt ein echtes 64-MiB-ext4-Dateisystem mit `mke2fs -d` in einem zuvor neu angelegten **regulären** temporären Image, ohne Loopgerät, Mount oder sudo. Prüft Dateisystemerkennung, Ordnerbaum, Datei-Vorschau, verschachtelten Export, exakten Bytevergleich und unveränderte Quelle. Für die Linux-CI wird `e2fsprogs` installiert. Dies ist ein Test aktueller Dateien, **kein** Beweis allgemeiner ext4-Löschrettung.
-- **Btrfs/XFS:** Bisherige `tests/test_linux_advanced.py` decken parserkonforme **handkonstruierte** Verzeichnis-/Extent-Metadaten und Dateiexporte sowie einige Fehlerfälle ab. Es fehlt weiterhin ein Importtest mit real mittels `mkfs.btrfs` bzw. `mkfs.xfs` erzeugten, gefüllten Datenträger-Images. Insbesondere moderne Btrfs-/XFS-Varianten und Btrfs mit mehreren Geräten sind **nicht allgemein freigegeben**.
+- **ext4 (auf Linux Mint praktisch bestätigt, 22.10.2026):** `tests/test_real_ext4_image.py` erzeugt ein echtes 64-MiB-ext4-Dateisystem mit `mke2fs -d` in einem zuvor neu angelegten **regulären** temporären Image, ohne Loopgerät, Mount oder sudo. Prüft Dateisystemerkennung, Ordnerbaum, Datei-Vorschau, verschachtelten Export, exakten Bytevergleich und unveränderte Quelle. Für die Linux-CI wird `e2fsprogs` installiert. Dies ist ein Test aktueller Dateien, **kein** Beweis allgemeiner ext4-Löschrettung.
+- **Btrfs/XFS (8/8 Tests auf Linux Mint bestanden, 22.10.2026):** Bisherige `tests/test_linux_advanced.py` decken parserkonforme **handkonstruierte** Verzeichnis-/Extent-Metadaten und Dateiexporte sowie einige Fehlerfälle ab. Es fehlt weiterhin ein Importtest mit real mittels `mkfs.btrfs` bzw. `mkfs.xfs` erzeugten, gefüllten Datenträger-Images. Insbesondere moderne Btrfs-/XFS-Varianten und Btrfs mit mehreren Geräten sind **nicht allgemein freigegeben**.
 
 Für den echten ext4-Test unter Linux Mint:
 
@@ -46,6 +48,9 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - Linux Mint Cinnamon/X11: kompakte Oberfläche und einklappbare Warteschlange bei 1024×650 (Screenshots).
 - RAW-Testimage: Partitionssuche, exFAT-Ordnernavigation, Dateisuche sowie Einzeldatei-Export mit geöffnetem PNG.
 - Export-Vorabprüfung: **nur Metadaten**, kein Nachweis vollständiger Dateiintegrität.
+- Linux Mint: vollständiger 256-MiB-Imaging-Test mit SHA-256- und `cmp`-Bestätigung bitgenauer Kopie; 16/16 Imaging-Tests bestanden (Unterbrechung/Wiederaufnahme dort simuliert).
+- Analysesitzung nach Programmneustart erfolgreich wieder geladen, ohne Dateisystem erneut einzulesen.
+- `test_real_ext4_image.py`: 1/1 auf Linux Mint bestanden; reguläres, temporäres ext4-Image mit Datei- und Unterordnerexport.
 - Quellen- und Exportdatei lagen bei diesem **Image-Datei-Test** auf demselben Dateisystem. Für physische Geräte gelten strengere Trennungsprüfungen.
 
 ## Ausstehende Pflichtprüfungen auf Linux-Cinnamon/X11
