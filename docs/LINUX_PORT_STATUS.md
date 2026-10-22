@@ -152,3 +152,10 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 8. Windows-Regressionstests auf echter Windows-Hardware durchführen; Windows-Installer und ZIP bleiben unverändert.
 
 **Freigabestatus:** Entwicklungskandidat, kein verifizierter Linux-Release. Die vollständige Gleichwertigkeit zum Windows-Funktionsumfang, weitere Skalierungen und die Sicherheit für **alle** realen Linux-Blockgerätetypen sind noch nicht bestätigt. Der LITEON-Test hat nur die dokumentierten Teilfälle abgedeckt. Bei beschädigten Originaldatenträgern zunächst keine belastenden Tests durchführen.
+
+## Imaging-Status beim Fortsetzen sicher einlesen (22.10.2026)
+
+- `_load_manifest()` liest die Statusdatei jetzt mit `open_regular_input()` statt einem normalen pfadbasierten `open()`. Auch Journal-Lesezugriffe erhalten im Imaging-Ablauf die ausgewählte Quelle für die Prüfung des geöffneten Elternverzeichnisses.
+- Unter Linux bleiben die Lesezugriffe an den geöffneten Verzeichnisdeskriptor gebunden; finale Symlinks und Sonderdateien werden abgewiesen, FIFOs ohne blockierendes Warten geöffnet und anschließend verworfen. Windows verwendet weiterhin den vorhandenen normalen Lesezugriff.
+- Vier neue Tests in `tests/test_secure_imaging_metadata.py`: Verzeichnisaustausch bei Statusdatei und Journal, Symlink-Austausch nach Vorprüfung und FIFO-Statusdatei. Beim Austausch des Zielverzeichnisses wird die ursprüngliche Statusdatei gelesen und die Fortsetzung wegen der geänderten Zielzuordnung verweigert.
+- Lokale Prüfung in der Entwicklungsumgebung: 20 Sicherheits-/Metadatentests bestanden; 36 Imaging-Tests erfolgreich (3 GUI-Tests übersprungen); 7 Image-Integritätstests bestanden. Gesamtsuite: 510 Tests, 25 Fehler ausschließlich wegen fehlendem X11-Display, 78 übersprungen. Dies ersetzt keinen vollständigen Cinnamon-/Xvfb-Lauf und keine Hardware-Abnahme. Der frühere Linux-Mint-Nachweis mit 506 Tests bezieht sich auf den vorherigen Stand.

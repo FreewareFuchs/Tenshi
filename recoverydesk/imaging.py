@@ -123,7 +123,7 @@ def _journal_encoding(state: dict) -> bytes:
     return (json.dumps(record, ensure_ascii=False, separators=(',', ':')) + '\n').encode('utf-8')
 
 
-def _read_journal(path: str) -> tuple[dict | None, int]:
+def _read_journal(path: str, *, source: str | None = None) -> tuple[dict | None, int]:
     """Return the newest intact record and the end of its committed line.
 
     A final truncated line, e.g. after sudden power loss, is ignored. A
@@ -135,7 +135,8 @@ def _read_journal(path: str) -> tuple[dict | None, int]:
         return None, 0
     last = None
     good_end = 0
-    with open(path, 'rb') as f:
+    reader = open_regular_input(path, source) if source is not None else open(path, 'rb')
+    with reader as f:
         while True:
             line = f.readline()
             if not line:
@@ -169,7 +170,7 @@ def _append_journal(path: str, state: dict, *,
         raise ImagingError('Symbolische Links als Prüfpunkt-Journal werden nicht unterstützt.')
     try:
         if valid_end is None:
-            previous, valid_end = _read_journal(path)
+            previous, valid_end = _read_journal(path, source=state['source']['path'])
         if previous is not None:
             if previous.get('source') != state.get('source') or previous.get('destination') != state.get('destination'):
                 raise ImagingError('Das Prüfpunkt-Journal gehört zu einer anderen Sicherung.')
@@ -211,7 +212,7 @@ class _CheckpointWriter:
         self.use_journal = os.path.isfile(self.journal)
         # Cache the validated end offset so large disks do not reread a
         # growing journal on every checkpoint (which would be quadratic).
-        self.journal_state, self.journal_end = (_read_journal(self.journal)
+        self.journal_state, self.journal_end = (_read_journal(self.journal, source=self.source)
             if self.use_journal else (None, 0))
         self.last_saved = 0
 
@@ -431,11 +432,11 @@ def _load_manifest(manifest_path: str, destination: str, source_identity: dict) 
     if os.path.islink(manifest_path) or os.path.islink(destination) or os.path.islink(journal_path(manifest_path)):
         raise ImagingError('Symbolische Links als Imaging-Ziele werden nicht unterstützt.')
     try:
-        with open(manifest_path, 'r', encoding='utf-8') as f:
+        with open_regular_input(manifest_path, source_identity['path']) as f:
             obj = json.load(f)
     except (OSError, ValueError, UnicodeError) as exc:
         raise ImagingError('Statusdatei fehlt oder ist unlesbar; bestehende Images werden nicht überschrieben.') from exc
-    candidate, _end = _read_journal(journal_path(manifest_path))
+    candidate, _end = _read_journal(journal_path(manifest_path), source=source_identity['path'])
     if candidate is not None:
         if not isinstance(obj, dict):
             raise ImagingError('Die ursprüngliche Statusdatei ist beschädigt.')
