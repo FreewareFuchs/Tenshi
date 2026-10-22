@@ -5,6 +5,7 @@ NTFS volume. Directory relations come from $FILE_NAME parent file references;
 this is not a reconstruction of damaged or overwritten directory indexes.
 """
 from __future__ import annotations
+from .secure_target import open_regular_output
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -524,7 +525,7 @@ def export_file(source: str, info: NTFSInfo, entry: FileEntry, dest: str,
         if actual_info != info:
             raise NTFSError('NTFS-Geometrie hat sich geändert; Analyse erneut starten.')
         try:
-            with open(dest, 'xb', buffering=0) as dst:
+            with open_regular_output(dest, 'xb', source) as dst:
                 created = True
                 if entry.data_kind == 'resident':
                     raw = entry.resident_data if entry.resident_data is not None else b''
