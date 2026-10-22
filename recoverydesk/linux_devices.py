@@ -38,14 +38,31 @@ def block_info(path: str) -> tuple[int, int]:
 
 
 def list_block_sources() -> list[tuple[str, int]]:
+    """List whole disks from sysfs without opening any physical source.
+
+    The kernel's sysfs size is expressed in units of 512 bytes, regardless
+    of the physical/logical sector size. Opening a chosen device and querying
+    its actual geometry remains a separate read-only operation, which may
+    fail for an unprivileged user.
+    """
     result = []
-    for entry in sorted(Path('/sys/class/block').iterdir()):
-        # Only whole disks. Individual partitions may be supplied explicitly.
+    try:
+        entries = sorted(Path('/sys/class/block').iterdir())
+    except OSError:
+        return result
+    for entry in entries:
         if (entry / 'partition').exists():
             continue
         path = '/dev/' + entry.name
         try:
-            size, _ = block_info(path)
+            if not block_path(path):
+                continue
+            raw_size = (entry / 'size').read_text(encoding='ascii').strip()
+            if not raw_size.isdecimal():
+                continue
+            size = int(raw_size) * 512
+            if not (512 <= size < 2 ** 63):
+                continue
             result.append((path, size))
         except (OSError, ValueError):
             continue
