@@ -216,3 +216,10 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - Drei neue GUI-Tests in `tests/test_preview_worker_gui.py`: echte README-Datei aus synthetischem FAT32-Image als Text anzeigen, Lesefehler sichtbar machen und Vorschaufenster während einer verzögerten Leseoperation schließen. Quellen bleiben bytegleich; verspätete Rückmeldung verursacht keinen GUI-Callbackfehler.
 - **Vollständige Suite bei virtuellem X11 1024×650 mit frisch angelegter Testkonfiguration: 539 Tests in 18,300 s, `OK`, Exitcode 0, keine Überspringungen.** Kompilierung und Diff-Prüfung bestanden.
 - Testgrenze: Wiederverwendung einer zuvor von Sprachtests veränderten Konfigurationsdatei verursachte Beschriftungsfehler in älteren deutschabhängigen Tests. Für reproduzierbare Gesamtprüfungen eine neue isolierte Testkonfiguration verwenden. GitHub-CI bei Kontrolle weiterhin Linux `pending` und Windows `queued`; reale Hardware-/Windows-Abnahme offen.
+
+## Wiederholbare GUI-Gesamtprüfung ohne Sprachreste (22.10.2026)
+
+- Ursache der sprachabhängigen Fehler bei wiederholten Testläufen eingegrenzt: `SessionGuiTests` wechselte alle sechs Sprachen und schrieb dabei in die äußere Test-/Benutzerkonfiguration. Diese Testklasse erhält jetzt eine eigene temporäre Einstellungsdatei; Fenster werden vor Rücknahme der Umgebungsüberschreibung geschlossen.
+- `NoticeGuiTests` verwendet statt einer fest benannten `/tmp`-Datei ebenfalls eine eigene temporäre Konfiguration. Das vermeidet Rückstände und ist auch unter Windows portabel.
+- **Zwei vollständige unmittelbar aufeinanderfolgende Läufe mit derselben äußeren Einstellungsdatei unter virtuellem X11 1024×650 bestanden: jeweils 539 Tests, `OK`, Exitcode 0, keine Überspringungen (18,528 s / 18,099 s).** Sprachwechsel-/Persistenztests bleiben enthalten. Keine Änderung am Sprachverhalten der Anwendung.
+- Kompilierung und Diff-Prüfung bestanden. GitHub-CI bei Kontrolle weiterhin Linux `pending`, Windows `queued`; reale Hardware-/Windows-Abnahme offen.
