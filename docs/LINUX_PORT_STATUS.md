@@ -52,13 +52,14 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - Analysesitzung nach Programmneustart erfolgreich wieder geladen, ohne Dateisystem erneut einzulesen.
 - `test_real_ext4_image.py`: 1/1 auf Linux Mint bestanden; reguläres, temporäres ext4-Image mit Datei- und Unterordnerexport.
 - Linux Mint: `test_linux_destination_safety.py` **11/11 bestanden** (22.10.2026). Simulierte sysfs-/Blockgeräte, Quellzugriff nur lesend, gleiche bzw. andere physische Ziellaufwerke, fail-closed bei unsicherer Zuordnung und Unterbindung unsicherer Ausgabedateien. **Kein Ersatz für `strace`-/Hardwareprüfung**.
+- Linux Mint, 22.10.2026: Mit `strace -f -e trace=open,openat,openat2` um `list_physical_sources()` wurden `/dev/nvme0n1` und `/dev/sda` in den Geräteinformationen erkannt. Ein `grep` nach den beiden exakten `/dev/...`-Pfaden im Trace ergab **keinen Öffnungsaufruf**. Dies bestätigt die reine Metadatenauflistung für diese beiden Geräte, jedoch **nicht** den Lesezugriff auf physische Quellen. Test ohne `sudo`.
 - Quellen- und Exportdatei lagen bei diesem **Image-Datei-Test** auf demselben Dateisystem. Für physische Geräte gelten strengere Trennungsprüfungen.
 
 ## Ausstehende Pflichtprüfungen auf Linux-Cinnamon/X11
 
 1. Weitere Schrift-/DPI-Skalierungen, alternative Sprachen und Modaldialoge auf echtem Cinnamon/X11 testen; Hauptfenster bei **1024×650** ist bereits visuell geprüft.
 2. Vor dem Öffnen eines Testdatenträgers Berechtigungen prüfen. Mit einem entbehrlichen USB-Laufwerk nur lesen, abziehen, erneut anstecken und Fehlermeldungen prüfen.
-3. Mit `strace -e openat,ioctl` kontrollieren, dass die Quelle nie mit O_WRONLY/O_RDWR geöffnet wird; zugelassene ioctls auf Lesen beschränken.
+3. **Noch offen: tatsächlichen physischen Lesezugriff** mit `strace -f -e trace=open,openat,openat2,ioctl` kontrollieren: Quelle nie mit `O_WRONLY`/`O_RDWR` öffnen; nur lesende ioctls verwenden. Die reine Datenträgerauflistung ohne Geräteöffnung ist auf Cinnamon/X11 bereits überprüft. Diese echte Blockgeräte-Abnahme nur auf entbehrlicher Testhardware mit sauberem Geräteplan durchführen.
 4. Linux-Datenträger- und Partitionsgröße, 512/4096-Byte-Sektoren, GPT/MBR, NTFS/ext4/exFAT/Btrfs/XFS mit Referenzabbildern verifizieren. GUI-Laufwerksauswahl an echter Hardware mit fehlenden Rechten, ext4/NTFS und Linux Mint prüfen.
 5. Image-Erstellung/Pause/Fortsetzen, Export-Checksums und gespeicherte Sitzungen nach Neustart prüfen; Fehlersimulation (kurze Lesevorgänge, I/O-Fehler, Verbindungsabbruch).
 6. **Schutz vor Ziel=Quelle:** Ausgabe auf dieselbe Platte und auf deren andere Partition, via Symlink, LVM, dm-crypt, mdraid und USB-Gerät testen; alle unklaren Zuordnungen müssen blockiert werden.
