@@ -4,7 +4,6 @@ Only metadata from sysfs and read-only ioctl calls is used here. No mount,
 filesystem repair, or write-enabled handle is created.
 """
 from __future__ import annotations
-import fcntl
 import os
 from pathlib import Path
 import stat
@@ -24,6 +23,7 @@ def block_path(path: str) -> bool:
 
 
 def block_info(path: str) -> tuple[int, int]:
+    import fcntl
     if not block_path(path):
         raise ValueError('Kein Linux-Blockgerät.')
     fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NONBLOCK)
