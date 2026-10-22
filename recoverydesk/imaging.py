@@ -56,7 +56,7 @@ def sidecar_path(destination: str) -> str:
 
 
 def _source_identity(source: str, total: int, sector: int) -> dict:
-    identity = {'path': _real(source) if not is_device_source(source) else source.lower(),
+    identity = {'path': _real(source) if not is_device_source(source) else (source.lower() if os.name == 'nt' else os.path.realpath(source)),
                 'size': total, 'sector_size': sector,
                 'device': bool(is_device_source(source))}
     if not is_device_source(source):
