@@ -3,6 +3,12 @@ name: Linux read-only checks
 on:
   push:
     branches: [feature/linux-readonly-port]
+    paths:
+      - 'recoverydesk/**'
+      - 'tests/**'
+      - 'main.py'
+      - 'start_linux.sh'
+      - '.github/workflows/linux-check.yml'
   pull_request:
     paths:
       - 'recoverydesk/**'
@@ -12,9 +18,14 @@ on:
       - '.github/workflows/linux-check.yml'
   workflow_dispatch:
 
+concurrency:
+  group: linux-check-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Install Tk and Xvfb
@@ -28,6 +39,7 @@ jobs:
       - name: Device safety regression tests
         run: python3 -m unittest discover -s tests -p 'test_linux*.py' -v
       - name: Full cross-platform regression suite (virtual X11, no raw hardware)
+        timeout-minutes: 8
         env:
           TENSHI_SETTINGS_FILE: ${{ runner.temp }}/tenshi-linux-test-settings.json
           TENSHI_LOG_DIR: ${{ runner.temp }}/tenshi-linux-test-logs
