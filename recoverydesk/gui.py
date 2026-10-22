@@ -3097,9 +3097,9 @@ class RecoveryDeskApp(tk.Tk):
                             0, min(item.initialized_size, limit)))
                     else:
                         data = b''.join(index.volumes.iter_file(f, item, max_bytes=limit))
-                self.after(0, lambda d=data: show_preview(d))
+                self._post_scan_callback(lambda d=data: show_preview(d))
             except Exception as exc:
-                self.after(0, lambda msg=str(exc): show_error(msg))
+                self._post_scan_callback(lambda msg=str(exc): show_error(msg))
         def show_error(message):
             if win.winfo_exists():
                 notice.configure(text='Vorschau fehlgeschlagen: ' + message)

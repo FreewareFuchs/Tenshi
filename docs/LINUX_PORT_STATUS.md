@@ -209,3 +209,10 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - `save_analysis_session()` und `load_analysis_session()` übermitteln Erfolg/Fehler jetzt über die vorhandene Hauptthread-Callback-Queue statt über Tkinter-`after()` aus dem Worker. Quelldatenprüfung, veraltete Ergebnisse und gespeicherte Metadaten werden weiterhin wie bisher behandelt.
 - Drei neue GUI-Integrationstests in `tests/test_session_worker_gui.py`: reale FAT32-Analysesitzung speichern und wieder laden, Speicherfehler sowie Ladefehler im Worker. Geprüft werden wieder freigegebene Bedienelemente, unveränderte Quelldatei, wiederhergestellter Dateibaum und Erhalt der bestehenden Analyse beim Ladefehler.
 - **Vollständige Suite unter virtuellem X11 bei 1024×650: 536 Tests in 21,607 s, `OK`, Exitcode 0, keine Überspringungen.** Kompilierung und Diff-Prüfung bestanden. GitHub-CI für Vorgänger `ae1cef4` bei Kontrolle Linux `pending`, Windows `queued`; reale Hardware-/Windows-Abnahme weiterhin offen.
+
+## Dateivorschau ohne Tkinter-Aufrufe im Worker (22.10.2026)
+
+- `preview_entry()` übermittelt gelesene Daten und Lesefehler über die bestehende Hauptthread-Callback-Queue. Ein inzwischen geschlossenes Vorschaufenster verwirft verspätete Ergebnisse weiterhin über die vorhandene Existenzprüfung.
+- Drei neue GUI-Tests in `tests/test_preview_worker_gui.py`: echte README-Datei aus synthetischem FAT32-Image als Text anzeigen, Lesefehler sichtbar machen und Vorschaufenster während einer verzögerten Leseoperation schließen. Quellen bleiben bytegleich; verspätete Rückmeldung verursacht keinen GUI-Callbackfehler.
+- **Vollständige Suite bei virtuellem X11 1024×650 mit frisch angelegter Testkonfiguration: 539 Tests in 18,300 s, `OK`, Exitcode 0, keine Überspringungen.** Kompilierung und Diff-Prüfung bestanden.
+- Testgrenze: Wiederverwendung einer zuvor von Sprachtests veränderten Konfigurationsdatei verursachte Beschriftungsfehler in älteren deutschabhängigen Tests. Für reproduzierbare Gesamtprüfungen eine neue isolierte Testkonfiguration verwenden. GitHub-CI bei Kontrolle weiterhin Linux `pending` und Windows `queued`; reale Hardware-/Windows-Abnahme offen.
