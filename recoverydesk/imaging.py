@@ -21,7 +21,7 @@ from typing import Callable
 from .diagnostics import traced
 from .sources import (validate_source, open_source, source_size, is_device_source,
                       physical_sector_size, ensure_safe_destination)
-from .secure_target import open_regular_output, atomic_json_checkpoint
+from .secure_target import open_regular_output, open_regular_input, atomic_json_checkpoint
 from .linux_devices import block_path
 
 FORMAT_VERSION = 1
@@ -345,6 +345,77 @@ def _hash_region(handle, start: int, count: int) -> str:
     return sha256(chunk).hexdigest()
 
 
+
+def _verify_full_copy(source: str, destination: str, identity: dict,
+                      total: int, chunk_size: int,
+                      expected_inode: tuple[int, int],
+                      cancel: Callable[[], bool] | None,
+                      progress: Callable[[ImagingProgress], None] | None,
+                      state: dict, checkpoint_writer: _CheckpointWriter) -> bool:
+    """Independently reread the source and image. Return False if cancelled.
+
+    An unreadable source is not verified; the caller must avoid rereading
+    known damaged devices unless verification was explicitly requested.
+    A failed comparison persists a distinct failure state before raising.
+    """
+    state['state'] = 'verifying'
+    state['verification'] = {'status': 'running', 'checked': 0}
+    checkpoint_writer.save(state)
+    if progress:
+        progress(ImagingProgress(total, total, state['unreadable_bytes'],
+                                 len(state['bad_ranges']), 'verifying'))
+
+    checked = 0
+    try:
+        with open_source(source) as reader, open_regular_input(destination, source) as copied:
+            opened = os.fstat(copied.fileno())
+            if (opened.st_dev, opened.st_ino) != expected_inode:
+                raise ImagingError('Image-Datei wurde vor der Integritätsprüfung ausgetauscht.')
+            if opened.st_size != total:
+                raise ImagingError('Image-Größe hat sich vor der Integritätsprüfung verändert.')
+            while checked < total:
+                if cancel is not None and cancel():
+                    state['state'] = 'paused'
+                    state['verification'] = {'status': 'interrupted', 'checked': checked}
+                    checkpoint_writer.save(state)
+                    if progress:
+                        progress(ImagingProgress(total, total, state['unreadable_bytes'],
+                                                 len(state['bad_ranges']), 'paused'))
+                    return False
+                n = min(chunk_size, total - checked)
+                reader.seek(checked)
+                copied.seek(checked)
+                original = reader.read(n)
+                image = copied.read(n)
+                if len(original) != n or len(image) != n:
+                    raise ImagingError('Integritätsprüfung: unvollständiger Leseblock bei Offset '
+                                       f'{checked}. Image ist nicht verifiziert.')
+                if original != image:
+                    first = next(i for i, (a, b) in enumerate(zip(original, image)) if a != b)
+                    raise ImagingError('INTEGRITÄTSFEHLER: Image weicht bei Byteoffset '
+                                       f'{checked + first} von der Quelle ab. '
+                                       'Image nicht als bitgenaue Sicherung verwenden.')
+                checked += n
+            if not is_device_source(source) and _source_identity(
+                    source, total, identity['sector_size']) != identity:
+                raise ImagingError('Quelldatei wurde während der Integritätsprüfung verändert.')
+    except (OSError, ImagingError) as exc:
+        state['state'] = 'integrity_failed'
+        state['verification'] = {'status': 'failed', 'checked': checked, 'message': str(exc)}
+        checkpoint_writer.save(state)
+        if isinstance(exc, ImagingError):
+            raise
+        raise ImagingError('Integritätsprüfung konnte nicht abgeschlossen werden: '
+                           f'{exc}. Image bleibt ungeprüft.') from exc
+    state['verification'] = {'status': 'verified', 'checked': total}
+    state['state'] = 'complete'
+    checkpoint_writer.save(state)
+    if progress:
+        progress(ImagingProgress(total, total, state['unreadable_bytes'],
+                                 len(state['bad_ranges']), 'complete'))
+    return True
+
+
 def _check_same_file(source: str, destination: str) -> None:
     if _real(source) == _real(destination):
         raise ImagingError('Quelldatei und Ziel dürfen niemals identisch sein.')
@@ -423,19 +494,25 @@ def create_image(source: str, destination: str, *,
                  cancel: Callable[[], bool] | None = None,
                  progress: Callable[[ImagingProgress], None] | None = None,
                  read_retries: int = 0, retry_delay_ms: int = 250,
-                 bad_sector_policy: str = 'zero') -> dict:
+                 bad_sector_policy: str = 'zero',
+                 verify: bool | None = None) -> dict:
     """Create or resume a raw image with a durable checkpoint.
 
     No source writes. Never opens Windows raw devices as destinations. Resuming
     requires a matching manifest and verifies the first and last checkpointed
     blocks; it does not cryptographically verify the entire previous image.
     """
+    if verify is not None and type(verify) is not bool:
+        raise ImagingError('Ungültige Integritätsprüfung-Einstellung.')
     if (type(read_retries) is not int or not 0 <= read_retries <= MAX_READ_RETRIES or
             type(retry_delay_ms) is not int or not 0 <= retry_delay_ms <= MAX_RETRY_DELAY_MS or
             bad_sector_policy not in BAD_SECTOR_POLICIES):
         raise ImagingError('Ungültige Lesefehler-Einstellungen (0–3 Wiederholungen, '
                            '0–2000 ms Wartezeit, Fehlerbehandlung zero/stop).')
     source = validate_source(source)
+    # Regular RAW image verification is automatic. On real physical drives,
+    # another complete read may burden failing media: explicit opt-in only.
+    verify_full = (not is_device_source(source)) if verify is None else verify
     destination = os.fspath(destination)
     if not destination or '\x00' in destination:
         raise ImagingError('Ungültige Zieldatei.')
@@ -503,13 +580,16 @@ def create_image(source: str, destination: str, *,
     checkpoint_writer = _CheckpointWriter(sidecar, source)
     checkpoint_writer.last_saved = state['processed']
     position = state['processed']
+    opened_output_inode = None
     if progress:
         progress(ImagingProgress(position, total, state['unreadable_bytes'],
                                  len(state['bad_ranges']), state['state']))
 
     with open_source(source) as reader, open_regular_output(
             destination, 'r+b', source, expected_identity=expected_output_inode) as out:
-        output_size = os.fstat(out.fileno()).st_size
+        output_info = os.fstat(out.fileno())
+        opened_output_inode = (output_info.st_dev, output_info.st_ino)
+        output_size = output_info.st_size
         if output_size < position or output_size > total:
             raise ImagingError('Image-Dateigröße passt nicht zum gesicherten Fortschritt.')
         if resume and position:
@@ -523,7 +603,9 @@ def create_image(source: str, destination: str, *,
         # overwrite only after manifest and block digests are verified.
         out.truncate(position)
         out.seek(position)
-        if state['state'] == 'complete' and position == total:
+        # A previous 'complete' state may predate full verification.
+        # An explicit resume must still run the requested verification.
+        if state['state'] == 'complete' and position == total and not verify_full:
             return state
         state['state'] = 'running'
         while position < total:
@@ -579,13 +661,30 @@ def create_image(source: str, destination: str, *,
             state['read_retries_performed'] += retry_counter[0]
             state['last'] = checkpoint
             state['processed'] = position
-            state['state'] = 'complete' if position == total else 'running'
+            state['state'] = ('verifying' if position == total and verify_full and
+                              not state['unreadable_bytes'] else
+                              'complete' if position == total else 'running')
             checkpoint_writer.save(state)
             if progress:
                 progress(ImagingProgress(position, total, state['unreadable_bytes'],
                                          len(state['bad_ranges']), state['state']))
         out.flush()
         os.fsync(out.fileno())
+    if state['unreadable_bytes']:
+        state['verification'] = {'status': 'not_possible',
+                                 'reason': 'Gemeldete Medienfehler / Nullersatz'}
+        state['state'] = 'complete'
+        checkpoint_writer.save(state)
+    elif verify_full:
+        if not _verify_full_copy(source, destination, identity, total,
+                                 min(block_size, 1024 * 1024),
+                                 opened_output_inode, cancel, progress, state,
+                                 checkpoint_writer):
+            return state
+    else:
+        state['verification'] = {'status': 'not_requested'}
+        state['state'] = 'complete'
+        checkpoint_writer.save(state)
     return state
 
 
