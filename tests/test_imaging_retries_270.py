@@ -135,7 +135,7 @@ class ImagingRetryIntegrationTests(unittest.TestCase):
             yield reader
         with patch('recoverydesk.imaging.open_source', open_fake):
             result = create_image(str(self.source), str(self.target),
-                                  read_retries=2, retry_delay_ms=0)
+                                  read_retries=2, retry_delay_ms=0, verify=False)
         self.assertEqual(result['unreadable_bytes'], 0)
         self.assertEqual(result['read_retries_performed'], 1)
         self.assertEqual(self.target.read_bytes(), self.content)
