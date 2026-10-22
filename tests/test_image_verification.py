@@ -95,8 +95,8 @@ class FullImagingVerificationTests(unittest.TestCase):
         last), then resume. Full verification must reject completion.
         """
         mib = 1024 * 1024
-        payload = bytes(range(256)) * (4 * 4096)
-        self.src.write_bytes(payload * 4 + b'last')
+        payload = bytes(4 * mib + 13)
+        self.src.write_bytes(payload)
 
         cancelled = [False]
         def pause_at_three_blocks(progress):
@@ -128,7 +128,7 @@ class FullImagingVerificationTests(unittest.TestCase):
         self.assertEqual(failed['verification']['status'], 'failed')
         self.assertIn(f'Byteoffset {bad_positions[0]}',
                       failed['verification']['message'])
-        self.assertEqual(self.src.read_bytes(), payload * 4 + b'last')
+        self.assertEqual(self.src.read_bytes(), payload)
 
     def test_explicit_opt_out_records_unverified(self):
         result = imaging.create_image(str(self.src), str(self.dest), verify=False)
