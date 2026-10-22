@@ -839,7 +839,7 @@ class RecoveryDeskApp(tk.Tk):
                         raise OSError('Es konnten keine 512 Bytes gelesen werden.')
             except (OSError, ValueError) as exc:
                 messagebox.showerror('Laufwerk nicht lesbar',
-                    f'{root} konnte nicht schreibgeschützt geöffnet werden.\n\n{exc}\n\n'
+                    f'{root} konnte nicht schreibgeschützt geöffnet werden.\n\n{exc}\n\n' +
                     ('Bitte Linux-Geräteberechtigungen prüfen oder ein RAW-Image verwenden.'
                      if linux_mode else
                      'Versuche Tenshi als Administrator zu starten oder untersuche ein Image.'),
