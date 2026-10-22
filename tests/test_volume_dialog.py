@@ -113,7 +113,7 @@ class VolumeDialogTests(unittest.TestCase):
                 tree, button = self.widgets(dlg)
                 self.assertEqual(str(button.cget('text')),
                                  translate('Auswahl übernehmen (nur lesen)', lang))
-                self.assertEqual(tuple(tree.selection()), ('C:\\\\',))
+                self.assertEqual(tuple(tree.selection()), (self.volumes[0].path,))
         dlg.destroy()
 
     def test_confirm_selection_sets_volume_and_byte_offset_zero(self):
