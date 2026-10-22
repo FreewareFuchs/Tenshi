@@ -223,3 +223,28 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - `NoticeGuiTests` verwendet statt einer fest benannten `/tmp`-Datei ebenfalls eine eigene temporäre Konfiguration. Das vermeidet Rückstände und ist auch unter Windows portabel.
 - **Zwei vollständige unmittelbar aufeinanderfolgende Läufe mit derselben äußeren Einstellungsdatei unter virtuellem X11 1024×650 bestanden: jeweils 539 Tests, `OK`, Exitcode 0, keine Überspringungen (18,528 s / 18,099 s).** Sprachwechsel-/Persistenztests bleiben enthalten. Keine Änderung am Sprachverhalten der Anwendung.
 - Kompilierung und Diff-Prüfung bestanden. GitHub-CI bei Kontrolle weiterhin Linux `pending`, Windows `queued`; reale Hardware-/Windows-Abnahme offen.
+
+## Gezielte 8-GiB-GUI-Abnahme auf Wegwerfdateien (22.10.2026)
+
+Getesteter Code: `ea2075a` unter virtuellem X11 bei 1024×650 in der Entwicklungsumgebung. Keine Originaldateien und keine Blockgeräte geöffnet; neue reguläre Quelldateien und neue Zieldateien in temporären Verzeichnissen. Steuerung über den echten Imaging-Dialog einschließlich Pause-Button, Fortsetzungsbestätigung und Abschlussmeldung; Dialogantworten automatisiert. Blockgröße 1 MiB, null Leseversuche, automatische vollständige Integritätsprüfung.
+
+| Prüfung | Lauf 1 | Lauf 2 |
+| --- | --- | --- |
+| Quellgröße | 8.589.934.592 Bytes | 8.589.934.592 Bytes |
+| Quelldaten | Sparse-Datei mit Nullbytes | Sparse-Datei mit eindeutigen Datenmarkierungen in jedem MiB und an Offset 1.625.391.250 |
+| Medienfehlerstrategie | Nullersatz mit Protokollierung | Sicher anhalten (`stop`) |
+| Bestätigtes Präfix bei GUI-Pause ab ca. 26,5 % | 2.311.061.504 Bytes | 2.298.478.592 Bytes |
+| Vollständiges Präfix vor Fortsetzung (`cmp -n`) | bytegleich | bytegleich |
+| GUI-Abschluss nach Fortsetzung | `complete`, `verified` | `complete`, `verified` |
+| Vollständiger unabhängiger `cmp` nach Abschluss | bytegleich | bytegleich |
+| Unlesbare Bytes / Fehlerbereiche | 0 / leer | 0 / leer |
+| Quellgröße und Änderungszeit unverändert | ja | ja |
+
+SHA-256 jeweils für die vollständige Quelle und das vollständige Ergebnis identisch:
+
+- Lauf 1: `ebfb4ef19ae410f190327b5ebd312711263bc7579970e87d9c1e2d84e06b3c25`
+- Lauf 2: `9d4ff82ae41a0157d7db1ba2dc63efbd3d9b22d69b738a65ef6cfc7c6019ca9b`
+
+**Beide gezielten Tests bestanden.** Die Quelldaten der beiden Läufe unterscheiden sich bewusst; deshalb unterscheiden sich ihre Hashwerte. Temporäre Testdateien nach Ende entfernt. Keine Änderung am Programmcode erforderlich. Diese Ergebnisse ergänzen die bereits bestandenen zweimal 539 Tests, ersetzen aber keine reale Cinnamon-/Hardware-/Windows-Abnahme.
+
+**Issue #3 bleibt offen und die Linux-Freigabesperre bestehen:** Der ursprüngliche Bytefehler wurde mit dem aktuellen Code auf neuen Dateien hier nicht reproduziert. Die ursprüngliche Ursache und der Zeitpunkt der Veränderung im aufbewahrten fehlerhaften Image sind damit nicht erklärt. Neueste GitHub-Läufe bei Kontrolle weiter Linux `pending`, Windows `queued`.
