@@ -102,5 +102,65 @@ class SafeBatchMetadataTests(unittest.TestCase):
         self.assertEqual((outside / batch_export.LOG_NAME).read_text(), 'protected')
 
 
+    def test_manifest_reader_rejects_final_symlink(self):
+        from recoverydesk.secure_target import open_regular_input
+        victim = self.root / 'secret.txt'
+        victim.write_text('protected-content', encoding='utf-8')
+        manifest = self.target / batch_export.MANIFEST
+        manifest.symlink_to(victim)
+        with self.simulated_block():
+            with self.assertRaises(OSError):
+                with open_regular_input(str(manifest), str(self.source)) as source:
+                    source.read()
+        self.assertEqual(victim.read_text(), 'protected-content')
+
+    def test_manifest_reader_pins_parent_before_path_swap(self):
+        from recoverydesk.secure_target import open_regular_input
+        old = self.root / 'former-output'
+        outside = self.root / 'outside'
+        outside.mkdir()
+        manifest = self.target / batch_export.MANIFEST
+        manifest.write_text('{"schema": 1}', encoding='utf-8')
+        (outside / batch_export.MANIFEST).write_text('{"schema": 999}', encoding='utf-8')
+        original_open = os.open
+        swaps = []
+
+        def swap_before_manifest_open(name, flags, *args, **kwargs):
+            if name == batch_export.MANIFEST and kwargs.get('dir_fd') is not None and not swaps:
+                self.target.rename(old)
+                self.target.symlink_to(outside, target_is_directory=True)
+                swaps.append(True)
+            return original_open(name, flags, *args, **kwargs)
+
+        with self.simulated_block(), \
+             mock.patch('recoverydesk.secure_target.os.open',
+                        side_effect=swap_before_manifest_open):
+            with open_regular_input(str(manifest), str(self.source)) as source:
+                state = json.load(source)
+        self.assertEqual(swaps, [True])
+        self.assertEqual(state, {'schema': 1})
+        self.assertEqual((outside / batch_export.MANIFEST).read_text(), '{"schema": 999}')
+
+    def test_real_batch_resume_invokes_pinned_manifest_reader(self):
+        from recoverydesk.filesystems import scan_tree
+        from test_filesystems import fat_img
+        source = self.root / 'fat-source.img'
+        source.write_bytes(fat_img())
+        index = scan_tree(str(source))
+        selected = next(item for item in index.list_dir(5)
+                        if item.name == 'README.TXT')
+        first = batch_export.export_batch(str(source), index, [selected], str(self.target))
+        self.assertEqual(first.exported, 1)
+        is_fake_source = lambda p: os.fspath(p) == str(source)
+        with mock.patch('recoverydesk.batch_export.block_path', side_effect=is_fake_source), \
+             mock.patch('recoverydesk.batch_export.open_regular_input',
+                        wraps=batch_export.open_regular_input) as pinned_reader:
+            second = batch_export.export_batch(str(source), index, [selected], str(self.target))
+        self.assertTrue(second.resumed)
+        self.assertEqual(second.verified_existing, 1)
+        pinned_reader.assert_called_once()
+        self.assertEqual(source.read_bytes(), fat_img())
+
+
 if __name__ == '__main__':
     unittest.main()
