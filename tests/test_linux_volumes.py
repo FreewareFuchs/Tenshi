@@ -70,6 +70,13 @@ class LinuxVolumeDialogTests(unittest.TestCase):
         walk(dialog)
         select = next(w for w in widgets if isinstance(w, ttk.Button)
                       and str(w.cget('text')).startswith('Auswahl übernehmen'))
+        tree = next(w for w in widgets if isinstance(w, ttk.Treeview))
+        self.assertGreaterEqual(tree.column('#0')['width'], 185)
+        self.assertFalse(tree.selection(), 'Linux raw device must not be preselected')
+        self.assertEqual(str(select.cget('state')), 'disabled')
+        tree.selection_set('/dev/mock-partition')
+        self.app.update()
+        self.assertEqual(str(select.cget('state')), 'normal')
 
         @contextlib.contextmanager
         def read_only_source(_path):
