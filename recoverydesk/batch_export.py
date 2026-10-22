@@ -202,11 +202,17 @@ def _write_log(path: Path, state: dict, result: BatchResult):
                 pass
 
 
-def _hash_file(path: Path) -> str:
+def _hash_file(path: Path, *, source: str | None = None) -> str:
+    """Verify an output by its opened inode, not a stale path preflight."""
     digest = hashlib.sha256()
-    with path.open('rb') as stream:
-        while chunk := stream.read(1024 * 1024):
-            digest.update(chunk)
+    if source is not None and block_path(source):
+        with open_regular_input(str(path), source) as stream:
+            while chunk := stream.read(1024 * 1024):
+                digest.update(chunk)
+    else:
+        with path.open('rb') as stream:
+            while chunk := stream.read(1024 * 1024):
+                digest.update(chunk)
     return digest.hexdigest()
 
 
@@ -370,7 +376,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
             elif path.exists() or _is_unsafe_link(path):
                 if (prior.get('status') == 'Erfolgreich' and path.is_file() and
                         path.stat().st_size == task.entry.size and
-                        _hash_file(path) == prior.get('sha256')):
+                        _hash_file(path, source=source) == prior.get('sha256')):
                     result.verified_existing += 1
                     completed_status = 'Bereits verifiziert'
                 else:
@@ -387,7 +393,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                     else:
                         written = exporter(source, index, task.entry, str(path),
                                            cancel=cancel, byte_progress=on_bytes)
-                    signature_file = _hash_file(path)
+                    signature_file = _hash_file(path, source=source)
                     result.exported += 1
                     result.bytes_written += written
                     state['results'][task.path] = {'status': 'Erfolgreich', 'bytes': written,
