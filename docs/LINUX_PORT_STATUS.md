@@ -63,6 +63,14 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - GitHub Actions: Linux-Spezialtests: 35 ausgeführt (32 bestanden, drei ohne Display übersprungen); gesamte Python-Suite: 475 Tests erfolgreich, zusätzlich echter ext4-Image-Test und virtuelles X11 1024×650 erfolgreich (Commit `8bda3ffd`). Windows-Tests separat.
 - **Grenzen:** Lesend geöffnete, aber gleichzeitig unter Linux beschriebene Dateisysteme können inkonsistente Daten liefern. Ein bereits ausgewählter Zielpfad könnte zwischen Prüfung und Dateiöffnung durch andere Prozesse verändert werden (Pfad-/Symlink-Race). Quelle/Ziel auf physischer Hardware und dynamische Mount-Topologien erfordern eine zusätzliche Abnahme; niemals hierfür wichtige Originaldatenträger verwenden.
 
+## Direkter USB-Quellenzugriff – Hardwaretest unter Linux Mint (22.10.2026)
+
+- Nutzerbestätigtes **entbehrliches** USB-Testgerät: LITEON L8H-128V2G-HP, ca. 119,2 GiB, während des Tests unter `/dev/sda` identifiziert. Achtung: Gerätenamen sind dynamisch und müssen vor jedem weiteren Test erneut gegen Modell, Transport, Größe und ggf. Seriennummer geprüft werden. Die interne NVMe-SSD ist **keine Testquelle**.
+- Partition `/dev/sda1` vor dem Test über `udisksctl unmount -b /dev/sda1` ausgehängt. Nur für `/dev/sda` wurde dem normalen Nutzer per ACL Leserecht ohne Schreibrecht eingeräumt. `test -r` ergab **JA**, `test -w` **NEIN**. Diese ACL ist keine hardwareseitige Schreibsperre und soll nach Abschluss entfernt werden.
+- `strace -f -e trace=open,openat,openat2,ioctl` überwachte `open_source('/dev/sda')` nach ausdrücklichem Modell-/USB-Identitätscheck. Es wurden erfolgreich **512 Bytes** gelesen; `reader.writable()` war `False`.
+- Im gefilterten Trace zeigten die **drei** Öffnungen von `/dev/sda` nur `O_RDONLY|O_CLOEXEC` bzw. `O_RDONLY|O_NONBLOCK|O_CLOEXEC`, keine schreibenden Öffnungsflags. Dies ist ein **realer Hardware-Nachweis** für diesen konkreten 512-Byte-Quellenzugriff, nicht für alle Programmwege.
+- Noch offen: längere/sektorausgerichtete Leselast, echte Hardware-Lese-/USB-Abbruchfehler, Imaging mit Pause/Fortsetzen, physische Quelle/Zieltrennung an separaten Geräten sowie Prüfung der ACL-Rücknahme. Die Originalquellen weiterer Datenträger bleiben unangetastet.
+
 ## Ausstehende Pflichtprüfungen auf Linux-Cinnamon/X11
 
 1. Weitere Schrift-/DPI-Skalierungen, alternative Sprachen und Modaldialoge auf echtem Cinnamon/X11 testen; Hauptfenster bei **1024×650** ist bereits visuell geprüft.
