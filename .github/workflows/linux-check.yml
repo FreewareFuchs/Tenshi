@@ -42,6 +42,15 @@ jobs:
                       assert app.file_tree.winfo_ismapped(), 'File browser is hidden'
                       assert app.file_tree.winfo_height() >= 70, app.file_tree.winfo_height()
                       assert app.export_queue_bar.winfo_ismapped(), 'Progress bar is hidden'
+                      before = app.file_tree.winfo_height()
+                      app._toggle_export_queue()
+                      app.update_idletasks()
+                      assert app.export_queue_collapsed
+                      assert not app.export_queue_bar.winfo_ismapped()
+                      assert app.file_tree.winfo_height() > before, (before, app.file_tree.winfo_height())
+                      app._toggle_export_queue()
+                      app.update_idletasks()
+                      assert app.export_queue_bar.winfo_ismapped(), 'Progress bar not restored'
           finally:
               app.destroy()
           PY
