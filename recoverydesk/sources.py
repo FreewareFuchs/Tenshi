@@ -10,6 +10,8 @@ import re
 from contextlib import contextmanager
 from ctypes import wintypes
 from .diagnostics import log_issue
+import sys
+from .linux_devices import block_path, block_info, list_block_sources, ensure_separate_device
 
 _DRIVE = re.compile(r'^\\\\\.\\PhysicalDrive(0|[1-9][0-9]{0,2})$', re.IGNORECASE)
 _VOLUME = re.compile(_DRIVE.pattern.replace("PhysicalDrive(0|[1-9][0-9]{0,2})", "([A-Z]):"), re.IGNORECASE)
@@ -39,7 +41,7 @@ def is_volume(path: str) -> bool:
 
 
 def is_device_source(path: str) -> bool:
-    return is_physical(path) or is_volume(path)
+    return is_physical(path) or is_volume(path) or (sys.platform.startswith('linux') and block_path(path))
 
 
 def raw_volume_path(root: str) -> str:
@@ -52,6 +54,8 @@ def raw_volume_path(root: str) -> str:
 def validate_source(path: str) -> str:
     if not path:
         raise ValueError('Bitte eine Quelldatei oder einen Datenträger auswählen.')
+    if sys.platform.startswith('linux') and block_path(path):
+        return path
     if is_device_source(path):
         if os.name != 'nt':
             raise ValueError('Physische Windows-Laufwerke sind nur auf Windows verfügbar.')
@@ -95,6 +99,8 @@ def _device_ioctl(path: str, code: int, length: int = 16) -> bytes:
 
 def source_size(path: str) -> int:
     validate_source(path)
+    if sys.platform.startswith('linux') and block_path(path):
+        return block_info(path)[0]
     if is_device_source(path):
         data = _device_ioctl(path, _IOCTL_DISK_GET_LENGTH_INFO, 8)
         if len(data) != 8:
@@ -109,6 +115,8 @@ def physical_sector_size(path: str) -> int:
     When inaccessible, use conservative 4096-byte requests (aligned for both
     standard 512-byte and 4096-byte logical sectors). Read-only IOCTLs only.
     """
+    if sys.platform.startswith('linux') and block_path(path):
+        return block_info(path)[1]
     if not is_device_source(path) or os.name != 'nt':
         raise ValueError('Nur für Windows-Rohdatenträger und Laufwerke.')
     for code, length in ((_IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, 64),
@@ -276,6 +284,8 @@ def open_source(path: str):
 
 
 def list_physical_sources(max_index: int = 32) -> list[tuple[str, int]]:
+    if sys.platform.startswith('linux'):
+        return list_block_sources()
     if os.name != 'nt':
         return []
     results = []
@@ -336,6 +346,9 @@ def ensure_safe_destination(source: str, destination: str):
     if os.path.realpath(source).casefold() == os.path.realpath(destination).casefold():
         raise ValueError('Quelle und Ziel dürfen nicht identisch sein.')
     if is_device_source(source):
+        if sys.platform.startswith('linux') and block_path(source):
+            ensure_separate_device(source, destination)
+            return
         src_disks = ({physical_number(source)} if is_physical(source)
                      else volume_disk_numbers(source))
         dest_disks = disk_numbers_of_destination(destination)
