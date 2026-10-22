@@ -1979,9 +1979,9 @@ class RecoveryDeskApp(tk.Tk):
             try:
                 save_session(dest, source, report=report, index=index,
                              filesystem=filesystem, expected_fingerprint=expected)
-                self.after(0, lambda: self._session_save_result(None, generation))
+                self._post_scan_callback(lambda: self._session_save_result(None, generation))
             except Exception as exc:
-                self.after(0, lambda error=str(exc): self._session_save_result(error, generation))
+                self._post_scan_callback(lambda error=str(exc): self._session_save_result(error, generation))
         threading.Thread(target=worker, daemon=True).start()
 
     def _session_save_result(self, error, generation):
@@ -2023,10 +2023,10 @@ class RecoveryDeskApp(tk.Tk):
         def worker():
             try:
                 result = load_session(filename, source_override=source_override)
-                self.after(0, lambda res=result, gen=generation:
+                self._post_scan_callback(lambda res=result, gen=generation:
                            self._finish_session_load(res, gen, source_text_at_start))
             except Exception as exc:
-                self.after(0, lambda error=str(exc): self._finish_session_load_error(error))
+                self._post_scan_callback(lambda error=str(exc): self._finish_session_load_error(error))
         threading.Thread(target=worker, daemon=True).start()
 
     def _finish_session_load_error(self, error):

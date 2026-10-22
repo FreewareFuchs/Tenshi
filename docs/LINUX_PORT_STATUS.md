@@ -203,3 +203,9 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - Neuer GUI-Integrationstest `tests/test_partition_details_worker.py`: simulierte Metadatenprüfung mit Erfolgs- und Fehlerfall; Rückmeldungen müssen im Hauptthread ankommen, die reguläre Testquelle bleibt bytegleich.
 - **Vollständige Suite unter virtuellem X11 bei 1024×650: 533 Tests in 18,190 s, `OK`, Exitcode 0, keine Überspringungen.** Isolierte Einstellungen/Logs. Dies ist keine reale Hardware- oder Windows-Freigabe.
 - GitHub-Prüfung des Vorgängers `51858ae`: Linux `pending`, Windows `queued` bei Kontrolle; kein GitHub-CI-Erfolg bestätigt.
+
+## Sitzungs-Worker liefern Ergebnisse im Hauptthread (22.10.2026)
+
+- `save_analysis_session()` und `load_analysis_session()` übermitteln Erfolg/Fehler jetzt über die vorhandene Hauptthread-Callback-Queue statt über Tkinter-`after()` aus dem Worker. Quelldatenprüfung, veraltete Ergebnisse und gespeicherte Metadaten werden weiterhin wie bisher behandelt.
+- Drei neue GUI-Integrationstests in `tests/test_session_worker_gui.py`: reale FAT32-Analysesitzung speichern und wieder laden, Speicherfehler sowie Ladefehler im Worker. Geprüft werden wieder freigegebene Bedienelemente, unveränderte Quelldatei, wiederhergestellter Dateibaum und Erhalt der bestehenden Analyse beim Ladefehler.
+- **Vollständige Suite unter virtuellem X11 bei 1024×650: 536 Tests in 21,607 s, `OK`, Exitcode 0, keine Überspringungen.** Kompilierung und Diff-Prüfung bestanden. GitHub-CI für Vorgänger `ae1cef4` bei Kontrolle Linux `pending`, Windows `queued`; reale Hardware-/Windows-Abnahme weiterhin offen.
