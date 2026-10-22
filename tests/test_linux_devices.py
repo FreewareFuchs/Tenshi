@@ -1,5 +1,6 @@
 """Linux port regression tests (no physical disk is opened)."""
 import os
+import sys
 import unittest
 from types import SimpleNamespace
 from unittest import mock
@@ -32,6 +33,7 @@ class LinuxDeviceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'demselben'):
                 linux_devices.ensure_separate_device('/dev/sda', '/tmp/tenshi-test.img')
 
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux-specific fcntl/ioctl test')
     def test_linux_block_info_permission_denial_is_actionable(self):
         with mock.patch.object(linux_devices, 'block_path', return_value=True), \
              mock.patch.object(linux_devices.os, 'open',
