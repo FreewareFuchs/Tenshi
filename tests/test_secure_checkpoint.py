@@ -23,7 +23,7 @@ class LinuxCheckpointRenameTests(unittest.TestCase):
             victim.write_text('unchanged', encoding='utf-8')
             checkpoint = root / 'checkpoint.json'
             checkpoint.symlink_to(victim)
-            with self.assertRaisesRegex(ValueError, 'Statusziel'):
+            with self.assertRaisesRegex(ValueError, 'umgeleitet'):
                 atomic_json_checkpoint(str(checkpoint), {'state': 'paused'}, str(image))
             self.assertEqual(victim.read_text(encoding='utf-8'), 'unchanged')
             self.assertTrue(checkpoint.is_symlink())
