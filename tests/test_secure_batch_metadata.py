@@ -158,7 +158,10 @@ class SafeBatchMetadataTests(unittest.TestCase):
             second = batch_export.export_batch(str(source), index, [selected], str(self.target))
         self.assertTrue(second.resumed)
         self.assertEqual(second.verified_existing, 1)
-        pinned_reader.assert_called_once()
+        opened = [call.args[0] for call in pinned_reader.call_args_list]
+        self.assertEqual(len(opened), 2)
+        self.assertIn(first.manifest, opened)
+        self.assertIn(str(Path(first.root) / 'files' / 'README.TXT'), opened)
         self.assertEqual(source.read_bytes(), fat_img())
 
 
