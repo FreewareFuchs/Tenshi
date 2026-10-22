@@ -733,12 +733,7 @@ class RecoveryDeskApp(tk.Tk):
         return validate_source(p)
 
     def show_volumes(self):
-        """Let the user select a mounted Windows volume as the read-only source."""
-        if os.name != 'nt':
-            messagebox.showinfo('Laufwerk auswählen',
-                                'Die Auswahl von Windows-Laufwerksbuchstaben ist nur unter Windows verfügbar.',
-                                parent=self)
-            return
+        """Choose a read-only Windows volume or mounted Linux block partition."""
         try:
             volumes = [v for v in list_volumes() if v.total_bytes >= 512]
         except Exception as exc:
@@ -746,14 +741,15 @@ class RecoveryDeskApp(tk.Tk):
             return
         if not volumes:
             messagebox.showwarning('Laufwerke',
-                'Keine verwendbaren Windows-Laufwerke gefunden. '
-                'Für nicht eingebundene Linux-Partitionen bitte einen physischen Datenträger auswählen.',
+                'Keine verwendbaren eingehängten Laufwerke gefunden. '
+                'Alternativ ein RAW-Image oder einen physischen Datenträger auswählen.',
                 parent=self)
             return
         self._show_volume_dialog(volumes)
 
     def _show_volume_dialog(self, volumes):
         """Choose one logical volume, confirm, then browse it at byte offset zero."""
+        linux_mode = any(v.path.startswith('/dev/') for v in volumes)
         win = tk.Toplevel(self)
         win.title('Laufwerk auswählen – nur lesen')
         win.geometry('820x465')
@@ -761,8 +757,11 @@ class RecoveryDeskApp(tk.Tk):
         win.transient(self)
         win.columnconfigure(0, weight=1)
         win.rowconfigure(1, weight=1)
-        ttk.Label(win, text='Windows-Laufwerk markieren und „Auswahl übernehmen“ anklicken. '
-                  'Doppelklick und Eingabetaste funktionieren ebenfalls.',
+        ttk.Label(win, text=('Eingehängte Linux-Partition markieren. Die Quelle wird '
+                             'ausschließlich lesend über ihr Blockgerät geöffnet.'
+                             if linux_mode else
+                             'Windows-Laufwerk markieren und „Auswahl übernehmen“ anklicken. '
+                             'Doppelklick und Eingabetaste funktionieren ebenfalls.'),
                   wraplength=760).grid(row=0, column=0, sticky='ew', padx=16, pady=(16, 10))
 
         panel = ttk.Frame(win)
@@ -798,9 +797,14 @@ class RecoveryDeskApp(tk.Tk):
         confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)', style='Accent.TButton')
         confirm_button.pack(side='right')
         ttk.Button(actions, text='Abbrechen', command=win.destroy).pack(side='right', padx=(0, 10))
-        ttk.Label(win, text='Nur gemountete Laufwerke mit Buchstaben sind hier sichtbar. '
-                  'Bei Fehler „Zugriff verweigert“ Tenshi als Administrator starten. '
-                  'Für defekte Laufwerke möglichst zuerst ein Image erstellen.',
+        ttk.Label(win, text=('Nur eingehängte Linux-Blockpartitionen erscheinen hier. '
+                             'Das Betriebssystem kann diese weiterhin verändern; für '
+                             'zuverlässige Datenrettung besser ein Offline-Image nutzen. '
+                             'Bei fehlenden Leserechten keine Geräteberechtigungen ändern.'
+                             if linux_mode else
+                             'Nur gemountete Laufwerke mit Buchstaben sind hier sichtbar. '
+                             'Bei Fehler „Zugriff verweigert“ Tenshi als Administrator starten. '
+                             'Für defekte Laufwerke möglichst zuerst ein Image erstellen.'),
                   foreground='#9a3412', wraplength=760).grid(row=4, column=0, sticky='ew',
                                                                 padx=16, pady=(0, 12))
 
@@ -816,15 +820,15 @@ class RecoveryDeskApp(tk.Tk):
                 return
             root = selected[0]
             try:
-                device_path = raw_volume_path(root)
+                device_path = root if root.startswith('/dev/') else raw_volume_path(root)
             except ValueError as exc:
                 messagebox.showerror('Laufwerk auswählen', str(exc), parent=win)
                 return
             if not messagebox.askyesno('Logisches Laufwerk direkt lesen',
-                f'Laufwerk {root} wird im Nur-Lese-Modus geöffnet. '
-                'Tenshi schreibt niemals in diese Quelle.\n\n'
-                'Für die Analyse ist keine Partitionstabelle erforderlich: '
-                'Das Dateisystem beginnt an Offset 0.\n\n'
+                f'Laufwerk {root} wird von Tenshi ausschließlich lesend geöffnet.\n\n'
+                'Hinweis: Eingehängte Dateisysteme können sich unabhängig von Tenshi '
+                'durch das Betriebssystem verändern. Ein Offline-Image ist sicherer.\n\n'
+                'Das Dateisystem eines logischen Laufwerks beginnt an Offset 0.\n\n'
                 f'{root} als Quelle übernehmen?', parent=win):
                 return
             # Fail early with an actionable access message, without claiming success.
@@ -836,8 +840,9 @@ class RecoveryDeskApp(tk.Tk):
             except (OSError, ValueError) as exc:
                 messagebox.showerror('Laufwerk nicht lesbar',
                     f'{root} konnte nicht schreibgeschützt geöffnet werden.\n\n{exc}\n\n'
-                    'Versuche Tenshi als Administrator zu starten oder untersuche ein Image. '
-                    'Für Linux-Partitionen ohne Laufwerksbuchstaben „Physischer Datenträger auswählen“ verwenden.',
+                    ('Bitte Linux-Geräteberechtigungen prüfen oder ein RAW-Image verwenden.'
+                     if linux_mode else
+                     'Versuche Tenshi als Administrator zu starten oder untersuche ein Image.'),
                     parent=win)
                 return
             win.destroy()
