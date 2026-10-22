@@ -111,3 +111,48 @@ class CheckpointValidationTests(unittest.TestCase):
         self.assertEqual(resumed['bad_ranges'], state['bad_ranges'])
         self.assertEqual(resumed['unreadable_bytes'], 1024)
         self.assertEqual(resumed['verification']['status'], 'not_possible')
+
+    def test_malformed_and_deeply_nested_json_never_opens_output(self):
+        for payload in (b'{"processed":', b'\xff', b'[' * 2000 + b']' * 2000):
+            with self.subTest(payload_length=len(payload)):
+                self.sidecar.write_bytes(payload)
+                before = self.dest.read_bytes()
+                with mock.patch.object(imaging, 'open_regular_output') as output:
+                    with self.assertRaises(imaging.ImagingError):
+                        imaging.create_image(str(self.source), str(self.dest), resume=True)
+                    output.assert_not_called()
+                self.assertEqual(self.dest.read_bytes(), before)
+
+    def test_oversized_status_file_is_rejected_before_writes(self):
+        with mock.patch.object(imaging, 'MAX_MANIFEST_BYTES', 128):
+            self.reject(self.state)
+
+    def test_status_read_request_is_bounded(self):
+        from contextlib import contextmanager
+        import io
+
+        class BoundedReader(io.BytesIO):
+            def read(self, size=-1):
+                self.requested = size
+                return super().read(size)
+
+        stream = BoundedReader(b'x' * 1024)
+
+        @contextmanager
+        def opener(*args):
+            yield stream
+
+        with mock.patch.object(imaging, 'MAX_MANIFEST_BYTES', 128), \
+             mock.patch.object(imaging, 'open_regular_input', side_effect=opener):
+            with self.assertRaisesRegex(imaging.ImagingError, 'Größe'):
+                imaging._load_manifest(str(self.sidecar), str(self.dest), self.state['source'])
+        self.assertEqual(stream.requested, 129)
+
+    def test_invalid_base_progress_with_journal_is_controlled_error(self):
+        journal = Path(imaging.journal_path(str(self.sidecar)))
+        journal.write_bytes(imaging._journal_encoding(self.state))
+        for value in (None, 'bad', [], True, -1):
+            with self.subTest(value=value):
+                state = copy.deepcopy(self.state)
+                state['processed'] = value
+                self.reject(state)

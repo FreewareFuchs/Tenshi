@@ -73,6 +73,7 @@ def _source_identity(source: str, total: int, sector: int) -> dict:
 # The original checkpoint is not modified in this fallback mode.
 JOURNAL_INTERVAL = 16 * 1024 * 1024
 MAX_JOURNAL_RECORD_BYTES = 32 * 1024 * 1024
+MAX_MANIFEST_BYTES = 32 * 1024 * 1024
 REPLACE_RETRY_DELAYS = (0.04, 0.12, 0.30, 0.60)
 
 
@@ -158,7 +159,7 @@ def _read_journal(path: str, *, source: str | None = None) -> tuple[dict | None,
                     raise ValueError('bad checksum')
                 if last is not None and state['processed'] < last['processed']:
                     raise ValueError('nonmonotonic checkpoint')
-            except (ValueError, KeyError, TypeError, UnicodeError) as exc:
+            except (ValueError, KeyError, TypeError, UnicodeError, RecursionError) as exc:
                 raise ImagingError('Prüfpunkt-Journal enthält einen beschädigten vollständigen Eintrag.') from exc
             last = state
             good_end = f.tell()
@@ -435,12 +436,16 @@ def _load_manifest(manifest_path: str, destination: str, source_identity: dict) 
         raise ImagingError('Symbolische Links als Imaging-Ziele werden nicht unterstützt.')
     try:
         with open_regular_input(manifest_path, source_identity['path']) as f:
-            obj = json.load(f)
-    except (OSError, ValueError, UnicodeError) as exc:
+            payload = f.read(MAX_MANIFEST_BYTES + 1)
+            if len(payload) > MAX_MANIFEST_BYTES:
+                raise ImagingError('Statusdatei überschreitet die erlaubte Größe.')
+            obj = json.loads(payload)
+    except (OSError, ValueError, UnicodeError, RecursionError) as exc:
         raise ImagingError('Statusdatei fehlt oder ist unlesbar; bestehende Images werden nicht überschrieben.') from exc
     candidate, _end = _read_journal(journal_path(manifest_path), source=source_identity['path'])
     if candidate is not None:
-        if not isinstance(obj, dict):
+        if (not isinstance(obj, dict) or
+                type(obj.get('processed')) is not int or obj['processed'] < 0):
             raise ImagingError('Die ursprüngliche Statusdatei ist beschädigt.')
         # Older journal records must never roll back a newer successful JSON
         # replacement. At equal positions, prefer the journal for a paused state.

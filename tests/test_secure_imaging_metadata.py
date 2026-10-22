@@ -40,7 +40,7 @@ class ImagingMetadataTests(unittest.TestCase):
             return real_open(name, flags, *args, **kwargs)
 
         loaded = []
-        real_load = json.load
+        real_load = json.loads
 
         def record_load(stream):
             value = real_load(stream)
@@ -48,7 +48,7 @@ class ImagingMetadataTests(unittest.TestCase):
             return value
 
         with mock.patch('recoverydesk.secure_target.os.open', side_effect=swap), \
-             mock.patch('recoverydesk.imaging.json.load', side_effect=record_load):
+             mock.patch('recoverydesk.imaging.json.loads', side_effect=record_load):
             with self.assertRaisesRegex(imaging.ImagingError, 'Fortsetzung verweigert'):
                 imaging._load_manifest(str(self.manifest), str(self.destination), self.state['source'])
         self.assertEqual(swapped, [True])

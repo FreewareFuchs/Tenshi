@@ -58,3 +58,8 @@ class JournalValidationTests(unittest.TestCase):
         committed = imaging._journal_encoding(state)
         self.path.write_bytes(committed + b'{"checkpoint":')
         self.assertEqual(imaging._read_journal(str(self.path)), (state, len(committed)))
+
+    def test_deeply_nested_record_is_controlled_error(self):
+        self.path.write_bytes(b'[' * 2000 + b']' * 2000 + b'\n')
+        with self.assertRaises(imaging.ImagingError):
+            imaging._read_journal(str(self.path))

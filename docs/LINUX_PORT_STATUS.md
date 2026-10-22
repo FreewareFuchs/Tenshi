@@ -180,3 +180,11 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - Fehlerbereiche müssen aus echten ganzzahligen Start-/Längenpaaren bestehen, positiv lang, geordnet, überschneidungsfrei und vollständig innerhalb des bestätigten Fortschritts liegen. Der Fehlerzähler muss exakt der Summe dieser Bereiche entsprechen; boolesche Werte gelten nicht als Bytezahlen.
 - Fünf ergänzte Regressionstests prüfen fehlende Felder, ungültige Bereiche, widersprüchliche Zähler/Zustände, Wiederaufnahme nach null kopierten Bytes sowie die weiterhin zulässige konsistente Fehlerkarte ohne falsche Bitgenauigkeitsbestätigung. Abgewiesene Metadaten führen zu keinem schreibenden Öffnen des Images.
 - Lokal: 50 Imaging-Tests erfolgreich (3 GUI-Tests mangels Display übersprungen), 20 Sicherheits-/Metadatentests und 7 Image-Integritätstests bestanden. Vollständige GUI-/Hardware-Freigabe weiterhin offen. GitHub Linux für Vorgänger `2cce4be` bei Kontrolle `pending`, Windows `queued`.
+
+## Begrenztes Einlesen beschädigter Statusdateien (22.10.2026)
+
+- Die Imaging-Statusdatei wird mit einer begrenzten Leseanforderung (32 MiB plus ein Erkennungsbyte) gelesen. Größere Dateien werden vor JSON-Verarbeitung und vor schreibendem Öffnen des Images abgewiesen.
+- Ungültiges, abgeschnittenes oder übermäßig tief verschachteltes JSON wird kontrolliert als `ImagingError` gemeldet; Rekursionstiefenfehler sind auch beim Journal abgefangen.
+- Vor dem Fortschrittsvergleich zwischen Basisstatus und Journal wird der Basiswert auf einen nichtnegativen echten Integer geprüft. Typfalsche Werte verursachen keine unkontrollierte Vergleichsausnahme.
+- Fünf neue Tests prüfen begrenzte Leseanforderung, Größenlimit, beschädigte/verschachtelte Statusdaten, ungültigen Basisfortschritt mit vorhandenem Journal und verschachtelte Journaldaten. Bestehender Pfadaustausch-Test an die begrenzte JSON-Verarbeitung angepasst.
+- Lokal: Imaging-Gruppe 55 Tests erfolgreich (3 GUI-Tests ohne Display übersprungen), 20 Sicherheits-/Metadatentests und 7 Integritätstests bestanden; Kompilierung und Diff-Prüfung erfolgreich. Aktuelle Linux-/Windows-CI bei Kontrolle weiterhin `queued`; vollständige GUI-/Hardware-Abnahme offen.
