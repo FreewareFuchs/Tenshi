@@ -13,15 +13,15 @@
 python3 -m unittest discover -s tests -p 'test_linux*.py' -v
 python3 main.py --smoke-test
 ```
-Die Linux-CI führt die vollständige Python-Testsuite unter virtuellem X11 sowie zusätzliche Geräte- und Layouttests bei 1024×650 aus. Geprüft werden nur simulierte Geräte: gleiches/anderes Zielmedium, überlappende Geräteverbünde, unklare Abbildung, blockierte Imagerstellung/Export vor Dateianlage, die O_RDONLY-Geräteabfrage und sysfs-Partition-/Virtuellgeräte-Zuordnung. CI-Ergebnisse je Commit unter GitHub Actions prüfen.
+Die Linux-Geräteliste wird ausschließlich aus sysfs-Metadaten erstellt und öffnet dabei keine Blockgeräte. Unter Linux ist auch beim physischen Datenträger **keine Vorauswahl** gesetzt: ein Zugriff erfordert die ausdrückliche Markierung und Bestätigung. Fehlende Leserechte werden nicht verändert.\n\nDie Linux-CI führt die vollständige Python-Testsuite unter virtuellem X11 sowie zusätzliche Geräte- und Layouttests bei 1024×650 aus. Geprüft werden nur simulierte Geräte: gleiches/anderes Zielmedium, überlappende Geräteverbünde, unklare Abbildung, blockierte Imagerstellung/Export vor Dateianlage, die O_RDONLY-Geräteabfrage und sysfs-Partition-/Virtuellgeräte-Zuordnung. CI-Ergebnisse je Commit unter GitHub Actions prüfen.
 
 ## Reproduzierbarer Linux-Start und Tests
 
 ```bash
 sudo apt install python3-tk util-linux
 python3 -m unittest discover -s tests -p 'test_linux*.py' -v
-python3 main.py --smoke-test
-python3 main.py
+bash start_linux.sh --smoke-test
+bash start_linux.sh
 ```
 
 Das Testen des normalen Startbefehls und der Linux-Volumenauswahl erfolgt ohne `sudo` oder Änderungen der Gerätegruppen. Fehlt die Leseerlaubnis für ein Blockgerät, muss Tenshi den Zugriff ablehnen; stattdessen ein vorher erstelltes RAW-Image verwenden.
