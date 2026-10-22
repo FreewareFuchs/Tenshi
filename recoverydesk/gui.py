@@ -528,9 +528,11 @@ class RecoveryDeskApp(tk.Tk):
                    command=self._choose_device).pack(side="left", padx=(10, 0))
         ttk.Button(source_actions, text="Laufwerk auswählen",
                    command=self.show_volumes).pack(side="left", padx=(10, 0))
-        ttk.Button(source_actions, text="Image erstellen / fortsetzen",
-                   command=self.open_imaging_dialog).pack(side="left", padx=(10, 0))
-        session_actions = ttk.Menubutton(source_actions, text='Analysesitzung')
+        secondary_actions = ttk.Frame(source)
+        secondary_actions.grid(row=2, column=0, columnspan=3, sticky='w', pady=(4, 0))
+        ttk.Button(secondary_actions, text="Image erstellen / fortsetzen",
+                   command=self.open_imaging_dialog).pack(side="left")
+        session_actions = ttk.Menubutton(secondary_actions, text='Analysesitzung')
         session_menu = tk.Menu(session_actions, tearoff=False)
         session_menu.add_command(label='Sitzung speichern', command=self.save_analysis_session)
         session_menu.add_command(label='Sitzung laden', command=self.load_analysis_session)
@@ -1421,7 +1423,7 @@ class RecoveryDeskApp(tk.Tk):
         self.show_deleted = tk.BooleanVar(value=True)
         self.deleted_toggle = ttk.Checkbutton(tools, text='Gelöschte Einträge anzeigen',
                                                variable=self.show_deleted, command=self._refresh_browser)
-        self.deleted_toggle.pack(side='left', padx=9)
+        self.deleted_toggle.pack(side='left', padx=4)
         # Native Tk button is deliberately used here: ttk's Windows "vista" theme
         # ignores custom button backgrounds, so ttk.Style cannot reliably turn it green.
         self.export_button = tk.Button(
