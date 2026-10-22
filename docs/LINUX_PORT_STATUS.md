@@ -248,3 +248,18 @@ SHA-256 jeweils für die vollständige Quelle und das vollständige Ergebnis ide
 **Beide gezielten Tests bestanden.** Die Quelldaten der beiden Läufe unterscheiden sich bewusst; deshalb unterscheiden sich ihre Hashwerte. Temporäre Testdateien nach Ende entfernt. Keine Änderung am Programmcode erforderlich. Diese Ergebnisse ergänzen die bereits bestandenen zweimal 539 Tests, ersetzen aber keine reale Cinnamon-/Hardware-/Windows-Abnahme.
 
 **Issue #3 bleibt offen und die Linux-Freigabesperre bestehen:** Der ursprüngliche Bytefehler wurde mit dem aktuellen Code auf neuen Dateien hier nicht reproduziert. Die ursprüngliche Ursache und der Zeitpunkt der Veränderung im aufbewahrten fehlerhaften Image sind damit nicht erklärt. Neueste GitHub-Läufe bei Kontrolle weiter Linux `pending`, Windows `queued`.
+
+## Lesende Diagnose des aufbewahrten Fehlerimages (22.10.2026)
+
+- Neues CLI `diagnose_image_integrity.py`: reguläre Dateien nur lesend öffnen, keine Reparatur, keine Berichts-/Image-Datei schreiben. Statische Symlinks/Sonderdateien werden vor Öffnen abgewiesen; der geöffnete Deskriptor wird nochmals auf regulären Dateityp geprüft. Keine Rohdaten von Geräten lesen.
+- Vollvergleich oder begrenztes Fenster, standardmäßig zwei Durchläufe, maximal fünf. Ausgabe als JSON: Hashwerte je Durchlauf, Byte-/Blockabweichungen, erste/letzte Position, höchstens 32 Bytebeispiele samt `Offset % 8`, Größen/Metadaten und Wiederholbarkeit. Byteoffsets sind 0-basiert. Ein Fenstervergleich bescheinigt ausschließlich den gewählten Bereich; unveränderte Metadaten sind kein Beweis unveränderter Daten zwischen Messzeitpunkten. Wiederholtes Lesen kann aus dem Betriebssystemcache bedient werden.
+- Sechs Tests prüfen Bytegleichheit, das ursprüngliche `08/10`-Muster, Größenunterschiede/Fenster, nur lesende Öffnungsflags, geänderte Daten zwischen Durchläufen sowie CLI-Exitcodes und Sonderdateiablehnung.
+- **Vollständige Suite unter virtuellem X11 1024×650: 545 Tests in 19,498 s, `OK`, Exitcode 0, keine Überspringungen.** Kompilierung und Diff-Prüfung bestanden.
+
+Nächste Untersuchung auf dem Rechner mit den erhaltenen Original-Testdateien, aus dem aktualisierten Tenshi-Projektordner:
+
+```bash
+python3 diagnose_image_integrity.py   "$HOME/Tenshi-Test/gui-pause-source-8g.raw"   "$HOME/Tenshi-Test/gui-pause-copy-8g.img"   --offset 1625292800 --length 1048576 --passes 2
+```
+
+Der Aufruf untersucht zweimal den betroffenen 1-MiB-Block. Exitcode 0: im gewählten Bereich gleich, wiederholbar, Metadaten unverändert; 1: Unterschiede oder instabile Beobachtung; 2: Aufruf-/Lesefehler. Der erwartete Unterschied im ursprünglichen defekten Image darf daher Exitcode 1 ergeben. Originale bleiben unangetastet; das Werkzeug wurde hier nur auf synthetischen Testdateien geprüft. Die vorhandenen Dateien auf dem Nutzerrechner sind von dieser Entwicklungsumgebung aus nicht zugänglich. Issue #3 und Freigabesperre bleiben offen; CI bei Kontrolle Linux `pending`, Windows `queued`.
