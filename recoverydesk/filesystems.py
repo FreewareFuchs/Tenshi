@@ -6,7 +6,7 @@ no EFS/Unix encryption/compression decoding, no exotic exFAT TexFAT, no fsck.
 Only in-use directory entries supported. The source is never modified.
 """
 from __future__ import annotations
-from .secure_target import open_regular_output
+from .secure_target import open_regular_output, mkdir_checked
 
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -1077,7 +1077,7 @@ def export_selection(source,index:GenericIndex,selection,target_dir,progress=Non
                 raise FileExistsError(target)
             ensure_safe_destination(source,target)
             if entry.is_directory:
-                os.mkdir(target)
+                mkdir_checked(target, source)
                 report.directories+=1
                 stack.extend((e,target,ancestry|{entry.record_number}) for e in reversed(index.list_dir(entry.record_number)))
             elif entry.recoverable:
