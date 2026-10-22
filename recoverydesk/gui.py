@@ -1092,11 +1092,14 @@ class RecoveryDeskApp(tk.Tk):
             block = 4 * 1024 * 1024 if block_choice.get() == '4 MiB' else 1024 * 1024
             retries = int(retry_choice.get())
             policy = selected_policy()
+            # Never read a Tk variable from a worker thread. Tk access must
+            # stay on the UI thread (also during headless/Xvfb tests).
+            verify_requested = bool(verify_var.get())
             def work():
                 try:
                     state = create_image(src, dest, resume=resumed, block_size=block,
                         read_retries=retries, retry_delay_ms=250, bad_sector_policy=policy,
-                        verify=verify_var.get(), cancel=stop.is_set,
+                        verify=verify_requested, cancel=stop.is_set,
                         progress=lambda item: events.put(('progress', item)))
                     events.put(('finished', state))
                 except Exception as exc:
