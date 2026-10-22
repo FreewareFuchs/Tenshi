@@ -1,10 +1,13 @@
 """Linux port regression tests (no physical disk is opened)."""
 import os
 import unittest
+from types import SimpleNamespace
 from unittest import mock
 
 from recoverydesk import sources
 from recoverydesk import linux_devices
+
+REAL_STAT = os.stat
 
 
 class LinuxDeviceTests(unittest.TestCase):
@@ -18,17 +21,14 @@ class LinuxDeviceTests(unittest.TestCase):
     def test_destination_unverifiable_fails_closed(self):
         with mock.patch.object(linux_devices, 'block_path', return_value=True), \
              mock.patch.object(linux_devices, '_backing_disks', side_effect=ValueError('unknown')), \
-             mock.patch.object(os, 'stat') as fake_stat:
-            fake_stat.return_value.st_rdev = os.makedev(8, 0)
+             mock.patch.object(linux_devices.os, 'stat', side_effect=lambda path, *a, **k: (SimpleNamespace(st_rdev=2048, st_dev=2049) if str(path) == '/dev/sda' else REAL_STAT(path, *a, **k))):
             with self.assertRaises(ValueError):
                 linux_devices.ensure_separate_device('/dev/sda', '/tmp/tenshi-test.img')
 
     def test_same_physical_disk_is_rejected(self):
         with mock.patch.object(linux_devices, 'block_path', return_value=True), \
              mock.patch.object(linux_devices, '_backing_disks', return_value={'/sys/devices/mock-disk'}), \
-             mock.patch.object(os, 'stat') as fake_stat:
-            fake_stat.return_value.st_rdev = os.makedev(8, 0)
-            fake_stat.return_value.st_dev = os.makedev(8, 1)
+             mock.patch.object(linux_devices.os, 'stat', side_effect=lambda path, *a, **k: (SimpleNamespace(st_rdev=2048, st_dev=2049) if str(path) == '/dev/sda' else REAL_STAT(path, *a, **k))):
             with self.assertRaisesRegex(ValueError, 'demselben'):
                 linux_devices.ensure_separate_device('/dev/sda', '/tmp/tenshi-test.img')
 
