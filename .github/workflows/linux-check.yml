@@ -24,6 +24,11 @@ jobs:
         run: python3 main.py --smoke-test
       - name: Device safety regression tests
         run: python3 -m unittest discover -s tests -p 'test_linux*.py' -v
+      - name: Full cross-platform regression suite (virtual X11, no raw hardware)
+        env:
+          TENSHI_SETTINGS_FILE: ${{ runner.temp }}/tenshi-linux-test-settings.json
+          TENSHI_LOG_DIR: ${{ runner.temp }}/tenshi-linux-test-logs
+        run: xvfb-run -a -s '-screen 0 1440x900x24' python3 -m unittest discover -s tests -q
       - name: UI test under 1024x650 virtual X11
         run: |
           xvfb-run -a -s '-screen 0 1024x650x24' python3 - <<'PY'
