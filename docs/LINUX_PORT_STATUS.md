@@ -53,6 +53,7 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - `test_real_ext4_image.py`: 1/1 auf Linux Mint bestanden; reguläres, temporäres ext4-Image mit Datei- und Unterordnerexport.
 - Linux Mint: `test_linux_destination_safety.py` **11/11 bestanden** (22.10.2026). Simulierte sysfs-/Blockgeräte, Quellzugriff nur lesend, gleiche bzw. andere physische Ziellaufwerke, fail-closed bei unsicherer Zuordnung und Unterbindung unsicherer Ausgabedateien. **Kein Ersatz für `strace`-/Hardwareprüfung**.
 - Linux Mint, 22.10.2026: Mit `strace -f -e trace=open,openat,openat2` um `list_physical_sources()` wurden `/dev/nvme0n1` und `/dev/sda` in den Geräteinformationen erkannt. Ein `grep` nach den beiden exakten `/dev/...`-Pfaden im Trace ergab **keinen Öffnungsaufruf**. Dies bestätigt die reine Metadatenauflistung für diese beiden Geräte, jedoch **nicht** den Lesezugriff auf physische Quellen. Test ohne `sudo`.
+- Linux Mint, 22.10.2026: Realer `strace -f -e trace=open,openat,openat2`-Nachweis für `open_source()` auf **regulärer RAW-Testdatei**, nicht auf Blockgerät: `openat(..., ".../testquelle.raw", O_RDONLY|O_CLOEXEC) = 3`; 512 Bytes gelesen; `reader.writable()` ergibt `False`. Bestätigt ausschließlich lesendes Öffnen dieses Image-Quellpfads. Direkte physische Quelle weiterhin ungeprüft.
 - Quellen- und Exportdatei lagen bei diesem **Image-Datei-Test** auf demselben Dateisystem. Für physische Geräte gelten strengere Trennungsprüfungen.
 
 ## Ausstehende Pflichtprüfungen auf Linux-Cinnamon/X11
