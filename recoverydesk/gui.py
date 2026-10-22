@@ -912,9 +912,14 @@ class RecoveryDeskApp(tk.Tk):
                      values=[translate('Nullen + protokollieren', self.language),
                              translate('Sicher anhalten', self.language)],
                      textvariable=failure_choice, width=23).pack(side='left')
-        ttk.Label(win, text='Optional 0–3 erneute Leseversuche an defekten Sektoren; jeder Versuch belastet das Medium. Bei Nullen entstehen Datenlücken; sicherer Stopp belässt den letzten gültigen Prüfpunkt.',
-                  wraplength=725, foreground='#9a3412').grid(row=4, column=0, columnspan=3,
-                                                              sticky='ew', padx=16, pady=(7, 4))
+        verify_var = tk.BooleanVar(value=not is_device_source(src))
+        ttk.Checkbutton(win, text='Image bitgenau prüfen', variable=verify_var).grid(
+            row=4, column=0, sticky='w', padx=16, pady=(7, 4))
+        ttk.Label(win, text=('Vollvergleich liest Quelle und Ziel nochmals vollständig. '
+                             'Auf beschädigten physischen Datenträgern nur bewusst aktivieren! '
+                             'Nullersatz wegen Lesefehlern kann nicht bitgenau bestätigt werden.'),
+                  wraplength=600, foreground='#9a3412').grid(
+                      row=4, column=1, columnspan=2, sticky='ew', padx=8, pady=(7, 4))
         percent = tk.StringVar(value='0,0 %')
         progress_bar = ttk.Progressbar(win, orient='horizontal', maximum=100)
         progress_bar.grid(row=5, column=0, columnspan=3, padx=16, pady=(12, 2), sticky='ew')
@@ -1020,13 +1025,21 @@ class RecoveryDeskApp(tk.Tk):
                         status = state['state']
                         txt = (f'Status: {status} · bearbeitet: {readable_bytes(state["processed"])} · '
                                f'nicht lesbar: {readable_bytes(state["unreadable_bytes"])}')
-                        stats.set(txt)
+                        verify_status = state.get('verification', {}).get('status')
+                        verified_text = ('\n\nBITGENAU VERIFIZIERT: Vollvergleich mit Quelle bestanden.'
+                                         if verify_status == 'verified' else
+                                         '\n\nACHTUNG: KEIN bestandener Vollvergleich; '
+                                         'Image nicht als bitgenau verifiziert betrachten.')
+                        stats.set(txt + (' · bitgenau geprüft' if verify_status == 'verified'
+                                         else ' · NICHT bitgenau verifiziert'))
                         if status == 'complete' and not active['close_after']:
-                            messagebox.showinfo('Image erstellt',
-                                'Image-Erstellung beendet.\n\n' + txt +
-                                ('\n\nNicht lesbare Datenbereiche wurden mit Nullbytes markiert; '
-                                 'siehe Fehlerstellen-Bericht.' if state['bad_ranges'] else
-                                 '\n\nEs wurden keine nicht lesbaren Bereiche protokolliert.'), parent=win)
+                            dialog_text = 'Image-Erstellung beendet.\n\n' + txt + verified_text
+                            if verify_status == 'verified':
+                                messagebox.showinfo('Image erstellt und geprüft', dialog_text, parent=win)
+                            else:
+                                messagebox.showwarning('Image erstellt – ungeprüft', dialog_text +
+                                    ('\n\nNicht lesbare Bereiche wurden mit Nullen ersetzt.' if state['bad_ranges']
+                                     else '\n\nKein Vollvergleich vorgenommen.'), parent=win)
                     if active['close_after']:
                         win.destroy()
                         return
@@ -1061,6 +1074,12 @@ class RecoveryDeskApp(tk.Tk):
                      'Bestätigte Medien-Lesefehler werden mit Nullen gefüllt und protokolliert. ') +
                     'Das Original wird nicht verändert.', parent=win):
                 return
+            if is_device_source(src) and verify_var.get():
+                if not messagebox.askyesno('Zusätzliche Belastung des Quelllaufwerks',
+                        'Die vollständige Integritätsprüfung liest den physischen Datenträger '
+                        'nach der Image-Erstellung erneut. Das kann ein defektes Medium '
+                        'zusätzlich belasten. Trotzdem durchführen?', parent=win):
+                    return
             active['started'] = time.monotonic()
             active['baseline'] = None
             active['running'] = True
@@ -1077,7 +1096,7 @@ class RecoveryDeskApp(tk.Tk):
                 try:
                     state = create_image(src, dest, resume=resumed, block_size=block,
                         read_retries=retries, retry_delay_ms=250, bad_sector_policy=policy,
-                        cancel=stop.is_set,
+                        verify=verify_var.get(), cancel=stop.is_set,
                         progress=lambda item: events.put(('progress', item)))
                     events.put(('finished', state))
                 except Exception as exc:
