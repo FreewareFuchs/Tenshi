@@ -2,6 +2,7 @@
 from __future__ import annotations
 import errno
 import io
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -90,7 +91,10 @@ class PhysicalDriveReadTests(unittest.TestCase):
                 raise OSError(errno.EINVAL, 'Invalid argument')
         d = FailingDevice(bytes(65536), 4096)
         f = AlignedDeviceReader(d, 65536, 4096)
-        with self.assertRaisesRegex(OSError, 'Windows hat einen physikalischen Leseauftrag abgelehnt'):
+        expected = ('Linux hat den sektorausgerichteten Leseauftrag abgelehnt'
+                    if sys.platform.startswith('linux') else
+                    'Windows hat einen physikalischen Leseauftrag abgelehnt')
+        with self.assertRaisesRegex(OSError, expected):
             f.read(11)
 
 if __name__ == '__main__':
