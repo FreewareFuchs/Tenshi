@@ -4,6 +4,7 @@ Only metadata from sysfs and read-only ioctl calls is used here. No mount,
 filesystem repair, or write-enabled handle is created.
 """
 from __future__ import annotations
+import errno
 import os
 from pathlib import Path
 import stat
@@ -26,7 +27,16 @@ def block_info(path: str) -> tuple[int, int]:
     import fcntl
     if not block_path(path):
         raise ValueError('Kein Linux-Blockgerät.')
-    fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NONBLOCK)
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NONBLOCK)
+    except PermissionError as exc:
+        raise PermissionError(
+            errno.EACCES,
+            'Linux-Blockgerät kann nicht lesend geöffnet werden. '
+            'Bitte Geräteberechtigungen prüfen oder ein RAW-Image verwenden; '
+            'Tenshi nicht mit zusätzlichen Administratorrechten starten.',
+            path
+        ) from exc
     try:
         size = struct.unpack('Q', fcntl.ioctl(fd, BLKGETSIZE64, bytes(8)))[0]
         sector = struct.unpack('I', fcntl.ioctl(fd, BLKSSZGET, bytes(4)))[0]
