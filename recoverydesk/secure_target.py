@@ -93,17 +93,18 @@ def mkdir_checked(path: str, source: str) -> None:
     with secure_parent(path, source) as parent_fd:
         os.mkdir(os.path.basename(os.path.abspath(path)), dir_fd=parent_fd)
 
-def atomic_json_checkpoint(path: str, state: dict, source: str) -> None:
-    """Atomically save a Linux imaging checkpoint in its verified directory.
+def atomic_bytes_checkpoint(path: str, payload: bytes, source: str) -> None:
+    """Atomically persist bytes relative to a physically verified Linux dirfd.
 
-    This uses src/dst dir_fd on rename; swapping a parent path after checking
-    cannot redirect the write to a different block device.
+    A swapped parent pathname cannot redirect the rename outside the opened
+    directory. An existing symlink or special-file target is not replaced.
     """
     if not _linux():
         raise ValueError('Linux-spezifische Prüfpunktfunktion.')
-    import json
     import secrets
 
+    if not isinstance(payload, bytes):
+        raise TypeError('Statusdaten müssen Bytes sein.')
     target = os.path.basename(os.path.abspath(path))
     with secure_parent(path, source) as parent_fd:
         temp_name = '.tenshi-checkpoint-' + secrets.token_hex(16) + '.tmp'
@@ -112,9 +113,8 @@ def atomic_json_checkpoint(path: str, state: dict, source: str) -> None:
             fd = os.open(temp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
                          os.O_CLOEXEC | os.O_NOFOLLOW, 0o600, dir_fd=parent_fd)
             temporary = True
-            with os.fdopen(fd, 'w', encoding='utf-8') as out:
-                json.dump(state, out, ensure_ascii=False, indent=2)
-                out.write('\n')
+            with os.fdopen(fd, 'wb') as out:
+                out.write(payload)
                 out.flush()
                 os.fsync(out.fileno())
             try:
@@ -123,10 +123,17 @@ def atomic_json_checkpoint(path: str, state: dict, source: str) -> None:
                 pass
             else:
                 if not stat.S_ISREG(prior.st_mode):
-                    raise ValueError('Imaging-Statusziel wurde auf einen Link oder ein Gerät umgeleitet.')
+                    raise ValueError('Status- oder Berichtsziel wurde auf einen Link oder ein Gerät umgeleitet.')
             os.replace(temp_name, target, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
             temporary = False
             os.fsync(parent_fd)
         finally:
             if temporary:
                 os.unlink(temp_name, dir_fd=parent_fd)
+
+
+def atomic_json_checkpoint(path: str, state: dict, source: str) -> None:
+    """Atomically persist an imaging/export manifest in its pinned parent."""
+    import json
+    payload = (json.dumps(state, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
+    atomic_bytes_checkpoint(path, payload, source)
