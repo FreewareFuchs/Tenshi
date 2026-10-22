@@ -60,7 +60,7 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 
 - `tests/test_linux_block_readonly.py`: für simulierte Blockgeräte mit 512/4096-Byte-Sektoren wird `open_source()` auf `rb` ohne Schreibfunktion geprüft. Unausgerichtete Anfragen werden vom `AlignedDeviceReader` in sektorausgerichtete Lesezugriffe übersetzt. Unter Linux melden Lesefehler/Gerätetrennung keinen Windows-Administratorhinweis; ein abgezogenes simuliertes Gerät wird nicht stillschweigend mit Nullbytes ersetzt.
 - `tests/test_linux_topology.py`: sysfs-Auflösung über simulierte gestapelte Blockgeräte mit zwei physischen Trägern. Fehlende Slaves und Zyklen führen zum Abbruch statt zu einer geratenen Zuordnung. Die Tests verändern **keine** realen Blockgeräte.
-- GitHub Actions: Linux-Spezialtests 35/35, davon drei ohne Display übersprungen; gesamte Python-Suite 475 Tests erfolgreich, zusätzlich echter ext4-Image-Test und virtuelles X11 1024×650 erfolgreich (Commit `8bda3ffd`). Windows-Tests separat.
+- GitHub Actions: Linux-Spezialtests: 35 ausgeführt (32 bestanden, drei ohne Display übersprungen); gesamte Python-Suite: 475 Tests erfolgreich, zusätzlich echter ext4-Image-Test und virtuelles X11 1024×650 erfolgreich (Commit `8bda3ffd`). Windows-Tests separat.
 - **Grenzen:** Lesend geöffnete, aber gleichzeitig unter Linux beschriebene Dateisysteme können inkonsistente Daten liefern. Ein bereits ausgewählter Zielpfad könnte zwischen Prüfung und Dateiöffnung durch andere Prozesse verändert werden (Pfad-/Symlink-Race). Quelle/Ziel auf physischer Hardware und dynamische Mount-Topologien erfordern eine zusätzliche Abnahme; niemals hierfür wichtige Originaldatenträger verwenden.
 
 ## Ausstehende Pflichtprüfungen auf Linux-Cinnamon/X11
