@@ -21,7 +21,8 @@ from .ntfs_browser import safe_name, export_file as export_ntfs_file
 from .filesystems import export_file as export_other_file
 from .export_io import ExportCancelled
 from .sources import ensure_safe_destination, is_device_source, source_size
-from .secure_target import mkdir_checked, atomic_json_checkpoint, atomic_bytes_checkpoint
+from .secure_target import (mkdir_checked, atomic_json_checkpoint,
+                            atomic_bytes_checkpoint, open_regular_input)
 from .linux_devices import block_path
 
 PLAN_LIMIT = 500_000
@@ -269,8 +270,12 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
     if root.exists():
         if not root.is_dir() or not manifest_path.is_file() or _is_unsafe_link(manifest_path):
             raise FileExistsError('Exportverzeichnis existiert ohne gültigen Wiederaufnahme-Status.')
-        with manifest_path.open('r', encoding='utf-8') as f:
-            state = json.load(f)
+        if block_path(source):
+            with open_regular_input(str(manifest_path), source) as f:
+                state = json.load(f)
+        else:
+            with manifest_path.open('r', encoding='utf-8') as f:
+                state = json.load(f)
         if state.get('schema') != 1 or state.get('signature') != signature or state.get('identity') != identity:
             raise ValueError('Bestehender Export gehört zu einer anderen Quelle/Auswahl.')
         if not isinstance(state.get('results'), dict):
