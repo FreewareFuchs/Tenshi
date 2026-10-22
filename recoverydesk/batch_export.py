@@ -21,7 +21,8 @@ from .ntfs_browser import safe_name, export_file as export_ntfs_file
 from .filesystems import export_file as export_other_file
 from .export_io import ExportCancelled
 from .sources import ensure_safe_destination, is_device_source, source_size
-from .secure_target import mkdir_checked
+from .secure_target import mkdir_checked, atomic_json_checkpoint, atomic_bytes_checkpoint
+from .linux_devices import block_path
 
 PLAN_LIMIT = 500_000
 MANIFEST = 'recoverydesk_status.json'
@@ -146,9 +147,12 @@ def _task_desc(item: PlannedItem) -> dict:
             'reason': getattr(e, 'unsupported_reason', '')}
 
 
-def _atomic_json(dest: Path, data: dict):
-    """Crash-resistant, uniquely named checkpoint with bounded lock retries."""
-    atomic_replace_json(dest, data)
+def _atomic_json(dest: Path, data: dict, *, source: str | None = None):
+    """Persist a manifest; anchor Linux block-source writes to a checked dirfd."""
+    if source is not None and block_path(source):
+        atomic_json_checkpoint(str(dest), data, source)
+    else:
+        atomic_replace_json(dest, data)
 
 
 def _write_log(path: Path, state: dict, result: BatchResult):
@@ -163,6 +167,10 @@ def _write_log(path: Path, state: dict, result: BatchResult):
     for key, item in sorted(state['results'].items()):
         rows.append(f'{item["status"]}\t{key}\t{item.get("detail", "")}')
     text = '\n'.join(rows) + '\n'
+    source = state['identity']['source']
+    if block_path(source):
+        atomic_bytes_checkpoint(str(path), text.encode('utf-8'), source)
+        return
     # Use a unique temp file; stale .tmp files must not block later exports.
     from tempfile import NamedTemporaryFile
     from .resilience import RETRY_DELAYS
@@ -269,11 +277,11 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
             raise ValueError('Ungültige Export-Statusdatei.')
         result.resumed = True
     else:
-        root.mkdir()
-        content.mkdir()
+        mkdir_checked(str(root), source)
+        mkdir_checked(str(content), source)
         state = {'schema': 1, 'signature': signature, 'identity': identity,
                  'started': datetime.now(timezone.utc).isoformat(), 'results': {}}
-        _atomic_json(manifest_path, state)
+        _atomic_json(manifest_path, state, source=source)
     if not content.is_dir() or _is_unsafe_link(content) or _is_unsafe_link(log_path):
         raise ValueError('Exportordner ist nicht sicher zugänglich.')
     exporter = export_ntfs_file if hasattr(index, 'info') else export_other_file
@@ -388,7 +396,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
             if progress:
                 progress(n, len(plan), task.path, state['results'].get(task.path, {}).get('status', ''))
         flush_bytes()
-        _atomic_json(manifest_path, state)
+        _atomic_json(manifest_path, state, source=source)
         if event:
             current = state['results'].get(task.path, {})
             event({'type': 'done', 'path': task.path, 'number': n,
