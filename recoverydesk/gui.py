@@ -770,12 +770,16 @@ class RecoveryDeskApp(tk.Tk):
         panel.rowconfigure(0, weight=1)
         cols = ('label', 'fs', 'size', 'free')
         tree = ttk.Treeview(panel, columns=cols, show='tree headings', selectmode='browse')
-        for c, label, width in [('label', 'Name', 210), ('fs', 'Dateisystem', 110),
-                                ('size', 'Größe (GiB)', 110), ('free', 'Frei (GiB)', 110)]:
+        for c, label, width in [('label', 'Name', 185 if linux_mode else 210),
+                                ('fs', 'Dateisystem', 100 if linux_mode else 110),
+                                ('size', 'Größe (GiB)', 100 if linux_mode else 110),
+                                ('free', 'Frei (GiB)', 100 if linux_mode else 110)]:
             tree.heading(c, text=label)
             tree.column(c, width=width, anchor='w', stretch=(c == 'label'))
         tree.heading('#0', text='Laufwerk')
-        tree.column('#0', width=95, anchor='w', stretch=False)
+        # Never visually conflate /dev/nvme0n1p1 and /dev/nvme0n1p5.
+        tree.column('#0', width=205 if linux_mode else 95,
+                    minwidth=185 if linux_mode else 95, anchor='w', stretch=False)
         tree.grid(row=0, column=0, sticky='nsew')
         bar = ttk.Scrollbar(panel, orient='vertical', command=tree.yview)
         bar.grid(row=0, column=1, sticky='ns')
@@ -786,15 +790,21 @@ class RecoveryDeskApp(tk.Tk):
                         values=(v.label, v.filesystem, f'{v.total_bytes/1024**3:.2f}',
                                 f'{v.free_bytes/1024**3:.2f}'))
         first = tree.get_children()[0]
-        tree.selection_set(first)
+        if not linux_mode:
+            # Preserve Windows keyboard-first selection behavior.
+            tree.selection_set(first)
         tree.focus(first)
         tree.see(first)
 
-        choice = tk.StringVar(value=f'Ausgewählt: {first}')
+        # Linux raw block access requires an explicit device choice.
+        choice = tk.StringVar(value=('Bitte ein Laufwerk markieren.' if linux_mode
+                                      else f'Ausgewählt: {first}'))
         ttk.Label(win, textvariable=choice).grid(row=2, column=0, sticky='w', padx=16, pady=8)
         actions = ttk.Frame(win)
         actions.grid(row=3, column=0, sticky='ew', padx=16, pady=(0, 8))
-        confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)', style='Accent.TButton')
+        confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)',
+                                    style='Accent.TButton',
+                                    state='disabled' if linux_mode else 'normal')
         confirm_button.pack(side='right')
         ttk.Button(actions, text='Abbrechen', command=win.destroy).pack(side='right', padx=(0, 10))
         ttk.Label(win, text=('Nur eingehängte Linux-Blockpartitionen erscheinen hier. '
