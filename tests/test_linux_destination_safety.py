@@ -49,6 +49,28 @@ class DestinationSeparationTests(unittest.TestCase):
                 self._check(os.path.join(folder, 'target.img'), {'diskA', 'diskB'},
                             {'diskB', 'diskC'})
 
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux block device policy')
+    def test_block_device_destination_rejected_without_file_creation(self):
+        with mock.patch.object(linux_devices, 'block_path',
+                               side_effect=lambda p: p in (_DEVICE, '/dev/sda1')), \
+             mock.patch.object(linux_devices, '_backing_disks',
+                               side_effect=AssertionError('no raw disk topology needed')):
+            with self.assertRaisesRegex(ValueError, 'niemals als Ausgabeziel'):
+                linux_devices.ensure_separate_device(_DEVICE, '/dev/sda1')
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux block device policy')
+    def test_symlink_to_block_device_destination_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            alias = os.path.join(folder, 'image.img')
+            os.symlink('/dev/sda1', alias)
+            with mock.patch.object(linux_devices, 'block_path',
+                                   side_effect=lambda p: p in (_DEVICE, '/dev/sda1')), \
+                 mock.patch.object(linux_devices, '_backing_disks',
+                                   side_effect=AssertionError('no raw disk topology needed')):
+                with self.assertRaisesRegex(ValueError, 'niemals als Ausgabeziel'):
+                    linux_devices.ensure_separate_device(_DEVICE, alias)
+            self.assertTrue(os.path.islink(alias))
+
     def test_unresolved_mapping_is_rejected(self):
         with tempfile.TemporaryDirectory() as folder, \
              mock.patch.object(linux_devices, 'block_path', return_value=True), \
