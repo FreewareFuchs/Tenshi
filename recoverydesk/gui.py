@@ -77,6 +77,9 @@ class RecoveryDeskApp(tk.Tk):
         self._setup_style()
         self._build()
         self._apply_theme()
+        self._compact_layout = None
+        self.bind("<Configure>", self._update_compact_layout, add="+")
+        self.after_idle(self._update_compact_layout)
         if self._view_settings['maximized'] and os.name == 'nt':
             try:
                 self.state('zoomed')
@@ -507,6 +510,8 @@ class RecoveryDeskApp(tk.Tk):
                                    highlightthickness=0)
         self.logo_label.pack(side="left", anchor="w")
         description = ttk.Frame(header)
+        self._header_description = description
+        self._compact_brand_logo = self.brand_logo.subsample(2, 2)
         description.pack(side="left", fill="both", expand=True, padx=(18, 0))
         ttk.Label(description, text="Datenrettung & schreibgeschützte Datenträgeranalyse",
                   font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(8, 2))
@@ -589,6 +594,26 @@ class RecoveryDeskApp(tk.Tk):
         ttk.Label(footer, textvariable=self.status, style="Sub.TLabel").pack(anchor="w")
         ttk.Label(footer, text="Bei Hardwaredefekt weitere Lesezugriffe minimieren und möglichst ein schonendes Image erstellen. Gerettete Daten nur auf einem anderen physischen Datenträger speichern.",
                   foreground="#9a3412").pack(anchor="w", pady=(1, 0))
+
+    def _update_compact_layout(self, event=None):
+        """Reclaim browser height at 1024x650 under X11 without hiding actions."""
+        if event is not None and event.widget is not self:
+            return
+        compact = self.winfo_width() <= 1100 and self.winfo_height() <= 720
+        if self._compact_layout == compact:
+            return
+        self._compact_layout = compact
+        if compact:
+            self._header_description.pack_forget()
+            self.logo_label.configure(image=self._compact_brand_logo)
+        else:
+            self.logo_label.configure(image=self.brand_logo)
+            self._header_description.pack(side='left', fill='both', expand=True, padx=(18, 0))
+        # All functional controls remain available; reduce only decorative space.
+        style = ttk.Style(self)
+        style.configure('TButton', padding=(7, 2) if compact else (10, 7))
+        style.configure('Accent.TButton', padding=(8, 3) if compact else (12, 8))
+        style.configure('Treeview', rowheight=22 if compact else 27)
 
     def _select_main_tab(self, name: str):
         target = self.partition_tab if name == 'partition' else self.ntfs_tab
