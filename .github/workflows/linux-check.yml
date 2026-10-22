@@ -38,6 +38,10 @@ jobs:
                   app._select_main_tab(key)
                   app.update_idletasks()
                   assert app.tabs.winfo_height() >= 100, (key, app.tabs.winfo_height())
+                  if key == 'files':
+                      assert app.file_tree.winfo_ismapped(), 'File browser is hidden'
+                      assert app.file_tree.winfo_height() >= 70, app.file_tree.winfo_height()
+                      assert app.export_queue_bar.winfo_ismapped(), 'Progress bar is hidden'
           finally:
               app.destroy()
           PY
