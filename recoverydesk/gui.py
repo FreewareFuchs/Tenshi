@@ -2497,17 +2497,17 @@ class RecoveryDeskApp(tk.Tk):
 
     def _build_export_queue(self):
         """Persistent recovery queue, in the same Files & Folders tab."""
-        frame = ttk.LabelFrame(self.ntfs_tab, padding=6)
+        self.export_queue_toggle = ttk.Button(self.ntfs_tab,
+            text='Wiederherstellungswarteschlange  ▼ Einklappen',
+            command=self._toggle_export_queue)
+        self.export_queue_toggle.pack(fill='x', pady=(2, 0), before=self.browser_paned)
+        frame = ttk.Frame(self.ntfs_tab, padding=(6, 2, 6, 4))
         # CRITICAL: pack the queue BEFORE the expanding file browser. Otherwise the
         # already-packed paned window consumes the vertical space and the progress
         # widgets remain unmapped (even though the export continues).
         frame.pack(fill='x', pady=(4, 4), before=self.browser_paned)
         self.export_queue_frame = frame
         self.export_queue_collapsed = False
-        self.export_queue_toggle = ttk.Button(frame,
-            text='Wiederherstellungswarteschlange  ▼ Einklappen',
-            command=self._toggle_export_queue)
-        frame.configure(labelwidget=self.export_queue_toggle)
         self.export_queue_contents = ttk.Frame(frame)
         self.export_queue_contents.pack(fill='x')
         head = ttk.Frame(self.export_queue_contents)
@@ -2557,11 +2557,13 @@ class RecoveryDeskApp(tk.Tk):
     def _toggle_export_queue(self):
         """Collapse only the queue contents; export work and state continue."""
         if self.export_queue_collapsed:
+            self.export_queue_frame.pack(fill='x', before=self.browser_paned)
             self.export_queue_contents.pack(fill='x')
             self.export_queue_toggle.configure(text='Wiederherstellungswarteschlange  ▼ Einklappen')
             self.export_queue_collapsed = False
         else:
             self.export_queue_contents.pack_forget()
+            self.export_queue_frame.pack_forget()
             self.export_queue_toggle.configure(text='Wiederherstellungswarteschlange  ▶ Ausklappen')
             self.export_queue_collapsed = True
         # Tk's packer can leave the flexible browser at its previous allocation
