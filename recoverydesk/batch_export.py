@@ -21,6 +21,7 @@ from .ntfs_browser import safe_name, export_file as export_ntfs_file
 from .filesystems import export_file as export_other_file
 from .export_io import ExportCancelled
 from .sources import ensure_safe_destination, is_device_source, source_size
+from .secure_target import mkdir_checked
 
 PLAN_LIMIT = 500_000
 MANIFEST = 'recoverydesk_status.json'
@@ -337,7 +338,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                 try:
                     if not path.parent.is_dir():
                         raise OSError('Übergeordneter Ordner konnte nicht erstellt werden.')
-                    os.mkdir(path)
+                    mkdir_checked(str(path), source)
                     result.directories += 1
                     state['results'][task.path] = {'status': 'Ordner erstellt'}
                 except OSError as exc:
