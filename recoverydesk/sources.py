@@ -271,6 +271,12 @@ def open_source(path: str):
         if not is_device_source(path):
             raise
         log_issue('raw_device_open', exc)
+        if sys.platform.startswith('linux'):
+            raise PermissionError(
+                'Der Linux-Datenträger kann nicht lesend geöffnet werden. '
+                'Bitte Geräteberechtigungen prüfen oder ein vorhandenes RAW-Image verwenden. '
+                'Tenshi nicht unnötig mit Administratorrechten starten.'
+            ) from exc
         raise PermissionError('Der Datenträger kann nicht schreibgeschützt geöffnet werden. '
                               'Bitte Windows-Administratorrechte, Freigabe und '
                               'Gerätezugriff prüfen.') from exc
