@@ -5,9 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: windows-check-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   windows:
     runs-on: windows-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -15,6 +20,7 @@ jobs:
           python-version: '3.12'
           architecture: x64
       - name: Test suite (isolated settings and logs)
+        timeout-minutes: 10
         shell: pwsh
         run: |
           $env:TENSHI_SETTINGS_FILE = Join-Path $env:RUNNER_TEMP 'tenshi-test-settings.json'
