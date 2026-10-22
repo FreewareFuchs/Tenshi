@@ -41,20 +41,27 @@ class ImagingGuiTests(unittest.TestCase):
                 entries[0].insert(0, str(destination))
                 start = next(b for b in buttons if b.cget('text') == 'Image erstellen / fortsetzen')
                 with patch('recoverydesk.gui.messagebox.askyesno', return_value=True), \
-                     patch('recoverydesk.gui.messagebox.showinfo'):
+                     patch('recoverydesk.gui.messagebox.showinfo') as info, \
+                     patch('recoverydesk.gui.messagebox.showwarning') as warning, \
+                     patch('recoverydesk.gui.messagebox.showerror') as error:
                     start.invoke()
                     deadline = time.monotonic() + 8
-                    while time.monotonic() < deadline and (not destination.exists() or
-                            destination.stat().st_size < source.stat().st_size):
+                    while time.monotonic() < deadline and str(start.cget('state')) == 'disabled':
                         app.update()
                         time.sleep(.025)
-                    # Handle last event and finish dialog update.
-                    for _ in range(5):
-                        app.update()
-                        time.sleep(.03)
+                    app.update()
+                    self.assertEqual(str(start.cget('state')), 'normal',
+                                     'GUI imaging worker did not finish before deadline')
+                    info.assert_called_once()
+                    warning.assert_not_called()
+                    error.assert_not_called()
                 self.assertTrue(destination.exists())
                 self.assertEqual(destination.read_bytes(), source.read_bytes())
-                self.assertTrue(Path(str(destination) + '.recovery.json').exists())
+                manifest = Path(str(destination) + '.recovery.json')
+                self.assertTrue(manifest.exists())
+                import json
+                self.assertEqual(json.loads(manifest.read_text())['verification']['status'],
+                                 'verified')
                 self.assertEqual(len(app.tabs.tabs()), 2)
             finally:
                 app.destroy()
