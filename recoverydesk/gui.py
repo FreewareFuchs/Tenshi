@@ -2564,6 +2564,11 @@ class RecoveryDeskApp(tk.Tk):
             self.export_queue_contents.pack_forget()
             self.export_queue_toggle.configure(text='Wiederherstellungswarteschlange  ▶ Ausklappen')
             self.export_queue_collapsed = True
+        # Tk's packer can leave the flexible browser at its previous allocation
+        # until another geometry event. Recalculate from the available pane space.
+        self.ntfs_tab.update_idletasks()
+        self.browser_paned.pack_configure(fill='both', expand=True)
+        self.ntfs_tab.update_idletasks()
 
     def _toggle_export_details(self):
         if self.export_queue_details_open:
