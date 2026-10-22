@@ -166,3 +166,10 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - Ein Prüfpunkt muss ein JSON-Objekt mit nichtnegativem ganzzahligem Fortschritt sein. Listen, null, boolesche Werte und andere ungültige Strukturen führen kontrolliert zu `ImagingError`, auch bei korrekter Prüfsumme.
 - Fünf neue Tests in `tests/test_imaging_journal_validation.py`, darunter eine Prüfung der tatsächlich begrenzten `readline()`-Anforderung. Lokal: Imaging-Gruppe 41 Tests erfolgreich (3 GUI-Tests ohne Display übersprungen), 20 Sicherheits-/Metadatentests und 7 Image-Integritätstests bestanden. Windows-Journal-Fallback und Wiederaufnahme sind in der Imaging-Gruppe enthalten; keine Hardwareprüfung.
 - GitHub-Prüfung für Vorgänger `9364443`: erster Push-Lauf abgebrochen, nachfolgender Linux-PR-Lauf und Windows-Lauf bei Kontrolle noch `queued`. Kein neuer CI-Erfolg behauptet.
+
+## Blockprüfpunkte vor Wiederaufnahme validieren (22.10.2026)
+
+- Statusdateien müssen für bestätigten Fortschritt gültige erste und letzte Blockprüfpunkte mit exakten Startpositionen/Längen und einer 64-stelligen hexadezimalen SHA-256-Prüfsumme enthalten. Typfalsche, fehlende, negative oder übergroße Angaben werden vor dem schreibenden Öffnen des Images abgewiesen.
+- Prüfpunkte ohne bestätigten Fortschritt werden ebenfalls abgewiesen. Reguläre letzte Teilblöcke bleiben zulässig; die vorhandene Pause-/Fortsetzungslogik ist unverändert.
+- Vier neue Tests in `tests/test_imaging_checkpoint_validation.py` mit mehreren Fehlerfallvarianten prüfen den Abbruch vor dem Öffnen zum Schreiben, unveränderte Quell-/Zielbytes und erfolgreiche erneute Vollverifikation eines Images mit letztem Teilblock.
+- Lokal: Imaging-Testgruppe 45 Tests erfolgreich (3 GUI-Tests ohne Display übersprungen); 20 Sicherheits-/Metadatentests und 7 Image-Integritätstests bestanden. Kompilierung und Diff-Prüfung erfolgreich. Vollständige GUI-/Hardware-Abnahme und aktuelle GitHub-CI-Bestätigung weiterhin ausstehend.

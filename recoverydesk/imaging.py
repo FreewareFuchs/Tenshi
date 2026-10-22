@@ -458,11 +458,24 @@ def _load_manifest(manifest_path: str, destination: str, source_identity: dict) 
         raise ImagingError('Ungültige Prüfpunkte in der Statusdatei.')
     if completed and completed != total and completed % block_size:
         raise ImagingError('Die Statusdatei enthält einen nicht ausgerichteten Fortschritt.')
-    last = obj.get('last')
-    if completed and (not isinstance(last, dict) or
-        last.get('start', -1) + last.get('length', -1) != completed or
-        last.get('length', 0) < 1):
-        raise ImagingError('Letzte Prüfsumme in der Statusdatei ist ungültig.')
+    def valid_digest(checkpoint, start, length):
+        if not isinstance(checkpoint, dict):
+            return False
+        digest = checkpoint.get('sha256')
+        return (type(checkpoint.get('start')) is int and
+                type(checkpoint.get('length')) is int and
+                checkpoint['start'] == start and checkpoint['length'] == length and
+                isinstance(digest, str) and len(digest) == 64 and
+                all(char in '0123456789abcdef' for char in digest))
+
+    if completed:
+        last_start = ((completed - 1) // block_size) * block_size
+        if not valid_digest(obj.get('last'), last_start, completed - last_start):
+            raise ImagingError('Letzte Prüfsumme in der Statusdatei ist ungültig.')
+        if not valid_digest(obj.get('first'), 0, min(block_size, total)):
+            raise ImagingError('Erste Prüfsumme in der Statusdatei ist ungültig.')
+    elif obj.get('first') is not None or obj.get('last') is not None:
+        raise ImagingError('Prüfsummen ohne bestätigten Fortschritt sind ungültig.')
     ranges = obj.get('bad_ranges', [])
     if (not isinstance(ranges, list) or any(not isinstance(item, list) or
          len(item) != 2 or not all(isinstance(n, int) and n >= 0 for n in item) for item in ranges)):
