@@ -5,7 +5,7 @@ NTFS volume. Directory relations come from $FILE_NAME parent file references;
 this is not a reconstruction of damaged or overwritten directory indexes.
 """
 from __future__ import annotations
-from .secure_target import open_regular_output
+from .secure_target import open_regular_output, mkdir_checked
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -597,7 +597,7 @@ def export_selection(source: str, index: FileIndex, selection: Iterable[FileEntr
                 continue
             if entry.is_directory:
                 ensure_safe_destination(source, target)
-                os.mkdir(target)
+                mkdir_checked(target, source)
                 report.directories += 1
                 next_ancestors = ancestors | {entry.record_number}
                 children = index.list_dir(entry.record_number)
