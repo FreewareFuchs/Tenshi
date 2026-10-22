@@ -43,7 +43,8 @@ from .scan_report import format_scan_report
 from .filesystems import (scan_tree as scan_other_tree,
                           ScanCancelled as OtherScanCancelled, FileSystemError)
 from .sources import (validate_source, open_source, source_size, is_physical,
-                      list_physical_sources, ensure_safe_destination, raw_volume_path, is_volume)
+                      list_physical_sources, ensure_safe_destination, raw_volume_path, is_volume,
+                      is_device_source)
 
 APP_NAME = "Tenshi"
 
@@ -1197,7 +1198,7 @@ class RecoveryDeskApp(tk.Tk):
         def worker():
             try:
                 fp = None
-                if not is_physical(source) and not is_volume(source):
+                if not is_device_source(source):
                     fp = fingerprint_image(source)
                 result = analyze_image(source, deep_scan=deep, max_scan_mb=limit,
                                        sector_size=sector, progress=progress)
@@ -1808,7 +1809,7 @@ class RecoveryDeskApp(tk.Tk):
             tolerant = bool(self.tolerant_scan.get())
             display_tmp = bool(self.show_tmp.get())
             scan_source_generation = self._source_generation
-            if tolerant and (is_physical(source) or is_volume(source)):
+            if tolerant and is_device_source(source):
                 raise ValueError('Fehlertolerante Suche nur für Image-Dateien; '
                                  'bei defekten Datenträgern zuerst ein Abbild erstellen.')
             if offset < 0 or offset % 512:
@@ -1831,7 +1832,7 @@ class RecoveryDeskApp(tk.Tk):
         def worker():
             try:
                 fp = None
-                if not is_physical(source) and not is_volume(source):
+                if not is_device_source(source):
                     fp = fingerprint_image(source, [offset])
                 with open_source(source) as f:
                     from .filesystems import detect_volume
@@ -1869,9 +1870,14 @@ class RecoveryDeskApp(tk.Tk):
             except Exception as exc:
                 msg = str(exc)
                 if isinstance(exc, OSError) and getattr(exc, 'errno', None) == 22:
-                    msg += ('\n\nPhysische Windows-Datenträger erfordern sektorausgerichtete Lesezugriffe. '
-                            'Bitte Tenshi neu starten und die aktuelle Version verwenden. '
-                            'Falls der Fehler bleibt, Laufwerk als Administrator öffnen oder RAW-Image erstellen.')
+                    if sys.platform.startswith('linux') and is_device_source(source):
+                        msg += ('\n\nLinux-Blockgerät: Logische Sektorgröße und Gerätezugriff '
+                                'prüfen; alternativ ein RAW-Image verwenden. '
+                                'Keine zusätzlichen Schreibrechte vergeben.')
+                    else:
+                        msg += ('\n\nPhysische Windows-Datenträger erfordern sektorausgerichtete Lesezugriffe. '
+                                'Bitte Tenshi neu starten und die aktuelle Version verwenden. '
+                                'Falls der Fehler bleibt, Laufwerk als Administrator öffnen oder RAW-Image erstellen.')
                 self.after(0, lambda m=msg, g=scan_source_generation: (
                     messagebox.showerror('Dateisystem', m) if g == self._source_generation else None))
             finally:
@@ -1899,7 +1905,7 @@ class RecoveryDeskApp(tk.Tk):
             return
         try:
             source = self.get_source()
-            if is_physical(source) or is_volume(source):
+            if is_device_source(source):
                 raise SessionError('Sitzungen erfordern ein reguläres Image. Bitte zuerst ein Image erstellen.')
             report = self.last_partition_report if self.partition_source == source else None
             index = self.browser_index if self.browser_source == source else None
@@ -2960,7 +2966,7 @@ class RecoveryDeskApp(tk.Tk):
                     f'{MAX_VERIFY_BYTES // 1024**2} MiB. Bitte große Dateien direkt exportieren '
                     'und auf einem gesunden Zielmedium prüfen.', parent=win)
                 return
-            if is_physical(source) or is_volume(source):
+            if is_device_source(source):
                 if not messagebox.askyesno('Leseprüfung am Datenträger',
                     'Die Prüfung liest den vollständigen Datenstrom erneut. Bei physisch '
                     'instabilen Laufwerken kann das zusätzliche Belastung verursachen. '
