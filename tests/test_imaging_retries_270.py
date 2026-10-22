@@ -248,6 +248,7 @@ class ImagingRetryGuiTests(unittest.TestCase):
                     captured.append(kwargs)
                     return {'state':'complete','processed':8192,'source':{'size':8192},
                             'unreadable_bytes':0,'bad_ranges':[],
+                            'verification': {'status':'verified', 'checked':8192},
                             'read_retries_performed':0,'bad_sector_policy':kwargs['bad_sector_policy']}
                 with patch('recoverydesk.gui.create_image', side_effect=fake_create), \
                      patch('recoverydesk.gui.messagebox.askyesno', return_value=True), \
@@ -262,6 +263,7 @@ class ImagingRetryGuiTests(unittest.TestCase):
                 self.assertTrue(captured)
                 self.assertEqual(captured[0]['read_retries'], 2)
                 self.assertEqual(captured[0]['bad_sector_policy'], 'stop')
+                self.assertIs(captured[0]['verify'], True)
                 report_button = next(w for w in walk(dialog) if isinstance(w, ttk.Button) and
                                      w.cget('text') == 'Fehlerstellen-Bericht')
                 self.assertNotEqual(str(report_button.cget('state')), 'disabled')
