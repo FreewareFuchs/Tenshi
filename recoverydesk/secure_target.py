@@ -92,3 +92,41 @@ def mkdir_checked(path: str, source: str) -> None:
         return
     with secure_parent(path, source) as parent_fd:
         os.mkdir(os.path.basename(os.path.abspath(path)), dir_fd=parent_fd)
+
+def atomic_json_checkpoint(path: str, state: dict, source: str) -> None:
+    """Atomically save a Linux imaging checkpoint in its verified directory.
+
+    This uses src/dst dir_fd on rename; swapping a parent path after checking
+    cannot redirect the write to a different block device.
+    """
+    if not _linux():
+        raise ValueError('Linux-spezifische Prüfpunktfunktion.')
+    import json
+    import secrets
+
+    target = os.path.basename(os.path.abspath(path))
+    with secure_parent(path, source) as parent_fd:
+        temp_name = '.tenshi-checkpoint-' + secrets.token_hex(16) + '.tmp'
+        temporary = False
+        try:
+            fd = os.open(temp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+                         os.O_CLOEXEC | os.O_NOFOLLOW, 0o600, dir_fd=parent_fd)
+            temporary = True
+            with os.fdopen(fd, 'w', encoding='utf-8') as out:
+                json.dump(state, out, ensure_ascii=False, indent=2)
+                out.write('\n')
+                out.flush()
+                os.fsync(out.fileno())
+            try:
+                prior = os.stat(target, dir_fd=parent_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                pass
+            else:
+                if not stat.S_ISREG(prior.st_mode):
+                    raise ValueError('Imaging-Statusziel wurde auf einen Link oder ein Gerät umgeleitet.')
+            os.replace(temp_name, target, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+            temporary = False
+            os.fsync(parent_fd)
+        finally:
+            if temporary:
+                os.unlink(temp_name, dir_fd=parent_fd)
