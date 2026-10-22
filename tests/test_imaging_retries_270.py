@@ -252,7 +252,9 @@ class ImagingRetryGuiTests(unittest.TestCase):
                             'read_retries_performed':0,'bad_sector_policy':kwargs['bad_sector_policy']}
                 with patch('recoverydesk.gui.create_image', side_effect=fake_create), \
                      patch('recoverydesk.gui.messagebox.askyesno', return_value=True), \
-                     patch('recoverydesk.gui.messagebox.showinfo'):
+                     patch('recoverydesk.gui.messagebox.showinfo') as info, \
+                     patch('recoverydesk.gui.messagebox.showwarning') as warning, \
+                     patch('recoverydesk.gui.messagebox.showerror') as error:
                     begin.invoke()
                     until = time.monotonic() + 4
                     while time.monotonic() < until:
@@ -260,6 +262,9 @@ class ImagingRetryGuiTests(unittest.TestCase):
                         if captured and str(begin.cget('state')) != 'disabled':
                             break
                         time.sleep(0.02)
+                    info.assert_called_once()
+                    warning.assert_not_called()
+                    error.assert_not_called()
                 self.assertTrue(captured)
                 self.assertEqual(captured[0]['read_retries'], 2)
                 self.assertEqual(captured[0]['bad_sector_policy'], 'stop')
