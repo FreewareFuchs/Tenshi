@@ -162,5 +162,45 @@ class SafeBatchMetadataTests(unittest.TestCase):
         self.assertEqual(source.read_bytes(), fat_img())
 
 
+    def test_export_hash_rejects_symlink_to_unrelated_file(self):
+        import hashlib
+        victim = self.root / 'unrelated.bin'
+        victim.write_bytes(b'do-not-use')
+        target = self.target / 'recovered.bin'
+        target.symlink_to(victim)
+        with self.simulated_block():
+            with self.assertRaises(OSError):
+                batch_export._hash_file(target, source=str(self.source))
+        self.assertEqual(victim.read_bytes(), b'do-not-use')
+
+    def test_export_hash_uses_original_parent_handle_after_swap(self):
+        import hashlib
+        outside = self.root / 'outside-hash'
+        outside.mkdir()
+        original = self.root / 'original-output'
+        expected = b'correct-recovered-file'
+        other = b'unrelated-file'
+        target = self.target / 'recovered.bin'
+        target.write_bytes(expected)
+        (outside / target.name).write_bytes(other)
+        open_original = os.open
+        swapped = []
+
+        def swap_before_file_open(name, flags, *args, **kwargs):
+            if name == target.name and kwargs.get('dir_fd') is not None and not swapped:
+                self.target.rename(original)
+                self.target.symlink_to(outside, target_is_directory=True)
+                swapped.append(True)
+            return open_original(name, flags, *args, **kwargs)
+
+        with self.simulated_block(), \
+             mock.patch('recoverydesk.secure_target.os.open',
+                        side_effect=swap_before_file_open):
+            digest = batch_export._hash_file(target, source=str(self.source))
+        self.assertEqual(swapped, [True])
+        self.assertEqual(digest, hashlib.sha256(expected).hexdigest())
+        self.assertEqual((outside / target.name).read_bytes(), other)
+
+
 if __name__ == '__main__':
     unittest.main()
