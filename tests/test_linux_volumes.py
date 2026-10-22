@@ -3,6 +3,7 @@ import contextlib
 import io
 import json
 import os
+import sys
 from types import SimpleNamespace
 import tempfile
 import unittest
@@ -11,6 +12,7 @@ from unittest.mock import patch
 from recoverydesk import core
 
 
+@unittest.skipUnless(sys.platform.startswith('linux'), 'Linux-only volume discovery')
 class LinuxMountedVolumeTests(unittest.TestCase):
     def test_lsblk_lists_only_mounted_block_volumes(self):
         with tempfile.TemporaryDirectory() as mount:
@@ -44,7 +46,7 @@ class LinuxMountedVolumeTests(unittest.TestCase):
                 core._linux_volumes()
 
 
-@unittest.skipUnless(os.environ.get('DISPLAY'), 'Virtual X11 required')
+@unittest.skipUnless(sys.platform.startswith('linux') and os.environ.get('DISPLAY'), 'Linux/X11 required')
 class LinuxVolumeDialogTests(unittest.TestCase):
     def setUp(self):
         from recoverydesk.gui import RecoveryDeskApp
