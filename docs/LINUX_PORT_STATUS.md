@@ -51,6 +51,7 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - Linux Mint: vollständiger 256-MiB-Imaging-Test mit SHA-256- und `cmp`-Bestätigung bitgenauer Kopie; 16/16 Imaging-Tests bestanden (Unterbrechung/Wiederaufnahme dort simuliert).
 - Analysesitzung nach Programmneustart erfolgreich wieder geladen, ohne Dateisystem erneut einzulesen.
 - `test_real_ext4_image.py`: 1/1 auf Linux Mint bestanden; reguläres, temporäres ext4-Image mit Datei- und Unterordnerexport.
+- Linux Mint: `test_linux_destination_safety.py` **11/11 bestanden** (22.10.2026). Simulierte sysfs-/Blockgeräte, Quellzugriff nur lesend, gleiche bzw. andere physische Ziellaufwerke, fail-closed bei unsicherer Zuordnung und Unterbindung unsicherer Ausgabedateien. **Kein Ersatz für `strace`-/Hardwareprüfung**.
 - Quellen- und Exportdatei lagen bei diesem **Image-Datei-Test** auf demselben Dateisystem. Für physische Geräte gelten strengere Trennungsprüfungen.
 
 ## Ausstehende Pflichtprüfungen auf Linux-Cinnamon/X11
