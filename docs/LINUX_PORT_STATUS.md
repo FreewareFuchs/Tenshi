@@ -196,3 +196,10 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - Drei zusätzliche Tests in `tests/test_scan_callback_queue.py` prüfen Reihenfolge und Ausführung im abarbeitenden Hauptthread, keine Tk-Timerregistrierung im Worker, Schließen des Fensters und begrenzte Verarbeitung bei vielen Fortschrittsmeldungen.
 - **Abschließende vollständige Suite unter virtuellem X11 (1024×650): 532 Tests in 18,327 s, `OK`, Exitcode 0, keine Überspringungen.** Isolierte Einstellungen und Logs. Beide zuvor fehlgeschlagenen GUI-Integrationstests bestehen. Zusätzlich besteht der unveränderte 1024×650-Layoutprüfcode aus `.github/workflows/linux-check.yml`.
 - Kompilierung und Diff-Prüfung bestanden. Dies ist ein lokaler automatisierter X11-Nachweis; reale Cinnamon-/Hardware- und Windows-Abnahme bleiben gesondert. GitHub-CI noch nicht grün bestätigt: Bei Kontrolle warten neueste Linux-/Windows-Läufe, während 20 ältere Läufe als `in_progress` gemeldet werden.
+
+## Partitions-Metadatenprüfung über Hauptthread-Queue (22.10.2026)
+
+- Auch `check_selected_partition()` stellt Erfolg und Fehler jetzt in die bestehende Callback-Queue. Der Worker ruft für diese Rückmeldungen kein Tkinter-`after()` mehr auf. Die vorhandene Prüfung auf veraltete Quellen/Partitionslisten bleibt bestehen.
+- Neuer GUI-Integrationstest `tests/test_partition_details_worker.py`: simulierte Metadatenprüfung mit Erfolgs- und Fehlerfall; Rückmeldungen müssen im Hauptthread ankommen, die reguläre Testquelle bleibt bytegleich.
+- **Vollständige Suite unter virtuellem X11 bei 1024×650: 533 Tests in 18,190 s, `OK`, Exitcode 0, keine Überspringungen.** Isolierte Einstellungen/Logs. Dies ist keine reale Hardware- oder Windows-Freigabe.
+- GitHub-Prüfung des Vorgängers `51858ae`: Linux `pending`, Windows `queued` bei Kontrolle; kein GitHub-CI-Erfolg bestätigt.

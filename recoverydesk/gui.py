@@ -1388,9 +1388,9 @@ class RecoveryDeskApp(tk.Tk):
                 result = inspect_partition(source, part)
             except Exception as exc:
                 msg = str(exc)
-                self.after(0, lambda: self._finish_partition_details_error(msg))
+                self._post_scan_callback(lambda: self._finish_partition_details_error(msg))
             else:
-                self.after(0, lambda: self._finish_partition_details(
+                self._post_scan_callback(lambda: self._finish_partition_details(
                     generation, source, idx, part, result))
         threading.Thread(target=run, daemon=True).start()
 
