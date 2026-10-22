@@ -68,7 +68,12 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 
 - Linux-Mint-Gegenprobe `python3 -m unittest discover -s tests -p 'test_imaging_gui.py' -v`: **2 Tests fehlgeschlagen**. Ein Test protokollierte `main thread is not in main loop`, statt des absichtlich induzierten `INTEGRITÄTSFEHLER`; beim Erfolgsfall blieb `messagebox.showinfo` aus.
 - Ursache in `recoverydesk/gui.py`: Der Imaging-Hintergrundthread führte `verify_var.get()` direkt auf einer Tkinter-Variable aus. Das ist bei Tests mit `app.update()` ohne dauerhaft laufendes `mainloop()` nicht zulässig und auch als GUI-Threading-Verhalten unnötig riskant.
-- Korrektur (Commit `2ff17356`): `verify_requested = bool(verify_var.get())` wird **im GUI-Hauptthread vor dem Start** erfasst; der Worker erhält nur noch den unveränderlichen Python-Wert. Imaging-Integritätslogik wurde nicht geändert. **Die zwei GUI-Tests müssen nach dieser Änderung erneut unter Linux Mint laufen; Ergebnis noch ausstehend.**
+- Korrektur (Commit `2ff17356`): `verify_requested = bool(verify_var.get())` wird **im GUI-Hauptthread vor dem Start** erfasst; der Worker erhält nur noch den unveränderlichen Python-Wert. Imaging-Integritätslogik wurde nicht geändert. **Linux-Mint-Gegenprobe am 22.10.2026 bestanden:** `python3 -m unittest discover -s tests -p 'test_imaging_gui.py' -v` → **2/2 Tests `OK`**; der positive und negative GUI-Pfad samt Statusspeicherung wurden automatisiert bestätigt.
+
+## Imaging-Leseversuche und Sicherheitsstrategie – Linux-Mint-Regressionslauf (22.10.2026)
+
+- Der Nutzer hat `python3 -m unittest discover -s tests -p 'test_imaging_retries_270.py' -v` im aktualisierten Linux-Zweig ausgeführt: **12/12 Tests `OK`**. Die Testgruppe deckt insbesondere Imaging-Leseversuche, Medienfehler-Strategien und die Weitergabe der GUI-Imaging-Parameter ab. Zusammen mit den separat bestätigten **7/7** Integritätstests und **2/2** GUI-Imaging-Tests sind alle drei zuletzt gezielt ausgeführten Testgruppen erfolgreich.
+- **Grenze:** Dies ist keine vollständige plattformübergreifende Freigabeprüfung. GitHub-CI stand bei der letzten Kontrolle für den aktuellen Commit noch auf `queued`; ursprüngliche Ursache des 8-GiB-Fehlers bleibt unbekannt.
 
 ## CI-Entstauung und automatischer GUI-Negativtest (22.10.2026)
 
