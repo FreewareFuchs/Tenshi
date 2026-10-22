@@ -533,11 +533,9 @@ class RecoveryDeskApp(tk.Tk):
                    command=self._choose_device).pack(side="left", padx=(10, 0))
         ttk.Button(source_actions, text="Laufwerk auswählen",
                    command=self.show_volumes).pack(side="left", padx=(10, 0))
-        secondary_actions = ttk.Frame(source)
-        secondary_actions.grid(row=2, column=0, columnspan=3, sticky='w', pady=(4, 0))
-        ttk.Button(secondary_actions, text="Image erstellen / fortsetzen",
-                   command=self.open_imaging_dialog).pack(side="left")
-        session_actions = ttk.Menubutton(secondary_actions, text='Analysesitzung')
+        ttk.Button(source_actions, text="Image erstellen / fortsetzen",
+                   command=self.open_imaging_dialog).pack(side="left", padx=(10, 0))
+        session_actions = ttk.Menubutton(source_actions, text='Analysesitzung')
         session_menu = tk.Menu(session_actions, tearoff=False)
         session_menu.add_command(label='Sitzung speichern', command=self.save_analysis_session)
         session_menu.add_command(label='Sitzung laden', command=self.load_analysis_session)
@@ -2499,16 +2497,17 @@ class RecoveryDeskApp(tk.Tk):
 
     def _build_export_queue(self):
         """Persistent recovery queue, in the same Files & Folders tab."""
-        frame = ttk.LabelFrame(self.ntfs_tab, text='Wiederherstellungswarteschlange', padding=6)
+        frame = ttk.LabelFrame(self.ntfs_tab, padding=6)
         # CRITICAL: pack the queue BEFORE the expanding file browser. Otherwise the
         # already-packed paned window consumes the vertical space and the progress
         # widgets remain unmapped (even though the export continues).
         frame.pack(fill='x', pady=(4, 4), before=self.browser_paned)
         self.export_queue_frame = frame
         self.export_queue_collapsed = False
-        self.export_queue_toggle = ttk.Button(frame, text='Warteschlange einklappen',
-                                               command=self._toggle_export_queue)
-        self.export_queue_toggle.pack(anchor='e')
+        self.export_queue_toggle = ttk.Button(frame,
+            text='Wiederherstellungswarteschlange  ▼ Einklappen',
+            command=self._toggle_export_queue)
+        frame.configure(labelwidget=self.export_queue_toggle)
         self.export_queue_contents = ttk.Frame(frame)
         self.export_queue_contents.pack(fill='x')
         head = ttk.Frame(self.export_queue_contents)
@@ -2559,11 +2558,11 @@ class RecoveryDeskApp(tk.Tk):
         """Collapse only the queue contents; export work and state continue."""
         if self.export_queue_collapsed:
             self.export_queue_contents.pack(fill='x')
-            self.export_queue_toggle.configure(text='Warteschlange einklappen')
+            self.export_queue_toggle.configure(text='Wiederherstellungswarteschlange  ▼ Einklappen')
             self.export_queue_collapsed = False
         else:
             self.export_queue_contents.pack_forget()
-            self.export_queue_toggle.configure(text='Warteschlange ausklappen')
+            self.export_queue_toggle.configure(text='Wiederherstellungswarteschlange  ▶ Ausklappen')
             self.export_queue_collapsed = True
 
     def _toggle_export_details(self):
