@@ -8,6 +8,7 @@ on:
       - 'recoverydesk/**'
       - 'tests/**'
       - 'main.py'
+      - 'start_linux.sh'
       - '.github/workflows/linux-check.yml'
   workflow_dispatch:
 
@@ -21,7 +22,9 @@ jobs:
       - name: Compile source modules
         run: python3 -m compileall -q main.py recoverydesk tests
       - name: Smoke test
-        run: python3 main.py --smoke-test
+        run: |
+          bash -n start_linux.sh
+          bash start_linux.sh --smoke-test
       - name: Device safety regression tests
         run: python3 -m unittest discover -s tests -p 'test_linux*.py' -v
       - name: Full cross-platform regression suite (virtual X11, no raw hardware)
