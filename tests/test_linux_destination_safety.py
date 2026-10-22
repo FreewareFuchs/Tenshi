@@ -82,6 +82,48 @@ class DestinationSeparationTests(unittest.TestCase):
             self.assertEqual(list(Path(folder).iterdir()), [])
 
 
+
+class SysfsTopologyTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux sysfs only')
+    def test_partition_maps_to_same_physical_disk_as_whole_device(self):
+        # Exercise the REAL ancestry resolver against a temporary fake sysfs.
+        # No /dev device is opened or examined.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            block = root / 'sys' / 'dev' / 'block'
+            disk = root / 'sys' / 'devices' / 'pci-test' / 'block' / 'sda'
+            partition = disk / 'sda1'
+            block.mkdir(parents=True)
+            partition.mkdir(parents=True)
+            (disk / 'device').mkdir()
+            (partition / 'partition').write_text('1', encoding='ascii')
+            (block / '8:0').symlink_to(disk, target_is_directory=True)
+            (block / '8:1').symlink_to(partition, target_is_directory=True)
+            original_path = Path
+            with mock.patch.object(linux_devices, 'Path',
+                  side_effect=lambda path: original_path(str(path).replace(
+                      '/sys/dev/block', str(block), 1))):
+                whole = linux_devices._backing_disks(os.makedev(8, 0))
+                part = linux_devices._backing_disks(os.makedev(8, 1))
+            self.assertEqual(whole, {str(disk.resolve())})
+            self.assertEqual(whole, part)
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux sysfs only')
+    def test_virtual_device_without_physical_backing_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            block = root / 'sys' / 'dev' / 'block'
+            virtual = root / 'sys' / 'devices' / 'virtual' / 'block' / 'loop0'
+            block.mkdir(parents=True)
+            virtual.mkdir(parents=True)
+            (block / '7:0').symlink_to(virtual, target_is_directory=True)
+            original_path = Path
+            with mock.patch.object(linux_devices, 'Path',
+                  side_effect=lambda path: original_path(str(path).replace(
+                      '/sys/dev/block', str(block), 1))):
+                with self.assertRaisesRegex(ValueError, 'Virtueller Datenträger'):
+                    linux_devices._backing_disks(os.makedev(7, 0))
+
 class ReadOnlyOpenTests(unittest.TestCase):
     def test_regular_raw_image_reader_cannot_write(self):
         with tempfile.TemporaryDirectory() as folder:
