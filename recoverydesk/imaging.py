@@ -21,7 +21,8 @@ from typing import Callable
 from .diagnostics import traced
 from .sources import (validate_source, open_source, source_size, is_device_source,
                       physical_sector_size, ensure_safe_destination)
-from .secure_target import open_regular_output
+from .secure_target import open_regular_output, atomic_json_checkpoint
+from .linux_devices import block_path
 
 FORMAT_VERSION = 1
 DEFAULT_BLOCK_SIZE = 1024 * 1024
@@ -83,7 +84,10 @@ def _is_sharing_denial(exc: OSError) -> bool:
             isinstance(exc, PermissionError))
 
 
-def _atomic_json(path: str, info: dict) -> None:
+def _atomic_json(path: str, info: dict, *, source: str | None = None) -> None:
+    if source is not None and block_path(source):
+        atomic_json_checkpoint(path, info, source)
+        return
     directory = os.path.dirname(os.path.abspath(path)) or '.'
     name = None
     try:
@@ -200,7 +204,8 @@ def _append_journal(path: str, state: dict, *,
 
 class _CheckpointWriter:
     """Replace checkpoints normally, switch to append-only journal on EACCES."""
-    def __init__(self, path: str):
+    def __init__(self, path: str, source: str | None = None):
+        self.source = source
         self.path = path
         self.journal = journal_path(path)
         self.use_journal = os.path.isfile(self.journal)
@@ -218,7 +223,7 @@ class _CheckpointWriter:
             return
         if not self.use_journal:
             try:
-                _atomic_json(self.path, state)
+                _atomic_json(self.path, state, source=self.source)
                 self.last_saved = state['processed']
                 return
             except OSError as exc:
@@ -471,10 +476,16 @@ def create_image(source: str, destination: str, *,
             expected_output_inode = (st.st_dev, st.st_ino)
         state = _make_manifest(identity, destination, block_size)
         try:
-            with open(sidecar, 'x', encoding='utf-8') as f:
-                json.dump(state, f, ensure_ascii=False, indent=2)
-                f.flush()
-                os.fsync(f.fileno())
+            if block_path(source):
+                with open_regular_output(sidecar, 'xb', source) as f:
+                    f.write(json.dumps(state, ensure_ascii=False, indent=2).encode('utf-8'))
+                    f.flush()
+                    os.fsync(f.fileno())
+            else:
+                with open(sidecar, 'x', encoding='utf-8') as f:
+                    json.dump(state, f, ensure_ascii=False, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
         except BaseException:
             # Source remains untouched; do not silently remove partial output.
             raise
@@ -489,7 +500,7 @@ def create_image(source: str, destination: str, *,
     state['retry_delay_ms'] = retry_delay_ms
     state['bad_sector_policy'] = bad_sector_policy
     state.setdefault('read_retries_performed', 0)
-    checkpoint_writer = _CheckpointWriter(sidecar)
+    checkpoint_writer = _CheckpointWriter(sidecar, source)
     checkpoint_writer.last_saved = state['processed']
     position = state['processed']
     if progress:
