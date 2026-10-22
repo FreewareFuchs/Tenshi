@@ -173,3 +173,10 @@ Der Test formatiert **niemals** ein vorhandenes Gerät. `mke2fs` wird ausschlie�
 - Prüfpunkte ohne bestätigten Fortschritt werden ebenfalls abgewiesen. Reguläre letzte Teilblöcke bleiben zulässig; die vorhandene Pause-/Fortsetzungslogik ist unverändert.
 - Vier neue Tests in `tests/test_imaging_checkpoint_validation.py` mit mehreren Fehlerfallvarianten prüfen den Abbruch vor dem Öffnen zum Schreiben, unveränderte Quell-/Zielbytes und erfolgreiche erneute Vollverifikation eines Images mit letztem Teilblock.
 - Lokal: Imaging-Testgruppe 45 Tests erfolgreich (3 GUI-Tests ohne Display übersprungen); 20 Sicherheits-/Metadatentests und 7 Image-Integritätstests bestanden. Kompilierung und Diff-Prüfung erfolgreich. Vollständige GUI-/Hardware-Abnahme und aktuelle GitHub-CI-Bestätigung weiterhin ausstehend.
+
+## Konsistente Imaging-Statusdaten vor Schreibzugriff (22.10.2026)
+
+- Die Wiederaufnahme verlangt nun alle später verwendeten Pflichtfelder und einen bekannten Zustand. Abschluss-/Verifikationszustände sind nur bei vollständig bestätigtem Fortschritt zulässig.
+- Fehlerbereiche müssen aus echten ganzzahligen Start-/Längenpaaren bestehen, positiv lang, geordnet, überschneidungsfrei und vollständig innerhalb des bestätigten Fortschritts liegen. Der Fehlerzähler muss exakt der Summe dieser Bereiche entsprechen; boolesche Werte gelten nicht als Bytezahlen.
+- Fünf ergänzte Regressionstests prüfen fehlende Felder, ungültige Bereiche, widersprüchliche Zähler/Zustände, Wiederaufnahme nach null kopierten Bytes sowie die weiterhin zulässige konsistente Fehlerkarte ohne falsche Bitgenauigkeitsbestätigung. Abgewiesene Metadaten führen zu keinem schreibenden Öffnen des Images.
+- Lokal: 50 Imaging-Tests erfolgreich (3 GUI-Tests mangels Display übersprungen), 20 Sicherheits-/Metadatentests und 7 Image-Integritätstests bestanden. Vollständige GUI-/Hardware-Freigabe weiterhin offen. GitHub Linux für Vorgänger `2cce4be` bei Kontrolle `pending`, Windows `queued`.

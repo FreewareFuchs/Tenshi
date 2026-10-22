@@ -449,6 +449,11 @@ def _load_manifest(manifest_path: str, destination: str, source_identity: dict) 
     if (not isinstance(obj, dict) or obj.get('format') != FORMAT_VERSION or
             obj.get('source') != source_identity or obj.get('destination') != _real(destination)):
         raise ImagingError('Statusdatei passt nicht zur ausgewählten Quelle bzw. zum Ziel. Fortsetzung verweigert.')
+    if not {'first', 'last', 'state', 'bad_ranges', 'unreadable_bytes'} <= obj.keys():
+        raise ImagingError('Pflichtfelder fehlen in der Statusdatei.')
+    phase = obj['state']
+    if phase not in ('running', 'paused', 'verifying', 'complete', 'integrity_failed'):
+        raise ImagingError('Ungültiger Zustand in der Statusdatei.')
     total = source_identity['size']
     completed = obj.get('processed')
     block_size = obj.get('block_size')
@@ -476,10 +481,24 @@ def _load_manifest(manifest_path: str, destination: str, source_identity: dict) 
             raise ImagingError('Erste Prüfsumme in der Statusdatei ist ungültig.')
     elif obj.get('first') is not None or obj.get('last') is not None:
         raise ImagingError('Prüfsummen ohne bestätigten Fortschritt sind ungültig.')
-    ranges = obj.get('bad_ranges', [])
-    if (not isinstance(ranges, list) or any(not isinstance(item, list) or
-         len(item) != 2 or not all(isinstance(n, int) and n >= 0 for n in item) for item in ranges)):
+    if phase in ('verifying', 'complete', 'integrity_failed') and completed != total:
+        raise ImagingError('Status und bestätigter Fortschritt widersprechen sich.')
+    ranges = obj['bad_ranges']
+    if not isinstance(ranges, list):
         raise ImagingError('Fehlerbereichsliste in der Statusdatei ist ungültig.')
+    previous_end = 0
+    unreadable_total = 0
+    for item in ranges:
+        if (not isinstance(item, list) or len(item) != 2 or
+                any(type(value) is not int for value in item)):
+            raise ImagingError('Fehlerbereichsliste in der Statusdatei ist ungültig.')
+        start, length = item
+        if start < previous_end or length <= 0 or start + length > completed:
+            raise ImagingError('Fehlerbereiche überschneiden sich oder liegen außerhalb des bestätigten Images.')
+        previous_end = start + length
+        unreadable_total += length
+    if type(obj['unreadable_bytes']) is not int or obj['unreadable_bytes'] != unreadable_total:
+        raise ImagingError('Fehlerzähler passt nicht zu den gespeicherten Fehlerbereichen.')
     for key, limit in (('read_retries', MAX_READ_RETRIES),
                        ('retry_delay_ms', MAX_RETRY_DELAY_MS)):
         value = obj.get(key, 0)
@@ -490,8 +509,6 @@ def _load_manifest(manifest_path: str, destination: str, source_identity: dict) 
     counter = obj.get('read_retries_performed', 0)
     if type(counter) is not int or counter < 0:
         raise ImagingError('Ungültiger Wiederholungszähler in der Statusdatei.')
-    if not isinstance(obj.get('unreadable_bytes'), int) or obj['unreadable_bytes'] < 0:
-        raise ImagingError('Fehlerzähler in der Statusdatei ist ungültig.')
     return obj
 
 

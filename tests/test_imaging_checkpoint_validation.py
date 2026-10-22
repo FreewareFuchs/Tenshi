@@ -62,3 +62,52 @@ class CheckpointValidationTests(unittest.TestCase):
         state = imaging.create_image(str(self.source), str(self.dest), resume=True)
         self.assertEqual(state['verification']['status'], 'verified')
         self.assertEqual(self.dest.read_bytes(), self.source.read_bytes())
+
+    def test_missing_required_fields_are_rejected_before_writes(self):
+        for key in ('first', 'last', 'state', 'bad_ranges', 'unreadable_bytes'):
+            with self.subTest(key=key):
+                state = copy.deepcopy(self.state)
+                del state[key]
+                self.reject(state)
+
+    def test_invalid_error_ranges_are_rejected_before_writes(self):
+        for ranges in (None, {}, [[0, 0]], [[-1, 1]], [[True, 1]],
+                       [[0, True]], [[0, '1']], [[0, 2], [1, 2]],
+                       [[4096, 1], [0, 1]], [[self.state['processed'], 1]]):
+            with self.subTest(ranges=ranges):
+                state = copy.deepcopy(self.state)
+                state['bad_ranges'] = ranges
+                self.reject(state)
+
+    def test_inconsistent_error_counters_and_states_are_rejected(self):
+        for field, value in (('unreadable_bytes', True), ('unreadable_bytes', 1),
+                             ('unreadable_bytes', -1), ('state', 'unknown'),
+                             ('state', None), ('state', [])):
+            with self.subTest(field=field, value=value):
+                state = copy.deepcopy(self.state)
+                state[field] = value
+                self.reject(state)
+        state = copy.deepcopy(self.state)
+        state['bad_ranges'] = [[0, 512]]
+        self.reject(state)
+
+    def test_zero_progress_checkpoint_can_resume(self):
+        self.dest.unlink()
+        self.sidecar.unlink()
+        paused = imaging.create_image(str(self.source), str(self.dest),
+                                      block_size=4096, cancel=lambda: True)
+        self.assertEqual(paused['processed'], 0)
+        self.assertEqual(paused['state'], 'paused')
+        resumed = imaging.create_image(str(self.source), str(self.dest), resume=True)
+        self.assertEqual(resumed['verification']['status'], 'verified')
+        self.assertEqual(self.dest.read_bytes(), self.source.read_bytes())
+
+    def test_consistent_error_map_remains_readable_without_verified_claim(self):
+        state = copy.deepcopy(self.state)
+        state['bad_ranges'] = [[0, 512], [4096, 512]]
+        state['unreadable_bytes'] = 1024
+        self.sidecar.write_text(json.dumps(state))
+        resumed = imaging.create_image(str(self.source), str(self.dest), resume=True)
+        self.assertEqual(resumed['bad_ranges'], state['bad_ranges'])
+        self.assertEqual(resumed['unreadable_bytes'], 1024)
+        self.assertEqual(resumed['verification']['status'], 'not_possible')
