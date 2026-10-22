@@ -107,7 +107,12 @@ def _backing_disks(dev: int, seen=None) -> set[str]:
 def ensure_separate_device(source: str, destination: str):
     if not block_path(source):
         raise ValueError('Ungültiger Linux-Quelldatenträger.')
-    parent = os.path.realpath(destination)
+    # Never treat a raw /dev node, including a symlink to one, as a regular
+    # output destination. This check does not open or write the device.
+    resolved_destination = os.path.realpath(destination)
+    if resolved_destination.startswith('/dev/') and block_path(resolved_destination):
+        raise ValueError('Linux-Blockgerät darf niemals als Ausgabeziel verwendet werden.')
+    parent = resolved_destination
     while not os.path.exists(parent):
         ancestor = os.path.dirname(parent)
         if ancestor == parent:
