@@ -6,6 +6,7 @@ no EFS/Unix encryption/compression decoding, no exotic exFAT TexFAT, no fsck.
 Only in-use directory entries supported. The source is never modified.
 """
 from __future__ import annotations
+from .secure_target import open_regular_output
 
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -1038,7 +1039,7 @@ def export_file(source, index: GenericIndex, entry: GenericEntry, dest: str,
     created = False
     with open_source(source) as f:
         try:
-            with open(dest, 'xb', buffering=0) as out:
+            with open_regular_output(dest, 'xb', source) as out:
                 created = True
                 written = write_chunks(out, index.volumes.iter_file(f, entry),
                                        cancel=cancel, byte_progress=byte_progress)
