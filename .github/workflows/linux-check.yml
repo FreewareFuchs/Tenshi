@@ -23,7 +23,7 @@ jobs:
       - name: Smoke test
         run: python3 main.py --smoke-test
       - name: Device safety regression tests
-        run: python3 -m unittest discover -s tests -p test_linux_devices.py -v
+        run: python3 -m unittest discover -s tests -p 'test_linux*.py' -v
       - name: UI test under 1024x650 virtual X11
         run: |
           xvfb-run -a -s '-screen 0 1024x650x24' python3 - <<'PY'
