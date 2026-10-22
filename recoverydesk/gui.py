@@ -1636,15 +1636,19 @@ class RecoveryDeskApp(tk.Tk):
         if not drives:
             messagebox.showwarning(
                 'Physische Datenträger',
-                'Keine lesbaren physischen Datenträger gefunden.\n\n'
-                'Starte Tenshi gegebenenfalls als Administrator. '
-                'Alternativ kannst du ein Image über „Image auswählen“ öffnen.',
+                ('Keine Linux-Blockdatenträger in sysfs gefunden. '
+                 'Tenshi nicht mit zusätzlichen Rechten starten; alternativ ein RAW-Image öffnen.'
+                 if sys.platform.startswith('linux') else
+                 'Keine lesbaren physischen Datenträger gefunden.\n\n'
+                 'Starte Tenshi gegebenenfalls als Administrator. '
+                 'Alternativ kannst du ein Image über „Image auswählen“ öffnen.'),
                 parent=self)
             return
         self._show_device_dialog(drives)
 
     def _show_device_dialog(self, drives):
-        """Separated from discovery to allow GUI interaction tests without a Windows disk."""
+        """Separated from discovery to allow GUI interaction tests without a disk."""
+        linux_mode = sys.platform.startswith('linux') and any(p.startswith('/dev/') for p, _ in drives)
         win = tk.Toplevel(self)
         win.title('Physischen Datenträger auswählen – nur lesen')
         win.geometry('760x430')
@@ -1675,13 +1679,16 @@ class RecoveryDeskApp(tk.Tk):
 
         for path, size in drives:
             tree.insert('', 'end', iid=path, text=path, values=(f'{size / 1024**3:,.2f}',))
-        # A preselected first row avoids the previous silent no-selection behavior.
         first = tree.get_children()[0]
-        tree.selection_set(first)
+        # Linux block devices are listed without accessing them. Require the
+        # user to explicitly mark one before confirming a direct source read.
+        if not linux_mode:
+            tree.selection_set(first)
         tree.focus(first)
         tree.see(first)
 
-        selected_text = tk.StringVar(value=f'Ausgewählt: {first}')
+        selected_text = tk.StringVar(value=('Bitte einen Datenträger markieren.' if linux_mode
+                                             else f'Ausgewählt: {first}'))
         ttk.Label(win, textvariable=selected_text, wraplength=700).grid(
             row=2, column=0, sticky='w', padx=16, pady=(8, 8))
 
@@ -1689,7 +1696,8 @@ class RecoveryDeskApp(tk.Tk):
         actions.grid(row=3, column=0, sticky='ew', padx=16, pady=(0, 8))
         # Bottom action area has a fixed grid row; it cannot disappear behind the list.
         confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)',
-                                    style='Accent.TButton')
+                                    style='Accent.TButton',
+                                    state='disabled' if linux_mode else 'normal')
         confirm_button.pack(side='right')
         ttk.Button(actions, text='Abbrechen', command=win.destroy).pack(side='right', padx=(0, 10))
 
