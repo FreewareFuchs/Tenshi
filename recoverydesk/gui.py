@@ -63,7 +63,7 @@ class RecoveryDeskApp(tk.Tk):
                 if x > screen_w - 160 or y > screen_h - 100 or x < -screen_w or y < -screen_h:
                     geometry = f'{width}x{height}+25+25'
         self.geometry(geometry or "1340x900")
-        self.minsize(1024, 650)
+        self.minsize(900, 560)
         self.configure(bg="#f3f5f8")
         global _CURRENT_LOCALE
         self.language = load_language()
@@ -522,7 +522,7 @@ class RecoveryDeskApp(tk.Tk):
         source_entry.grid(row=0, column=1, sticky="ew", padx=(10, 0))
         source_entry.bind('<Return>', self._accept_source_entry)
         source_actions = ttk.Frame(source)
-        source_actions.grid(row=1, column=0, columnspan=3, sticky="e", pady=(10, 0))
+        source_actions.grid(row=1, column=0, columnspan=3, sticky="w", pady=(5, 0))
         ttk.Button(source_actions, text="Image auswählen", command=self.choose_source).pack(side="left")
         ttk.Button(source_actions, text="Physischer Datenträger auswählen",
                    command=self._choose_device).pack(side="left", padx=(10, 0))
@@ -535,7 +535,7 @@ class RecoveryDeskApp(tk.Tk):
         session_menu.add_command(label='Sitzung speichern', command=self.save_analysis_session)
         session_menu.add_command(label='Sitzung laden', command=self.load_analysis_session)
         session_actions.configure(menu=session_menu)
-        session_actions.pack(side='left', padx=(10, 0))
+        session_actions.pack(side='left', padx=(5, 0))
         self.session_menu_button = session_actions
         self.session_menu = session_menu
 
@@ -585,8 +585,8 @@ class RecoveryDeskApp(tk.Tk):
         footer = ttk.Frame(self, padding=(22, 7, 22, 12))
         footer.pack(fill="x")
         ttk.Label(footer, textvariable=self.status, style="Sub.TLabel").pack(anchor="w")
-        ttk.Label(footer, text="Bei Hardwaredefekt weitere Lesezugriffe minimieren und möglichst ein schonendes Image erstellen. Gerettete Daten nur auf einem anderen physischen Datenträger speichern.",
-                  foreground="#9a3412").pack(anchor="w", pady=(4, 0))
+        ttk.Label(footer, text="Bei Hardwaredefekt Lesezugriffe minimieren; gerettete Daten nur auf einem anderen physischen Datenträger speichern.",
+                  foreground="#9a3412", wraplength=850).pack(anchor="w", pady=(4, 0))
 
     def _select_main_tab(self, name: str):
         target = self.partition_tab if name == 'partition' else self.ntfs_tab
@@ -1588,9 +1588,6 @@ class RecoveryDeskApp(tk.Tk):
 
     def _choose_device(self):
         """Show a visible, keyboard-accessible physical disk selection dialog."""
-        if os.name != 'nt':
-            messagebox.showinfo('Physische Datenträger', 'Nur unter Windows verfügbar.', parent=self)
-            return
         try:
             drives = list_physical_sources()
         except Exception as exc:
