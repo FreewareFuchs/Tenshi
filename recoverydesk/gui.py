@@ -76,6 +76,8 @@ class RecoveryDeskApp(tk.Tk):
         # All application-owned Tcl timers are canceled before Tk is destroyed.
         self._pending_after = set()
         self._closing = False
+        self._scan_callbacks = queue.Queue()
+        self.after(20, self._drain_scan_callbacks)
         self._setup_style()
         self._build()
         self._apply_theme()
@@ -222,6 +224,27 @@ class RecoveryDeskApp(tk.Tk):
         self.browser_status_filter.set(canonical_choice(
             self.browser_status_display.get(), STATUS_FILTERS, self.language))
         return self._on_browser_filter_change(event)
+
+    def _post_scan_callback(self, callback):
+        """Workers only enqueue Python objects; all Tcl calls stay on the UI thread."""
+        self._scan_callbacks.put(callback)
+
+    def _drain_scan_callbacks(self):
+        if self._closing:
+            return
+        try:
+            # Bound each poll so progress traffic cannot starve GUI events.
+            for _ in range(100):
+                try:
+                    callback = self._scan_callbacks.get_nowait()
+                except queue.Empty:
+                    break
+                if self._closing:
+                    break
+                callback()
+        finally:
+            if not self._closing:
+                self.after(20, self._drain_scan_callbacks)
 
     def after(self, ms, func=None, *args):
         """Own root timers so closing Tenshi never leaves dead Tcl commands.
@@ -1214,7 +1237,7 @@ class RecoveryDeskApp(tk.Tk):
         self.status.set("Suche läuft – RAW-Abbild wird ausschließlich gelesen …")
         def progress(current, total):
             if current == total or current % (64 * 1024 * 1024) < 4 * 1024 * 1024:
-                self.after(0, lambda c=current, t=total, g=generation: (
+                self._post_scan_callback(lambda c=current, t=total, g=generation: (
                     self.status.set(f"Dateisystemsuche: {c / 1024**2:,.0f} / {t / 1024**2:,.0f} MiB gelesen")
                     if g == self._source_generation else None))
         def worker():
@@ -1226,15 +1249,15 @@ class RecoveryDeskApp(tk.Tk):
                                        sector_size=sector, progress=progress)
                 if fp is not None:
                     check_fingerprint(source, fp, original=source)
-                self.after(0, lambda r=result, g=generation, p=source, f=fp:
+                self._post_scan_callback(lambda r=result, g=generation, p=source, f=fp:
                            self._show_partitions(r, g, p, fingerprint=f))
             except Exception as e:
                 msg = str(e)
-                self.after(0, lambda m=msg, g=generation: (
+                self._post_scan_callback(lambda m=msg, g=generation: (
                     messagebox.showerror('Partitionsanalyse', m)
                     if g == self._source_generation else None))
             finally:
-                self.after(0, self._finish_partition_scan)
+                self._post_scan_callback(self._finish_partition_scan)
         threading.Thread(target=worker, daemon=True).start()
 
     def _finish_partition_scan(self):
@@ -1848,7 +1871,7 @@ class RecoveryDeskApp(tk.Tk):
         self.ntfs_cancel_btn.configure(state='normal')
         self.status.set('Dateisystem wird schreibgeschützt gelesen …')
         def progress(done, total):
-            self.after(0, lambda d=done, t=total, g=scan_source_generation: (
+            self._post_scan_callback(lambda d=done, t=total, g=scan_source_generation: (
                 self.status.set(f'MFT: {d:,} / {t:,} Datensätze geprüft …')
                 if g == self._source_generation else None))
         def worker():
@@ -1879,15 +1902,15 @@ class RecoveryDeskApp(tk.Tk):
                 paths = construct_paths(index.entries)
                 warning_records = folder_warning_records(
                     visible_entries(index.entries, display_tmp))
-                self.after(0, lambda name=fs_name, g=scan_source_generation: (
+                self._post_scan_callback(lambda name=fs_name, g=scan_source_generation: (
                     self._set_browser_fs(name) if g == self._source_generation else None))
                 def publish(idx=index, prepared=(paths, warning_records, display_tmp), fingerprint=fp):
                     if scan_source_generation == self._source_generation:
                         self._browser_fingerprint = fingerprint
                         self._show_browser_index(source, idx, prepared=prepared)
-                self.after(0, publish)
+                self._post_scan_callback(publish)
             except (ScanCancelled, OtherScanCancelled):
-                self.after(0, lambda g=scan_source_generation: (
+                self._post_scan_callback(lambda g=scan_source_generation: (
                     self.status.set('Scan abgebrochen.') if g == self._source_generation else None))
             except Exception as exc:
                 msg = str(exc)
@@ -1900,10 +1923,10 @@ class RecoveryDeskApp(tk.Tk):
                         msg += ('\n\nPhysische Windows-Datenträger erfordern sektorausgerichtete Lesezugriffe. '
                                 'Bitte Tenshi neu starten und die aktuelle Version verwenden. '
                                 'Falls der Fehler bleibt, Laufwerk als Administrator öffnen oder RAW-Image erstellen.')
-                self.after(0, lambda m=msg, g=scan_source_generation: (
+                self._post_scan_callback(lambda m=msg, g=scan_source_generation: (
                     messagebox.showerror('Dateisystem', m) if g == self._source_generation else None))
             finally:
-                self.after(0, self._finish_ntfs_scan)
+                self._post_scan_callback(self._finish_ntfs_scan)
         threading.Thread(target=worker, daemon=True).start()
 
     def _set_browser_fs(self, fs_name):
