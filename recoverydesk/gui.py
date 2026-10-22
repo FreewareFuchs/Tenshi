@@ -63,7 +63,7 @@ class RecoveryDeskApp(tk.Tk):
                 if x > screen_w - 160 or y > screen_h - 100 or x < -screen_w or y < -screen_h:
                     geometry = f'{width}x{height}+25+25'
         self.geometry(geometry or "1340x900")
-        self.minsize(900, 560)
+        self.minsize(1024, 650)
         self.configure(bg="#f3f5f8")
         global _CURRENT_LOCALE
         self.language = load_language()
@@ -514,7 +514,7 @@ class RecoveryDeskApp(tk.Tk):
                   style="Sub.TLabel").pack(anchor="w")
 
         # Two rows keep all source actions accessible even with Windows display scaling.
-        source = ttk.Frame(self, padding=(22, 8, 22, 12))
+        source = ttk.Frame(self, padding=(12, 2, 12, 2))
         source.pack(fill="x")
         source.columnconfigure(1, weight=1)
         ttk.Label(source, text="Ausgewählte Quelle:").grid(row=0, column=0, sticky="w")
@@ -541,7 +541,7 @@ class RecoveryDeskApp(tk.Tk):
         self.session_menu_button = session_actions
         self.session_menu = session_menu
 
-        body = ttk.Frame(self, padding=(22, 0, 22, 12))
+        body = ttk.Frame(self, padding=(12, 0, 12, 2))
         body.pack(fill="both", expand=True)
         # Clearly visible custom navigation instead of low-contrast native tabs.
         self._tab_nav = tk.Frame(body, bg=self._palette()['inactive'], padx=5, pady=5)
@@ -550,7 +550,7 @@ class RecoveryDeskApp(tk.Tk):
         for name, label in (('partition', '▦  Partitionen'),
                             ('files', '📁  Dateien & Ordner')):
             btn = tk.Button(self._tab_nav, text=label,
-                font=('Segoe UI', 13, 'bold'), padx=26, pady=11,
+                font=('Segoe UI', 12, 'bold'), padx=14, pady=4,
                 relief='flat', bd=0, cursor='hand2', takefocus=True,
                 command=lambda key=name: self._select_main_tab(key))
             btn.pack(side='left', fill='x', expand=True, padx=3)
@@ -584,11 +584,11 @@ class RecoveryDeskApp(tk.Tk):
         self._update_main_tab_styles()
         self._build_partitions()
         self._build_ntfs()
-        footer = ttk.Frame(self, padding=(22, 7, 22, 12))
+        footer = ttk.Frame(self, padding=(12, 2, 12, 3))
         footer.pack(fill="x")
         ttk.Label(footer, textvariable=self.status, style="Sub.TLabel").pack(anchor="w")
-        ttk.Label(footer, text="Bei Hardwaredefekt Lesezugriffe minimieren; gerettete Daten nur auf einem anderen physischen Datenträger speichern.",
-                  foreground="#9a3412", wraplength=850).pack(anchor="w", pady=(4, 0))
+        ttk.Label(footer, text="Bei Hardwaredefekt weitere Lesezugriffe minimieren und möglichst ein schonendes Image erstellen. Gerettete Daten nur auf einem anderen physischen Datenträger speichern.",
+                  foreground="#9a3412").pack(anchor="w", pady=(1, 0))
 
     def _select_main_tab(self, name: str):
         target = self.partition_tab if name == 'partition' else self.ntfs_tab
