@@ -85,6 +85,33 @@ def open_regular_output(path: str, mode: str, source: str, *,
                 os.close(fd)
 
 
+@contextmanager
+def open_regular_input(path: str, source: str):
+    """Read a regular metadata file under a verified Linux parent descriptor.
+
+    A replaced parent or final symlink cannot redirect the open to a new inode.
+    This is intended for untrusted existing recovery manifests.
+    """
+    if not _linux():
+        with open(path, 'rb') as src:
+            yield src
+        return
+    with secure_parent(path, source) as parent_fd:
+        name = os.path.basename(os.path.abspath(os.fspath(path)))
+        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK |
+                     os.O_CLOEXEC, dir_fd=parent_fd)
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode):
+                raise ValueError('Nur reguläre Statusdateien dürfen eingelesen werden.')
+            with os.fdopen(fd, 'rb') as src:
+                fd = -1
+                yield src
+        finally:
+            if fd >= 0:
+                os.close(fd)
+
+
 def mkdir_checked(path: str, source: str) -> None:
     """Create one directory under a verified parent descriptor on Linux."""
     if not _linux():
