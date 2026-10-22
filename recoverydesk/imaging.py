@@ -21,6 +21,7 @@ from typing import Callable
 from .diagnostics import traced
 from .sources import (validate_source, open_source, source_size, is_device_source,
                       physical_sector_size, ensure_safe_destination)
+from .secure_target import open_regular_output
 
 FORMAT_VERSION = 1
 DEFAULT_BLOCK_SIZE = 1024 * 1024
@@ -173,7 +174,7 @@ def _append_journal(path: str, state: dict, *,
         data = _journal_encoding(state)
         # Correct a truncated final record before appending new records.
         if os.path.exists(path):
-            with open(path, 'r+b', buffering=0) as f:
+            with open_regular_output(path, 'r+b', state['source']['path']) as f:
                 if os.fstat(f.fileno()).st_size < valid_end:
                     raise ImagingError('Prüfpunkt-Journal wurde extern verkürzt.')
                 f.truncate(valid_end)
@@ -184,7 +185,7 @@ def _append_journal(path: str, state: dict, *,
             if valid_end:
                 raise ImagingError('Prüfpunkt-Journal wurde während der Sicherung entfernt.')
             # Exclusive creation prevents overwriting a foreign file.
-            with open(path, 'xb', buffering=0) as f:
+            with open_regular_output(path, 'xb', state['source']['path']) as f:
                 _write_all(f, data)
                 os.fsync(f.fileno())
         return valid_end + len(data)
@@ -459,13 +460,15 @@ def create_image(source: str, destination: str, *,
         raise ImagingError('Blockgröße muss sektorausgerichtet sein und maximal 16 MiB betragen.')
     identity = _source_identity(source, total, sector)
     sidecar = sidecar_path(destination)
+    expected_output_inode = None
     if not resume:
         if (os.path.lexists(destination) or os.path.lexists(sidecar) or
                 os.path.lexists(journal_path(sidecar))):
             raise ImagingError('Ziel oder Statusdatei existiert bereits. Für Fortsetzen dieselbe Datei wählen; sonst neuen Namen verwenden.')
         # The exclusive create prevents overwriting an unrelated file.
-        with open(destination, 'xb'):
-            pass
+        with open_regular_output(destination, 'xb', source) as initial_output:
+            st = os.fstat(initial_output.fileno())
+            expected_output_inode = (st.st_dev, st.st_ino)
         state = _make_manifest(identity, destination, block_size)
         try:
             with open(sidecar, 'x', encoding='utf-8') as f:
@@ -493,7 +496,8 @@ def create_image(source: str, destination: str, *,
         progress(ImagingProgress(position, total, state['unreadable_bytes'],
                                  len(state['bad_ranges']), state['state']))
 
-    with open_source(source) as reader, open(destination, 'r+b', buffering=0) as out:
+    with open_source(source) as reader, open_regular_output(
+            destination, 'r+b', source, expected_identity=expected_output_inode) as out:
         output_size = os.fstat(out.fileno()).st_size
         if output_size < position or output_size > total:
             raise ImagingError('Image-Dateigröße passt nicht zum gesicherten Fortschritt.')
