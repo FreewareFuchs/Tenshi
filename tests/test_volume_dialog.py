@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from recoverydesk import sources
 from recoverydesk.gui import RecoveryDeskApp
+from recoverydesk.i18n import LANGUAGES, translate
 try:
     from tkinter import ttk
 except ImportError:
@@ -90,8 +91,17 @@ class VolumeDialogTests(unittest.TestCase):
                 yield from visit(child)
         widgets = list(visit(dialog))
         tree = next(w for w in widgets if isinstance(w, ttk.Treeview))
-        button = next(w for w in widgets if isinstance(w, ttk.Button)
-                      and str(w.cget('text')).startswith('Auswahl übernehmen'))
+        # UITranslator updates dialog captions asynchronously and can run in
+        # any of the six supported languages when tests share a process.
+        expected = {
+            translate('Auswahl übernehmen (nur lesen)', lang)
+            for lang in LANGUAGES
+        }
+        buttons = [w for w in widgets if isinstance(w, ttk.Button)]
+        button = next((w for w in buttons if str(w.cget('text')) in expected), None)
+        self.assertIsNotNone(
+            button, f'Confirm button missing; found captions: '
+                    f'{[str(w.cget("text")) for w in buttons]!r}')
         return tree, button
 
     def test_confirm_selection_sets_volume_and_byte_offset_zero(self):
