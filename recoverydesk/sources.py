@@ -224,6 +224,11 @@ class AlignedDeviceReader:
                 win_code = getattr(exc, 'winerror', None)
                 if getattr(exc, 'errno', None) == errno.EINVAL or win_code == 87:
                     log_issue('raw_device_alignment', exc, offset=aligned_start, length=request)
+                    if sys.platform.startswith('linux'):
+                        raise OSError(errno.EINVAL,
+                                      'Linux hat den sektorausgerichteten Leseauftrag abgelehnt. '
+                                      'Logische Sektorgroesse, Geraetezustand und '
+                                      'Verbindung pruefen; alternativ ein RAW-Image verwenden.') from exc
                     raise OSError(errno.EINVAL,
                                   'Windows hat einen physikalischen Leseauftrag abgelehnt: nicht ausgerichteter oder ungueltiger '
                                   'Leseauftrag abgelehnt (Fehler 87/22). Logische '
@@ -236,10 +241,22 @@ class AlignedDeviceReader:
                                   'Imaging erst mit derselben identifizierten Quelle fortsetzen.') from exc
                 if isinstance(exc, PermissionError) or win_code in (5, 32, 33):
                     log_issue('raw_device_access_denied', exc, offset=aligned_start, length=request)
+                    if sys.platform.startswith('linux'):
+                        raise PermissionError(errno.EACCES,
+                                              'Linux verweigert das lesende Oeffnen des Blockgeraets. '
+                                              'Bitte Geraeteberechtigungen pruefen oder ein '
+                                              'vorhandenes RAW-Image verwenden.') from exc
                     raise PermissionError(errno.EACCES,
                                           'Der schreibgeschuetzte Lesezugriff wurde von '
                                           'Windows verweigert. Administratorrechte, '
                                           'Freigaben und Sicherheitssoftware pruefen.') from exc
+                if sys.platform.startswith('linux') and exc.errno in (
+                        errno.ENODEV, errno.ENXIO, errno.ESHUTDOWN):
+                    log_issue('raw_device_disconnected', exc,
+                              offset=aligned_start, length=request)
+                    raise OSError(errno.ENODEV,
+                                  'Linux-Quellgeraet ist nicht mehr erreichbar. '
+                                  'Imaging gestoppt; Verbindung und Quelle pruefen.') from exc
                 # Preserve genuine CRC / hardware-I/O exceptions (WinError
                 # 23/1117 or EIO): imaging may isolate their faulty sectors.
                 log_issue('raw_device_read', exc, offset=aligned_start, length=request)
