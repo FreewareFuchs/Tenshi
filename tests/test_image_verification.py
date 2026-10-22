@@ -96,6 +96,10 @@ class FullImagingVerificationTests(unittest.TestCase):
     def test_physical_device_like_source_does_not_auto_reread(self):
         # Models the control flow of a physical source using a regular
         # temporary file; no /dev device is opened.
+        # Real block devices have a size divisible by the logical sector;
+        # the general fixture intentionally has a 6-byte trailing footer.
+        aligned_payload = self.payload + bytes((-len(self.payload)) % 512)
+        self.src.write_bytes(aligned_payload)
         source = str(self.src)
         with mock.patch.object(imaging, 'is_device_source',
                                side_effect=lambda path: str(path) == source), \
@@ -107,7 +111,7 @@ class FullImagingVerificationTests(unittest.TestCase):
         self.assertEqual(result['state'], 'complete')
         self.assertEqual(result['verification']['status'], 'not_requested')
         guard.assert_called_once()
-        self.assertEqual(self.dest.read_bytes(), self.payload)
+        self.assertEqual(self.dest.read_bytes(), aligned_payload)
 
 
 if __name__ == '__main__':
