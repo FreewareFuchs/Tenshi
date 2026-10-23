@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import sys
 import threading
 import time
 import queue
@@ -42,7 +43,8 @@ from .scan_report import format_scan_report
 from .filesystems import (scan_tree as scan_other_tree,
                           ScanCancelled as OtherScanCancelled, FileSystemError)
 from .sources import (validate_source, open_source, source_size, is_physical,
-                      list_physical_sources, ensure_safe_destination, raw_volume_path, is_volume)
+                      list_physical_sources, ensure_safe_destination, raw_volume_path, is_volume,
+                      is_device_source)
 
 APP_NAME = "Tenshi"
 
@@ -74,9 +76,14 @@ class RecoveryDeskApp(tk.Tk):
         # All application-owned Tcl timers are canceled before Tk is destroyed.
         self._pending_after = set()
         self._closing = False
+        self._scan_callbacks = queue.Queue()
+        self.after(20, self._drain_scan_callbacks)
         self._setup_style()
         self._build()
         self._apply_theme()
+        self._compact_layout = None
+        self.bind("<Configure>", self._update_compact_layout, add="+")
+        self.after_idle(self._update_compact_layout)
         if self._view_settings['maximized'] and os.name == 'nt':
             try:
                 self.state('zoomed')
@@ -218,6 +225,27 @@ class RecoveryDeskApp(tk.Tk):
             self.browser_status_display.get(), STATUS_FILTERS, self.language))
         return self._on_browser_filter_change(event)
 
+    def _post_scan_callback(self, callback):
+        """Workers only enqueue Python objects; all Tcl calls stay on the UI thread."""
+        self._scan_callbacks.put(callback)
+
+    def _drain_scan_callbacks(self):
+        if self._closing:
+            return
+        try:
+            # Bound each poll so progress traffic cannot starve GUI events.
+            for _ in range(100):
+                try:
+                    callback = self._scan_callbacks.get_nowait()
+                except queue.Empty:
+                    break
+                if self._closing:
+                    break
+                callback()
+        finally:
+            if not self._closing:
+                self.after(20, self._drain_scan_callbacks)
+
     def after(self, ms, func=None, *args):
         """Own root timers so closing Tenshi never leaves dead Tcl commands.
 
@@ -338,9 +366,18 @@ class RecoveryDeskApp(tk.Tk):
     def change_theme(self, theme):
         if theme not in ('light', 'dark'):
             raise ValueError('Unbekannte Darstellung')
+        self.update_idletasks()
+        geometry = self.geometry() if self.state() == 'normal' else None
+        sash = (self.browser_paned.sashpos(0)
+                if getattr(self, '_browser_sash_initialized', False) else None)
         self.theme = theme
         self._theme_var.set(theme)
         self._apply_theme()
+        self.update_idletasks()
+        if geometry is not None:
+            self.geometry(geometry)
+        if sash is not None:
+            self.browser_paned.sashpos(0, sash)
         help_window = getattr(self, '_help_window', None)
         if help_window is not None and help_window.winfo_exists():
             help_window.refresh_theme()
@@ -409,8 +446,8 @@ class RecoveryDeskApp(tk.Tk):
         c = self._palette()
         style = ttk.Style(self)
         try:
-            style.theme_use('clam' if self.theme == 'dark'
-                            else ('vista' if os.name == 'nt' else 'clam'))
+            # Appearance changes colors, not the underlying widget metrics.
+            style.theme_use('clam')
         except tk.TclError:
             style.theme_use('clam')
         style.configure('TFrame', background=c['bg'])
@@ -430,6 +467,8 @@ class RecoveryDeskApp(tk.Tk):
         style.map('TCheckbutton', background=[('active',c['bg'])])
         style.configure('TRadiobutton', background=c['bg'], foreground=c['text'])
         style.configure('TMenubutton', background=c['panel'], foreground=c['text'])
+        for name in ('Header.TButton', 'Header.TMenubutton'):
+            style.configure(name, font=('Segoe UI', 10), padding=(10, 7))
         style.configure('Treeview', background=c['panel'], fieldbackground=c['panel'],
                         foreground=c['text'], rowheight=27)
         style.map('Treeview', background=[('selected',c['select'])],
@@ -445,6 +484,11 @@ class RecoveryDeskApp(tk.Tk):
         style.layout('TenshiHidden.TNotebook.Tab', [])
         self._style_native_widgets(self)
         self._update_main_tab_styles()
+        if hasattr(self, '_compact_layout'):
+            # Theme configuration resets padding/row heights; restore the active
+            # compact metrics even when the window dimensions did not change.
+            self._compact_layout = None
+            self._update_compact_layout()
 
     def _on_popup_map(self, event):
         popup = event.widget
@@ -471,30 +515,38 @@ class RecoveryDeskApp(tk.Tk):
         # User-provided Tenshi logo replaces the former text title.
         header = ttk.Frame(self, padding=(22, 8, 22, 3))
         header.pack(fill="x")
+        header.columnconfigure(1, weight=1)
+        self._header_actions = ttk.Frame(header)
+        self._header_actions.grid(row=0, column=2, sticky="ne")
         # Top-right language switcher; native names make each language findable.
         self._language_var = tk.StringVar(value=self.language)
         self._language_button = ttk.Menubutton(
-            header, text='🌐  ' + LANGUAGES[self.language], direction='below')
+            self._header_actions, text='🌐  ' + LANGUAGES[self.language], direction='below',
+            style='Header.TMenubutton', width=18)
         self._language_menu = tk.Menu(self._language_button, tearoff=False)
         for language_code, native_label in LANGUAGES.items():
             self._language_menu.add_radiobutton(
                 label=native_label, value=language_code, variable=self._language_var,
                 command=lambda code=language_code: self.change_language(code))
         self._language_button.configure(menu=self._language_menu)
-        self._language_button.pack(side='right', anchor='ne', padx=(10, 0), pady=(9, 0))
+        self._language_button.grid(row=0, column=3, sticky='nsew', padx=3, pady=(9, 0))
         self._theme_var = tk.StringVar(value=self.theme)
-        self.theme_button = ttk.Menubutton(header, text='◐  Darstellung', direction='below')
+        self.theme_button = ttk.Menubutton(self._header_actions, text='◐  Darstellung', direction='below',
+                                               style='Header.TMenubutton', width=18)
         self._theme_menu = tk.Menu(self.theme_button, tearoff=False)
         for label, value in (('Hell', 'light'), ('Dunkel', 'dark')):
             self._theme_menu.add_radiobutton(label=label, value=value, variable=self._theme_var,
                 command=lambda theme=value: self.change_theme(theme))
         self.theme_button.configure(menu=self._theme_menu)
-        self.theme_button.pack(side='right', anchor='ne', padx=(6,0), pady=(9,0))
-        self.help_button = ttk.Button(header, text='? Hilfe', command=self.show_help)
-        self.help_button.pack(side='right', anchor='ne', padx=(6, 0), pady=(9, 0))
-        self.error_log_button = ttk.Button(header, text='Fehlerprotokoll',
-                                           command=self.show_error_log)
-        self.error_log_button.pack(side='right', anchor='ne', padx=(6, 0), pady=(9, 0))
+        self.theme_button.grid(row=0, column=2, sticky='nsew', padx=3, pady=(9, 0))
+        self.help_button = ttk.Button(self._header_actions, text='Hilfe', command=self.show_help,
+                                      style='Header.TButton', width=18)
+        self.help_button.grid(row=0, column=1, sticky='nsew', padx=3, pady=(9, 0))
+        self.error_log_button = ttk.Button(self._header_actions, text='Fehlerprotokoll',
+                                           command=self.show_error_log, style='Header.TButton', width=18)
+        self.error_log_button.grid(row=0, column=0, sticky='nsew', padx=3, pady=(9, 0))
+        for column in range(4):
+            self._header_actions.columnconfigure(column, uniform='header_buttons')
         self.brand_logo = tk.PhotoImage(file=str(asset_path("tenshi_logo.png")))
         self.brand_icon = tk.PhotoImage(file=str(asset_path("tenshi_icon.png")))
         self.iconphoto(True, self.brand_icon)
@@ -505,16 +557,23 @@ class RecoveryDeskApp(tk.Tk):
                 pass  # The embedded PNG icon remains available.
         self.logo_label = tk.Label(header, image=self.brand_logo, background="#f3f5f8", borderwidth=0,
                                    highlightthickness=0)
-        self.logo_label.pack(side="left", anchor="w")
+        self.logo_label.grid(row=0, column=0, sticky="w")
         description = ttk.Frame(header)
-        description.pack(side="left", fill="both", expand=True, padx=(18, 0))
-        ttk.Label(description, text="Datenrettung & schreibgeschützte Datenträgeranalyse",
-                  font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(8, 2))
-        ttk.Label(description, text="NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner",
-                  style="Sub.TLabel").pack(anchor="w")
+        self._header_description = description
+        self._compact_brand_logo = self.brand_logo.subsample(2, 2)
+        description.grid(row=0, column=1, sticky="ew", padx=(18, 0))
+        self._header_title = ttk.Label(description, text="Datenrettung & schreibgeschützte Datenträgeranalyse",
+                  font=("Segoe UI", 13, "bold"))
+        self._header_title.pack(anchor="w", fill="x", pady=(2, 2))
+        self._header_subtitle = ttk.Label(description, text="NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner",
+                  style="Sub.TLabel")
+        self._header_subtitle.pack(anchor="w", fill="x")
+        description.bind("<Configure>", lambda event: (
+            self._header_title.configure(wraplength=max(100, event.width)),
+            self._header_subtitle.configure(wraplength=max(100, event.width))))
 
         # Two rows keep all source actions accessible even with Windows display scaling.
-        source = ttk.Frame(self, padding=(22, 8, 22, 12))
+        source = ttk.Frame(self, padding=(12, 2, 12, 2))
         source.pack(fill="x")
         source.columnconfigure(1, weight=1)
         ttk.Label(source, text="Ausgewählte Quelle:").grid(row=0, column=0, sticky="w")
@@ -522,7 +581,7 @@ class RecoveryDeskApp(tk.Tk):
         source_entry.grid(row=0, column=1, sticky="ew", padx=(10, 0))
         source_entry.bind('<Return>', self._accept_source_entry)
         source_actions = ttk.Frame(source)
-        source_actions.grid(row=1, column=0, columnspan=3, sticky="e", pady=(10, 0))
+        source_actions.grid(row=1, column=0, columnspan=3, sticky="w", pady=(5, 0))
         ttk.Button(source_actions, text="Image auswählen", command=self.choose_source).pack(side="left")
         ttk.Button(source_actions, text="Physischer Datenträger auswählen",
                    command=self._choose_device).pack(side="left", padx=(10, 0))
@@ -535,11 +594,11 @@ class RecoveryDeskApp(tk.Tk):
         session_menu.add_command(label='Sitzung speichern', command=self.save_analysis_session)
         session_menu.add_command(label='Sitzung laden', command=self.load_analysis_session)
         session_actions.configure(menu=session_menu)
-        session_actions.pack(side='left', padx=(10, 0))
+        session_actions.pack(side='left', padx=(5, 0))
         self.session_menu_button = session_actions
         self.session_menu = session_menu
 
-        body = ttk.Frame(self, padding=(22, 0, 22, 12))
+        body = ttk.Frame(self, padding=(12, 0, 12, 2))
         body.pack(fill="both", expand=True)
         # Clearly visible custom navigation instead of low-contrast native tabs.
         self._tab_nav = tk.Frame(body, bg=self._palette()['inactive'], padx=5, pady=5)
@@ -548,7 +607,7 @@ class RecoveryDeskApp(tk.Tk):
         for name, label in (('partition', '▦  Partitionen'),
                             ('files', '📁  Dateien & Ordner')):
             btn = tk.Button(self._tab_nav, text=label,
-                font=('Segoe UI', 13, 'bold'), padx=26, pady=11,
+                font=('Segoe UI', 12, 'bold'), padx=14, pady=4,
                 relief='flat', bd=0, cursor='hand2', takefocus=True,
                 command=lambda key=name: self._select_main_tab(key))
             btn.pack(side='left', fill='x', expand=True, padx=3)
@@ -582,11 +641,37 @@ class RecoveryDeskApp(tk.Tk):
         self._update_main_tab_styles()
         self._build_partitions()
         self._build_ntfs()
-        footer = ttk.Frame(self, padding=(22, 7, 22, 12))
+        footer = ttk.Frame(self, padding=(12, 2, 12, 3))
         footer.pack(fill="x")
         ttk.Label(footer, textvariable=self.status, style="Sub.TLabel").pack(anchor="w")
         ttk.Label(footer, text="Bei Hardwaredefekt weitere Lesezugriffe minimieren und möglichst ein schonendes Image erstellen. Gerettete Daten nur auf einem anderen physischen Datenträger speichern.",
-                  foreground="#9a3412").pack(anchor="w", pady=(4, 0))
+                  foreground="#9a3412").pack(anchor="w", pady=(1, 0))
+
+    def _update_compact_layout(self, event=None):
+        """Reclaim browser height at 1024x650 under X11 without hiding actions."""
+        if event is not None and event.widget is not self:
+            return
+        compact = self.winfo_width() <= 1100 and self.winfo_height() <= 720
+        narrow = self.winfo_width() < 1400
+        layout = (compact, narrow)
+        if self._compact_layout == layout:
+            return
+        self._compact_layout = layout
+        self.logo_label.configure(image=self._compact_brand_logo if narrow else self.brand_logo)
+        self._header_description.grid_forget()
+        if narrow:
+            self._header_actions.grid_configure(column=1)
+            self._header_description.grid(row=1, column=0, columnspan=2,
+                                          sticky='ew', pady=(3, 0))
+        else:
+            self._header_actions.grid_configure(column=2)
+            self._header_description.grid(row=0, column=1, sticky='ew', padx=(18, 0))
+        self._header_title.configure(font=('Segoe UI', 10 if compact else 13, 'bold'))
+        # All functional controls remain available; reduce only decorative space.
+        style = ttk.Style(self)
+        style.configure('TButton', padding=(7, 2) if compact else (10, 7))
+        style.configure('Accent.TButton', padding=(8, 3) if compact else (12, 8))
+        style.configure('Treeview', rowheight=22 if compact else 27)
 
     def _select_main_tab(self, name: str):
         target = self.partition_tab if name == 'partition' else self.ntfs_tab
@@ -708,12 +793,7 @@ class RecoveryDeskApp(tk.Tk):
         return validate_source(p)
 
     def show_volumes(self):
-        """Let the user select a mounted Windows volume as the read-only source."""
-        if os.name != 'nt':
-            messagebox.showinfo('Laufwerk auswählen',
-                                'Die Auswahl von Windows-Laufwerksbuchstaben ist nur unter Windows verfügbar.',
-                                parent=self)
-            return
+        """Choose a read-only Windows volume or mounted Linux block partition."""
         try:
             volumes = [v for v in list_volumes() if v.total_bytes >= 512]
         except Exception as exc:
@@ -721,14 +801,15 @@ class RecoveryDeskApp(tk.Tk):
             return
         if not volumes:
             messagebox.showwarning('Laufwerke',
-                'Keine verwendbaren Windows-Laufwerke gefunden. '
-                'Für nicht eingebundene Linux-Partitionen bitte einen physischen Datenträger auswählen.',
+                'Keine verwendbaren eingehängten Laufwerke gefunden. '
+                'Alternativ ein RAW-Image oder einen physischen Datenträger auswählen.',
                 parent=self)
             return
         self._show_volume_dialog(volumes)
 
     def _show_volume_dialog(self, volumes):
         """Choose one logical volume, confirm, then browse it at byte offset zero."""
+        linux_mode = any(v.path.startswith('/dev/') for v in volumes)
         win = tk.Toplevel(self)
         win.title('Laufwerk auswählen – nur lesen')
         win.geometry('820x465')
@@ -736,8 +817,11 @@ class RecoveryDeskApp(tk.Tk):
         win.transient(self)
         win.columnconfigure(0, weight=1)
         win.rowconfigure(1, weight=1)
-        ttk.Label(win, text='Windows-Laufwerk markieren und „Auswahl übernehmen“ anklicken. '
-                  'Doppelklick und Eingabetaste funktionieren ebenfalls.',
+        ttk.Label(win, text=('Eingehängte Linux-Partition markieren. Die Quelle wird '
+                             'ausschließlich lesend über ihr Blockgerät geöffnet.'
+                             if linux_mode else
+                             'Windows-Laufwerk markieren und „Auswahl übernehmen“ anklicken. '
+                             'Doppelklick und Eingabetaste funktionieren ebenfalls.'),
                   wraplength=760).grid(row=0, column=0, sticky='ew', padx=16, pady=(16, 10))
 
         panel = ttk.Frame(win)
@@ -746,12 +830,16 @@ class RecoveryDeskApp(tk.Tk):
         panel.rowconfigure(0, weight=1)
         cols = ('label', 'fs', 'size', 'free')
         tree = ttk.Treeview(panel, columns=cols, show='tree headings', selectmode='browse')
-        for c, label, width in [('label', 'Name', 210), ('fs', 'Dateisystem', 110),
-                                ('size', 'Größe (GiB)', 110), ('free', 'Frei (GiB)', 110)]:
+        for c, label, width in [('label', 'Name', 185 if linux_mode else 210),
+                                ('fs', 'Dateisystem', 100 if linux_mode else 110),
+                                ('size', 'Größe (GiB)', 100 if linux_mode else 110),
+                                ('free', 'Frei (GiB)', 100 if linux_mode else 110)]:
             tree.heading(c, text=label)
             tree.column(c, width=width, anchor='w', stretch=(c == 'label'))
         tree.heading('#0', text='Laufwerk')
-        tree.column('#0', width=95, anchor='w', stretch=False)
+        # Never visually conflate /dev/nvme0n1p1 and /dev/nvme0n1p5.
+        tree.column('#0', width=205 if linux_mode else 95,
+                    minwidth=185 if linux_mode else 95, anchor='w', stretch=False)
         tree.grid(row=0, column=0, sticky='nsew')
         bar = ttk.Scrollbar(panel, orient='vertical', command=tree.yview)
         bar.grid(row=0, column=1, sticky='ns')
@@ -762,20 +850,31 @@ class RecoveryDeskApp(tk.Tk):
                         values=(v.label, v.filesystem, f'{v.total_bytes/1024**3:.2f}',
                                 f'{v.free_bytes/1024**3:.2f}'))
         first = tree.get_children()[0]
-        tree.selection_set(first)
+        if not linux_mode:
+            # Preserve Windows keyboard-first selection behavior.
+            tree.selection_set(first)
         tree.focus(first)
         tree.see(first)
 
-        choice = tk.StringVar(value=f'Ausgewählt: {first}')
+        # Linux raw block access requires an explicit device choice.
+        choice = tk.StringVar(value=('Bitte ein Laufwerk markieren.' if linux_mode
+                                      else f'Ausgewählt: {first}'))
         ttk.Label(win, textvariable=choice).grid(row=2, column=0, sticky='w', padx=16, pady=8)
         actions = ttk.Frame(win)
         actions.grid(row=3, column=0, sticky='ew', padx=16, pady=(0, 8))
-        confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)', style='Accent.TButton')
+        confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)',
+                                    style='Accent.TButton',
+                                    state='disabled' if linux_mode else 'normal')
         confirm_button.pack(side='right')
         ttk.Button(actions, text='Abbrechen', command=win.destroy).pack(side='right', padx=(0, 10))
-        ttk.Label(win, text='Nur gemountete Laufwerke mit Buchstaben sind hier sichtbar. '
-                  'Bei Fehler „Zugriff verweigert“ Tenshi als Administrator starten. '
-                  'Für defekte Laufwerke möglichst zuerst ein Image erstellen.',
+        ttk.Label(win, text=('Nur eingehängte Linux-Blockpartitionen erscheinen hier. '
+                             'Das Betriebssystem kann diese weiterhin verändern; für '
+                             'zuverlässige Datenrettung besser ein Offline-Image nutzen. '
+                             'Bei fehlenden Leserechten keine Geräteberechtigungen ändern.'
+                             if linux_mode else
+                             'Nur gemountete Laufwerke mit Buchstaben sind hier sichtbar. '
+                             'Bei Fehler „Zugriff verweigert“ Tenshi als Administrator starten. '
+                             'Für defekte Laufwerke möglichst zuerst ein Image erstellen.'),
                   foreground='#9a3412', wraplength=760).grid(row=4, column=0, sticky='ew',
                                                                 padx=16, pady=(0, 12))
 
@@ -791,15 +890,15 @@ class RecoveryDeskApp(tk.Tk):
                 return
             root = selected[0]
             try:
-                device_path = raw_volume_path(root)
+                device_path = root if root.startswith('/dev/') else raw_volume_path(root)
             except ValueError as exc:
                 messagebox.showerror('Laufwerk auswählen', str(exc), parent=win)
                 return
             if not messagebox.askyesno('Logisches Laufwerk direkt lesen',
-                f'Laufwerk {root} wird im Nur-Lese-Modus geöffnet. '
-                'Tenshi schreibt niemals in diese Quelle.\n\n'
-                'Für die Analyse ist keine Partitionstabelle erforderlich: '
-                'Das Dateisystem beginnt an Offset 0.\n\n'
+                f'Laufwerk {root} wird von Tenshi ausschließlich lesend geöffnet.\n\n'
+                'Hinweis: Eingehängte Dateisysteme können sich unabhängig von Tenshi '
+                'durch das Betriebssystem verändern. Ein Offline-Image ist sicherer.\n\n'
+                'Das Dateisystem eines logischen Laufwerks beginnt an Offset 0.\n\n'
                 f'{root} als Quelle übernehmen?', parent=win):
                 return
             # Fail early with an actionable access message, without claiming success.
@@ -810,9 +909,10 @@ class RecoveryDeskApp(tk.Tk):
                         raise OSError('Es konnten keine 512 Bytes gelesen werden.')
             except (OSError, ValueError) as exc:
                 messagebox.showerror('Laufwerk nicht lesbar',
-                    f'{root} konnte nicht schreibgeschützt geöffnet werden.\n\n{exc}\n\n'
-                    'Versuche Tenshi als Administrator zu starten oder untersuche ein Image. '
-                    'Für Linux-Partitionen ohne Laufwerksbuchstaben „Physischer Datenträger auswählen“ verwenden.',
+                    f'{root} konnte nicht schreibgeschützt geöffnet werden.\n\n{exc}\n\n' +
+                    ('Bitte Linux-Geräteberechtigungen prüfen oder ein RAW-Image verwenden.'
+                     if linux_mode else
+                     'Versuche Tenshi als Administrator zu starten oder untersuche ein Image.'),
                     parent=win)
                 return
             win.destroy()
@@ -865,14 +965,19 @@ class RecoveryDeskApp(tk.Tk):
         ttk.Combobox(settings_bar, state='readonly', values=['0', '1', '2', '3'],
                      textvariable=retry_choice, width=3).pack(side='left')
         ttk.Label(settings_bar, text='Bei Medienfehler:').pack(side='left', padx=(12, 4))
-        failure_choice = tk.StringVar(value=translate('Nullen + protokollieren', self.language))
+        failure_choice = tk.StringVar(value=translate('Sicher anhalten', self.language))
         ttk.Combobox(settings_bar, state='readonly',
                      values=[translate('Nullen + protokollieren', self.language),
                              translate('Sicher anhalten', self.language)],
                      textvariable=failure_choice, width=23).pack(side='left')
-        ttk.Label(win, text='Optional 0–3 erneute Leseversuche an defekten Sektoren; jeder Versuch belastet das Medium. Bei Nullen entstehen Datenlücken; sicherer Stopp belässt den letzten gültigen Prüfpunkt.',
-                  wraplength=725, foreground='#9a3412').grid(row=4, column=0, columnspan=3,
-                                                              sticky='ew', padx=16, pady=(7, 4))
+        verify_var = tk.BooleanVar(value=not is_device_source(src))
+        ttk.Checkbutton(win, text='Image bitgenau prüfen', variable=verify_var).grid(
+            row=4, column=0, sticky='w', padx=16, pady=(7, 4))
+        ttk.Label(win, text=('Vollvergleich liest Quelle und Ziel nochmals vollständig. '
+                             'Auf beschädigten physischen Datenträgern nur bewusst aktivieren! '
+                             'Nullersatz wegen Lesefehlern kann nicht bitgenau bestätigt werden.'),
+                  wraplength=600, foreground='#9a3412').grid(
+                      row=4, column=1, columnspan=2, sticky='ew', padx=8, pady=(7, 4))
         percent = tk.StringVar(value='0,0 %')
         progress_bar = ttk.Progressbar(win, orient='horizontal', maximum=100)
         progress_bar.grid(row=5, column=0, columnspan=3, padx=16, pady=(12, 2), sticky='ew')
@@ -978,13 +1083,21 @@ class RecoveryDeskApp(tk.Tk):
                         status = state['state']
                         txt = (f'Status: {status} · bearbeitet: {readable_bytes(state["processed"])} · '
                                f'nicht lesbar: {readable_bytes(state["unreadable_bytes"])}')
-                        stats.set(txt)
+                        verify_status = state.get('verification', {}).get('status')
+                        verified_text = ('\n\nBITGENAU VERIFIZIERT: Vollvergleich mit Quelle bestanden.'
+                                         if verify_status == 'verified' else
+                                         '\n\nACHTUNG: KEIN bestandener Vollvergleich; '
+                                         'Image nicht als bitgenau verifiziert betrachten.')
+                        stats.set(txt + (' · bitgenau geprüft' if verify_status == 'verified'
+                                         else ' · NICHT bitgenau verifiziert'))
                         if status == 'complete' and not active['close_after']:
-                            messagebox.showinfo('Image erstellt',
-                                'Image-Erstellung beendet.\n\n' + txt +
-                                ('\n\nNicht lesbare Datenbereiche wurden mit Nullbytes markiert; '
-                                 'siehe Fehlerstellen-Bericht.' if state['bad_ranges'] else
-                                 '\n\nEs wurden keine nicht lesbaren Bereiche protokolliert.'), parent=win)
+                            dialog_text = 'Image-Erstellung beendet.\n\n' + txt + verified_text
+                            if verify_status == 'verified':
+                                messagebox.showinfo('Image erstellt und geprüft', dialog_text, parent=win)
+                            else:
+                                messagebox.showwarning('Image erstellt – ungeprüft', dialog_text +
+                                    ('\n\nNicht lesbare Bereiche wurden mit Nullen ersetzt.' if state['bad_ranges']
+                                     else '\n\nKein Vollvergleich vorgenommen.'), parent=win)
                     if active['close_after']:
                         win.destroy()
                         return
@@ -1019,6 +1132,12 @@ class RecoveryDeskApp(tk.Tk):
                      'Bestätigte Medien-Lesefehler werden mit Nullen gefüllt und protokolliert. ') +
                     'Das Original wird nicht verändert.', parent=win):
                 return
+            if is_device_source(src) and verify_var.get():
+                if not messagebox.askyesno('Zusätzliche Belastung des Quelllaufwerks',
+                        'Die vollständige Integritätsprüfung liest den physischen Datenträger '
+                        'nach der Image-Erstellung erneut. Das kann ein defektes Medium '
+                        'zusätzlich belasten. Trotzdem durchführen?', parent=win):
+                    return
             active['started'] = time.monotonic()
             active['baseline'] = None
             active['running'] = True
@@ -1031,11 +1150,14 @@ class RecoveryDeskApp(tk.Tk):
             block = 4 * 1024 * 1024 if block_choice.get() == '4 MiB' else 1024 * 1024
             retries = int(retry_choice.get())
             policy = selected_policy()
+            # Never read a Tk variable from a worker thread. Tk access must
+            # stay on the UI thread (also during headless/Xvfb tests).
+            verify_requested = bool(verify_var.get())
             def work():
                 try:
                     state = create_image(src, dest, resume=resumed, block_size=block,
                         read_retries=retries, retry_delay_ms=250, bad_sector_policy=policy,
-                        cancel=stop.is_set,
+                        verify=verify_requested, cancel=stop.is_set,
                         progress=lambda item: events.put(('progress', item)))
                     events.put(('finished', state))
                 except Exception as exc:
@@ -1150,27 +1272,27 @@ class RecoveryDeskApp(tk.Tk):
         self.status.set("Suche läuft – RAW-Abbild wird ausschließlich gelesen …")
         def progress(current, total):
             if current == total or current % (64 * 1024 * 1024) < 4 * 1024 * 1024:
-                self.after(0, lambda c=current, t=total, g=generation: (
+                self._post_scan_callback(lambda c=current, t=total, g=generation: (
                     self.status.set(f"Dateisystemsuche: {c / 1024**2:,.0f} / {t / 1024**2:,.0f} MiB gelesen")
                     if g == self._source_generation else None))
         def worker():
             try:
                 fp = None
-                if not is_physical(source) and not is_volume(source):
+                if not is_device_source(source):
                     fp = fingerprint_image(source)
                 result = analyze_image(source, deep_scan=deep, max_scan_mb=limit,
                                        sector_size=sector, progress=progress)
                 if fp is not None:
                     check_fingerprint(source, fp, original=source)
-                self.after(0, lambda r=result, g=generation, p=source, f=fp:
+                self._post_scan_callback(lambda r=result, g=generation, p=source, f=fp:
                            self._show_partitions(r, g, p, fingerprint=f))
             except Exception as e:
                 msg = str(e)
-                self.after(0, lambda m=msg, g=generation: (
+                self._post_scan_callback(lambda m=msg, g=generation: (
                     messagebox.showerror('Partitionsanalyse', m)
                     if g == self._source_generation else None))
             finally:
-                self.after(0, self._finish_partition_scan)
+                self._post_scan_callback(self._finish_partition_scan)
         threading.Thread(target=worker, daemon=True).start()
 
     def _finish_partition_scan(self):
@@ -1301,9 +1423,9 @@ class RecoveryDeskApp(tk.Tk):
                 result = inspect_partition(source, part)
             except Exception as exc:
                 msg = str(exc)
-                self.after(0, lambda: self._finish_partition_details_error(msg))
+                self._post_scan_callback(lambda: self._finish_partition_details_error(msg))
             else:
-                self.after(0, lambda: self._finish_partition_details(
+                self._post_scan_callback(lambda: self._finish_partition_details(
                     generation, source, idx, part, result))
         threading.Thread(target=run, daemon=True).start()
 
@@ -1421,7 +1543,7 @@ class RecoveryDeskApp(tk.Tk):
         self.show_deleted = tk.BooleanVar(value=True)
         self.deleted_toggle = ttk.Checkbutton(tools, text='Gelöschte Einträge anzeigen',
                                                variable=self.show_deleted, command=self._refresh_browser)
-        self.deleted_toggle.pack(side='left', padx=9)
+        self.deleted_toggle.pack(side='left', padx=4)
         # Native Tk button is deliberately used here: ttk's Windows "vista" theme
         # ignores custom button backgrounds, so ttk.Style cannot reliably turn it green.
         self.export_button = tk.Button(
@@ -1442,8 +1564,8 @@ class RecoveryDeskApp(tk.Tk):
         entry = ttk.Entry(searchrow, textvariable=self.browser_search)
         self.browser_search_entry = entry
         entry.pack(side='left', fill='x', expand=True, padx=6)
-        entry.bind('<Return>', lambda event: self._search_browser())
-        ttk.Button(searchrow, text='Suchen', command=self._search_browser).pack(side='left')
+        entry.bind('<Return>', lambda event: self._normal_search_browser())
+        ttk.Button(searchrow, text='Suchen', command=self._normal_search_browser).pack(side='left')
         ttk.Button(searchrow, text='Erweiterte Suche…', command=self._advanced_search_dialog).pack(side='left', padx=(5,0))
         ttk.Button(searchrow, text='Zurück zum Ordner', command=self._show_current_directory).pack(side='left', padx=6)
 
@@ -1588,9 +1710,6 @@ class RecoveryDeskApp(tk.Tk):
 
     def _choose_device(self):
         """Show a visible, keyboard-accessible physical disk selection dialog."""
-        if os.name != 'nt':
-            messagebox.showinfo('Physische Datenträger', 'Nur unter Windows verfügbar.', parent=self)
-            return
         try:
             drives = list_physical_sources()
         except Exception as exc:
@@ -1599,15 +1718,19 @@ class RecoveryDeskApp(tk.Tk):
         if not drives:
             messagebox.showwarning(
                 'Physische Datenträger',
-                'Keine lesbaren physischen Datenträger gefunden.\n\n'
-                'Starte Tenshi gegebenenfalls als Administrator. '
-                'Alternativ kannst du ein Image über „Image auswählen“ öffnen.',
+                ('Keine Linux-Blockdatenträger in sysfs gefunden. '
+                 'Tenshi nicht mit zusätzlichen Rechten starten; alternativ ein RAW-Image öffnen.'
+                 if sys.platform.startswith('linux') else
+                 'Keine lesbaren physischen Datenträger gefunden.\n\n'
+                 'Starte Tenshi gegebenenfalls als Administrator. '
+                 'Alternativ kannst du ein Image über „Image auswählen“ öffnen.'),
                 parent=self)
             return
         self._show_device_dialog(drives)
 
     def _show_device_dialog(self, drives):
-        """Separated from discovery to allow GUI interaction tests without a Windows disk."""
+        """Separated from discovery to allow GUI interaction tests without a disk."""
+        linux_mode = sys.platform.startswith('linux') and any(p.startswith('/dev/') for p, _ in drives)
         win = tk.Toplevel(self)
         win.title('Physischen Datenträger auswählen – nur lesen')
         win.geometry('760x430')
@@ -1638,13 +1761,16 @@ class RecoveryDeskApp(tk.Tk):
 
         for path, size in drives:
             tree.insert('', 'end', iid=path, text=path, values=(f'{size / 1024**3:,.2f}',))
-        # A preselected first row avoids the previous silent no-selection behavior.
         first = tree.get_children()[0]
-        tree.selection_set(first)
+        # Linux block devices are listed without accessing them. Require the
+        # user to explicitly mark one before confirming a direct source read.
+        if not linux_mode:
+            tree.selection_set(first)
         tree.focus(first)
         tree.see(first)
 
-        selected_text = tk.StringVar(value=f'Ausgewählt: {first}')
+        selected_text = tk.StringVar(value=('Bitte einen Datenträger markieren.' if linux_mode
+                                             else f'Ausgewählt: {first}'))
         ttk.Label(win, textvariable=selected_text, wraplength=700).grid(
             row=2, column=0, sticky='w', padx=16, pady=(8, 8))
 
@@ -1652,7 +1778,8 @@ class RecoveryDeskApp(tk.Tk):
         actions.grid(row=3, column=0, sticky='ew', padx=16, pady=(0, 8))
         # Bottom action area has a fixed grid row; it cannot disappear behind the list.
         confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)',
-                                    style='Accent.TButton')
+                                    style='Accent.TButton',
+                                    state='disabled' if linux_mode else 'normal')
         confirm_button.pack(side='right')
         ttk.Button(actions, text='Abbrechen', command=win.destroy).pack(side='right', padx=(0, 10))
 
@@ -1762,7 +1889,7 @@ class RecoveryDeskApp(tk.Tk):
             tolerant = bool(self.tolerant_scan.get())
             display_tmp = bool(self.show_tmp.get())
             scan_source_generation = self._source_generation
-            if tolerant and (is_physical(source) or is_volume(source)):
+            if tolerant and is_device_source(source):
                 raise ValueError('Fehlertolerante Suche nur für Image-Dateien; '
                                  'bei defekten Datenträgern zuerst ein Abbild erstellen.')
             if offset < 0 or offset % 512:
@@ -1779,13 +1906,13 @@ class RecoveryDeskApp(tk.Tk):
         self.ntfs_cancel_btn.configure(state='normal')
         self.status.set('Dateisystem wird schreibgeschützt gelesen …')
         def progress(done, total):
-            self.after(0, lambda d=done, t=total, g=scan_source_generation: (
+            self._post_scan_callback(lambda d=done, t=total, g=scan_source_generation: (
                 self.status.set(f'MFT: {d:,} / {t:,} Datensätze geprüft …')
                 if g == self._source_generation else None))
         def worker():
             try:
                 fp = None
-                if not is_physical(source) and not is_volume(source):
+                if not is_device_source(source):
                     fp = fingerprint_image(source, [offset])
                 with open_source(source) as f:
                     from .filesystems import detect_volume
@@ -1810,26 +1937,31 @@ class RecoveryDeskApp(tk.Tk):
                 paths = construct_paths(index.entries)
                 warning_records = folder_warning_records(
                     visible_entries(index.entries, display_tmp))
-                self.after(0, lambda name=fs_name, g=scan_source_generation: (
+                self._post_scan_callback(lambda name=fs_name, g=scan_source_generation: (
                     self._set_browser_fs(name) if g == self._source_generation else None))
                 def publish(idx=index, prepared=(paths, warning_records, display_tmp), fingerprint=fp):
                     if scan_source_generation == self._source_generation:
                         self._browser_fingerprint = fingerprint
                         self._show_browser_index(source, idx, prepared=prepared)
-                self.after(0, publish)
+                self._post_scan_callback(publish)
             except (ScanCancelled, OtherScanCancelled):
-                self.after(0, lambda g=scan_source_generation: (
+                self._post_scan_callback(lambda g=scan_source_generation: (
                     self.status.set('Scan abgebrochen.') if g == self._source_generation else None))
             except Exception as exc:
                 msg = str(exc)
                 if isinstance(exc, OSError) and getattr(exc, 'errno', None) == 22:
-                    msg += ('\n\nPhysische Windows-Datenträger erfordern sektorausgerichtete Lesezugriffe. '
-                            'Bitte Tenshi neu starten und die aktuelle Version verwenden. '
-                            'Falls der Fehler bleibt, Laufwerk als Administrator öffnen oder RAW-Image erstellen.')
-                self.after(0, lambda m=msg, g=scan_source_generation: (
+                    if sys.platform.startswith('linux') and is_device_source(source):
+                        msg += ('\n\nLinux-Blockgerät: Logische Sektorgröße und Gerätezugriff '
+                                'prüfen; alternativ ein RAW-Image verwenden. '
+                                'Keine zusätzlichen Schreibrechte vergeben.')
+                    else:
+                        msg += ('\n\nPhysische Windows-Datenträger erfordern sektorausgerichtete Lesezugriffe. '
+                                'Bitte Tenshi neu starten und die aktuelle Version verwenden. '
+                                'Falls der Fehler bleibt, Laufwerk als Administrator öffnen oder RAW-Image erstellen.')
+                self._post_scan_callback(lambda m=msg, g=scan_source_generation: (
                     messagebox.showerror('Dateisystem', m) if g == self._source_generation else None))
             finally:
-                self.after(0, self._finish_ntfs_scan)
+                self._post_scan_callback(self._finish_ntfs_scan)
         threading.Thread(target=worker, daemon=True).start()
 
     def _set_browser_fs(self, fs_name):
@@ -1853,7 +1985,7 @@ class RecoveryDeskApp(tk.Tk):
             return
         try:
             source = self.get_source()
-            if is_physical(source) or is_volume(source):
+            if is_device_source(source):
                 raise SessionError('Sitzungen erfordern ein reguläres Image. Bitte zuerst ein Image erstellen.')
             report = self.last_partition_report if self.partition_source == source else None
             index = self.browser_index if self.browser_source == source else None
@@ -1882,9 +2014,9 @@ class RecoveryDeskApp(tk.Tk):
             try:
                 save_session(dest, source, report=report, index=index,
                              filesystem=filesystem, expected_fingerprint=expected)
-                self.after(0, lambda: self._session_save_result(None, generation))
+                self._post_scan_callback(lambda: self._session_save_result(None, generation))
             except Exception as exc:
-                self.after(0, lambda error=str(exc): self._session_save_result(error, generation))
+                self._post_scan_callback(lambda error=str(exc): self._session_save_result(error, generation))
         threading.Thread(target=worker, daemon=True).start()
 
     def _session_save_result(self, error, generation):
@@ -1926,10 +2058,10 @@ class RecoveryDeskApp(tk.Tk):
         def worker():
             try:
                 result = load_session(filename, source_override=source_override)
-                self.after(0, lambda res=result, gen=generation:
+                self._post_scan_callback(lambda res=result, gen=generation:
                            self._finish_session_load(res, gen, source_text_at_start))
             except Exception as exc:
-                self.after(0, lambda error=str(exc): self._finish_session_load_error(error))
+                self._post_scan_callback(lambda error=str(exc): self._finish_session_load_error(error))
         threading.Thread(target=worker, daemon=True).start()
 
     def _finish_session_load_error(self, error):
@@ -2228,7 +2360,9 @@ class RecoveryDeskApp(tk.Tk):
     def _scan_options_dialog(self):
         win = tk.Toplevel(self)
         win.title('Scan-Einstellungen und Diagnose')
-        win.geometry('640x210')
+        # Let Tk derive the height from the themed widgets and wrapped text.
+        # A fixed 210px height clips the close button on Linux/font scaling.
+        win.minsize(640, 0)
         win.transient(self)
         panel = ttk.Frame(win, padding=18)
         panel.pack(fill='both', expand=True)
@@ -2317,6 +2451,12 @@ class RecoveryDeskApp(tk.Tk):
             in_path=self.browser_search_paths.get())
         criteria.validate()
         return criteria
+
+    def _normal_search_browser(self):
+        """An empty normal search clears advanced criteria as well."""
+        if not self.browser_search.get().strip():
+            self._clear_advanced_search()
+        self._search_browser()
 
     def _search_browser(self):
         if not self.browser_index:
@@ -2475,16 +2615,25 @@ class RecoveryDeskApp(tk.Tk):
 
     def _build_export_queue(self):
         """Persistent recovery queue, in the same Files & Folders tab."""
-        frame = ttk.LabelFrame(self.ntfs_tab, text='Wiederherstellungswarteschlange', padding=6)
+        self.export_queue_toggle = ttk.Button(self.ntfs_tab,
+            text='Wiederherstellungswarteschlange  ▼ Einklappen',
+            command=self._toggle_export_queue)
+        self.export_queue_toggle.pack(fill='x', pady=(2, 0), before=self.browser_paned)
+        frame = ttk.Frame(self.ntfs_tab, padding=(6, 2, 6, 4))
         # CRITICAL: pack the queue BEFORE the expanding file browser. Otherwise the
         # already-packed paned window consumes the vertical space and the progress
         # widgets remain unmapped (even though the export continues).
         frame.pack(fill='x', pady=(4, 4), before=self.browser_paned)
         self.export_queue_frame = frame
-        head = ttk.Frame(frame)
-        head.pack(fill='x')
+        self.export_queue_collapsed = False
+        self.export_queue_contents = ttk.Frame(frame)
+        self.export_queue_contents.pack(fill='x')
         self.export_queue_summary = tk.StringVar(value='Noch kein Stapel-Export gestartet.')
-        ttk.Label(head, textvariable=self.export_queue_summary, style='Sub.TLabel').pack(side='left', fill='x', expand=True)
+        # Keep the summary separate: long progress text must not squeeze buttons.
+        ttk.Label(self.export_queue_contents, textvariable=self.export_queue_summary,
+                  style='Sub.TLabel', wraplength=900).pack(fill='x', pady=(0, 3))
+        head = ttk.Frame(self.export_queue_contents)
+        head.pack(fill='x')
         self.export_cancel_button = ttk.Button(head, text='Abbrechen', state='disabled',
                                               command=self._cancel_export)
         self.export_cancel_button.pack(side='right', padx=(5, 0))
@@ -2497,7 +2646,7 @@ class RecoveryDeskApp(tk.Tk):
         self.export_details_button = ttk.Button(head, text='Dateistatus anzeigen',
                                                command=self._toggle_export_details)
         self.export_details_button.pack(side='right', padx=(4, 4))
-        progress_row = ttk.Frame(frame)
+        progress_row = ttk.Frame(self.export_queue_contents)
         progress_row.pack(fill='x', pady=(3, 3))
         self.export_queue_bar = ttk.Progressbar(progress_row, mode='determinate', maximum=100, value=0)
         self.export_queue_bar.pack(side='left', fill='x', expand=True)
@@ -2507,7 +2656,7 @@ class RecoveryDeskApp(tk.Tk):
         columns = ('state', 'size', 'detail')
         # The detailed list is expandable, to keep the main file browser visible
         # on smaller laptops and at 125–200% Windows display scaling.
-        self.export_queue_details = ttk.Frame(frame)
+        self.export_queue_details = ttk.Frame(self.export_queue_contents)
         self.export_queue_details_open = False
         self.export_queue_tree = ttk.Treeview(self.export_queue_details, columns=columns,
                                                show='tree headings', height=3)
@@ -2523,7 +2672,30 @@ class RecoveryDeskApp(tk.Tk):
         queue_scroll.pack(side='right', fill='y')
         self.export_queue_tree.pack(fill='x')
         self.export_queue_tree.bind('<Double-1>', self._export_row_details)
+        # Start collapsed; all controls and progress remain available on demand.
+        self.export_queue_contents.pack_forget()
+        self.export_queue_frame.pack_forget()
+        self.export_queue_collapsed = True
+        self.export_queue_toggle.configure(text="Wiederherstellungswarteschlange  ▶ Ausklappen")
         # Full details, including entries not visible in the compact list, stay in the report.
+
+    def _toggle_export_queue(self):
+        """Collapse only the queue contents; export work and state continue."""
+        if self.export_queue_collapsed:
+            self.export_queue_frame.pack(fill='x', before=self.browser_paned)
+            self.export_queue_contents.pack(fill='x')
+            self.export_queue_toggle.configure(text='Wiederherstellungswarteschlange  ▼ Einklappen')
+            self.export_queue_collapsed = False
+        else:
+            self.export_queue_contents.pack_forget()
+            self.export_queue_frame.pack_forget()
+            self.export_queue_toggle.configure(text='Wiederherstellungswarteschlange  ▶ Ausklappen')
+            self.export_queue_collapsed = True
+        # Tk's packer can leave the flexible browser at its previous allocation
+        # until another geometry event. Recalculate from the available pane space.
+        self.ntfs_tab.update_idletasks()
+        self.browser_paned.pack_configure(fill='both', expand=True)
+        self.ntfs_tab.update_idletasks()
 
     def _toggle_export_details(self):
         if self.export_queue_details_open:
@@ -2889,7 +3061,7 @@ class RecoveryDeskApp(tk.Tk):
                     f'{MAX_VERIFY_BYTES // 1024**2} MiB. Bitte große Dateien direkt exportieren '
                     'und auf einem gesunden Zielmedium prüfen.', parent=win)
                 return
-            if is_physical(source) or is_volume(source):
+            if is_device_source(source):
                 if not messagebox.askyesno('Leseprüfung am Datenträger',
                     'Die Prüfung liest den vollständigen Datenstrom erneut. Bei physisch '
                     'instabilen Laufwerken kann das zusätzliche Belastung verursachen. '
@@ -2975,9 +3147,9 @@ class RecoveryDeskApp(tk.Tk):
                             0, min(item.initialized_size, limit)))
                     else:
                         data = b''.join(index.volumes.iter_file(f, item, max_bytes=limit))
-                self.after(0, lambda d=data: show_preview(d))
+                self._post_scan_callback(lambda d=data: show_preview(d))
             except Exception as exc:
-                self.after(0, lambda msg=str(exc): show_error(msg))
+                self._post_scan_callback(lambda msg=str(exc): show_error(msg))
         def show_error(message):
             if win.winfo_exists():
                 notice.configure(text='Vorschau fehlgeschlagen: ' + message)

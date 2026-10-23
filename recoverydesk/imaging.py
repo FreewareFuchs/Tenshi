@@ -14,6 +14,7 @@ from hashlib import sha256
 from pathlib import PureWindowsPath
 import json
 import os
+import sys
 import tempfile
 import time
 from typing import Callable
@@ -21,6 +22,7 @@ from typing import Callable
 from .diagnostics import traced
 from .sources import (validate_source, open_source, source_size, is_device_source,
                       physical_sector_size, ensure_safe_destination)
+from .secure_target import open_regular_output, open_regular_input, atomic_json_checkpoint
 
 FORMAT_VERSION = 1
 DEFAULT_BLOCK_SIZE = 1024 * 1024
@@ -56,7 +58,7 @@ def sidecar_path(destination: str) -> str:
 
 
 def _source_identity(source: str, total: int, sector: int) -> dict:
-    identity = {'path': _real(source) if not is_device_source(source) else source.lower(),
+    identity = {'path': _real(source) if not is_device_source(source) else (source.lower() if os.name == 'nt' else os.path.realpath(source)),
                 'size': total, 'sector_size': sector,
                 'device': bool(is_device_source(source))}
     if not is_device_source(source):
@@ -70,6 +72,8 @@ def _source_identity(source: str, total: int, sector: int) -> dict:
 # replace an existing .recovery.json (often a lock from antivirus/indexers).
 # The original checkpoint is not modified in this fallback mode.
 JOURNAL_INTERVAL = 16 * 1024 * 1024
+MAX_JOURNAL_RECORD_BYTES = 32 * 1024 * 1024
+MAX_MANIFEST_BYTES = 32 * 1024 * 1024
 REPLACE_RETRY_DELAYS = (0.04, 0.12, 0.30, 0.60)
 
 
@@ -82,7 +86,10 @@ def _is_sharing_denial(exc: OSError) -> bool:
             isinstance(exc, PermissionError))
 
 
-def _atomic_json(path: str, info: dict) -> None:
+def _atomic_json(path: str, info: dict, *, source: str | None = None) -> None:
+    if source is not None and sys.platform.startswith('linux'):
+        atomic_json_checkpoint(path, info, source)
+        return
     directory = os.path.dirname(os.path.abspath(path)) or '.'
     name = None
     try:
@@ -118,7 +125,7 @@ def _journal_encoding(state: dict) -> bytes:
     return (json.dumps(record, ensure_ascii=False, separators=(',', ':')) + '\n').encode('utf-8')
 
 
-def _read_journal(path: str) -> tuple[dict | None, int]:
+def _read_journal(path: str, *, source: str | None = None) -> tuple[dict | None, int]:
     """Return the newest intact record and the end of its committed line.
 
     A final truncated line, e.g. after sudden power loss, is ignored. A
@@ -130,27 +137,29 @@ def _read_journal(path: str) -> tuple[dict | None, int]:
         return None, 0
     last = None
     good_end = 0
-    with open(path, 'rb') as f:
+    reader = open_regular_input(path, source) if source is not None else open(path, 'rb')
+    with reader as f:
         while True:
-            line = f.readline()
+            line = f.readline(MAX_JOURNAL_RECORD_BYTES + 1)
             if not line:
                 break
+            if len(line) > MAX_JOURNAL_RECORD_BYTES:
+                raise ImagingError('Prüfpunkt-Journal enthält einen übergroßen Eintrag.')
             if not line.endswith(b'\n'):
                 break  # torn trailing journal record, safe to ignore
-            if len(line) > 32 * 1024 * 1024:
-                raise ImagingError('Prüfpunkt-Journal enthält einen übergroßen Eintrag.')
             try:
                 record = json.loads(line)
                 state = record['checkpoint']
+                if (not isinstance(state, dict) or
+                        type(state.get('processed')) is not int or state['processed'] < 0):
+                    raise ValueError('bad checkpoint')
                 payload = json.dumps(state, ensure_ascii=False, sort_keys=True,
                                      separators=(',', ':')).encode('utf-8')
                 if sha256(payload).hexdigest() != record['sha256']:
                     raise ValueError('bad checksum')
-                if not isinstance(state, dict) or not isinstance(state.get('processed'), int):
-                    raise ValueError('bad checkpoint')
                 if last is not None and state['processed'] < last['processed']:
                     raise ValueError('nonmonotonic checkpoint')
-            except (ValueError, KeyError, TypeError, UnicodeError) as exc:
+            except (ValueError, KeyError, TypeError, UnicodeError, RecursionError) as exc:
                 raise ImagingError('Prüfpunkt-Journal enthält einen beschädigten vollständigen Eintrag.') from exc
             last = state
             good_end = f.tell()
@@ -164,7 +173,7 @@ def _append_journal(path: str, state: dict, *,
         raise ImagingError('Symbolische Links als Prüfpunkt-Journal werden nicht unterstützt.')
     try:
         if valid_end is None:
-            previous, valid_end = _read_journal(path)
+            previous, valid_end = _read_journal(path, source=state['source']['path'])
         if previous is not None:
             if previous.get('source') != state.get('source') or previous.get('destination') != state.get('destination'):
                 raise ImagingError('Das Prüfpunkt-Journal gehört zu einer anderen Sicherung.')
@@ -173,7 +182,7 @@ def _append_journal(path: str, state: dict, *,
         data = _journal_encoding(state)
         # Correct a truncated final record before appending new records.
         if os.path.exists(path):
-            with open(path, 'r+b', buffering=0) as f:
+            with open_regular_output(path, 'r+b', state['source']['path']) as f:
                 if os.fstat(f.fileno()).st_size < valid_end:
                     raise ImagingError('Prüfpunkt-Journal wurde extern verkürzt.')
                 f.truncate(valid_end)
@@ -184,7 +193,7 @@ def _append_journal(path: str, state: dict, *,
             if valid_end:
                 raise ImagingError('Prüfpunkt-Journal wurde während der Sicherung entfernt.')
             # Exclusive creation prevents overwriting a foreign file.
-            with open(path, 'xb', buffering=0) as f:
+            with open_regular_output(path, 'xb', state['source']['path']) as f:
                 _write_all(f, data)
                 os.fsync(f.fileno())
         return valid_end + len(data)
@@ -199,13 +208,14 @@ def _append_journal(path: str, state: dict, *,
 
 class _CheckpointWriter:
     """Replace checkpoints normally, switch to append-only journal on EACCES."""
-    def __init__(self, path: str):
+    def __init__(self, path: str, source: str | None = None):
+        self.source = source
         self.path = path
         self.journal = journal_path(path)
         self.use_journal = os.path.isfile(self.journal)
         # Cache the validated end offset so large disks do not reread a
         # growing journal on every checkpoint (which would be quadratic).
-        self.journal_state, self.journal_end = (_read_journal(self.journal)
+        self.journal_state, self.journal_end = (_read_journal(self.journal, source=self.source)
             if self.use_journal else (None, 0))
         self.last_saved = 0
 
@@ -217,7 +227,7 @@ class _CheckpointWriter:
             return
         if not self.use_journal:
             try:
-                _atomic_json(self.path, state)
+                _atomic_json(self.path, state, source=self.source)
                 self.last_saved = state['processed']
                 return
             except OSError as exc:
@@ -339,6 +349,77 @@ def _hash_region(handle, start: int, count: int) -> str:
     return sha256(chunk).hexdigest()
 
 
+
+def _verify_full_copy(source: str, destination: str, identity: dict,
+                      total: int, chunk_size: int,
+                      expected_inode: tuple[int, int],
+                      cancel: Callable[[], bool] | None,
+                      progress: Callable[[ImagingProgress], None] | None,
+                      state: dict, checkpoint_writer: _CheckpointWriter) -> bool:
+    """Independently reread the source and image. Return False if cancelled.
+
+    An unreadable source is not verified; the caller must avoid rereading
+    known damaged devices unless verification was explicitly requested.
+    A failed comparison persists a distinct failure state before raising.
+    """
+    state['state'] = 'verifying'
+    state['verification'] = {'status': 'running', 'checked': 0}
+    checkpoint_writer.save(state)
+    if progress:
+        progress(ImagingProgress(total, total, state['unreadable_bytes'],
+                                 len(state['bad_ranges']), 'verifying'))
+
+    checked = 0
+    try:
+        with open_source(source) as reader, open_regular_input(destination, source) as copied:
+            opened = os.fstat(copied.fileno())
+            if (opened.st_dev, opened.st_ino) != expected_inode:
+                raise ImagingError('Image-Datei wurde vor der Integritätsprüfung ausgetauscht.')
+            if opened.st_size != total:
+                raise ImagingError('Image-Größe hat sich vor der Integritätsprüfung verändert.')
+            while checked < total:
+                if cancel is not None and cancel():
+                    state['state'] = 'paused'
+                    state['verification'] = {'status': 'interrupted', 'checked': checked}
+                    checkpoint_writer.save(state)
+                    if progress:
+                        progress(ImagingProgress(total, total, state['unreadable_bytes'],
+                                                 len(state['bad_ranges']), 'paused'))
+                    return False
+                n = min(chunk_size, total - checked)
+                reader.seek(checked)
+                copied.seek(checked)
+                original = reader.read(n)
+                image = copied.read(n)
+                if len(original) != n or len(image) != n:
+                    raise ImagingError('Integritätsprüfung: unvollständiger Leseblock bei Offset '
+                                       f'{checked}. Image ist nicht verifiziert.')
+                if original != image:
+                    first = next(i for i, (a, b) in enumerate(zip(original, image)) if a != b)
+                    raise ImagingError('INTEGRITÄTSFEHLER: Image weicht bei Byteoffset '
+                                       f'{checked + first} von der Quelle ab. '
+                                       'Image nicht als bitgenaue Sicherung verwenden.')
+                checked += n
+            if not is_device_source(source) and _source_identity(
+                    source, total, identity['sector_size']) != identity:
+                raise ImagingError('Quelldatei wurde während der Integritätsprüfung verändert.')
+    except (OSError, ImagingError) as exc:
+        state['state'] = 'integrity_failed'
+        state['verification'] = {'status': 'failed', 'checked': checked, 'message': str(exc)}
+        checkpoint_writer.save(state)
+        if isinstance(exc, ImagingError):
+            raise
+        raise ImagingError('Integritätsprüfung konnte nicht abgeschlossen werden: '
+                           f'{exc}. Image bleibt ungeprüft.') from exc
+    state['verification'] = {'status': 'verified', 'checked': total}
+    state['state'] = 'complete'
+    checkpoint_writer.save(state)
+    if progress:
+        progress(ImagingProgress(total, total, state['unreadable_bytes'],
+                                 len(state['bad_ranges']), 'complete'))
+    return True
+
+
 def _check_same_file(source: str, destination: str) -> None:
     if _real(source) == _real(destination):
         raise ImagingError('Quelldatei und Ziel dürfen niemals identisch sein.')
@@ -354,13 +435,17 @@ def _load_manifest(manifest_path: str, destination: str, source_identity: dict) 
     if os.path.islink(manifest_path) or os.path.islink(destination) or os.path.islink(journal_path(manifest_path)):
         raise ImagingError('Symbolische Links als Imaging-Ziele werden nicht unterstützt.')
     try:
-        with open(manifest_path, 'r', encoding='utf-8') as f:
-            obj = json.load(f)
-    except (OSError, ValueError, UnicodeError) as exc:
+        with open_regular_input(manifest_path, source_identity['path']) as f:
+            payload = f.read(MAX_MANIFEST_BYTES + 1)
+            if len(payload) > MAX_MANIFEST_BYTES:
+                raise ImagingError('Statusdatei überschreitet die erlaubte Größe.')
+            obj = json.loads(payload)
+    except (OSError, ValueError, UnicodeError, RecursionError) as exc:
         raise ImagingError('Statusdatei fehlt oder ist unlesbar; bestehende Images werden nicht überschrieben.') from exc
-    candidate, _end = _read_journal(journal_path(manifest_path))
+    candidate, _end = _read_journal(journal_path(manifest_path), source=source_identity['path'])
     if candidate is not None:
-        if not isinstance(obj, dict):
+        if (not isinstance(obj, dict) or
+                type(obj.get('processed')) is not int or obj['processed'] < 0):
             raise ImagingError('Die ursprüngliche Statusdatei ist beschädigt.')
         # Older journal records must never roll back a newer successful JSON
         # replacement. At equal positions, prefer the journal for a paused state.
@@ -369,6 +454,11 @@ def _load_manifest(manifest_path: str, destination: str, source_identity: dict) 
     if (not isinstance(obj, dict) or obj.get('format') != FORMAT_VERSION or
             obj.get('source') != source_identity or obj.get('destination') != _real(destination)):
         raise ImagingError('Statusdatei passt nicht zur ausgewählten Quelle bzw. zum Ziel. Fortsetzung verweigert.')
+    if not {'first', 'last', 'state', 'bad_ranges', 'unreadable_bytes'} <= obj.keys():
+        raise ImagingError('Pflichtfelder fehlen in der Statusdatei.')
+    phase = obj['state']
+    if phase not in ('running', 'paused', 'verifying', 'complete', 'integrity_failed'):
+        raise ImagingError('Ungültiger Zustand in der Statusdatei.')
     total = source_identity['size']
     completed = obj.get('processed')
     block_size = obj.get('block_size')
@@ -378,15 +468,42 @@ def _load_manifest(manifest_path: str, destination: str, source_identity: dict) 
         raise ImagingError('Ungültige Prüfpunkte in der Statusdatei.')
     if completed and completed != total and completed % block_size:
         raise ImagingError('Die Statusdatei enthält einen nicht ausgerichteten Fortschritt.')
-    last = obj.get('last')
-    if completed and (not isinstance(last, dict) or
-        last.get('start', -1) + last.get('length', -1) != completed or
-        last.get('length', 0) < 1):
-        raise ImagingError('Letzte Prüfsumme in der Statusdatei ist ungültig.')
-    ranges = obj.get('bad_ranges', [])
-    if (not isinstance(ranges, list) or any(not isinstance(item, list) or
-         len(item) != 2 or not all(isinstance(n, int) and n >= 0 for n in item) for item in ranges)):
+    def valid_digest(checkpoint, start, length):
+        if not isinstance(checkpoint, dict):
+            return False
+        digest = checkpoint.get('sha256')
+        return (type(checkpoint.get('start')) is int and
+                type(checkpoint.get('length')) is int and
+                checkpoint['start'] == start and checkpoint['length'] == length and
+                isinstance(digest, str) and len(digest) == 64 and
+                all(char in '0123456789abcdef' for char in digest))
+
+    if completed:
+        last_start = ((completed - 1) // block_size) * block_size
+        if not valid_digest(obj.get('last'), last_start, completed - last_start):
+            raise ImagingError('Letzte Prüfsumme in der Statusdatei ist ungültig.')
+        if not valid_digest(obj.get('first'), 0, min(block_size, total)):
+            raise ImagingError('Erste Prüfsumme in der Statusdatei ist ungültig.')
+    elif obj.get('first') is not None or obj.get('last') is not None:
+        raise ImagingError('Prüfsummen ohne bestätigten Fortschritt sind ungültig.')
+    if phase in ('verifying', 'complete', 'integrity_failed') and completed != total:
+        raise ImagingError('Status und bestätigter Fortschritt widersprechen sich.')
+    ranges = obj['bad_ranges']
+    if not isinstance(ranges, list):
         raise ImagingError('Fehlerbereichsliste in der Statusdatei ist ungültig.')
+    previous_end = 0
+    unreadable_total = 0
+    for item in ranges:
+        if (not isinstance(item, list) or len(item) != 2 or
+                any(type(value) is not int for value in item)):
+            raise ImagingError('Fehlerbereichsliste in der Statusdatei ist ungültig.')
+        start, length = item
+        if start < previous_end or length <= 0 or start + length > completed:
+            raise ImagingError('Fehlerbereiche überschneiden sich oder liegen außerhalb des bestätigten Images.')
+        previous_end = start + length
+        unreadable_total += length
+    if type(obj['unreadable_bytes']) is not int or obj['unreadable_bytes'] != unreadable_total:
+        raise ImagingError('Fehlerzähler passt nicht zu den gespeicherten Fehlerbereichen.')
     for key, limit in (('read_retries', MAX_READ_RETRIES),
                        ('retry_delay_ms', MAX_RETRY_DELAY_MS)):
         value = obj.get(key, 0)
@@ -397,8 +514,6 @@ def _load_manifest(manifest_path: str, destination: str, source_identity: dict) 
     counter = obj.get('read_retries_performed', 0)
     if type(counter) is not int or counter < 0:
         raise ImagingError('Ungültiger Wiederholungszähler in der Statusdatei.')
-    if not isinstance(obj.get('unreadable_bytes'), int) or obj['unreadable_bytes'] < 0:
-        raise ImagingError('Fehlerzähler in der Statusdatei ist ungültig.')
     return obj
 
 
@@ -417,19 +532,25 @@ def create_image(source: str, destination: str, *,
                  cancel: Callable[[], bool] | None = None,
                  progress: Callable[[ImagingProgress], None] | None = None,
                  read_retries: int = 0, retry_delay_ms: int = 250,
-                 bad_sector_policy: str = 'zero') -> dict:
+                 bad_sector_policy: str = 'zero',
+                 verify: bool | None = None) -> dict:
     """Create or resume a raw image with a durable checkpoint.
 
     No source writes. Never opens Windows raw devices as destinations. Resuming
     requires a matching manifest and verifies the first and last checkpointed
     blocks; it does not cryptographically verify the entire previous image.
     """
+    if verify is not None and type(verify) is not bool:
+        raise ImagingError('Ungültige Integritätsprüfung-Einstellung.')
     if (type(read_retries) is not int or not 0 <= read_retries <= MAX_READ_RETRIES or
             type(retry_delay_ms) is not int or not 0 <= retry_delay_ms <= MAX_RETRY_DELAY_MS or
             bad_sector_policy not in BAD_SECTOR_POLICIES):
         raise ImagingError('Ungültige Lesefehler-Einstellungen (0–3 Wiederholungen, '
                            '0–2000 ms Wartezeit, Fehlerbehandlung zero/stop).')
     source = validate_source(source)
+    # Regular RAW image verification is automatic. On real physical drives,
+    # another complete read may burden failing media: explicit opt-in only.
+    verify_full = (not is_device_source(source)) if verify is None else verify
     destination = os.fspath(destination)
     if not destination or '\x00' in destination:
         raise ImagingError('Ungültige Zieldatei.')
@@ -459,19 +580,27 @@ def create_image(source: str, destination: str, *,
         raise ImagingError('Blockgröße muss sektorausgerichtet sein und maximal 16 MiB betragen.')
     identity = _source_identity(source, total, sector)
     sidecar = sidecar_path(destination)
+    expected_output_inode = None
     if not resume:
         if (os.path.lexists(destination) or os.path.lexists(sidecar) or
                 os.path.lexists(journal_path(sidecar))):
             raise ImagingError('Ziel oder Statusdatei existiert bereits. Für Fortsetzen dieselbe Datei wählen; sonst neuen Namen verwenden.')
         # The exclusive create prevents overwriting an unrelated file.
-        with open(destination, 'xb'):
-            pass
+        with open_regular_output(destination, 'xb', source) as initial_output:
+            st = os.fstat(initial_output.fileno())
+            expected_output_inode = (st.st_dev, st.st_ino)
         state = _make_manifest(identity, destination, block_size)
         try:
-            with open(sidecar, 'x', encoding='utf-8') as f:
-                json.dump(state, f, ensure_ascii=False, indent=2)
-                f.flush()
-                os.fsync(f.fileno())
+            if sys.platform.startswith('linux'):
+                with open_regular_output(sidecar, 'xb', source) as f:
+                    f.write(json.dumps(state, ensure_ascii=False, indent=2).encode('utf-8'))
+                    f.flush()
+                    os.fsync(f.fileno())
+            else:
+                with open(sidecar, 'x', encoding='utf-8') as f:
+                    json.dump(state, f, ensure_ascii=False, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
         except BaseException:
             # Source remains untouched; do not silently remove partial output.
             raise
@@ -486,15 +615,19 @@ def create_image(source: str, destination: str, *,
     state['retry_delay_ms'] = retry_delay_ms
     state['bad_sector_policy'] = bad_sector_policy
     state.setdefault('read_retries_performed', 0)
-    checkpoint_writer = _CheckpointWriter(sidecar)
+    checkpoint_writer = _CheckpointWriter(sidecar, source)
     checkpoint_writer.last_saved = state['processed']
     position = state['processed']
+    opened_output_inode = None
     if progress:
         progress(ImagingProgress(position, total, state['unreadable_bytes'],
                                  len(state['bad_ranges']), state['state']))
 
-    with open_source(source) as reader, open(destination, 'r+b', buffering=0) as out:
-        output_size = os.fstat(out.fileno()).st_size
+    with open_source(source) as reader, open_regular_output(
+            destination, 'r+b', source, expected_identity=expected_output_inode) as out:
+        output_info = os.fstat(out.fileno())
+        opened_output_inode = (output_info.st_dev, output_info.st_ino)
+        output_size = output_info.st_size
         if output_size < position or output_size > total:
             raise ImagingError('Image-Dateigröße passt nicht zum gesicherten Fortschritt.')
         if resume and position:
@@ -508,7 +641,9 @@ def create_image(source: str, destination: str, *,
         # overwrite only after manifest and block digests are verified.
         out.truncate(position)
         out.seek(position)
-        if state['state'] == 'complete' and position == total:
+        # A previous 'complete' state may predate full verification.
+        # An explicit resume must still run the requested verification.
+        if state['state'] == 'complete' and position == total and not verify_full:
             return state
         state['state'] = 'running'
         while position < total:
@@ -564,13 +699,30 @@ def create_image(source: str, destination: str, *,
             state['read_retries_performed'] += retry_counter[0]
             state['last'] = checkpoint
             state['processed'] = position
-            state['state'] = 'complete' if position == total else 'running'
+            state['state'] = ('verifying' if position == total and verify_full and
+                              not state['unreadable_bytes'] else
+                              'complete' if position == total else 'running')
             checkpoint_writer.save(state)
             if progress:
                 progress(ImagingProgress(position, total, state['unreadable_bytes'],
                                          len(state['bad_ranges']), state['state']))
         out.flush()
         os.fsync(out.fileno())
+    if state['unreadable_bytes']:
+        state['verification'] = {'status': 'not_possible',
+                                 'reason': 'Gemeldete Medienfehler / Nullersatz'}
+        state['state'] = 'complete'
+        checkpoint_writer.save(state)
+    elif verify_full:
+        if not _verify_full_copy(source, destination, identity, total,
+                                 min(block_size, 1024 * 1024),
+                                 opened_output_inode, cancel, progress, state,
+                                 checkpoint_writer):
+            return state
+    else:
+        state['verification'] = {'status': 'not_requested'}
+        state['state'] = 'complete'
+        checkpoint_writer.save(state)
     return state
 
 

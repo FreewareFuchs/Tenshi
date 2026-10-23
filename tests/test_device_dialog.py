@@ -10,6 +10,7 @@ except ImportError:
     tk = None
 
 from recoverydesk.gui import RecoveryDeskApp
+from recoverydesk.i18n import LANGUAGES, translate
 
 
 def descendants(widget):
@@ -31,8 +32,16 @@ class DeviceDialogTests(unittest.TestCase):
     def _parts(self, dialog):
         widgets = list(descendants(dialog))
         tree = next(w for w in widgets if isinstance(w, ttk.Treeview))
-        ok = next(w for w in widgets if isinstance(w, ttk.Button) and
-                  w.cget('text').startswith('Auswahl übernehmen'))
+        # Dialog captions may be translated on the next Tk event loop pass.
+        expected = {
+            translate('Auswahl übernehmen (nur lesen)', lang)
+            for lang in LANGUAGES
+        }
+        buttons = [w for w in widgets if isinstance(w, ttk.Button)]
+        ok = next((w for w in buttons if str(w.cget('text')) in expected), None)
+        self.assertIsNotNone(
+            ok, f'Confirm button missing; found captions: '
+                f'{[str(w.cget("text")) for w in buttons]!r}')
         return tree, ok
 
     def test_first_disk_is_selected_and_button_sets_source(self):

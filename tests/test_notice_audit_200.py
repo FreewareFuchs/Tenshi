@@ -1,6 +1,7 @@
 """Regression tests for historically misleading in-app safety notices."""
 from __future__ import annotations
 import os
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -72,7 +73,10 @@ class NoticeLogicTests(unittest.TestCase):
 @unittest.skipUnless(os.environ.get('DISPLAY') or os.name == 'nt', 'Graphical display required')
 class NoticeGuiTests(unittest.TestCase):
     def setUp(self):
-        self.path_patch = mock.patch.dict(os.environ, {'TENSHI_SETTINGS_FILE':'/tmp/tenshi-notice-audit-200.json'})
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.path_patch = mock.patch.dict(os.environ, {
+            'TENSHI_SETTINGS_FILE': str(Path(temporary.name) / 'settings.json')})
         self.path_patch.start()
         self.app=RecoveryDeskApp()
         self.app.update()

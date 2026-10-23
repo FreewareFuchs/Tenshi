@@ -516,6 +516,26 @@ def analyze_image(path: str, deep_scan: bool = False, max_scan_mb: int = 4096,
             if offset in known:
                 # A recognized filesystem at a table entry was already annotated.
                 continue
+            if filesystem == 'FAT32':
+                # BPB_BkBootSec is relative to the volume, not a new volume.
+                # Require matching BPBs so a nearby independent volume is kept.
+                backup = _read_at(f, offset, 512)
+                duplicate = False
+                for part in report.partitions:
+                    if part.filesystem != 'FAT32':
+                        continue
+                    primary = _read_at(f, part.offset_bytes, 512)
+                    if len(primary) < 512:
+                        continue
+                    reserved = struct.unpack_from('<H', primary, 14)[0]
+                    backup_sector = struct.unpack_from('<H', primary, 50)[0]
+                    if (0 < backup_sector < reserved and
+                            offset == part.offset_bytes + backup_sector * bps and
+                            primary[11:90] == backup[11:90]):
+                        duplicate = True
+                        break
+                if duplicate:
+                    continue
             # NTFS has an optional VBR copy in its last sector; exFAT stores
             # a backup boot region starting 12 sectors after its main VBR.
             # Neither should be reported as a separate partition.

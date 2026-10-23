@@ -233,6 +233,12 @@ class SessionLogicTests(unittest.TestCase):
 
 class SessionGuiTests(unittest.TestCase):
     def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        settings = patch.dict(os.environ, {
+            'TENSHI_SETTINGS_FILE': str(Path(temporary.name) / 'settings.json')})
+        settings.start()
+        self.addCleanup(settings.stop)
         from recoverydesk.gui import RecoveryDeskApp
         try:
             self.app = RecoveryDeskApp()

@@ -19,7 +19,7 @@ class WindowsCheckpointAccessDeniedTests(unittest.TestCase):
         self.source.write_bytes(self.data)
 
     @staticmethod
-    def locked_replace(*args):
+    def locked_replace(*args, **kwargs):
         raise PermissionError(errno.EACCES, 'Access denied')
 
     def test_fallback_journal_produces_complete_byte_exact_image(self):
@@ -62,7 +62,9 @@ class WindowsCheckpointAccessDeniedTests(unittest.TestCase):
         self.assertEqual(complete['state'], 'complete')
         self.assertEqual(self.target.read_bytes(), self.data)
         self.assertTrue(j.read_bytes().endswith(b'\n'))
-        self.assertEqual(len(j.read_bytes().splitlines()), 3)
+        final, _ = _read_journal(str(j))
+        self.assertEqual(final['state'], 'complete')
+        self.assertEqual(final['verification']['status'], 'verified')
 
     def test_tampered_committed_journal_record_rejected(self):
         canceled = [False]
@@ -83,11 +85,11 @@ class WindowsCheckpointAccessDeniedTests(unittest.TestCase):
         import os
         normal_replace = os.replace
         failures = [0]
-        def transient_replace(src, dst):
+        def transient_replace(src, dst, **kwargs):
             if failures[0] < 2:
                 failures[0] += 1
                 raise PermissionError(errno.EACCES, 'temporarily locked')
-            return normal_replace(src, dst)
+            return normal_replace(src, dst, **kwargs)
         with patch('recoverydesk.imaging.os.replace', side_effect=transient_replace), \
              patch('recoverydesk.imaging.time.sleep'):
             result = create_image(str(self.source), str(self.target))

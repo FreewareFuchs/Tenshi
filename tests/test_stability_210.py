@@ -104,11 +104,11 @@ class ReliableCheckpointTests(unittest.TestCase):
             output.mkdir()
             orig_replace = os.replace
             count = [0]
-            def flaky_replace(src_, dst_):
+            def flaky_replace(src_, dst_, **kwargs):
                 if str(dst_).endswith(MANIFEST) and count[0] < 2:
                     count[0] += 1
                     raise PermissionError(errno.EACCES, 'sharing violation')
-                return orig_replace(src_, dst_)
+                return orig_replace(src_, dst_, **kwargs)
             with patch('recoverydesk.resilience.os.replace', side_effect=flaky_replace):
                 result = export_batch(str(src), index, [folder], str(output))
             self.assertEqual(result.exported, 3)

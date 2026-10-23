@@ -135,7 +135,7 @@ class ImagingRetryIntegrationTests(unittest.TestCase):
             yield reader
         with patch('recoverydesk.imaging.open_source', open_fake):
             result = create_image(str(self.source), str(self.target),
-                                  read_retries=2, retry_delay_ms=0)
+                                  read_retries=2, retry_delay_ms=0, verify=False)
         self.assertEqual(result['unreadable_bytes'], 0)
         self.assertEqual(result['read_retries_performed'], 1)
         self.assertEqual(self.target.read_bytes(), self.content)
@@ -248,10 +248,13 @@ class ImagingRetryGuiTests(unittest.TestCase):
                     captured.append(kwargs)
                     return {'state':'complete','processed':8192,'source':{'size':8192},
                             'unreadable_bytes':0,'bad_ranges':[],
+                            'verification': {'status':'verified', 'checked':8192},
                             'read_retries_performed':0,'bad_sector_policy':kwargs['bad_sector_policy']}
                 with patch('recoverydesk.gui.create_image', side_effect=fake_create), \
                      patch('recoverydesk.gui.messagebox.askyesno', return_value=True), \
-                     patch('recoverydesk.gui.messagebox.showinfo'):
+                     patch('recoverydesk.gui.messagebox.showinfo') as info, \
+                     patch('recoverydesk.gui.messagebox.showwarning') as warning, \
+                     patch('recoverydesk.gui.messagebox.showerror') as error:
                     begin.invoke()
                     until = time.monotonic() + 4
                     while time.monotonic() < until:
@@ -259,9 +262,13 @@ class ImagingRetryGuiTests(unittest.TestCase):
                         if captured and str(begin.cget('state')) != 'disabled':
                             break
                         time.sleep(0.02)
+                    info.assert_called_once()
+                    warning.assert_not_called()
+                    error.assert_not_called()
                 self.assertTrue(captured)
                 self.assertEqual(captured[0]['read_retries'], 2)
                 self.assertEqual(captured[0]['bad_sector_policy'], 'stop')
+                self.assertIs(captured[0]['verify'], True)
                 report_button = next(w for w in walk(dialog) if isinstance(w, ttk.Button) and
                                      w.cget('text') == 'Fehlerstellen-Bericht')
                 self.assertNotEqual(str(report_button.cget('state')), 'disabled')

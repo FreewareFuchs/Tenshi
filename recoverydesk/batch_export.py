@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Callable, Iterable
@@ -21,6 +22,8 @@ from .ntfs_browser import safe_name, export_file as export_ntfs_file
 from .filesystems import export_file as export_other_file
 from .export_io import ExportCancelled
 from .sources import ensure_safe_destination, is_device_source, source_size
+from .secure_target import (mkdir_checked, atomic_json_checkpoint,
+                            atomic_bytes_checkpoint, open_regular_input)
 
 PLAN_LIMIT = 500_000
 MANIFEST = 'recoverydesk_status.json'
@@ -145,9 +148,12 @@ def _task_desc(item: PlannedItem) -> dict:
             'reason': getattr(e, 'unsupported_reason', '')}
 
 
-def _atomic_json(dest: Path, data: dict):
-    """Crash-resistant, uniquely named checkpoint with bounded lock retries."""
-    atomic_replace_json(dest, data)
+def _atomic_json(dest: Path, data: dict, *, source: str | None = None):
+    """Persist a manifest; anchor Linux writes to a checked dirfd."""
+    if source is not None and sys.platform.startswith('linux'):
+        atomic_json_checkpoint(str(dest), data, source)
+    else:
+        atomic_replace_json(dest, data)
 
 
 def _write_log(path: Path, state: dict, result: BatchResult):
@@ -162,6 +168,10 @@ def _write_log(path: Path, state: dict, result: BatchResult):
     for key, item in sorted(state['results'].items()):
         rows.append(f'{item["status"]}\t{key}\t{item.get("detail", "")}')
     text = '\n'.join(rows) + '\n'
+    source = state['identity']['source']
+    if sys.platform.startswith('linux'):
+        atomic_bytes_checkpoint(str(path), text.encode('utf-8'), source)
+        return
     # Use a unique temp file; stale .tmp files must not block later exports.
     from tempfile import NamedTemporaryFile
     from .resilience import RETRY_DELAYS
@@ -192,11 +202,17 @@ def _write_log(path: Path, state: dict, result: BatchResult):
                 pass
 
 
-def _hash_file(path: Path) -> str:
+def _hash_file(path: Path, *, source: str | None = None) -> str:
+    """Verify an output by its opened inode, not a stale path preflight."""
     digest = hashlib.sha256()
-    with path.open('rb') as stream:
-        while chunk := stream.read(1024 * 1024):
-            digest.update(chunk)
+    if source is not None and sys.platform.startswith('linux'):
+        with open_regular_input(str(path), source) as stream:
+            while chunk := stream.read(1024 * 1024):
+                digest.update(chunk)
+    else:
+        with path.open('rb') as stream:
+            while chunk := stream.read(1024 * 1024):
+                digest.update(chunk)
     return digest.hexdigest()
 
 
@@ -260,19 +276,23 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
     if root.exists():
         if not root.is_dir() or not manifest_path.is_file() or _is_unsafe_link(manifest_path):
             raise FileExistsError('Exportverzeichnis existiert ohne gültigen Wiederaufnahme-Status.')
-        with manifest_path.open('r', encoding='utf-8') as f:
-            state = json.load(f)
+        if sys.platform.startswith('linux'):
+            with open_regular_input(str(manifest_path), source) as f:
+                state = json.load(f)
+        else:
+            with manifest_path.open('r', encoding='utf-8') as f:
+                state = json.load(f)
         if state.get('schema') != 1 or state.get('signature') != signature or state.get('identity') != identity:
             raise ValueError('Bestehender Export gehört zu einer anderen Quelle/Auswahl.')
         if not isinstance(state.get('results'), dict):
             raise ValueError('Ungültige Export-Statusdatei.')
         result.resumed = True
     else:
-        root.mkdir()
-        content.mkdir()
+        mkdir_checked(str(root), source)
+        mkdir_checked(str(content), source)
         state = {'schema': 1, 'signature': signature, 'identity': identity,
                  'started': datetime.now(timezone.utc).isoformat(), 'results': {}}
-        _atomic_json(manifest_path, state)
+        _atomic_json(manifest_path, state, source=source)
     if not content.is_dir() or _is_unsafe_link(content) or _is_unsafe_link(log_path):
         raise ValueError('Exportordner ist nicht sicher zugänglich.')
     exporter = export_ntfs_file if hasattr(index, 'info') else export_other_file
@@ -337,7 +357,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                 try:
                     if not path.parent.is_dir():
                         raise OSError('Übergeordneter Ordner konnte nicht erstellt werden.')
-                    os.mkdir(path)
+                    mkdir_checked(str(path), source)
                     result.directories += 1
                     state['results'][task.path] = {'status': 'Ordner erstellt'}
                 except OSError as exc:
@@ -354,15 +374,20 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                 state['results'][task.path] = {'status': 'Übersprungen',
                     'detail': '; '.join(preflight.details)}
             elif path.exists() or _is_unsafe_link(path):
-                if (prior.get('status') == 'Erfolgreich' and path.is_file() and
-                        path.stat().st_size == task.entry.size and
-                        _hash_file(path) == prior.get('sha256')):
-                    result.verified_existing += 1
-                    completed_status = 'Bereits verifiziert'
-                else:
+                try:
+                    if (prior.get('status') == 'Erfolgreich' and path.is_file() and
+                            path.stat().st_size == task.entry.size and
+                            _hash_file(path, source=source) == prior.get('sha256')):
+                        result.verified_existing += 1
+                        completed_status = 'Bereits verifiziert'
+                    else:
+                        result.failed += 1
+                        state['results'][task.path] = {'status': 'Fehler',
+                            'detail': 'Zieldatei existiert und kann nicht als vorheriger Export bestätigt werden'}
+                except (OSError, ValueError) as exc:
                     result.failed += 1
                     state['results'][task.path] = {'status': 'Fehler',
-                        'detail': 'Zieldatei existiert und kann nicht als vorheriger Export bestätigt werden'}
+                        'detail': f'Vorhandene Exportdatei konnte nicht geprüft werden: {exc}'}
             else:
                 try:
                     if not path.parent.is_dir():
@@ -373,7 +398,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                     else:
                         written = exporter(source, index, task.entry, str(path),
                                            cancel=cancel, byte_progress=on_bytes)
-                    signature_file = _hash_file(path)
+                    signature_file = _hash_file(path, source=source)
                     result.exported += 1
                     result.bytes_written += written
                     state['results'][task.path] = {'status': 'Erfolgreich', 'bytes': written,
@@ -387,7 +412,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
             if progress:
                 progress(n, len(plan), task.path, state['results'].get(task.path, {}).get('status', ''))
         flush_bytes()
-        _atomic_json(manifest_path, state)
+        _atomic_json(manifest_path, state, source=source)
         if event:
             current = state['results'].get(task.path, {})
             event({'type': 'done', 'path': task.path, 'number': n,
