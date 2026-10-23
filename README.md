@@ -1,8 +1,8 @@
-# Tenshi – Datenrettung und Datenträgeranalyse für Windows
+# Tenshi – Datenrettung und Datenträgeranalyse für Windows und Linux
 
 Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Untersuchen von Partitionen, Durchsuchen unterstützter Dateisysteme und Exportieren wiederherstellbarer Dateien auf einen separaten Datenträger.
 
-**Windows 10/11 · 64 Bit · Experimentelle Beta**
+**Windows 10/11 · 64 Bit · Linux aus dem Quellcode (auf Linux Mint Cinnamon geprüft) · Experimentelle Beta**
 
 [Website](https://freewarefuchs.de/tenshi/) · [Downloads](https://freewarefuchs.de/tenshi/#downloads) · [Bedienungsanleitung](https://freewarefuchs.de/tenshi/anleitung/) · [English](https://freewarefuchs.de/en/tenshi/)
 
@@ -22,6 +22,27 @@ Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releas
 Die portable Variante kann Einstellungen und Fehlerprotokolle im Windows-Benutzerprofil speichern. Der GitHub-Quellcode-Download ist kein fertiges Windows-Programmpaket.
 
 Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**. Prüfe Herkunft und die SHA-256-Prüfsummen des jeweiligen Releases. Sicherheitsfunktionen nicht pauschal abschalten. [Download-Sicherheit und Prüfsummen](https://freewarefuchs.de/tenshi/sicherheit/)
+
+## Unter Linux starten
+
+Die Linux-Unterstützung ist auf `main` integriert. Die bereits veröffentlichten Beta-Downloads enthalten Windows-Pakete; für Linux derzeit den aktuellen Quellcode verwenden.
+
+Voraussetzungen: Python 3.11 oder neuer, Tkinter und util-linux. Unter Linux Mint:
+
+```bash
+sudo apt install git python3-tk util-linux
+git clone https://github.com/FreewareFuchs/Tenshi.git Tenshi
+cd Tenshi
+bash start_linux.sh
+```
+
+Zum Aktualisieren im geklonten Projektordner `git pull --ff-only` ausführen und Tenshi neu starten. Ein entpackter ZIP-Quellcodeordner besitzt keine Git-Verwaltung; dort funktionieren Git-Aktualisierungen nicht.
+
+Tenshi ohne `sudo` starten. Der Start verändert keine Geräteberechtigungen. Ist der lesende Zugriff auf ein physisches Gerät nicht erlaubt, ein vorhandenes RAW-Image verwenden oder gezielt die Geräteberechtigung außerhalb der Anwendung einrichten. Für konsistente Daten eine nicht mehr beschreibbar eingebundene Quelle oder ein Offline-Image verwenden.
+
+Der Imaging-Dialog wählt „Sicher anhalten“ bei Medienfehlern. Die zusätzliche bitgenaue Prüfung liest Quelle und Image vollständig; bei physischen Quellen wird sie ausdrücklich aktiviert. Für beschädigte Medien ersetzt Tenshi keine spezialisierte mehrphasige Rettungsstrategie wie GNU ddrescue.
+
+[Linux-Prüfstand und Grenzen](docs/LINUX_PORT_STATUS.md) · [Vorläufige Linux-Versionshinweise](RELEASE_NOTES_LINUX_BETA.md)
 
 ## Was Tenshi kann
 
@@ -60,7 +81,11 @@ Die Quelle wird nur lesend geöffnet. Bei mechanischen Auffälligkeiten oder wer
 
 Tenshi bleibt experimentelle Beta-Software. Automatisierte Tests mit synthetischen Images und simulierten Fehlerfällen ersetzen keine Prüfung auf beschädigter Hardware.
 
-Nach den bisherigen Projektangaben wurden für **3.0.1** Windows-Praxistests gemeldet: Installation und Deinstallation, physischer Laufwerks- und USB-Zugriff, neun exportierte Prüffälle mit SHA-256-Abgleich sowie bitgenaues 4-MiB-Imaging. Für die Änderungen in **3.0.2** ist im bisherigen README noch kein Windows-Praxistest dokumentiert. Tatsächlich defekte Laufwerke wurden laut diesem Stand nicht geprüft. **Windows-Hardwaretest steht aus.**
+Für den integrierten Linux-Stand sind 569 lokale Tests unter virtuellem X11 erfolgreich. Linux- und Windows-CI auf `main` sind für Merge-Commit `ade614a` erfolgreich. Linux-CI prüft außerdem unabhängig formatierte ext4-, Btrfs- und XFS-Images.
+
+Auf Linux Mint wurde eine physische USB-SSD mit 128.035.676.160 Bytes vollständig in ein Image kopiert und bitgenau verglichen, ohne unlesbare Bytes. Navigation und Exporte aus dem erstellten exFAT-Image wurden bestätigt. Windows-Praxistests mit dem während der Linux-Entwicklung erzeugten Build umfassen Referenzexport, Vorschau, Sitzungen, Sprachen und Themewechsel. Diese Prüfungen beziehen sich auf die getesteten Entwicklungsstände, nicht rückwirkend auf bestehende Release-Downloads.
+
+Tatsächlich defekte Laufwerke, weitere Geräte-/Mount-Topologien und allgemeine Löschrettung sind damit nicht abgenommen. Details und historische Ergebnisse: [Linux-Portierungsstatus](docs/LINUX_PORT_STATUS.md).
 
 Der [Windows-Abnahmeplan](WINDOWS_ABNAHME_3.0.0.md) ist ein Prüfplan, kein Nachweis einer abgeschlossenen Abnahme. Historische Testergebnisse beziehen sich jeweils auf die dort genannte Version.
 
@@ -87,7 +112,7 @@ Bei Build-Problemen: [Build-Fehlersuche](BUILD_FEHLERSUCHE.md). Bei Weitergabe v
 
 ## Fehler melden und mitarbeiten
 
-Für Fehler und Verbesserungsvorschläge bitte ein [GitHub-Issue](https://github.com/FreewareFuchs/Tenshi/issues) erstellen. Nenne Version, Windows-Version, Schritte zur Reproduktion sowie erwartetes und tatsächliches Verhalten. Keine privaten Dateien, vollständigen Laufwerksabbilder oder ungeprüften Protokolle veröffentlichen.
+Für Fehler und Verbesserungsvorschläge bitte ein [GitHub-Issue](https://github.com/FreewareFuchs/Tenshi/issues) erstellen. Nenne Version, Betriebssystem, Schritte zur Reproduktion sowie erwartetes und tatsächliches Verhalten. Keine privaten Dateien, vollständigen Laufwerksabbilder oder ungeprüften Protokolle veröffentlichen.
 
 [Beiträge zum Projekt](CONTRIBUTING.md) · [Sicherheitsmeldungen](SECURITY.md)
 
