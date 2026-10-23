@@ -2593,10 +2593,12 @@ class RecoveryDeskApp(tk.Tk):
         self.export_queue_collapsed = False
         self.export_queue_contents = ttk.Frame(frame)
         self.export_queue_contents.pack(fill='x')
+        self.export_queue_summary = tk.StringVar(value='Noch kein Stapel-Export gestartet.')
+        # Keep the summary separate: long progress text must not squeeze buttons.
+        ttk.Label(self.export_queue_contents, textvariable=self.export_queue_summary,
+                  style='Sub.TLabel', wraplength=900).pack(fill='x', pady=(0, 3))
         head = ttk.Frame(self.export_queue_contents)
         head.pack(fill='x')
-        self.export_queue_summary = tk.StringVar(value='Noch kein Stapel-Export gestartet.')
-        ttk.Label(head, textvariable=self.export_queue_summary, style='Sub.TLabel').pack(side='left', fill='x', expand=True)
         self.export_cancel_button = ttk.Button(head, text='Abbrechen', state='disabled',
                                               command=self._cancel_export)
         self.export_cancel_button.pack(side='right', padx=(5, 0))
