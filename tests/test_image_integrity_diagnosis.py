@@ -67,19 +67,28 @@ class ImageIntegrityDiagnosisTests(unittest.TestCase):
                 compare_images(self.a, fifo)
 
     def test_mutation_between_passes_is_reported(self):
-        original = os.stat
+        from contextlib import contextmanager
+        import diagnose_image_integrity as diagnosis
+        original_reader = diagnosis._regular_reader
         changed = []
-        target_stats = []
-        def swap(path, *args, **kwargs):
-            info = original(path, *args, **kwargs)
-            if Path(path) == self.b:
-                target_stats.append(True)
-                if len(target_stats) == 2 and not changed:
-                    self.b.write_bytes(b'X' + self.data[1:])
-                    changed.append(True)
-            return info
-        with mock.patch('diagnose_image_integrity.os.stat', side_effect=swap):
+
+        @contextmanager
+        def reader(path):
+            with original_reader(path) as stream:
+                yield stream
+            # The target reader closes after the pass result was captured.
+            # Do not infer pass boundaries from platform-dependent stat calls.
+            if Path(path) == self.b and not changed:
+                self.b.write_bytes(b'X' + self.data[1:])
+                changed.append(True)
+
+        with mock.patch.object(diagnosis, '_regular_reader', side_effect=reader):
             result = compare_images(self.a, self.b)
+        self.assertEqual(changed, [True])
+        self.assertEqual(result['passes'][0]['different_bytes'], 0)
+        self.assertEqual(result['passes'][1]['different_bytes'], 1)
+        self.assertEqual(result['passes'][1]['first_difference'], 0)
+        self.assertTrue(result['metadata_unchanged'])
         self.assertFalse(result['repeatable'])
         self.assertFalse(result['identical'])
 
