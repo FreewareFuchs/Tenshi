@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Callable, Iterable
@@ -23,7 +24,6 @@ from .export_io import ExportCancelled
 from .sources import ensure_safe_destination, is_device_source, source_size
 from .secure_target import (mkdir_checked, atomic_json_checkpoint,
                             atomic_bytes_checkpoint, open_regular_input)
-from .linux_devices import block_path
 
 PLAN_LIMIT = 500_000
 MANIFEST = 'recoverydesk_status.json'
@@ -149,8 +149,8 @@ def _task_desc(item: PlannedItem) -> dict:
 
 
 def _atomic_json(dest: Path, data: dict, *, source: str | None = None):
-    """Persist a manifest; anchor Linux block-source writes to a checked dirfd."""
-    if source is not None and block_path(source):
+    """Persist a manifest; anchor Linux writes to a checked dirfd."""
+    if source is not None and sys.platform.startswith('linux'):
         atomic_json_checkpoint(str(dest), data, source)
     else:
         atomic_replace_json(dest, data)
@@ -169,7 +169,7 @@ def _write_log(path: Path, state: dict, result: BatchResult):
         rows.append(f'{item["status"]}\t{key}\t{item.get("detail", "")}')
     text = '\n'.join(rows) + '\n'
     source = state['identity']['source']
-    if block_path(source):
+    if sys.platform.startswith('linux'):
         atomic_bytes_checkpoint(str(path), text.encode('utf-8'), source)
         return
     # Use a unique temp file; stale .tmp files must not block later exports.
@@ -205,7 +205,7 @@ def _write_log(path: Path, state: dict, result: BatchResult):
 def _hash_file(path: Path, *, source: str | None = None) -> str:
     """Verify an output by its opened inode, not a stale path preflight."""
     digest = hashlib.sha256()
-    if source is not None and block_path(source):
+    if source is not None and sys.platform.startswith('linux'):
         with open_regular_input(str(path), source) as stream:
             while chunk := stream.read(1024 * 1024):
                 digest.update(chunk)
@@ -276,7 +276,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
     if root.exists():
         if not root.is_dir() or not manifest_path.is_file() or _is_unsafe_link(manifest_path):
             raise FileExistsError('Exportverzeichnis existiert ohne gültigen Wiederaufnahme-Status.')
-        if block_path(source):
+        if sys.platform.startswith('linux'):
             with open_regular_input(str(manifest_path), source) as f:
                 state = json.load(f)
         else:

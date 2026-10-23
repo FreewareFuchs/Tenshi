@@ -32,8 +32,7 @@ class SafeBatchMetadataTests(unittest.TestCase):
     def simulated_block(self):
         name = str(self.source)
         is_source = lambda path: os.fspath(path) == name
-        with mock.patch('recoverydesk.batch_export.block_path', side_effect=is_source), \
-             mock.patch('recoverydesk.linux_devices.block_path', side_effect=is_source), \
+        with mock.patch('recoverydesk.linux_devices.block_path', side_effect=is_source), \
              mock.patch('recoverydesk.linux_devices._backing_disks',
                         side_effect=lambda dev: {'source-disk'} if dev == 0 else {'target-disk'}):
             yield
@@ -151,9 +150,7 @@ class SafeBatchMetadataTests(unittest.TestCase):
                         if item.name == 'README.TXT')
         first = batch_export.export_batch(str(source), index, [selected], str(self.target))
         self.assertEqual(first.exported, 1)
-        is_fake_source = lambda p: os.fspath(p) == str(source)
-        with mock.patch('recoverydesk.batch_export.block_path', side_effect=is_fake_source), \
-             mock.patch('recoverydesk.batch_export.open_regular_input',
+        with mock.patch('recoverydesk.batch_export.open_regular_input',
                         wraps=batch_export.open_regular_input) as pinned_reader:
             second = batch_export.export_batch(str(source), index, [selected], str(self.target))
         self.assertTrue(second.resumed)
@@ -203,6 +200,16 @@ class SafeBatchMetadataTests(unittest.TestCase):
         self.assertEqual(swapped, [True])
         self.assertEqual(digest, hashlib.sha256(expected).hexdigest())
         self.assertEqual((outside / target.name).read_bytes(), other)
+
+
+@unittest.skipUnless(sys.platform.startswith('linux'), 'Linux dirfd tests only')
+class SafeImageBatchMetadataTests(SafeBatchMetadataTests):
+    """The same redirection attacks must fail for real regular image sources."""
+
+    @contextmanager
+    def simulated_block(self):
+        # Deliberately no block-device mocks: exercise normal image dispatch.
+        yield
 
 
 if __name__ == '__main__':

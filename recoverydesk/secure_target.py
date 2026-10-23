@@ -144,14 +144,23 @@ def atomic_bytes_checkpoint(path: str, payload: bytes, source: str) -> None:
                 out.write(payload)
                 out.flush()
                 os.fsync(out.fileno())
-            try:
-                prior = os.stat(target, dir_fd=parent_fd, follow_symlinks=False)
-            except FileNotFoundError:
-                pass
-            else:
-                if not stat.S_ISREG(prior.st_mode):
-                    raise ValueError('Status- oder Berichtsziel wurde auf einen Link oder ein Gerät umgeleitet.')
-            os.replace(temp_name, target, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+            from .resilience import RETRY_DELAYS, is_transient_lock
+            import time
+            for delay in (*RETRY_DELAYS, None):
+                try:
+                    prior = os.stat(target, dir_fd=parent_fd, follow_symlinks=False)
+                except FileNotFoundError:
+                    pass
+                else:
+                    if not stat.S_ISREG(prior.st_mode):
+                        raise ValueError('Status- oder Berichtsziel wurde auf einen Link oder ein Gerät umgeleitet.')
+                try:
+                    os.replace(temp_name, target, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+                    break
+                except OSError as exc:
+                    if delay is None or not is_transient_lock(exc):
+                        raise
+                    time.sleep(delay)
             temporary = False
             os.fsync(parent_fd)
         finally:
