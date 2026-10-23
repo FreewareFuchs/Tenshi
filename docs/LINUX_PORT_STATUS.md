@@ -1,5 +1,53 @@
 # Linux-Portierung – Stand und Hardware-Abnahme
 
+## Aktueller Stand vom 23.10.2026
+
+Geprüfter Programmstand: `bb5c374828b626ff3e7bad00bd3f3dc78fc503e0` auf `feature/linux-readonly-port`.
+[PR #2](https://github.com/FreewareFuchs/Tenshi/pull/2) ist ein Entwurf; Zusammenführung und Veröffentlichung sind noch nicht erfolgt.
+
+### Bestätigte Prüfungen
+
+| Bereich | Ergebnis und Umfang |
+| --- | --- |
+| Automatisierte Suite | 566 Tests unter virtuellem X11 bestanden, keine Überspringungen (22,595 s). |
+| Linux-CI | [Lauf 39934009137](https://github.com/FreewareFuchs/Tenshi/actions/runs/39934009137) vollständig erfolgreich, einschließlich realer ext4-, Btrfs- und XFS-Images und 1024×650-GUI-Test. |
+| Windows-CI | [Lauf 39934009162](https://github.com/FreewareFuchs/Tenshi/actions/runs/39934009162) erfolgreich: Tests, EXE-Smoke-Test, Versionsprüfung, Portable-Paket und Installer. Die Linux-Formatierungstests laufen unter Linux. |
+| Linux Mint Cinnamon | FAT32-, NTFS- und ext4-Referenzimages: Navigation und jeweils fünf SHA-256-identische Exporte. Vorschau, Suche, Sitzungen, sechs Sprachen und Layout praktisch bestätigt. |
+| Physische USB-SSD | LITEON, 128.035.676.160 Bytes (119,2 GiB): Image vollständig erstellt, keine unlesbaren/ersetzten Bytes, Strategie `stop`, Vollvergleich mit Quelle bitgenau bestanden. |
+| SSD-Image lesen | exFAT/YUMI-Inhalt sichtbar; kleine und größere Datei aus dem Image exportiert und erfolgreich geöffnet. Für diese beiden Dateien wurde kein zusätzlicher Hashvergleich berichtet. |
+| Windows-Nutzerprüfung | exFAT-Referenzexport mit fünf passenden SHA-256-Werten, Vorschau, Sitzungen, Sprachen und Themewechsel mit dem damaligen aktuellen Build bestanden. |
+
+Beim SSD-Test stieg die beobachtete Kopiergeschwindigkeit nach Kabelwechsel von rund 41 auf 221 MiB/s. Zuvor meldete `lsusb -t` für das Mass-Storage-Gerät 480M; dies ist kein allgemeiner Linux-Leistungsfehler.
+
+### Integritätsstörung und Absicherung
+
+[Issue #3](https://github.com/FreewareFuchs/Tenshi/issues/3) ist geschlossen. Beim Einzeltest im gleichen A2-Steckplatz zeigte ein DIMM sofort Fehler, der verbleibende Riegel bestand vier Memtest-Durchläufe. Nach Entfernung des defekten Riegels bestand Imaging mit Pause/Fortsetzung und Vollvergleich. Die Ergebnisse sprechen für den Hardwarefehler als Ursache der beobachteten Instabilität; sie beweisen nicht rückwirkend die Ursache jedes ursprünglichen Bytefehlers.
+
+Die vollständige Image-Prüfung erkennt auch Abweichungen innerhalb eines Blocks und bestätigt Bitgenauigkeit nur nach erfolgreichem Vollvergleich. Physische Quellen werden dafür nur nach bewusster Aktivierung zusätzlich vollständig gelesen.
+
+Linux-Exportstatus, Berichte und das Hashen exportierter Dateien verwenden sowohl für Blockquellen als auch für reguläre Image-Quellen geprüfte Verzeichnisdeskriptoren. Tests simulieren Symlinks und den Austausch von Elternverzeichnissen. Vorübergehende Dateisperren werden begrenzt erneut versucht, mit erneuter Zielprüfung unter demselben Verzeichnisdeskriptor. Dies ist keine pauschale Absicherung aller Nebenpfade.
+
+### Echte Btrfs- und XFS-Images
+
+`tests/test_real_advanced_images.py` erzeugt ausschließlich neue reguläre Dateien in temporären Verzeichnissen:
+- Btrfs mit `mkfs.btrfs -r` und XFS mit `mkfs.xfs -p`, jeweils Standardformat der installierten Werkzeuge.
+- Erkennung, UTF-8-Vorschau, Unterordner, exakter Export einer kleinen Textdatei und einer Binärdatei von mehr als 1 MiB.
+- SHA-256 des gesamten Quell-Images vor und nach Analyse/Export identisch.
+- Kein Mount, Loopgerät, sudo oder physischer Datenträgerzugriff. Linux-CI installiert beide Formatierungswerkzeuge und führt die Tests ausdrücklich aus.
+
+### Verbleibende Testgrenzen
+
+- Weitere Btrfs-/XFS-Varianten, Kompression, RAID und Mehrgeräte-Dateisysteme sind durch diese beiden Standard-Image-Tests nicht abgenommen.
+- Allgemeine Löschrettung ist durch erfolgreiche Exporte aktueller Dateien nicht nachgewiesen.
+- Weitere Hardwarevarianten (4K-Sektoren, LVM/dmraid), Hotplug-/Mountwechsel und tatsächlich defekte Medien benötigen zusätzliche Abnahme.
+- Tenshi-Imaging bietet keine mit GNU ddrescue gleichzusetzende mehrphasige Strategie für beschädigte Medien.
+- Die Medienfehlerstrategie wird im Dialog geprüft; aus dem erfolgreichen Lauf folgt keine Änderung des allgemeinen Standardwertes.
+
+## Historischer Prüfverlauf
+
+Die folgenden Abschnitte dokumentieren frühere Zwischenstände. Aussagen wie „Issue #3 offen“, „CI queued“ oder „Hardware-/Windows-Abnahme ausstehend“ sind historische Angaben und werden durch den aktuellen Stand oben ersetzt.
+
+
 ## Plattformprüfung
 
 - **Plattformneutral:** RAW-Abbild, Partitionssuche, NTFS/FAT/exFAT/ext2–4/Btrfs/XFS-Parser, Suchfunktionen, Export, Sitzungen und Imaging-Kern.
