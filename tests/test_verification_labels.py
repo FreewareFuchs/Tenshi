@@ -37,15 +37,15 @@ class VerificationLabelTests(unittest.TestCase):
             destination.mkdir()
             first = export_batch(str(source), index, [item], str(destination))
             self.assertEqual(first.exported, 1)
-            report = Path(first.log).read_text()
+            report = Path(first.log).read_text(encoding='utf-8')
             self.assertIn(EXPORT_SCOPE, report)
             self.assertIn(RESUME_SCOPE, report)
             self.assertIn(WRITTEN_LABEL, report)
-            state = json.loads(Path(first.manifest).read_text())
+            state = json.loads(Path(first.manifest).read_text(encoding='utf-8'))
             self.assertEqual(state['results']['README.TXT']['status'], 'Erfolgreich')
             second = export_batch(str(source), index, [item], str(destination))
             self.assertEqual((second.exported, second.verified_existing, second.failed), (0, 1, 0))
-            self.assertIn('Export-Prüfsumme bestätigt: 1', Path(second.log).read_text())
+            self.assertIn('Export-Prüfsumme bestätigt: 1', Path(second.log).read_text(encoding='utf-8'))
             self.assertEqual(source.read_bytes(), raw)
 
     def test_only_successful_export_states_receive_check_labels(self):
