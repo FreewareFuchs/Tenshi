@@ -32,7 +32,7 @@ def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
 # Online-independent help access (Tenshi 3.0.0)
-add('? Hilfe', '? Help', '? Ayuda', '? 帮助', '? Справка', '? ヘルプ')
+add('Hilfe', 'Help', 'Ayuda', '帮助', 'Справка', 'ヘルプ')
 
 # Imaging controls (Tenshi 2.7.0)
 add('Leseversuche:', 'Read retries:', 'Reintentos:', '重试读取：', 'Повторы чтения:', '再読み取り回数:')

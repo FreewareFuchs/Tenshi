@@ -30,7 +30,7 @@ class HelpContentTests(unittest.TestCase):
             self.assertEqual(len(strings), 5)
             self.assertTrue(all(strings))
         for lang in LANGUAGES:
-            self.assertNotEqual(translate('? Hilfe', lang), '? Hilfe' if lang != 'de' else '')
+            self.assertNotEqual(translate('Hilfe', lang), 'Hilfe' if lang != 'de' else '')
 
     def test_version_and_safety_limits_in_help(self):
         for language in LANGUAGES:
@@ -90,6 +90,17 @@ class HelpWindowTests(unittest.TestCase):
         self.app.destroy()
         self.env.stop()
         self.temp.cleanup()
+
+    def test_header_help_button_translates_in_all_six_languages_and_back(self):
+        self.app.source_path.set('test-image.raw')
+        labels = {'de': 'Hilfe', 'en': 'Help', 'es': 'Ayuda',
+                  'zh': '帮助', 'ru': 'Справка', 'ja': 'ヘルプ'}
+        for language in (*LANGUAGES, 'de'):
+            with self.subTest(language=language):
+                self.app.change_language(language)
+                self.app.update()
+                self.assertEqual(self.app.help_button.cget('text'), labels[language])
+                self.assertEqual(self.app.source_path.get(), 'test-image.raw')
 
     def test_button_opens_help_without_changing_two_tabs_or_source(self):
         self.app.source_path.set('test-image.raw')
