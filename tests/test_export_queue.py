@@ -154,7 +154,8 @@ class ExportQueueTests(unittest.TestCase):
             app._handle_export_event({'type': 'done', 'path': 'eins.txt', 'size': 512,
                 'status': 'Erfolgreich', 'detail': '', 'number': 1})
             row = app.export_queue_tree.get_children()[0]
-            self.assertEqual(app.export_queue_tree.item(row, 'values')[0], 'Erfolgreich')
+            from recoverydesk.verification_labels import WRITTEN_LABEL
+            self.assertEqual(app.export_queue_tree.item(row, 'values')[0], WRITTEN_LABEL)
         finally:
             app.destroy()
 
