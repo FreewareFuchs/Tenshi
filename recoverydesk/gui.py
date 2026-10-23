@@ -1529,8 +1529,8 @@ class RecoveryDeskApp(tk.Tk):
         entry = ttk.Entry(searchrow, textvariable=self.browser_search)
         self.browser_search_entry = entry
         entry.pack(side='left', fill='x', expand=True, padx=6)
-        entry.bind('<Return>', lambda event: self._search_browser())
-        ttk.Button(searchrow, text='Suchen', command=self._search_browser).pack(side='left')
+        entry.bind('<Return>', lambda event: self._normal_search_browser())
+        ttk.Button(searchrow, text='Suchen', command=self._normal_search_browser).pack(side='left')
         ttk.Button(searchrow, text='Erweiterte Suche…', command=self._advanced_search_dialog).pack(side='left', padx=(5,0))
         ttk.Button(searchrow, text='Zurück zum Ordner', command=self._show_current_directory).pack(side='left', padx=6)
 
@@ -2414,6 +2414,12 @@ class RecoveryDeskApp(tk.Tk):
             in_path=self.browser_search_paths.get())
         criteria.validate()
         return criteria
+
+    def _normal_search_browser(self):
+        """An empty normal search clears advanced criteria as well."""
+        if not self.browser_search.get().strip():
+            self._clear_advanced_search()
+        self._search_browser()
 
     def _search_browser(self):
         if not self.browser_index:
