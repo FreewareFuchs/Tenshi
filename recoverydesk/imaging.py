@@ -14,6 +14,7 @@ from hashlib import sha256
 from pathlib import PureWindowsPath
 import json
 import os
+import sys
 import tempfile
 import time
 from typing import Callable
@@ -22,7 +23,6 @@ from .diagnostics import traced
 from .sources import (validate_source, open_source, source_size, is_device_source,
                       physical_sector_size, ensure_safe_destination)
 from .secure_target import open_regular_output, open_regular_input, atomic_json_checkpoint
-from .linux_devices import block_path
 
 FORMAT_VERSION = 1
 DEFAULT_BLOCK_SIZE = 1024 * 1024
@@ -87,7 +87,7 @@ def _is_sharing_denial(exc: OSError) -> bool:
 
 
 def _atomic_json(path: str, info: dict, *, source: str | None = None) -> None:
-    if source is not None and block_path(source):
+    if source is not None and sys.platform.startswith('linux'):
         atomic_json_checkpoint(path, info, source)
         return
     directory = os.path.dirname(os.path.abspath(path)) or '.'
@@ -591,7 +591,7 @@ def create_image(source: str, destination: str, *,
             expected_output_inode = (st.st_dev, st.st_ino)
         state = _make_manifest(identity, destination, block_size)
         try:
-            if block_path(source):
+            if sys.platform.startswith('linux'):
                 with open_regular_output(sidecar, 'xb', source) as f:
                     f.write(json.dumps(state, ensure_ascii=False, indent=2).encode('utf-8'))
                     f.flush()

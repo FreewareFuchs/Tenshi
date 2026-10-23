@@ -60,5 +60,16 @@ class LinuxCheckpointRenameTests(unittest.TestCase):
             self.assertFalse((outside / 'checkpoint.json').is_symlink())
 
 
+class LinuxImageCheckpointDispatchTests(LinuxCheckpointRenameTests):
+    """Exercise the imaging entry point with an ordinary image source."""
+
+    def setUp(self):
+        from recoverydesk.imaging import _atomic_json
+        dispatch = lambda path, state, source: _atomic_json(path, state, source=source)
+        patcher = mock.patch(__name__ + '.atomic_json_checkpoint', side_effect=dispatch)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+
 if __name__ == '__main__':
     unittest.main()
