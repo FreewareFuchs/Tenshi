@@ -124,9 +124,14 @@ class FAT32(VolumeBase):
             raise FileSystemError('FAT32-Rootcluster außerhalb des Volumes')
         self.fat_offset = offset+self.reserved*self.bps
         self.fat_bytes = self.fat_sectors*self.bps
-        # A stale second FAT can occasionally retain an old chain after the
-        # first FAT was cleared. Only use it when FAT mirroring was enabled.
-        self.mirroring_enabled = not bool(u16(b, 40) & 0x0080)
+        flags = u16(b, 40)
+        self.mirroring_enabled = not bool(flags & 0x0080)
+        # ExtFlags bits 0-3 select the authoritative FAT only without mirroring.
+        # Keep fat_offset at FAT 0 for the separate deleted-file mirror checks.
+        self.active_fat = 0 if self.mirroring_enabled else flags & 0x000F
+        if self.active_fat >= self.fats:
+            raise FileSystemError('Aktive FAT32-Tabelle außerhalb der vorhandenen FATs')
+        self.active_fat_offset = self.fat_offset + self.active_fat*self.fat_bytes
 
     def cluster_offset(self, cluster):
         if not 2 <= cluster < self.cluster_count+2:
@@ -145,7 +150,7 @@ class FAT32(VolumeBase):
             fat_entry = current*4
             if fat_entry+4 > self.fat_bytes:
                 raise FileSystemError('FAT32-Cluster außerhalb der FAT')
-            current = u32(read_exact(f, self.fat_offset+fat_entry, 4)) & 0x0FFFFFFF
+            current = u32(read_exact(f, self.active_fat_offset+fat_entry, 4)) & 0x0FFFFFFF
             if current in (0,1,0x0FFFFFF7):
                 raise FileSystemError('FAT32-Kette enthält ungültigen oder defekten Cluster')
 
