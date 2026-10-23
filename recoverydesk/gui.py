@@ -499,10 +499,13 @@ class RecoveryDeskApp(tk.Tk):
         # User-provided Tenshi logo replaces the former text title.
         header = ttk.Frame(self, padding=(22, 8, 22, 3))
         header.pack(fill="x")
+        header.columnconfigure(1, weight=1)
+        self._header_actions = ttk.Frame(header)
+        self._header_actions.grid(row=0, column=2, sticky="ne")
         # Top-right language switcher; native names make each language findable.
         self._language_var = tk.StringVar(value=self.language)
         self._language_button = ttk.Menubutton(
-            header, text='🌐  ' + LANGUAGES[self.language], direction='below')
+            self._header_actions, text='🌐  ' + LANGUAGES[self.language], direction='below')
         self._language_menu = tk.Menu(self._language_button, tearoff=False)
         for language_code, native_label in LANGUAGES.items():
             self._language_menu.add_radiobutton(
@@ -511,16 +514,16 @@ class RecoveryDeskApp(tk.Tk):
         self._language_button.configure(menu=self._language_menu)
         self._language_button.pack(side='right', anchor='ne', padx=(10, 0), pady=(9, 0))
         self._theme_var = tk.StringVar(value=self.theme)
-        self.theme_button = ttk.Menubutton(header, text='◐  Darstellung', direction='below')
+        self.theme_button = ttk.Menubutton(self._header_actions, text='◐  Darstellung', direction='below')
         self._theme_menu = tk.Menu(self.theme_button, tearoff=False)
         for label, value in (('Hell', 'light'), ('Dunkel', 'dark')):
             self._theme_menu.add_radiobutton(label=label, value=value, variable=self._theme_var,
                 command=lambda theme=value: self.change_theme(theme))
         self.theme_button.configure(menu=self._theme_menu)
         self.theme_button.pack(side='right', anchor='ne', padx=(6,0), pady=(9,0))
-        self.help_button = ttk.Button(header, text='? Hilfe', command=self.show_help)
+        self.help_button = ttk.Button(self._header_actions, text='? Hilfe', command=self.show_help)
         self.help_button.pack(side='right', anchor='ne', padx=(6, 0), pady=(9, 0))
-        self.error_log_button = ttk.Button(header, text='Fehlerprotokoll',
+        self.error_log_button = ttk.Button(self._header_actions, text='Fehlerprotokoll',
                                            command=self.show_error_log)
         self.error_log_button.pack(side='right', anchor='ne', padx=(6, 0), pady=(9, 0))
         self.brand_logo = tk.PhotoImage(file=str(asset_path("tenshi_logo.png")))
@@ -533,15 +536,20 @@ class RecoveryDeskApp(tk.Tk):
                 pass  # The embedded PNG icon remains available.
         self.logo_label = tk.Label(header, image=self.brand_logo, background="#f3f5f8", borderwidth=0,
                                    highlightthickness=0)
-        self.logo_label.pack(side="left", anchor="w")
+        self.logo_label.grid(row=0, column=0, sticky="w")
         description = ttk.Frame(header)
         self._header_description = description
         self._compact_brand_logo = self.brand_logo.subsample(2, 2)
-        description.pack(side="left", fill="both", expand=True, padx=(18, 0))
-        ttk.Label(description, text="Datenrettung & schreibgeschützte Datenträgeranalyse",
-                  font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(8, 2))
-        ttk.Label(description, text="NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner",
-                  style="Sub.TLabel").pack(anchor="w")
+        description.grid(row=0, column=1, sticky="ew", padx=(18, 0))
+        self._header_title = ttk.Label(description, text="Datenrettung & schreibgeschützte Datenträgeranalyse",
+                  font=("Segoe UI", 13, "bold"))
+        self._header_title.pack(anchor="w", fill="x", pady=(2, 2))
+        self._header_subtitle = ttk.Label(description, text="NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner",
+                  style="Sub.TLabel")
+        self._header_subtitle.pack(anchor="w", fill="x")
+        description.bind("<Configure>", lambda event: (
+            self._header_title.configure(wraplength=max(100, event.width)),
+            self._header_subtitle.configure(wraplength=max(100, event.width))))
 
         # Two rows keep all source actions accessible even with Windows display scaling.
         source = ttk.Frame(self, padding=(12, 2, 12, 2))
@@ -623,15 +631,21 @@ class RecoveryDeskApp(tk.Tk):
         if event is not None and event.widget is not self:
             return
         compact = self.winfo_width() <= 1100 and self.winfo_height() <= 720
-        if self._compact_layout == compact:
+        narrow = self.winfo_width() < 1400
+        layout = (compact, narrow)
+        if self._compact_layout == layout:
             return
-        self._compact_layout = compact
-        if compact:
-            self._header_description.pack_forget()
-            self.logo_label.configure(image=self._compact_brand_logo)
+        self._compact_layout = layout
+        self.logo_label.configure(image=self._compact_brand_logo if narrow else self.brand_logo)
+        self._header_description.grid_forget()
+        if narrow:
+            self._header_actions.grid_configure(column=1)
+            self._header_description.grid(row=1, column=0, columnspan=2,
+                                          sticky='ew', pady=(3, 0))
         else:
-            self.logo_label.configure(image=self.brand_logo)
-            self._header_description.pack(side='left', fill='both', expand=True, padx=(18, 0))
+            self._header_actions.grid_configure(column=2)
+            self._header_description.grid(row=0, column=1, sticky='ew', padx=(18, 0))
+        self._header_title.configure(font=('Segoe UI', 10 if compact else 13, 'bold'))
         # All functional controls remain available; reduce only decorative space.
         style = ttk.Style(self)
         style.configure('TButton', padding=(7, 2) if compact else (10, 7))
@@ -2637,6 +2651,11 @@ class RecoveryDeskApp(tk.Tk):
         queue_scroll.pack(side='right', fill='y')
         self.export_queue_tree.pack(fill='x')
         self.export_queue_tree.bind('<Double-1>', self._export_row_details)
+        # Start collapsed; all controls and progress remain available on demand.
+        self.export_queue_contents.pack_forget()
+        self.export_queue_frame.pack_forget()
+        self.export_queue_collapsed = True
+        self.export_queue_toggle.configure(text="Wiederherstellungswarteschlange  ▶ Ausklappen")
         # Full details, including entries not visible in the compact list, stay in the report.
 
     def _toggle_export_queue(self):
