@@ -103,6 +103,11 @@ def check_fingerprint(source: str, saved: dict, *, original: str | None = None) 
             not isinstance(point[1], str) or len(point[1]) != 64):
             raise SessionError('Ungültige Prüfpunkte in der Sitzung.')
         offsets.append(point[0])
+    # Reject differently sized replacements before reading saved sample offsets:
+    # a valid sample near the original end may lie beyond a smaller replacement.
+    _, source_stat = _plain_image(source)
+    if source_stat.st_size != saved.get('size'):
+        raise SessionError('Die Größe des Quell-Images stimmt nicht mit der Sitzung überein.')
     actual = fingerprint_image(source, offsets)
     if actual['size'] != saved.get('size'):
         raise SessionError('Die Größe des Quell-Images stimmt nicht mit der Sitzung überein.')
