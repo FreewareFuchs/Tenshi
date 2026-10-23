@@ -1,0 +1,53 @@
+name: Prepare release bundle (no publishing)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Release label, e.g. beta.5 (does not publish a release)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate release identity
+        env:
+          RELEASE_LABEL: ${{ inputs.release }}
+        run: python3 write_build_info.py --release "$RELEASE_LABEL"
+  linux:
+    needs: validate
+    uses: ./.github/workflows/linux-check.yml
+    with:
+      release: ${{ inputs.release }}
+  windows:
+    needs: validate
+    uses: ./.github/workflows/windows-check.yml
+    with:
+      release: ${{ inputs.release }}
+  assemble:
+    needs: [linux, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Tenshi-*
+          path: artifacts
+      - name: Validate and assemble three distribution packages
+        env:
+          RELEASE_LABEL: ${{ inputs.release }}
+          BUILD_COMMIT: ${{ github.sha }}
+        run: >-
+          python3 prepare_release.py --artifacts artifacts --output release_bundle
+          --release "$RELEASE_LABEL" --commit "$BUILD_COMMIT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tenshi-prepared-release
+          path: release_bundle/*
+          if-no-files-found: error

@@ -10,6 +10,10 @@ on:
       - 'start_linux.sh'
       - 'build_deb.py'
       - 'write_build_info.py'
+      - 'prepare_release.py'
+      - 'release_tools.py'
+      - 'release_finalize.py'
+      - '.github/workflows/prepare-release.yml'
       - 'packaging/linux/**'
       - '.github/workflows/linux-check.yml'
   pull_request:
@@ -20,9 +24,19 @@ on:
       - 'start_linux.sh'
       - 'build_deb.py'
       - 'write_build_info.py'
+      - 'prepare_release.py'
+      - 'release_tools.py'
+      - 'release_finalize.py'
+      - '.github/workflows/prepare-release.yml'
       - 'packaging/linux/**'
       - '.github/workflows/linux-check.yml'
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release:
+        type: string
+        default: ""
+
 
 concurrency:
   group: linux-check-${{ github.event.pull_request.head.ref || github.ref_name }}
@@ -34,6 +48,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Set explicit release identity for preparation
+        if: inputs.release != ''
+        shell: bash
+        env:
+          RELEASE_LABEL: ${{ inputs.release }}
+        run: |
+          [[ "$RELEASE_LABEL" =~ ^beta\.[1-9][0-9]*$ ]] || exit 2
+          echo "TENSHI_RELEASE=$RELEASE_LABEL" >> "$GITHUB_ENV"
       - name: Install Tk and Xvfb
         run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb e2fsprogs btrfs-progs xfsprogs desktop-file-utils
       - name: Compile source modules
@@ -94,7 +116,12 @@ jobs:
       - name: Build native DEB and validate desktop entry
         run: |
           desktop-file-validate packaging/linux/de.freewarefuchs.Tenshi.desktop
-          python3 build_deb.py
+          if [ -n "${TENSHI_RELEASE:-}" ]; then
+            VERSION=$(python3 -c 'from recoverydesk import __version__; print(__version__)')
+            python3 build_deb.py --package-version "$VERSION~$TENSHI_RELEASE-1"
+          else
+            python3 build_deb.py
+          fi
           dpkg-deb --info deb_output/*.deb
           cd deb_output
           sha256sum -c *.deb.sha256

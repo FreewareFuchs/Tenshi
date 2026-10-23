@@ -45,3 +45,7 @@ release_manifest.json
 Thumbs.db
 .vscode/
 .idea/
+
+# Prepared release output and CI build identity
+release_bundle/
+windows-build-info.json
