@@ -374,15 +374,20 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                 state['results'][task.path] = {'status': 'Übersprungen',
                     'detail': '; '.join(preflight.details)}
             elif path.exists() or _is_unsafe_link(path):
-                if (prior.get('status') == 'Erfolgreich' and path.is_file() and
-                        path.stat().st_size == task.entry.size and
-                        _hash_file(path, source=source) == prior.get('sha256')):
-                    result.verified_existing += 1
-                    completed_status = 'Bereits verifiziert'
-                else:
+                try:
+                    if (prior.get('status') == 'Erfolgreich' and path.is_file() and
+                            path.stat().st_size == task.entry.size and
+                            _hash_file(path, source=source) == prior.get('sha256')):
+                        result.verified_existing += 1
+                        completed_status = 'Bereits verifiziert'
+                    else:
+                        result.failed += 1
+                        state['results'][task.path] = {'status': 'Fehler',
+                            'detail': 'Zieldatei existiert und kann nicht als vorheriger Export bestätigt werden'}
+                except (OSError, ValueError) as exc:
                     result.failed += 1
                     state['results'][task.path] = {'status': 'Fehler',
-                        'detail': 'Zieldatei existiert und kann nicht als vorheriger Export bestätigt werden'}
+                        'detail': f'Vorhandene Exportdatei konnte nicht geprüft werden: {exc}'}
             else:
                 try:
                     if not path.parent.is_dir():

@@ -42,6 +42,28 @@ class BatchExportTests(unittest.TestCase):
             self.assertEqual(second.verified_existing, 3)
             self.assertEqual(src.read_bytes(), original)
 
+    def test_resume_read_error_is_reported_and_other_files_are_verified(self):
+        from recoverydesk import batch_export
+        for error in (PermissionError('read denied'), ValueError('unsafe file')):
+            with self.subTest(error=type(error).__name__), tempfile.TemporaryDirectory() as temp:
+                src, index, parent, target = self.fixture(Path(temp))
+                first = export_batch(str(src), index, [parent], str(target))
+                original = src.read_bytes()
+                hash_file = batch_export._hash_file
+                def fail_one(path, **kwargs):
+                    if path.name == 'bericht.txt':
+                        raise error
+                    return hash_file(path, **kwargs)
+                with patch('recoverydesk.batch_export._hash_file', side_effect=fail_one):
+                    result = export_batch(str(src), index, [parent], str(target))
+                self.assertEqual(result.failed, 1)
+                self.assertEqual(result.verified_existing, 2)
+                state = json.loads(Path(first.manifest).read_text(encoding='utf-8'))
+                self.assertEqual(state['results']['Dokumente/bericht.txt']['status'], 'Fehler')
+                self.assertIn(str(error), Path(result.log).read_text(encoding='utf-8'))
+                self.assertEqual((Path(first.root) / 'files/Dokumente/bericht.txt').read_bytes(), b'FIRST')
+                self.assertEqual(src.read_bytes(), original)
+
     def test_cancel_then_resume_remaining_without_duplicate(self):
         with tempfile.TemporaryDirectory() as temp:
             src, idx, parent, dest = self.fixture(Path(temp))
