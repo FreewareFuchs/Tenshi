@@ -36,7 +36,9 @@ if errorlevel 1 goto install_failed
 
 echo [4/5] Tenshi.exe mit Programmsymbol und Versionsinformationen bauen...
 if not exist "build\version_info.txt" goto missing_version
-"%VENV_PYTHON%" -m PyInstaller --noconfirm --clean --windowed --onefile --name Tenshi --icon "recoverydesk/assets/tenshi.ico" --version-file "build/version_info.txt" --add-data "recoverydesk/assets;recoverydesk/assets" main.py >> "%BUILD_LOG%" 2>&1
+"%VENV_PYTHON%" write_build_info.py >> "%BUILD_LOG%" 2>&1
+if errorlevel 1 goto build_failed
+"%VENV_PYTHON%" -m PyInstaller --noconfirm --clean --windowed --onefile --name Tenshi --icon "recoverydesk/assets/tenshi.ico" --version-file "build/version_info.txt" --add-data "recoverydesk/assets;recoverydesk/assets" --add-data "build/identity/recoverydesk/_build_info.json;recoverydesk" main.py >> "%BUILD_LOG%" 2>&1
 if errorlevel 1 goto build_failed
 if not exist "dist\Tenshi.exe" goto missing_exe
 

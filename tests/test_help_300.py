@@ -92,6 +92,7 @@ class HelpWindowTests(unittest.TestCase):
         self.temp.cleanup()
 
     def test_header_help_button_translates_in_all_six_languages_and_back(self):
+        from recoverydesk.version_info import display_version
         self.app.source_path.set('test-image.raw')
         labels = {'de': 'Hilfe', 'en': 'Help', 'es': 'Ayuda',
                   'zh': '帮助', 'ru': 'Справка', 'ja': 'ヘルプ'}
@@ -101,6 +102,7 @@ class HelpWindowTests(unittest.TestCase):
                 self.app.update()
                 self.assertEqual(self.app.help_button.cget('text'), labels[language])
                 self.assertEqual(self.app.source_path.get(), 'test-image.raw')
+                self.assertIn(display_version(), self.app.title())
 
     def test_button_opens_help_without_changing_two_tabs_or_source(self):
         self.app.source_path.set('test-image.raw')

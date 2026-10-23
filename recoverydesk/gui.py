@@ -16,6 +16,7 @@ messagebox = DialogProxy(_messagebox, lambda: _CURRENT_LOCALE)
 filedialog = DialogProxy(_filedialog, lambda: _CURRENT_LOCALE, is_file_dialog=True)
 from pathlib import Path
 from .branding import asset_path
+from .version_info import display_version
 from .help_center import HelpWindow
 from .ui_preferences import load_ui_preferences, save_ui_preferences, valid_geometry
 from .diagnostics import log_issue, diagnostic_log_path
@@ -51,7 +52,7 @@ APP_NAME = "Tenshi"
 class RecoveryDeskApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Tenshi — Datenrettung")
+        self.title(f"Tenshi — Datenrettung | {display_version()}")
         self._view_settings = load_ui_preferences()
         self.theme = self._view_settings['theme']
         geometry = self._view_settings['geometry']

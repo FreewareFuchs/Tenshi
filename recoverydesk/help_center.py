@@ -10,6 +10,7 @@ from tkinter import ttk
 
 from .i18n import LANGUAGES
 from . import __version__
+from .version_info import display_version
 
 TOPICS = (
     'start', 'partitions', 'browser', 'imaging', 'export',
@@ -119,7 +120,7 @@ def topic_text(topic: str, language: str) -> tuple[str, str]:
         raise ValueError('Unknown help topic')
     lang = LANG_INDEX.get(language, 0)
     labels, bodies = DATA[topic]
-    return labels[lang], bodies[lang].format(version=__version__)
+    return labels[lang], bodies[lang].format(version=display_version())
 
 
 def available_topics(language: str, query: str = '') -> list[str]:

@@ -11,16 +11,19 @@ import re
 import shutil
 import subprocess
 import tempfile
+from recoverydesk.version_info import write_build_info
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_VERSION = '3.0.2~beta.4-1'
 
 
-def build(output: Path, version: str = DEFAULT_VERSION) -> Path:
+def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = None) -> Path:
     app_version = re.search(r'__version__ = "([^"]+)"',
                             (ROOT / 'recoverydesk/__init__.py').read_text()).group(1)
     if not re.fullmatch(re.escape(app_version) + r'(?:~[a-zA-Z0-9.+]+)?-[1-9][0-9]*', version):
         raise ValueError('Package version must match the application version and include a Debian revision.')
+    if release is not None and not version.startswith(f'{app_version}~{release}-'):
+        raise ValueError('Release identity must match the Debian package version.')
     if not shutil.which('dpkg-deb'):
         raise RuntimeError('dpkg-deb is required (Debian/Ubuntu/Linux Mint: dpkg).')
     epoch = int(os.environ.get('SOURCE_DATE_EPOCH') or subprocess.check_output(
@@ -41,6 +44,7 @@ def build(output: Path, version: str = DEFAULT_VERSION) -> Path:
             path.chmod(mode)
 
         copy(ROOT / 'main.py', 'usr/share/tenshi/main.py')
+        write_build_info(stage / 'usr/share/tenshi/recoverydesk/_build_info.json', ROOT, release)
         for source in sorted((ROOT / 'recoverydesk').rglob('*')):
             if source.is_file() and '__pycache__' not in source.parts and source.suffix in ('.py', '.png', '.ico'):
                 copy(source, 'usr/share/tenshi/' + source.relative_to(ROOT).as_posix())
@@ -90,5 +94,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'deb_output')
     parser.add_argument('--package-version', default=DEFAULT_VERSION)
+    parser.add_argument('--release', default=os.environ.get('TENSHI_RELEASE'),
+                        help='Explicit beta.N release identity; requires a clean Git tree')
     args = parser.parse_args()
-    print(build(args.output_dir, args.package_version))
+    print(build(args.output_dir, args.package_version, args.release))
