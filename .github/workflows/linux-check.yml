@@ -2,7 +2,7 @@ name: Linux read-only checks
 
 on:
   push:
-    branches: [feature/linux-readonly-port]
+    branches: [main, feature/linux-readonly-port]
     paths:
       - 'recoverydesk/**'
       - 'tests/**'
