@@ -14,6 +14,58 @@ BLKGETSIZE64 = 0x80081272
 BLKSSZGET = 0x1268
 
 
+ACCESS_HEADER = 'Linux-Datenträger: Leseberechtigung fehlt.'
+ACCESS_HINT = 'Geräteberechtigungen durch die Systemverwaltung gezielt für dieses Gerät prüfen lassen; nur Lesezugriff wird benötigt.'
+ACCESS_ALTERNATIVE = 'Alternativ ein vorhandenes Image öffnen. Danach die Quelle erneut auswählen. Tenshi ohne sudo starten.'
+ACCESS_UNCHANGED = 'Tenshi ändert keine Geräteberechtigungen.'
+
+
+def device_access_details(path: str, *, sysfs_root: Path = Path('/sys/dev/block')) -> dict:
+    """Read only device-node metadata and bounded sysfs text, never disk contents."""
+    details = {'path': path}
+    try:
+        node_stat = os.stat(path)
+        if not stat.S_ISBLK(node_stat.st_mode):
+            return details
+        key = f'{os.major(node_stat.st_rdev)}:{os.minor(node_stat.st_rdev)}'
+        details['address'] = key
+        node = (sysfs_root / key).resolve(strict=True)
+        def text(file):
+            try:
+                with file.open('r', encoding='utf-8', errors='replace') as stream:
+                    return ' '.join(stream.read(256).split())
+            except OSError:
+                return ''
+        sectors = text(node / 'size')
+        if sectors.isdecimal() and 0 < int(sectors) * 512 < 2 ** 63:
+            details['size_bytes'] = int(sectors) * 512
+        model_node = node.parent if (node / 'partition').exists() else node
+        model = text(model_node / 'device/model')
+        if model:
+            details['model'] = model
+    except (OSError, ValueError, RuntimeError):
+        pass  # Missing/hot-unplugged metadata must not hide the access error.
+    return details
+
+
+class LinuxReadAccessError(PermissionError):
+    def __init__(self, path: str):
+        details = device_access_details(path)
+        lines = [ACCESS_HEADER, '', 'Gerät:', path]
+        if 'address' in details:
+            lines += ['Gerätekennung (Major:Minor):', details['address']]
+        if 'model' in details:
+            lines += ['Modell:', details['model']]
+        if 'size_bytes' in details:
+            lines += ['Gerätegröße (Bytes):', str(details['size_bytes'])]
+        lines += ['', ACCESS_HINT, ACCESS_ALTERNATIVE, ACCESS_UNCHANGED]
+        super().__init__(errno.EACCES, '\n'.join(lines), path)
+
+    def __str__(self):
+        # Whole-line UI translation must not be obscured by an [Errno 13] prefix.
+        return self.strerror
+
+
 def block_path(path: str) -> bool:
     if not isinstance(path, str) or not path.startswith('/dev/'):
         return False
@@ -30,13 +82,7 @@ def block_info(path: str) -> tuple[int, int]:
     try:
         fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NONBLOCK)
     except PermissionError as exc:
-        raise PermissionError(
-            errno.EACCES,
-            'Linux-Blockgerät kann nicht lesend geöffnet werden. '
-            'Bitte Geräteberechtigungen prüfen oder ein RAW-Image verwenden; '
-            'Tenshi nicht mit zusätzlichen Administratorrechten starten.',
-            path
-        ) from exc
+        raise LinuxReadAccessError(path) from exc
     try:
         size = struct.unpack('Q', fcntl.ioctl(fd, BLKGETSIZE64, bytes(8)))[0]
         sector = struct.unpack('I', fcntl.ioctl(fd, BLKSSZGET, bytes(4)))[0]

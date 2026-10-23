@@ -724,6 +724,31 @@ add('Export-Prüfsumme bestätigt', 'Export checksum confirmed', 'Suma de export
     '导出校验和已确认', 'Контрольная сумма экспорта подтверждена', '出力チェックサムを確認済み')
 add('Metadaten plausibel', 'Metadata plausible', 'Metadatos plausibles',
     '元数据合理', 'Метаданные правдоподобны', 'メタデータに整合性あり')
+add('Linux-Datenträger: Leseberechtigung fehlt.',
+    'Linux drive: read permission is missing.', 'Unidad Linux: falta permiso de lectura.',
+    'Linux 磁盘：缺少读取权限。', 'Диск Linux: нет разрешения на чтение.',
+    'Linuxドライブ：読み取り権限がありません。')
+add('Geräteberechtigungen durch die Systemverwaltung gezielt für dieses Gerät prüfen lassen; nur Lesezugriff wird benötigt.',
+    'Ask your system administrator to check permissions for this specific device; only read access is needed.',
+    'Pida al administrador que revise los permisos de este dispositivo; solo se necesita acceso de lectura.',
+    '请系统管理员检查此设备的权限；只需要读取权限。',
+    'Попросите администратора проверить права именно на это устройство; нужен только доступ на чтение.',
+    '管理者にこのデバイスの権限確認を依頼してください。必要なのは読み取り権限のみです。')
+add('Alternativ ein vorhandenes Image öffnen. Danach die Quelle erneut auswählen. Tenshi ohne sudo starten.',
+    'Alternatively, open an existing image. Select the source again after permissions are resolved. Run Tenshi without sudo.',
+    'También puede abrir una imagen existente. Tras resolver los permisos, seleccione de nuevo el origen. Inicie Tenshi sin sudo.',
+    '也可打开现有镜像。权限问题解决后重新选择来源。请勿使用 sudo 启动 Tenshi。',
+    'Можно открыть готовый образ. После исправления прав выберите источник заново. Запускайте Tenshi без sudo.',
+    '既存のイメージも利用できます。権限の問題を解決したらソースを選び直してください。Tenshiはsudoなしで起動してください。')
+add('Tenshi ändert keine Geräteberechtigungen.', 'Tenshi does not change device permissions.',
+    'Tenshi no cambia los permisos de dispositivos.', 'Tenshi 不会更改设备权限。',
+    'Tenshi не изменяет права на устройства.', 'Tenshiはデバイスの権限を変更しません。')
+add('Gerät:', 'Device:', 'Dispositivo:', '设备：', 'Устройство:', 'デバイス:')
+add('Gerätekennung (Major:Minor):', 'Device ID (major:minor):', 'ID del dispositivo (mayor:menor):',
+    '设备标识（主设备号:次设备号）：', 'Идентификатор устройства (major:minor):', 'デバイスID（major:minor）:')
+add('Modell:', 'Model:', 'Modelo:', '型号：', 'Модель:', 'モデル:')
+add('Gerätegröße (Bytes):', 'Device size (bytes):', 'Tamaño del dispositivo (bytes):',
+    '设备大小（字节）：', 'Размер устройства (байт):', 'デバイス容量（バイト）:')
 # Keep partial substitutions conservative: only anchored field labels and
 # fixed status fragments are eligible; do not translate a raw filename.
 _PARTIAL = sorted(set(_PARTIAL + [s for s in TRANSLATIONS if s.endswith(':') and len(s)>=5]),
