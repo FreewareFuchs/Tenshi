@@ -157,16 +157,17 @@ def _atomic_json(dest: Path, data: dict, *, source: str | None = None):
 
 
 def _write_log(path: Path, state: dict, result: BatchResult):
+    from .verification_labels import EXPORT_SCOPE, RESUME_SCOPE, export_status_label
     rows = [f'Tenshi Exportbericht — {datetime.now(timezone.utc).isoformat()}',
             f'Quelle: {state["identity"]["source"]}',
             f'Dateisystem: {state["identity"]["filesystem"]}',
             f'Exportziel: {result.root}',
             f'Status: {"Abgebrochen" if result.cancelled else "Beendet"}',
-            f'Neue Dateien: {result.exported}; bereits verifiziert: {result.verified_existing}',
+            f'Neue Dateien: {result.exported}; Export-Prüfsumme bestätigt: {result.verified_existing}',
             f'Neue Ordner: {result.directories}; fehlgeschlagen: {result.failed}; ausgelassen: {result.skipped}',
-            '', 'Einzelergebnisse:']
+            '', EXPORT_SCOPE, RESUME_SCOPE, '', 'Einzelergebnisse:']
     for key, item in sorted(state['results'].items()):
-        rows.append(f'{item["status"]}\t{key}\t{item.get("detail", "")}')
+        rows.append(f'{export_status_label(item["status"])}\t{key}\t{item.get("detail", "")}')
     text = '\n'.join(rows) + '\n'
     source = state['identity']['source']
     if sys.platform.startswith('linux'):

@@ -17,6 +17,8 @@ filedialog = DialogProxy(_filedialog, lambda: _CURRENT_LOCALE, is_file_dialog=Tr
 from pathlib import Path
 from .branding import asset_path
 from .version_info import display_version
+from .verification_labels import (METADATA_SCOPE, READ_SCOPE, EXPORT_SCOPE, RESUME_SCOPE,
+                                  RESUME_LABEL, METADATA_LABEL, export_status_label)
 from .help_center import HelpWindow
 from .ui_preferences import load_ui_preferences, save_ui_preferences, valid_geometry
 from .diagnostics import log_issue, diagnostic_log_path
@@ -218,7 +220,7 @@ class RecoveryDeskApp(tk.Tk):
                         if row:
                             values = list(self.export_queue_tree.item(iid, 'values'))
                             if values:
-                                values[0] = translate(row['status'], self.language)
+                                values[0] = translate(export_status_label(row['status']), self.language)
                                 self.export_queue_tree.item(iid, values=values)
 
     def _on_localized_status_selected(self, event=None):
@@ -2658,12 +2660,14 @@ class RecoveryDeskApp(tk.Tk):
         # The detailed list is expandable, to keep the main file browser visible
         # on smaller laptops and at 125–200% Windows display scaling.
         self.export_queue_details = ttk.Frame(self.export_queue_contents)
+        ttk.Label(self.export_queue_details, text=EXPORT_SCOPE + '\n' + RESUME_SCOPE,
+                  wraplength=900, justify='left').pack(anchor='w', pady=(2, 4))
         self.export_queue_details_open = False
         self.export_queue_tree = ttk.Treeview(self.export_queue_details, columns=columns,
                                                show='tree headings', height=3)
         self.export_queue_tree.heading('#0', text='Datei / Ordner')
         self.export_queue_tree.column('#0', width=440, minwidth=160)
-        for key, label, width in [('state', 'Status', 150), ('size', 'Größe', 105),
+        for key, label, width in [('state', 'Status', 270), ('size', 'Größe', 105),
                                   ('detail', 'Ergebnis / Fehler', 380)]:
             self.export_queue_tree.heading(key, text=label)
             self.export_queue_tree.column(key, width=width, minwidth=70)
@@ -2721,9 +2725,10 @@ class RecoveryDeskApp(tk.Tk):
         path = self.export_queue_tree.item(chosen[0], 'text')
         item = self.export_progress.visible_items.get(path, {})
         messagebox.showinfo('Einzelergebnis',
-            f'{path}\n\nStatus: {item.get("status", "unbekannt")}\n'
+            f'{path}\n\nStatus: {translate(export_status_label(item.get("status", "unbekannt")), self.language)}\n'
             f'Größe: {readable_bytes(item.get("size", 0))}\n'
-            f'Info: {item.get("detail", "–") or "–"}', parent=self)
+            f'Info: {item.get("detail", "–") or "–"}\n\n'
+            f'{translate(EXPORT_SCOPE, self.language)}\n{translate(RESUME_SCOPE, self.language)}', parent=self)
 
     def _show_export_results(self):
         report = getattr(self.export_result, 'log', '') if self.export_result else self.export_progress.log
@@ -2734,6 +2739,8 @@ class RecoveryDeskApp(tk.Tk):
         win.title('Tenshi – Exportergebnisse')
         win.geometry('980x620')
         ttk.Label(win, text=f'Bericht: {report}', wraplength=930).pack(anchor='w', padx=14, pady=10)
+        ttk.Label(win, text=EXPORT_SCOPE + '\n' + RESUME_SCOPE,
+                  wraplength=930).pack(anchor='w', padx=14, pady=(0, 8))
         area = ttk.Frame(win, padding=(14, 0, 14, 14))
         area.pack(fill='both', expand=True)
         scrollbar = ttk.Scrollbar(area, orient='vertical')
@@ -2762,9 +2769,9 @@ class RecoveryDeskApp(tk.Tk):
             rep = self.export_result
             label = 'Abgebrochen' if rep.cancelled else 'Beendet'
             self.status.set(f'Stapel-Export {label.lower()}: {rep.exported} neu, '
-                            f'{rep.verified_existing} verifiziert, {rep.failed} Fehler.')
+                            f'{rep.verified_existing} {translate(RESUME_LABEL, self.language)}, {rep.failed} Fehler.')
             self.export_queue_summary.set(
-                f'{label}: {rep.exported} neu · {rep.verified_existing} geprüft · '
+                f'{label}: {rep.exported} neu · {rep.verified_existing} {translate(RESUME_LABEL, self.language)} · '
                 f'{rep.failed} Fehler · {rep.skipped} übersprungen · '
                 f'{readable_bytes(rep.bytes_written)} geschrieben')
             return
@@ -2783,7 +2790,7 @@ class RecoveryDeskApp(tk.Tk):
             for n, (path, item) in enumerate(self.export_progress.visible_items.items()):
                 iid = str(n + 1)
                 self.export_queue_tree.insert('', 'end', iid=iid, text=path,
-                    values=(translate(item['status'], self.language), readable_bytes(item['size']), ''))
+                    values=(translate(export_status_label(item['status']), self.language), readable_bytes(item['size']), ''))
                 self._export_iids[path] = iid
             if data.get('resumed'):
                 self.status.set('Vorhandenen Export prüfen und fortsetzen …')
@@ -2793,7 +2800,7 @@ class RecoveryDeskApp(tk.Tk):
             if iid:
                 item = self.export_progress.visible_items[path]
                 self.export_queue_tree.item(iid, values=(
-                    translate(item['status'], self.language), readable_bytes(item['size']), item['detail']))
+                    translate(export_status_label(item['status']), self.language), readable_bytes(item['size']), item['detail']))
             if kind == 'done' and data['status'] in ('Fehler', 'Abgebrochen'):
                 self.status.set(f'{data["status"]}: {path}: {data.get("detail", "")}')
         # transfer speed, amount remaining and ETA are derived on the UI thread.
@@ -2902,13 +2909,13 @@ class RecoveryDeskApp(tk.Tk):
                   font=('Segoe UI', 13, 'bold')).pack(anchor='w')
         status_text = tk.StringVar(value='Einträge werden anhand der Metadaten geprüft …')
         ttk.Label(panel, textvariable=status_text, wraplength=890).pack(anchor='w', pady=(7, 8))
-        note = 'Metadatenprüfung: Auch ein plausibler Eintrag kann beschädigte oder überschriebene Inhalte enthalten.'
+        note = METADATA_SCOPE
         ttk.Label(panel, text=note, wraplength=890, foreground='#9a3412').pack(anchor='w', pady=(0, 8))
         columns = ('state', 'bytes', 'details')
         table = ttk.Treeview(panel, columns=columns, show='tree headings')
         table.heading('#0', text='Datei / Ordner')
         table.column('#0', width=340, minwidth=140)
-        for key, title, width in [('state', 'Bewertung', 110), ('bytes', 'Größe', 110),
+        for key, title, width in [('state', 'Bewertung', 170), ('bytes', 'Größe', 110),
                                   ('details', 'Hinweise', 460)]:
             table.heading(key, text=title)
             table.column(key, width=width, minwidth=90)
@@ -2967,7 +2974,7 @@ class RecoveryDeskApp(tk.Tk):
             for row in payload.items[:MAX_DETAIL_ROWS]:
                 tags = ('blocked',) if row.state == 'Gesperrt' else ('warn',) if row.state == 'Warnung' else ()
                 table.insert('', 'end', text=row.path, tags=tags,
-                             values=(translate(row.state, self.language), f'{row.bytes_expected:,}',
+                             values=(translate(METADATA_LABEL if row.state == 'Bereit' else row.state, self.language), f'{row.bytes_expected:,}',
                                      '; '.join(translate(note, self.language) for note in row.details)))
             if len(payload.items) > MAX_DETAIL_ROWS:
                 status_text.set(payload.summary() + f' | Liste zeigt erste {MAX_DETAIL_ROWS:,} Einträge; Bericht enthält alle.')
@@ -3039,7 +3046,7 @@ class RecoveryDeskApp(tk.Tk):
             stop_btn.configure(state='disabled')
             detail.set(f'Lesetest abgeschlossen: {report.read_bytes:,} / {report.expected_bytes:,} Bytes')
             progress.configure(value=report.read_bytes)
-            set_info('SHA-256 der gelesenen Bytes: ' + report.sha256 + '\n\n' + report.message)
+            set_info(translate(READ_SCOPE, self.language) + '\n\nSHA-256: ' + report.sha256)
 
         def finish_error(exc):
             worker_state['running'] = False

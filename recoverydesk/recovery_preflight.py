@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Iterable
 
 from .batch_export import plan_selection
+from .verification_labels import METADATA_SCOPE, METADATA_LABEL
 from .recovery_quality import assess
 from .recovery_evidence import (build_live_cluster_evidence,
                                 deleted_stream_claim_issue, self_overlap_issue)
@@ -40,13 +41,15 @@ class PreflightReport:
 
     def as_text(self) -> str:
         lines = ['Tenshi – Export-Vorabprüfung', '', self.summary(), '',
+                 METADATA_SCOPE,
                  'Nur Metadatenprüfung. Keine Prüfung auf überschriebene Inhalte.',
                  'Dateiinhalte wurden nicht gelesen oder mit Originalen verglichen.', '']
         lines.append('NTFS: Bereits von vorhandenen Dateien belegte Cluster sperren einen Löschfund.')
         lines.append('Keine Überlappung beweist NICHT, dass gelöschte Daten unversehrt sind.')
         lines.append('')
         for row in self.items:
-            lines.append(f'[{row.state}] {row.path} ({row.bytes_expected:,} Bytes)')
+            label = METADATA_LABEL if row.state == 'Bereit' else row.state
+            lines.append(f'[{label}] {row.path} ({row.bytes_expected:,} Bytes)')
             lines.extend(f'    - {line}' for line in row.details)
         return '\n'.join(lines) + '\n'
 

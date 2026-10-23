@@ -693,6 +693,37 @@ for row in [
     ('Dateisystem:', 'File system:', 'Sistema de archivos:', '文件系统：', 'Файловая система:', 'ファイルシステム:'),
     ('Info:', 'Info:', 'Información:', '信息：', 'Сведения:', '情報:'),
 ]: add(*row)
+add('Nur Metadaten geprüft; Dateiinhalte ungeprüft.',
+    'Metadata checked only; file contents unverified.',
+    'Solo se comprobaron los metadatos; contenido sin verificar.',
+    '仅检查了元数据；文件内容未经验证。',
+    'Проверены только метаданные; содержимое файлов не проверено.',
+    'メタデータのみ確認済み。ファイル内容は未検証です。')
+add('Dateigröße vollständig gelesen; SHA-256 nur berechnet, nicht mit einem Original verglichen.',
+    'Full declared file size read; SHA-256 calculated only, not compared with an original.',
+    'Se leyó todo el tamaño declarado; SHA-256 calculado, sin comparar con un original.',
+    '已读取完整声明长度；仅计算 SHA-256，未与原始文件比较。',
+    'Прочитан весь заявленный размер; SHA-256 вычислена, но с оригиналом не сравнивалась.',
+    '申告サイズをすべて読み取り済み。SHA-256は計算のみで、原本との比較は行っていません。')
+add('Neue Exporte: Zieldatei gelesen und SHA-256 gespeichert. Kein erneuter Vergleich mit der Quelle.',
+    'New exports: destination file read and SHA-256 saved. No separate comparison with the source.',
+    'Nuevas exportaciones: destino leído y SHA-256 guardado. Sin comparación adicional con el origen.',
+    '新导出：已读取目标文件并保存 SHA-256。未另行与源文件比较。',
+    'Новый экспорт: файл назначения прочитан, SHA-256 сохранена. Отдельного сравнения с источником нет.',
+    '新規出力：出力ファイルを読み取り、SHA-256を保存。元データとの再比較は行っていません。')
+add('Fortsetzen: Größe und SHA-256 mit dem gespeicherten Export verglichen. Kein erneuter Vergleich mit der Quelle.',
+    'Resume: size and SHA-256 compared with the saved export record. No new source comparison.',
+    'Reanudación: tamaño y SHA-256 comparados con el registro guardado. Sin nueva comparación con el origen.',
+    '继续导出：已将大小和 SHA-256 与保存的导出记录比较。未重新与源文件比较。',
+    'Продолжение: размер и SHA-256 сверены с сохранённой записью экспорта. Источник повторно не сравнивался.',
+    '再開：サイズとSHA-256を保存済み出力記録と比較。元データとの再比較は行っていません。')
+add('Exportiert – Originalinhalt ungeprüft', 'Exported – original contents unverified',
+    'Exportado: original sin verificar', '已导出－原始内容未经验证',
+    'Экспортировано — оригинал не проверен', '出力済み－原本内容は未検証')
+add('Export-Prüfsumme bestätigt', 'Export checksum confirmed', 'Suma de exportación confirmada',
+    '导出校验和已确认', 'Контрольная сумма экспорта подтверждена', '出力チェックサムを確認済み')
+add('Metadaten plausibel', 'Metadata plausible', 'Metadatos plausibles',
+    '元数据合理', 'Метаданные правдоподобны', 'メタデータに整合性あり')
 # Keep partial substitutions conservative: only anchored field labels and
 # fixed status fragments are eligible; do not translate a raw filename.
 _PARTIAL = sorted(set(_PARTIAL + [s for s in TRANSLATIONS if s.endswith(':') and len(s)>=5]),
