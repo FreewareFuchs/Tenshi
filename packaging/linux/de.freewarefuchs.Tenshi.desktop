@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Tenshi
+GenericName=Data recovery
+GenericName[de]=Datenrettung
+Comment=Browse disk images and recover files to another drive
+Comment[de]=Datenträger-Images untersuchen und Dateien auf ein anderes Laufwerk retten
+Exec=tenshi
+Icon=tenshi
+Terminal=false
+Categories=System;Utility;
+Keywords=recovery;disk;image;Datenrettung;
+StartupNotify=true

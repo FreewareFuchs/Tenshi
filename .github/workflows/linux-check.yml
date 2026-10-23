@@ -8,6 +8,8 @@ on:
       - 'tests/**'
       - 'main.py'
       - 'start_linux.sh'
+      - 'build_deb.py'
+      - 'packaging/linux/**'
       - '.github/workflows/linux-check.yml'
   pull_request:
     paths:
@@ -15,6 +17,8 @@ on:
       - 'tests/**'
       - 'main.py'
       - 'start_linux.sh'
+      - 'build_deb.py'
+      - 'packaging/linux/**'
       - '.github/workflows/linux-check.yml'
   workflow_dispatch:
 
@@ -29,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Tk and Xvfb
-        run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb e2fsprogs btrfs-progs xfsprogs
+        run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb e2fsprogs btrfs-progs xfsprogs desktop-file-utils
       - name: Compile source modules
         run: python3 -m compileall -q main.py recoverydesk tests
       - name: Smoke test
@@ -85,3 +89,35 @@ jobs:
           finally:
               app.destroy()
           PY
+      - name: Build native DEB and validate desktop entry
+        run: |
+          desktop-file-validate packaging/linux/de.freewarefuchs.Tenshi.desktop
+          python3 build_deb.py
+          dpkg-deb --info deb_output/*.deb
+          cd deb_output
+          sha256sum -c *.deb.sha256
+      - name: Install and test packaged application without raw hardware
+        env:
+          TENSHI_SETTINGS_FILE: ${{ runner.temp }}/tenshi-installed-settings.json
+          TENSHI_LOG_DIR: ${{ runner.temp }}/tenshi-installed-logs
+        run: |
+          sudo apt-get install -y ./deb_output/*.deb
+          cd /tmp
+          /usr/bin/tenshi --version
+          /usr/bin/tenshi --smoke-test
+          xvfb-run -a /usr/bin/python3 -EsB "$GITHUB_WORKSPACE/packaging/linux/check_installed.py"
+      - name: Verify package removal
+        run: |
+          sudo apt-get purge -y tenshi
+          test ! -e /usr/bin/tenshi
+          test ! -e /usr/share/tenshi/main.py
+          test ! -e /usr/share/applications/de.freewarefuchs.Tenshi.desktop
+          test ! -e /usr/share/icons/hicolor/256x256/apps/tenshi.png
+      - name: Upload Linux release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tenshi-3.0.2-Linux-DEB
+          path: |
+            deb_output/*.deb
+            deb_output/*.deb.sha256
+          if-no-files-found: error

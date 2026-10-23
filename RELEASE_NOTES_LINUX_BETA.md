@@ -6,6 +6,7 @@ Stand: 23.10.2026. Noch nicht veröffentlicht; die Anwendungsversion bleibt 3.0.
 
 - Linux-Geräteerkennung über sysfs und lesender Zugriff auf Blockgeräte; Ausgabe auf demselben physischen Quelldatenträger wird abgewiesen, unklare Zuordnungen führen zum Abbruch.
 - Linux-Start über `bash start_linux.sh`; Voraussetzungen und Aktualisierung im README.
+- Natives DEB-Paket für Linux Mint 22.x mit Menüeintrag, Logo und Systemabhängigkeiten; Start über `tenshi` ohne Administratorrechte. Paketinstallation ändert keine Geräteberechtigungen.
 - Imaging mit Pause/Fortsetzung und vollständigem Bytevergleich. Physische Quellen werden nur nach bewusster Aktivierung nochmals vollständig geprüft.
 - „Sicher anhalten“ als Vorauswahl im Imaging-Dialog; Nullersatz mit Protokollierung bleibt auswählbar.
 - Abgesicherte Linux-Schreibpfade für Image-/Exportstatus und Berichte; geprüfte Wiederaufnahme und Datei-Verifikation.
@@ -23,7 +24,7 @@ Stand: 23.10.2026. Noch nicht veröffentlicht; die Anwendungsversion bleibt 3.0.
 
 ## Grenzen und Bereitstellung
 
-Linux wird derzeit aus dem Quellcode gestartet; ein natives Linux-Installationspaket ist nicht vorbereitet. Die Windows-CI erstellt EXE, Portable-Paket und Installer; deren Bereitstellung als neuer öffentlicher Release ist ein separater Schritt.
+Für `v3.0.2-beta.2` sind das Linux-DEB `tenshi_3.0.2~beta.2-1_all.deb`, der Windows-Installer und das Windows-Portable-Paket vorgesehen. Linux benötigt Python ab 3.11; Linux Mint 21.x mit Python 3.10 wird vom Paket nicht unterstützt. Alternativ bleibt der Start aus dem Quellcode möglich. Der vorbereitete Linux-Workflow baut das DEB und prüft Installation, Start und Entfernung unter Ubuntu; sein erster CI-Lauf steht noch aus. Das lokal gebaute Paket wurde am 23.10.2026 unter Linux Mint erfolgreich installiert, gestartet, mit einem vorhandenen Image und Dateiexport geprüft und anschließend entfernt. Die Bereitstellung als öffentlicher Release ist ein separater Schritt. Der direkte DEB-Download richtet keine Paketquelle für automatische Updates ein.
 
 Die Standard-Image-Tests belegen keine allgemeine Löschrettung und keine Unterstützung sämtlicher Btrfs-/XFS-Varianten, RAID oder Mehrgeräte-Dateisysteme. 4K-Hardware, weitere LVM-/Mount-Topologien, Hotplug und tatsächlich defekte Medien benötigen weitere Abnahme. Tenshi bleibt experimentelle Beta-Software.
 

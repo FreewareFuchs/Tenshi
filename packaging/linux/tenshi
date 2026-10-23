@@ -1,0 +1,3 @@
+#!/bin/sh
+# Use the system interpreter and installed code; never elevate privileges.
+exec /usr/bin/python3 -EsB /usr/share/tenshi/main.py "$@"
