@@ -41,7 +41,7 @@ Linux-Exportstatus, Berichte und das Hashen exportierter Dateien verwenden sowoh
 - Allgemeine Löschrettung ist durch erfolgreiche Exporte aktueller Dateien nicht nachgewiesen.
 - Weitere Hardwarevarianten (4K-Sektoren, LVM/dmraid), Hotplug-/Mountwechsel und tatsächlich defekte Medien benötigen zusätzliche Abnahme.
 - Tenshi-Imaging bietet keine mit GNU ddrescue gleichzusetzende mehrphasige Strategie für beschädigte Medien.
-- Die Medienfehlerstrategie wird im Dialog geprüft; aus dem erfolgreichen Lauf folgt keine Änderung des allgemeinen Standardwertes.
+- Der Imaging-Dialog wählt standardmäßig „Sicher anhalten“; Nullersatz bleibt ausdrücklich auswählbar. Beim Fortsetzen gilt die bestätigte Dialogauswahl für verbleibende Blöcke, vorhandene Fehlerbereiche bleiben erhalten. Der API-Standardwert wurde nicht geändert.
 
 ## Historischer Prüfverlauf
 

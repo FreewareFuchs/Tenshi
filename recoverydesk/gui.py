@@ -965,7 +965,7 @@ class RecoveryDeskApp(tk.Tk):
         ttk.Combobox(settings_bar, state='readonly', values=['0', '1', '2', '3'],
                      textvariable=retry_choice, width=3).pack(side='left')
         ttk.Label(settings_bar, text='Bei Medienfehler:').pack(side='left', padx=(12, 4))
-        failure_choice = tk.StringVar(value=translate('Nullen + protokollieren', self.language))
+        failure_choice = tk.StringVar(value=translate('Sicher anhalten', self.language))
         ttk.Combobox(settings_bar, state='readonly',
                      values=[translate('Nullen + protokollieren', self.language),
                              translate('Sicher anhalten', self.language)],

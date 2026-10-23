@@ -62,8 +62,9 @@ class ImagingGuiTests(unittest.TestCase):
                 manifest = Path(str(destination) + '.recovery.json')
                 self.assertTrue(manifest.exists())
                 import json
-                self.assertEqual(json.loads(manifest.read_text())['verification']['status'],
-                                 'verified')
+                state = json.loads(manifest.read_text())
+                self.assertEqual(state['verification']['status'], 'verified')
+                self.assertEqual(state['bad_sector_policy'], 'stop')
                 self.assertEqual(len(app.tabs.tabs()), 2)
             finally:
                 app.destroy()
