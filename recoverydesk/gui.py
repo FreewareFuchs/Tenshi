@@ -2325,7 +2325,9 @@ class RecoveryDeskApp(tk.Tk):
     def _scan_options_dialog(self):
         win = tk.Toplevel(self)
         win.title('Scan-Einstellungen und Diagnose')
-        win.geometry('640x210')
+        # Let Tk derive the height from the themed widgets and wrapped text.
+        # A fixed 210px height clips the close button on Linux/font scaling.
+        win.minsize(640, 0)
         win.transient(self)
         panel = ttk.Frame(win, padding=18)
         panel.pack(fill='both', expand=True)
