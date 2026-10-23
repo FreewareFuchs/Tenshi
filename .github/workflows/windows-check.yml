@@ -1,6 +1,12 @@
 name: Tenshi Windows release verification
 on:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release:
+        type: string
+        default: ""
+
   push:
     branches: [main]
   pull_request:
@@ -12,6 +18,7 @@ on:
       - 'requirements*.txt'
       - 'assets/**'
       - '.github/workflows/windows-check.yml'
+      - '.github/workflows/prepare-release.yml'
 
 concurrency:
   group: windows-check-${{ github.event.pull_request.head.ref || github.ref_name }}
@@ -23,6 +30,14 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
+      - name: Set explicit release identity for preparation
+        if: inputs.release != ''
+        shell: bash
+        env:
+          RELEASE_LABEL: ${{ inputs.release }}
+        run: |
+          [[ "$RELEASE_LABEL" =~ ^beta\.[1-9][0-9]*$ ]] || exit 2
+          echo "TENSHI_RELEASE=$RELEASE_LABEL" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
@@ -75,11 +90,15 @@ jobs:
             if (Test-Path tenshi-installer-build.log) { Get-Content tenshi-installer-build.log -Tail 60 }
             exit $LASTEXITCODE
           }
+      - name: Include Windows build identity
+        shell: pwsh
+        run: Copy-Item build/identity/recoverydesk/_build_info.json windows-build-info.json
       - name: Upload Windows release artifacts
         uses: actions/upload-artifact@v7
         with:
           name: Tenshi-3.0.2-Windows-release
           path: |
+            windows-build-info.json
             dist/Tenshi.exe
             portable_output/Tenshi_Portable_3.0.2_Win64.zip
             installer_output/Tenshi_Setup_3.0.2.exe
