@@ -458,6 +458,8 @@ class RecoveryDeskApp(tk.Tk):
         style.map('TCheckbutton', background=[('active',c['bg'])])
         style.configure('TRadiobutton', background=c['bg'], foreground=c['text'])
         style.configure('TMenubutton', background=c['panel'], foreground=c['text'])
+        for name in ('Header.TButton', 'Header.TMenubutton'):
+            style.configure(name, font=('Segoe UI', 10), padding=(10, 7))
         style.configure('Treeview', background=c['panel'], fieldbackground=c['panel'],
                         foreground=c['text'], rowheight=27)
         style.map('Treeview', background=[('selected',c['select'])],
@@ -505,27 +507,32 @@ class RecoveryDeskApp(tk.Tk):
         # Top-right language switcher; native names make each language findable.
         self._language_var = tk.StringVar(value=self.language)
         self._language_button = ttk.Menubutton(
-            self._header_actions, text='🌐  ' + LANGUAGES[self.language], direction='below')
+            self._header_actions, text='🌐  ' + LANGUAGES[self.language], direction='below',
+            style='Header.TMenubutton', width=18)
         self._language_menu = tk.Menu(self._language_button, tearoff=False)
         for language_code, native_label in LANGUAGES.items():
             self._language_menu.add_radiobutton(
                 label=native_label, value=language_code, variable=self._language_var,
                 command=lambda code=language_code: self.change_language(code))
         self._language_button.configure(menu=self._language_menu)
-        self._language_button.pack(side='right', anchor='ne', padx=(10, 0), pady=(9, 0))
+        self._language_button.grid(row=0, column=3, sticky='ew', padx=3, pady=(9, 0))
         self._theme_var = tk.StringVar(value=self.theme)
-        self.theme_button = ttk.Menubutton(self._header_actions, text='◐  Darstellung', direction='below')
+        self.theme_button = ttk.Menubutton(self._header_actions, text='◐  Darstellung', direction='below',
+                                               style='Header.TMenubutton', width=18)
         self._theme_menu = tk.Menu(self.theme_button, tearoff=False)
         for label, value in (('Hell', 'light'), ('Dunkel', 'dark')):
             self._theme_menu.add_radiobutton(label=label, value=value, variable=self._theme_var,
                 command=lambda theme=value: self.change_theme(theme))
         self.theme_button.configure(menu=self._theme_menu)
-        self.theme_button.pack(side='right', anchor='ne', padx=(6,0), pady=(9,0))
-        self.help_button = ttk.Button(self._header_actions, text='? Hilfe', command=self.show_help)
-        self.help_button.pack(side='right', anchor='ne', padx=(6, 0), pady=(9, 0))
+        self.theme_button.grid(row=0, column=2, sticky='ew', padx=3, pady=(9, 0))
+        self.help_button = ttk.Button(self._header_actions, text='? Hilfe', command=self.show_help,
+                                      style='Header.TButton', width=18)
+        self.help_button.grid(row=0, column=1, sticky='ew', padx=3, pady=(9, 0))
         self.error_log_button = ttk.Button(self._header_actions, text='Fehlerprotokoll',
-                                           command=self.show_error_log)
-        self.error_log_button.pack(side='right', anchor='ne', padx=(6, 0), pady=(9, 0))
+                                           command=self.show_error_log, style='Header.TButton', width=18)
+        self.error_log_button.grid(row=0, column=0, sticky='ew', padx=3, pady=(9, 0))
+        for column in range(4):
+            self._header_actions.columnconfigure(column, uniform='header_buttons')
         self.brand_logo = tk.PhotoImage(file=str(asset_path("tenshi_logo.png")))
         self.brand_icon = tk.PhotoImage(file=str(asset_path("tenshi_icon.png")))
         self.iconphoto(True, self.brand_icon)
