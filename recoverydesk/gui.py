@@ -515,7 +515,7 @@ class RecoveryDeskApp(tk.Tk):
                 label=native_label, value=language_code, variable=self._language_var,
                 command=lambda code=language_code: self.change_language(code))
         self._language_button.configure(menu=self._language_menu)
-        self._language_button.grid(row=0, column=3, sticky='ew', padx=3, pady=(9, 0))
+        self._language_button.grid(row=0, column=3, sticky='nsew', padx=3, pady=(9, 0))
         self._theme_var = tk.StringVar(value=self.theme)
         self.theme_button = ttk.Menubutton(self._header_actions, text='◐  Darstellung', direction='below',
                                                style='Header.TMenubutton', width=18)
@@ -524,13 +524,13 @@ class RecoveryDeskApp(tk.Tk):
             self._theme_menu.add_radiobutton(label=label, value=value, variable=self._theme_var,
                 command=lambda theme=value: self.change_theme(theme))
         self.theme_button.configure(menu=self._theme_menu)
-        self.theme_button.grid(row=0, column=2, sticky='ew', padx=3, pady=(9, 0))
-        self.help_button = ttk.Button(self._header_actions, text='? Hilfe', command=self.show_help,
+        self.theme_button.grid(row=0, column=2, sticky='nsew', padx=3, pady=(9, 0))
+        self.help_button = ttk.Button(self._header_actions, text='Hilfe', command=self.show_help,
                                       style='Header.TButton', width=18)
-        self.help_button.grid(row=0, column=1, sticky='ew', padx=3, pady=(9, 0))
+        self.help_button.grid(row=0, column=1, sticky='nsew', padx=3, pady=(9, 0))
         self.error_log_button = ttk.Button(self._header_actions, text='Fehlerprotokoll',
                                            command=self.show_error_log, style='Header.TButton', width=18)
-        self.error_log_button.grid(row=0, column=0, sticky='ew', padx=3, pady=(9, 0))
+        self.error_log_button.grid(row=0, column=0, sticky='nsew', padx=3, pady=(9, 0))
         for column in range(4):
             self._header_actions.columnconfigure(column, uniform='header_buttons')
         self.brand_logo = tk.PhotoImage(file=str(asset_path("tenshi_logo.png")))
