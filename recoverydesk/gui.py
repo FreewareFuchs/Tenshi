@@ -366,9 +366,18 @@ class RecoveryDeskApp(tk.Tk):
     def change_theme(self, theme):
         if theme not in ('light', 'dark'):
             raise ValueError('Unbekannte Darstellung')
+        self.update_idletasks()
+        geometry = self.geometry() if self.state() == 'normal' else None
+        sash = (self.browser_paned.sashpos(0)
+                if getattr(self, '_browser_sash_initialized', False) else None)
         self.theme = theme
         self._theme_var.set(theme)
         self._apply_theme()
+        self.update_idletasks()
+        if geometry is not None:
+            self.geometry(geometry)
+        if sash is not None:
+            self.browser_paned.sashpos(0, sash)
         help_window = getattr(self, '_help_window', None)
         if help_window is not None and help_window.winfo_exists():
             help_window.refresh_theme()
@@ -437,8 +446,8 @@ class RecoveryDeskApp(tk.Tk):
         c = self._palette()
         style = ttk.Style(self)
         try:
-            style.theme_use('clam' if self.theme == 'dark'
-                            else ('vista' if os.name == 'nt' else 'clam'))
+            # Appearance changes colors, not the underlying widget metrics.
+            style.theme_use('clam')
         except tk.TclError:
             style.theme_use('clam')
         style.configure('TFrame', background=c['bg'])
@@ -475,6 +484,11 @@ class RecoveryDeskApp(tk.Tk):
         style.layout('TenshiHidden.TNotebook.Tab', [])
         self._style_native_widgets(self)
         self._update_main_tab_styles()
+        if hasattr(self, '_compact_layout'):
+            # Theme configuration resets padding/row heights; restore the active
+            # compact metrics even when the window dimensions did not change.
+            self._compact_layout = None
+            self._update_compact_layout()
 
     def _on_popup_map(self, event):
         popup = event.widget
