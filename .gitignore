@@ -10,6 +10,9 @@ Tenshi.spec
 dist/
 portable_output/
 installer_output/
+deb_output/
+*.deb
+*.deb.sha256
 VEROEFFENTLICHUNG/UPLOAD/
 # Keep build/version_info.txt tracked
 # Local state, diagnostics, user exports and recovery data

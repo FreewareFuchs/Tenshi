@@ -25,7 +25,23 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 
 ## Unter Linux starten
 
-Die Linux-Unterstützung ist auf `main` integriert. Die bereits veröffentlichten Beta-Downloads enthalten Windows-Pakete; für Linux derzeit den aktuellen Quellcode verwenden.
+Die Linux-Unterstützung ist auf `main` integriert. Ab dem geplanten Release `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die bisherigen Releases enthalten dieses Paket noch nicht.
+
+### DEB-Paket für Linux Mint 22.x
+
+Die Datei `tenshi_3.0.2~beta.2-1_all.deb` aus dem entsprechenden GitHub-Release herunterladen. Im Downloadordner installieren:
+
+```bash
+sudo apt install ./tenshi_3.0.2~beta.2-1_all.deb
+```
+
+Danach **Tenshi** im Anwendungsmenü öffnen oder `tenshi` im Terminal starten. Tenshi läuft als normaler Benutzer. Das Paket installiert benötigte Systemabhängigkeiten über APT; es ändert keine Geräteberechtigungen. Deinstallation: `sudo apt remove tenshi`.
+
+Erforderlich sind Python ab 3.11, Tkinter und util-linux. Linux Mint 21.x mit seinem standardmäßigen Python 3.10 ist kein unterstütztes Paket-Ziel. Das DEB ist ein direkter Download und bindet keine Paketquelle für automatische Tenshi-Updates ein. Eine allgemeine Auffindbarkeit im Mint-Anwendungsmanager ist damit noch nicht verbunden.
+
+[Paketbau und Prüfung](docs/LINUX_DEB.md)
+
+### Aus dem Quellcode starten
 
 Voraussetzungen: Python 3.11 oder neuer, Tkinter und util-linux. Unter Linux Mint:
 
