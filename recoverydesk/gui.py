@@ -149,6 +149,44 @@ class RecoveryDeskApp(tk.Tk):
             data = translate('Fehlerprotokoll kann nicht geöffnet werden.', self.language)
         output.insert('1.0', data)
         output.configure(state='disabled')
+        ttk.Button(frame, text=translate('Support-Bericht', self.language),
+                   command=self.show_support_report).pack(anchor='e')
+
+    def show_support_report(self):
+        from .support_report import collect_report, report_text, save_report
+        text = report_text(collect_report(
+            language=self.language, tk_version=str(self.tk.call('package', 'provide', 'Tk')),
+            window_system=str(self.tk.call('tk', 'windowingsystem'))))
+        win = tk.Toplevel(self)
+        win.title(translate('Support-Bericht', self.language))
+        win.geometry('840x520')
+        frame = ttk.Frame(win, padding=12)
+        frame.pack(fill='both', expand=True)
+        ttk.Label(frame, text=translate(
+            'Vorschau: technische Metadaten und Fehlercodes. Keine Pfade, Dateinamen oder Dateiinhalte. Der Bericht wird nur lokal gespeichert.',
+            self.language), wraplength=760).pack(anchor='w')
+        output = tk.Text(frame, wrap='word', font=('Consolas', 10))
+        output.pack(fill='both', expand=True, pady=10)
+        output.insert('1.0', text)
+        output.configure(state='disabled')
+
+        def save():
+            destination = filedialog.asksaveasfilename(
+                parent=win, title='Support-Bericht speichern', defaultextension='.json',
+                initialfile='Tenshi_Support.json', filetypes=[('JSON', '*.json')])
+            if not destination:
+                return
+            try:
+                save_report(destination, text, (self.source_path.get().strip(),
+                    getattr(self, 'browser_source', ''), getattr(self, 'partition_source', '')))
+            except (OSError, ValueError) as exc:
+                messagebox.showerror('Support-Bericht', str(exc), parent=win)
+                return
+            messagebox.showinfo('Support-Bericht', 'Bericht gespeichert.', parent=win)
+
+        ttk.Button(frame, text=translate('Support-Bericht speichern', self.language),
+                   command=save).pack(anchor='e')
+        return win
 
     def change_language(self, language: str):
         """Apply the language immediately; persist the choice for future launches."""

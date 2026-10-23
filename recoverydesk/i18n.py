@@ -34,6 +34,16 @@ def add(de, en, es, zh, ru, ja):
 # Online-independent help access (Tenshi 3.0.0)
 add('Hilfe', 'Help', 'Ayuda', '帮助', 'Справка', 'ヘルプ')
 
+# Local support snapshot
+add('Support-Bericht', 'Support report', 'Informe de soporte', '支持报告', 'Отчёт для поддержки', 'サポートレポート')
+add('Support-Bericht speichern', 'Save support report', 'Guardar informe de soporte', '保存支持报告', 'Сохранить отчёт для поддержки', 'サポートレポートを保存')
+add('Vorschau: technische Metadaten und Fehlercodes. Keine Pfade, Dateinamen oder Dateiinhalte. Der Bericht wird nur lokal gespeichert.',
+    'Preview: technical metadata and error codes. No paths, filenames or file contents. The report is saved locally only.',
+    'Vista previa: metadatos técnicos y códigos de error. Sin rutas, nombres ni contenido de archivos. Solo se guarda localmente.',
+    '预览：技术元数据和错误代码。不含路径、文件名或文件内容。报告仅保存在本地。',
+    'Предпросмотр: технические метаданные и коды ошибок. Без путей, имён и содержимого файлов. Отчёт сохраняется только локально.',
+    'プレビュー：技術メタデータとエラーコード。パス、ファイル名、ファイル内容は含みません。保存先はローカルのみです。')
+
 # Imaging controls (Tenshi 2.7.0)
 add('Leseversuche:', 'Read retries:', 'Reintentos:', '重试读取：', 'Повторы чтения:', '再読み取り回数:')
 add('Bei Medienfehler:', 'On media error:', 'Ante error del medio:', '介质错误时：', 'При ошибке носителя:', '媒体エラー時:')
