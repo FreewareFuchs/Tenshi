@@ -35,6 +35,10 @@ class ProgressVisibilityTests(unittest.TestCase):
                     app.geometry(geometry)
                     app.tabs.select(app.ntfs_tab)
                     app.update()
+                    self.assertTrue(app.export_queue_collapsed)
+                    self.assertFalse(app.export_queue_bar.winfo_ismapped())
+                    app._toggle_export_queue()
+                    app.update()
                     self.assertTrue(app.export_queue_bar.winfo_ismapped(), 'Fortschrittsbalken fehlt')
                     self.assertTrue(app.file_tree.winfo_ismapped(), 'Dateibrowser verschwunden')
                     self.assertLess(app.export_queue_bar.winfo_rooty() + app.export_queue_bar.winfo_height(),

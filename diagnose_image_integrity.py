@@ -45,7 +45,8 @@ def compare_images(source, target, *, offset=0, length=None, passes=2):
     for _ in range(passes):
         with _regular_reader(source) as left, _regular_reader(target) as right:
             before = [_identity(os.fstat(f.fileno())) for f in (left, right)]
-            if before[0][:2] == before[1][:2]:
+            paths_before = [_identity(os.stat(p, follow_symlinks=False)) for p in (source, target)]
+            if paths_before[0][:2] == paths_before[1][:2]:
                 raise ValueError('Quelle und Vergleichsimage müssen verschiedene Dateien sein.')
             maximum = max(info[2] for info in before)
             if offset > maximum:
@@ -77,6 +78,9 @@ def compare_images(source, target, *, offset=0, length=None, passes=2):
                 position += amount
             after = [_identity(os.fstat(f.fileno())) for f in (left, right)]
             paths_after = [_identity(os.stat(p, follow_symlinks=False)) for p in (source, target)]
+            # Compare each API against itself: Windows path and descriptor stat
+            # can represent identity/ctime differently. Still detect changes to
+            # either the open file or its path, and cross-check size and mtime.
             results.append({'offset': offset, 'length': end - offset,
                             'sizes': [info[2] for info in before],
                             'metadata_before': [dict(zip(('device', 'inode', 'size', 'mtime_ns', 'ctime_ns'), info))
@@ -84,7 +88,10 @@ def compare_images(source, target, *, offset=0, length=None, passes=2):
                             'sha256': [h.hexdigest() for h in hashes],
                             'different_bytes': count, 'different_blocks': blocks,
                             'first_difference': first, 'last_difference': last,
-                            'samples': samples, 'metadata_unchanged': before == after == paths_after})
+                            'samples': samples, 'metadata_unchanged':
+                            before == after and paths_before == paths_after and
+                            all(handle[2:4] == path[2:4]
+                                for handle, path in zip(after, paths_after))})
     return {'passes': results, 'repeatable': all(r == results[0] for r in results),
             'metadata_unchanged': all(r['metadata_unchanged'] for r in results),
             'identical': all(r['different_bytes'] == 0 for r in results)}

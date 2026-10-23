@@ -89,3 +89,43 @@ class ImageIntegrityDiagnosisTests(unittest.TestCase):
             self.b.write_bytes(b'bad')
             self.assertEqual(main([str(self.a), str(self.b)]), 1)
             self.assertEqual(main([str(self.a), str(self.b), '--passes', '0']), 2)
+
+class MetadataApiTests(unittest.TestCase):
+    def test_stable_path_and_descriptor_metadata_can_differ(self):
+        from types import SimpleNamespace
+        import diagnose_image_integrity as diagnosis
+        with tempfile.TemporaryDirectory() as tmp:
+            a, b = Path(tmp)/'a.img', Path(tmp)/'b.img'
+            a.write_bytes(b'content'); b.write_bytes(b'content')
+            real_fstat = os.fstat
+            def descriptor_stat(fd):
+                info = real_fstat(fd)
+                return SimpleNamespace(st_mode=info.st_mode, st_dev=0, st_ino=0,
+                    st_size=info.st_size, st_mtime_ns=info.st_mtime_ns,
+                    st_ctime_ns=info.st_ctime_ns+1)
+            with mock.patch.object(diagnosis.os, 'fstat', side_effect=descriptor_stat):
+                result = diagnosis.compare_images(a, b)
+            self.assertTrue(result['identical'])
+            self.assertTrue(result['metadata_unchanged'])
+            self.assertTrue(result['repeatable'])
+    def test_path_identity_change_is_not_ignored(self):
+        from types import SimpleNamespace
+        import diagnose_image_integrity as diagnosis
+        with tempfile.TemporaryDirectory() as tmp:
+            a, b = Path(tmp)/'a.img', Path(tmp)/'b.img'
+            a.write_bytes(b'content'); b.write_bytes(b'content')
+            real_stat = os.stat
+            count = 0
+            def path_stat(path, *args, **kwargs):
+                nonlocal count
+                info = real_stat(path, *args, **kwargs)
+                if Path(path)==b:
+                    count += 1
+                    if count >= 3:
+                        return SimpleNamespace(st_mode=info.st_mode, st_dev=info.st_dev,
+                            st_ino=info.st_ino+1, st_size=info.st_size,
+                            st_mtime_ns=info.st_mtime_ns, st_ctime_ns=info.st_ctime_ns)
+                return info
+            with mock.patch.object(diagnosis.os, 'stat', side_effect=path_stat):
+                result = diagnosis.compare_images(a, b, passes=1)
+            self.assertFalse(result['metadata_unchanged'])
