@@ -40,7 +40,7 @@ class LinuxDeviceTests(unittest.TestCase):
                                side_effect=PermissionError(13, 'Permission denied')) as opened:
             with self.assertRaises(PermissionError) as caught:
                 linux_devices.block_info('/dev/fake-test-device')
-        self.assertIn('Linux-Blockgerät', str(caught.exception))
+        self.assertIn('Linux-Datenträger', str(caught.exception))
         self.assertIn('Geräteberechtigungen', str(caught.exception))
         self.assertNotIn('Windows', str(caught.exception))
         opened.assert_called_once()
