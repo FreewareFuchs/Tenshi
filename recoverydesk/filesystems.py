@@ -330,13 +330,15 @@ class ExFAT(VolumeBase):
         self.cluster_count=u32(b,92)
         self.root_cluster=u32(b,96)
         self.fat_count=b[110]
+        self.active_fat=u16(b,106) & 1
         if (self.fat_count not in (1,2) or self.fat_start<24 or self.fat_length==0 or
+            self.active_fat>=self.fat_count or
             self.cluster_count==0 or self.cluster_count>0xFFFFFFF0 or
-            self.heap_start<=self.fat_start or
+            self.heap_start<self.fat_start+self.fat_count*self.fat_length or
             self.heap_start+self.cluster_count*self.spc>self.vol_sectors or
             not 2<=self.root_cluster<self.cluster_count+2):
             raise FileSystemError('Unplausible exFAT-Volumegeometrie')
-        self.fat_offset=self.offset+self.fat_start*self.bps
+        self.fat_offset=self.offset+(self.fat_start+self.active_fat*self.fat_length)*self.bps
         self._bitmap = None
         self._bitmap_cache = {}
 
@@ -523,9 +525,10 @@ class ExFAT(VolumeBase):
                     bitmap_start = u32(raw,k+20)
                     bitmap_size = u64(raw,k+24)
                     if 2 <= bitmap_start < self.cluster_count+2 and 0 < bitmap_size <= (self.cluster_count+7)//8:
-                        bitmaps.append((bitmap_start, bitmap_size))
+                        bitmaps.append((raw[k+1] & 1, bitmap_start, bitmap_size))
             # TexFAT/ambiguous multiple bitmaps: do not guess the active one.
-            self._bitmap = bitmaps[0] if len(bitmaps) == 1 else None
+            self._bitmap = (bitmaps[0][1:] if self.fat_count == 1 and len(bitmaps) == 1
+                            and bitmaps[0][0] == self.active_fat else None)
         rows=[]; i=0
         while i+32<=len(raw):
             first=raw[i]
