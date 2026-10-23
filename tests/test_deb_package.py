@@ -1,6 +1,7 @@
 """Validate actual DEB contents and reproducibility without root or raw devices."""
 import hashlib
 import io
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -30,6 +31,10 @@ class DebPackageTests(unittest.TestCase):
             self.assertIn('Depends: python3 (>= 3.11), python3-tk, util-linux', metadata)
             archive = subprocess.check_output(['dpkg-deb', '--fsys-tarfile', str(first)])
             with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+                metadata = json.load(tar.extractfile('./usr/share/tenshi/recoverydesk/_build_info.json'))
+                self.assertEqual(metadata['schema'], 1)
+                self.assertEqual(metadata['version'], '3.0.2')
+                self.assertEqual(len(metadata['commit']), 40)
                 for member in tar.getmembers():
                     self.assertEqual((member.uid, member.gid), (0, 0))
                     self.assertFalse(member.issym() or member.islnk())

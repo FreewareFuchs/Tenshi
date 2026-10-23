@@ -95,6 +95,8 @@ Die Quelle wird nur lesend geöffnet. Bei mechanischen Auffälligkeiten oder wer
 
 ## Entwicklungs- und Teststatus
 
+Fenstertitel, Offline-Hilfe unter „Über Tenshi“ und `tenshi --version` zeigen Beta- und Build-Kennung. Entwicklungsstände erhalten `+dev`, lokal geänderte Quellen zusätzlich `+dirty`; ohne bekannte Build-Information steht beim Commit `?`. Details: [Build-Kennung](docs/BUILD_IDENTITY.md).
+
 Tenshi bleibt experimentelle Beta-Software. Automatisierte Tests mit synthetischen Images und simulierten Fehlerfällen ersetzen keine Prüfung auf beschädigter Hardware.
 
 Für den integrierten Linux-Stand sind 569 lokale Tests unter virtuellem X11 erfolgreich. Linux- und Windows-CI auf `main` sind für Merge-Commit `ade614a` erfolgreich. Linux-CI prüft außerdem unabhängig formatierte ext4-, Btrfs- und XFS-Images.

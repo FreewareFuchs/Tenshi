@@ -76,7 +76,8 @@ class LanguageGuiTests(TestCase):
         self.app.update()
         self.assertEqual(self.app.language, 'ru')
         self.assertEqual(self.app._language_button.cget('text'), '🌐  Русский')
-        self.assertEqual(self.app.title(), translate('Tenshi — Datenrettung', 'ru'))
+        from recoverydesk.version_info import display_version
+        self.assertEqual(self.app.title(), translate('Tenshi — Datenrettung', 'ru') + ' | ' + display_version())
         self.app.destroy()
         self.app = RecoveryDeskApp()
         self.app.update()

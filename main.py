@@ -14,6 +14,11 @@ def smoke_test() -> int:
             raise RuntimeError('Required application asset is missing.')
     if gui.APP_NAME != 'Tenshi' or not __version__:
         raise RuntimeError('Invalid application identity.')
+    if getattr(sys, 'frozen', False):
+        from pathlib import Path
+        from recoverydesk import version_info
+        if not Path(version_info.__file__).with_name('_build_info.json').is_file():
+            raise RuntimeError('Packaged build identity is missing.')
     # Verify bundled offline help and all localized topics without launching Tk
     # or opening a data source. Useful with Windows PyInstaller --onefile.
     from recoverydesk.help_center import TOPICS, topic_text
@@ -36,8 +41,8 @@ def main(argv=None) -> int:
         except Exception:
             return 1
     if args == ['--version']:
-        from recoverydesk import __version__
-        print(f'Tenshi {__version__}')
+        from recoverydesk.version_info import display_version
+        print(f'Tenshi {display_version()}')
         return 0
     if args:
         # Unknown CLI args are not silently ignored (for example typos in CI).

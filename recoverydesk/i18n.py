@@ -337,7 +337,7 @@ for row in _FRAGMENTS:
 # Text is translated only if it is an actual UI phrase, or contains a
 # multi-character German phrase known in the catalog. Never perform word-level
 # replacements in arbitrary paths, filenames or hexdumps.
-_PARTIAL = [s for s in TRANSLATIONS if len(s) >= 9 and (s.endswith(':') or s.endswith(' ') or s in {'Restzeit', 'Einträge', 'gefunden', 'gelesen', 'abgeschlossen'})]
+_PARTIAL = [s for s in TRANSLATIONS if len(s) >= 9 and (s.endswith(':') or s.endswith(' ') or s in {'Tenshi — Datenrettung', 'Restzeit', 'Einträge', 'gefunden', 'gelesen', 'abgeschlossen'})]
 _PARTIAL.sort(key=len, reverse=True)
 
 def translate(text: str, language: str = 'de') -> str:
