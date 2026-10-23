@@ -23,6 +23,9 @@ class DebPackageTests(unittest.TestCase):
                              f'{digest}  {first.name}\n')
             metadata = subprocess.check_output(['dpkg-deb', '-f', str(first)], text=True)
             self.assertIn(f'Version: {DEFAULT_VERSION}', metadata)
+            self.assertNotIn('~', first.name)
+            subprocess.run(['dpkg', '--compare-versions', DEFAULT_VERSION, 'gt',
+                            '3.0.2~beta.2-1'], check=True)
             self.assertIn('Architecture: all', metadata)
             self.assertIn('Depends: python3 (>= 3.11), python3-tk, util-linux', metadata)
             archive = subprocess.check_output(['dpkg-deb', '--fsys-tarfile', str(first)])

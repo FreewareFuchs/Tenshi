@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_VERSION = '3.0.2~beta.2-1'
+DEFAULT_VERSION = '3.0.2~beta.3-1'
 
 
 def build(output: Path, version: str = DEFAULT_VERSION) -> Path:
@@ -27,7 +27,8 @@ def build(output: Path, version: str = DEFAULT_VERSION) -> Path:
         ['git', '-C', str(ROOT), 'log', '-1', '--format=%ct'], text=True).strip())
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    destination = output / f'tenshi_{version}_all.deb'
+    # GitHub replaces '~' in asset names; use its safe spelling from the start.
+    destination = output / f'tenshi_{version.replace("~", ".")}_all.deb'
     if destination.exists():
         raise FileExistsError(destination)
     with tempfile.TemporaryDirectory(prefix='tenshi-deb-') as temporary:
