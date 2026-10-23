@@ -59,9 +59,11 @@ class NoticeLogicTests(unittest.TestCase):
         for lang in LANGUAGES:
             self.assertEqual(translate(r'C:\Personal\Bilder.raw', lang), r'C:\Personal\Bilder.raw')
 
-    def test_untested_hardware_not_claimed_in_release_notes(self):
+    def test_readme_distinguishes_tested_builds_and_remaining_limits(self):
         readme = (Path(__file__).resolve().parents[1] / 'README.md').read_text(encoding='utf-8')
-        self.assertIn('Windows-Hardwaretest steht aus', readme)
+        self.assertIn('nicht rückwirkend auf bestehende Release-Downloads', readme)
+        self.assertIn('Tatsächlich defekte Laufwerke', readme)
+        self.assertIn('nicht abgenommen', readme)
         self.assertIn('keine fehlerfreien Daten', readme)
 
     def test_installer_contains_only_application_exe(self):
