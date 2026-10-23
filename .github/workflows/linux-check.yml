@@ -63,7 +63,11 @@ jobs:
                   if key == 'files':
                       assert app.file_tree.winfo_ismapped(), 'File browser is hidden'
                       assert app.file_tree.winfo_height() >= 70, app.file_tree.winfo_height()
-                      assert app.export_queue_bar.winfo_ismapped(), 'Progress bar is hidden'
+                      assert app.export_queue_collapsed, 'Queue must start collapsed'
+                      assert not app.export_queue_bar.winfo_ismapped()
+                      app._toggle_export_queue()
+                      app.update_idletasks()
+                      assert app.export_queue_bar.winfo_ismapped(), 'Progress bar is hidden after expanding'
                       before = app.file_tree.winfo_height()
                       app._toggle_export_queue()
                       app.update_idletasks()

@@ -25,7 +25,7 @@ class ImageIntegrityDiagnosisTests(unittest.TestCase):
         self.assertTrue(result['repeatable'])
         self.assertTrue(result['metadata_unchanged'])
         for call in opener.call_args_list:
-            self.assertEqual(call.args[1] & os.O_ACCMODE, os.O_RDONLY)
+            self.assertFalse(call.args[1] & (os.O_WRONLY | os.O_RDWR))
 
     def test_original_style_corruption_is_counted_and_repeatable(self):
         offsets = [1024 * 1024 + 2, 1024 * 1024 + 10, 1024 * 1024 + 18]
