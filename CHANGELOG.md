@@ -1,3 +1,9 @@
+# Tenshi 3.0.2 Beta.4 – vorbereitet, noch nicht veröffentlicht
+
+- FAT32: Bei deaktivierter Spiegelung wird die aktive FAT für Datei- und Verzeichnisketten berücksichtigt. Dadurch werden gleich große, aber inhaltlich falsche Exporte aus veralteten inaktiven FAT-Ketten vermieden.
+- Ungültige aktive FAT-Nummern werden abgewiesen; Regressionstests für Export, Vorschau und Verzeichnisfortsetzungen ergänzt.
+- Linux-Paketversion auf `3.0.2~beta.4-1` erhöht. Details: [Beta.4-Versionshinweise](RELEASE_NOTES_3.0.2_BETA4.md).
+
 # Noch nicht veröffentlicht – Linux-Unterstützung (2026-10-23)
 
 - Linux-Blockgeräte, lesender Quellzugriff und geprüfte Quell-/Zieltrennung integriert.
