@@ -1,3 +1,11 @@
+# Noch nicht veröffentlicht – Linux-Unterstützung (2026-10-23)
+
+- Linux-Blockgeräte, lesender Quellzugriff und geprüfte Quell-/Zieltrennung integriert.
+- Imaging-Vollvergleich, abgesicherte Statusdateien und verbesserte Export-Wiederaufnahme.
+- Kompakte Oberfläche, Suche, Sitzungen und Themewechsel korrigiert.
+- Echte ext4-/Btrfs-/XFS-Tests und automatische Linux-Prüfung auf main ergänzt.
+- 569 lokale Tests sowie Linux-/Windows-CI erfolgreich; Einzelheiten und Grenzen in [vorläufigen Versionshinweisen](RELEASE_NOTES_LINUX_BETA.md).
+
 # Tenshi 3.0.2 – Quellenwechsel und Exportnamen (2026-10-18)
 
 - Neue Stapel-Exportordner heißen `Tenshi_Export_<Prüfsignatur>` (bisher `RecoveryDesk_Export_*`). Bereits angelegte alte Aufträge werden beim Fortsetzen weiterhin unter ihrem bisherigen Namen gefunden und anhand ihrer Statusdatei geprüft.
