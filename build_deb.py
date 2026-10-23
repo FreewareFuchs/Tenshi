@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_VERSION = '3.0.2~beta.3-1'
+DEFAULT_VERSION = '3.0.2~beta.4-1'
 
 
 def build(output: Path, version: str = DEFAULT_VERSION) -> Path:
@@ -49,7 +49,7 @@ def build(output: Path, version: str = DEFAULT_VERSION) -> Path:
              'usr/share/applications/de.freewarefuchs.Tenshi.desktop')
         copy(ROOT / 'recoverydesk/assets/tenshi_icon.png',
              'usr/share/icons/hicolor/256x256/apps/tenshi.png')
-        for name in ('README.md', 'THIRD_PARTY_NOTICES.md', 'RELEASE_NOTES_LINUX_BETA.md'):
+        for name in ('README.md', 'THIRD_PARTY_NOTICES.md', 'RELEASE_NOTES_LINUX_BETA.md', 'RELEASE_NOTES_3.0.2_BETA4.md'):
             copy(ROOT / name, f'usr/share/doc/tenshi/{name}')
         copy(ROOT / 'LICENSE', 'usr/share/doc/tenshi/copyright')
         changelog = stage / 'usr/share/doc/tenshi/changelog.gz'

@@ -25,14 +25,14 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 
 ## Unter Linux starten
 
-Die Linux-Unterstützung ist auf `main` integriert. Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Der nächste Release `v3.0.2-beta.3` enthält außerdem die korrigierte Übersetzung des Hilfe-Buttons.
+Die Linux-Unterstützung ist auf `main` integriert. Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. `v3.0.2-beta.3` korrigiert die Übersetzung des Hilfe-Buttons. Der nächste Release `v3.0.2-beta.4` behebt falsche FAT32-Exporte bei deaktivierter FAT-Spiegelung und aktiver zweiter FAT.
 
 ### DEB-Paket für Linux Mint 22.x
 
-Die Datei `tenshi_3.0.2.beta.3-1_all.deb` aus dem entsprechenden GitHub-Release herunterladen. Im Downloadordner installieren:
+Die Datei `tenshi_3.0.2.beta.4-1_all.deb` aus dem entsprechenden GitHub-Release herunterladen. Im Downloadordner installieren:
 
 ```bash
-sudo apt install ./tenshi_3.0.2.beta.3-1_all.deb
+sudo apt install ./tenshi_3.0.2.beta.4-1_all.deb
 ```
 
 Danach **Tenshi** im Anwendungsmenü öffnen oder `tenshi` im Terminal starten. Tenshi läuft als normaler Benutzer. Das Paket installiert benötigte Systemabhängigkeiten über APT; es ändert keine Geräteberechtigungen. Deinstallation: `sudo apt remove tenshi`.

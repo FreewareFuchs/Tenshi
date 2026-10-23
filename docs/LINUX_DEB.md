@@ -1,23 +1,23 @@
 # Natives Linux-DEB – Beta-Paket
 
-Das Paket ist für den gemeinsamen GitHub-Release `v3.0.2-beta.3` vorgesehen:
+Das Paket ist für den gemeinsamen GitHub-Release `v3.0.2-beta.4` vorgesehen:
 
 | Datei | Plattform |
 | --- | --- |
-| `tenshi_3.0.2.beta.3-1_all.deb` | Linux Mint 22.x / kompatible Debian-Systeme mit Python >= 3.11 |
+| `tenshi_3.0.2.beta.4-1_all.deb` | Linux Mint 22.x / kompatible Debian-Systeme mit Python >= 3.11 |
 | `Tenshi_Setup_3.0.2.exe` | Windows 10/11 64 Bit |
 | `Tenshi_Portable_3.0.2_Win64.zip` | Windows 10/11 64 Bit |
 
-`all` bezeichnet architekturunabhängigen Python-Code und ersetzt keine Hardwareabnahme. Das bisherige Linux-Praxistestgerät war ein 64-Bit-System mit Linux Mint. Linux Mint 21.x verwendet standardmäßig Python 3.10 und ist kein unterstütztes Paket-Ziel. Die Programmversion bleibt 3.0.2; die Debian-Paketversion `3.0.2~beta.3-1` sortiert vor einer späteren stabilen Version 3.0.2.
+`all` bezeichnet architekturunabhängigen Python-Code und ersetzt keine Hardwareabnahme. Das bisherige Linux-Praxistestgerät war ein 64-Bit-System mit Linux Mint. Linux Mint 21.x verwendet standardmäßig Python 3.10 und ist kein unterstütztes Paket-Ziel. Die Programmversion bleibt 3.0.2; die Debian-Paketversion `3.0.2~beta.4-1` sortiert vor einer späteren stabilen Version 3.0.2.
 
-Der Download-Dateiname verwendet Punkte, damit GitHub ihn beim Hochladen nicht verändert. Die Paketversion im DEB behält die Debian-Tilde bei; Beta.3 wird dadurch als neuer als Beta.2 erkannt.
+Der Download-Dateiname verwendet Punkte, damit GitHub ihn beim Hochladen nicht verändert. Die Paketversion im DEB behält die Debian-Tilde bei; Beta.4 wird dadurch als neuer als Beta.3 erkannt.
 
 ## Installation, Start und Entfernung
 
 Im Ordner mit dem heruntergeladenen Paket:
 
 ```bash
-sudo apt install ./tenshi_3.0.2.beta.3-1_all.deb
+sudo apt install ./tenshi_3.0.2.beta.4-1_all.deb
 tenshi
 ```
 
