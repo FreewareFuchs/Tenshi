@@ -44,7 +44,11 @@ class PartitionDetailsWorkerTests(unittest.TestCase):
                                 time.sleep(.005)
                         self.assertEqual(len(delivered), 1)
                         self.assertEqual(delivered[0][0], threading.get_ident())
-                        self.assertEqual(delivered[0][1][-1], 'test error' if failure else 'metadata')
+                        args = delivered[0][1]
+                        if failure:
+                            self.assertEqual(args, ('test error', app._source_generation, str(source)))
+                        else:
+                            self.assertEqual(args[-1], 'metadata')
                 self.assertEqual(source.read_bytes(), b'protected source')
             finally:
                 app.destroy()

@@ -753,25 +753,7 @@ class RecoveryDeskApp(tk.Tk):
         self.partition_summary.set('Neue Quelle ausgewählt. Schnellanalyse startet automatisch.')
         if hasattr(self, 'partition_quality_summary'):
             self.partition_quality_summary.set('')
-        self.browser_index = None
-        self.browser_source = None
-        self.ntfs_entries = []
-        self.scan_report_text = None
-        self.ntfs_source = None
-        self.folder_tree.delete(*self.folder_tree.get_children())
-        self.file_tree.delete(*self.file_tree.get_children())
-        self.browser_search_generation += 1
-        self.browser_entries_visible = {}
-        self.browser_display = []
-        self.browser_sorted_items = []
-        self.browser_page_items = []
-        self.browser_page = 0
-        self.browser_paths = {}
-        if hasattr(self, 'browser_page_caption'):
-            self._update_browser_page_caption()
-        self.browser_nodes = {}
-        self.browser_warning_records = set()
-        self.browser_warning_files = {}
+        self._clear_browser_results()
         if hasattr(self, 'browser_status_filter'):
             self.browser_status_filter.set(FILTER_ALL)
             if hasattr(self, 'browser_status_display'):
@@ -793,6 +775,33 @@ class RecoveryDeskApp(tk.Tk):
             self.browser_kind_display.set(translate('Alle', self.language))
         if hasattr(self, 'browser_search_paths'):
             self.browser_search_paths.set(False)
+
+    def _clear_browser_results(self):
+        """Invalidate cached entries before a replacement scan can fail."""
+        self._browser_fingerprint = None
+        self.browser_index = None
+        self.browser_source = None
+        self.ntfs_entries = []
+        self.scan_report_text = None
+        self.ntfs_source = None
+        self.folder_tree.delete(*self.folder_tree.get_children())
+        self.file_tree.delete(*self.file_tree.get_children())
+        self.browser_search_generation += 1
+        self.browser_entries_visible = {}
+        self.browser_display = []
+        self.browser_sorted_items = []
+        self.browser_page_items = []
+        self.browser_page = 0
+        self.browser_paths = {}
+        if hasattr(self, 'browser_page_caption'):
+            self._update_browser_page_caption()
+        self.browser_nodes = {}
+        self.browser_warning_records = set()
+        self.browser_warning_files = {}
+
+    def _scan_source_matches(self, generation, source):
+        return (generation == self._source_generation and
+                self.source_path.get().strip() == source)
 
     def _activate_source_and_quick_scan(self, source: str):
         """Switch to Partitionen and scan the new source, exclusively read-only.
@@ -1464,21 +1473,22 @@ class RecoveryDeskApp(tk.Tk):
                 result = inspect_partition(source, part)
             except Exception as exc:
                 msg = str(exc)
-                self._post_scan_callback(lambda: self._finish_partition_details_error(msg))
+                self._post_scan_callback(lambda: self._finish_partition_details_error(msg, generation, source))
             else:
                 self._post_scan_callback(lambda: self._finish_partition_details(
                     generation, source, idx, part, result))
         threading.Thread(target=run, daemon=True).start()
 
-    def _finish_partition_details_error(self, message):
+    def _finish_partition_details_error(self, message, generation=None, source=None):
         self.partition_diagnosing = False
         self.detail_btn.configure(state='normal')
-        messagebox.showerror('Partitionsprüfung', message, parent=self)
+        if generation is None or self._scan_source_matches(generation, source):
+            messagebox.showerror('Partitionsprüfung', message, parent=self)
 
     def _finish_partition_details(self, generation, source, idx, part, result):
         self.partition_diagnosing = False
         self.detail_btn.configure(state='normal')
-        if generation != self._source_generation or idx >= len(self.partitions) or self.partitions[idx] is not part:
+        if not self._scan_source_matches(generation, source) or idx >= len(self.partitions) or self.partitions[idx] is not part:
             self.status.set('Partitionsdiagnose verworfen: Quelle/Partitionsliste inzwischen geändert.')
             return
         self.partition_source = source
@@ -1941,7 +1951,7 @@ class RecoveryDeskApp(tk.Tk):
             messagebox.showerror('NTFS-Ordneransicht', str(exc))
             return
         self.ntfs_scanning = True
-        self._browser_fingerprint = None
+        self._clear_browser_results()
         self.browser_cancel.clear()
         self.ntfs_scan_btn.configure(state='disabled')
         self.ntfs_cancel_btn.configure(state='normal')
@@ -1949,7 +1959,7 @@ class RecoveryDeskApp(tk.Tk):
         def progress(done, total):
             self._post_scan_callback(lambda d=done, t=total, g=scan_source_generation: (
                 self.status.set(f'MFT: {d:,} / {t:,} Datensätze geprüft …')
-                if g == self._source_generation else None))
+                if self._scan_source_matches(g, source) else None))
         def worker():
             try:
                 fp = None
@@ -1979,15 +1989,15 @@ class RecoveryDeskApp(tk.Tk):
                 warning_records = folder_warning_records(
                     visible_entries(index.entries, display_tmp))
                 self._post_scan_callback(lambda name=fs_name, g=scan_source_generation: (
-                    self._set_browser_fs(name) if g == self._source_generation else None))
+                    self._set_browser_fs(name) if self._scan_source_matches(g, source) else None))
                 def publish(idx=index, prepared=(paths, warning_records, display_tmp), fingerprint=fp):
-                    if scan_source_generation == self._source_generation:
+                    if self._scan_source_matches(scan_source_generation, source):
                         self._browser_fingerprint = fingerprint
                         self._show_browser_index(source, idx, prepared=prepared)
                 self._post_scan_callback(publish)
             except (ScanCancelled, OtherScanCancelled):
                 self._post_scan_callback(lambda g=scan_source_generation: (
-                    self.status.set('Scan abgebrochen.') if g == self._source_generation else None))
+                    self.status.set('Scan abgebrochen.') if self._scan_source_matches(g, source) else None))
             except Exception as exc:
                 msg = str(exc)
                 if isinstance(exc, OSError) and getattr(exc, 'errno', None) == 22:
@@ -2000,7 +2010,7 @@ class RecoveryDeskApp(tk.Tk):
                                 'Bitte Tenshi neu starten und die aktuelle Version verwenden. '
                                 'Falls der Fehler bleibt, Laufwerk als Administrator öffnen oder RAW-Image erstellen.')
                 self._post_scan_callback(lambda m=msg, g=scan_source_generation: (
-                    messagebox.showerror('Dateisystem', m) if g == self._source_generation else None))
+                    messagebox.showerror('Dateisystem', m) if self._scan_source_matches(g, source) else None))
             finally:
                 self._post_scan_callback(self._finish_ntfs_scan)
         threading.Thread(target=worker, daemon=True).start()
