@@ -26,6 +26,7 @@ class LinuxGuiDeviceScanTests(unittest.TestCase):
     def setUp(self):
         self.app = RecoveryDeskApp()
         self.app.withdraw()
+        self.app.source_path.set(FAKE_DEVICE)
 
     def tearDown(self):
         self.app.destroy()
