@@ -22,4 +22,18 @@ Dies ist eine zusätzliche Konsistenzprüfung, kein Beweis der Datenträgerident
 
 Die Bindung an den Analysezeitpunkt gilt für die Dateisystemanalyse der Oberfläche. Direkte API-Aufrufe ohne gebundene Indexkennung erhalten erst beim Start von `export_batch` eine Vergleichsbasis. Direkte Einzeldatei-Exporter und Imaging-Aufträge sind durch diese Änderung nicht zusätzlich abgesichert.
 
-Die automatisierten Tests simulieren Austausch und Verbindungsverlust. Eine Hardwareabnahme unter Windows oder Linux ist damit nicht behauptet.
+## Bestätigter Linux-Praxistest am 24.10.2026
+
+Unter Linux Mint wurde die Geräteprüfung mit einem intakten SanDisk-USB-Testdatenträger mit exFAT geprüft. Die folgenden Ergebnisse wurden durch Rückmeldungen und Screenshots während der Entwicklung von PR #29 und der Meldungskorrektur in PR #31 bestätigt:
+
+| Ablauf | Bestätigtes Ergebnis |
+| --- | --- |
+| Nach dem Einlesen sicher auswerfen und abziehen; Vorschau aus der alten Dateiliste öffnen | Keine Inhaltsvorschau; Meldung „Quelle nicht mehr erreichbar. Datenträger erneut einlesen.“ |
+| Bei abgezogener Quelle einen Stapel-Export versuchen | Auftrag wird blockiert; nach der Meldungskorrektur derselbe verständliche Hinweis statt einer Geometriemeldung; keine Datei als erfolgreich exportiert. |
+| Wieder anschließen, ohne die Quelle erneut auszuwählen oder einzulesen; Vorschau aus der alten Dateiliste öffnen | Meldung „Datenträger wurde ausgetauscht oder geändert. Quelle erneut einlesen.“; kein Dateiinhalt angezeigt. |
+| Aus derselben alten Dateiliste nach dem Wiederanschließen einen Stapel-Export versuchen | Auftrag wird mit derselben Änderungsmeldung blockiert. |
+| Quelle erneut auswählen und einlesen; bekannte Datei in einen neuen Zielordner exportieren | Original und Export haben denselben SHA-256-Wert. |
+
+Der zeitweise fehlende Linux-Lesezugriff war ein separater Berechtigungsfall. Tenshi wurde als normaler Benutzer betrieben; die gezielte Freigabe des lesenden Gerätezugriffs erfolgte außerhalb der Anwendung.
+
+Diese Ergebnisse bestätigen nur den beschriebenen Ablauf mit dem getesteten Gerät und den getesteten Entwicklungsständen. Ein Austausch gegen ein anderes physisches Gerät, ein Abziehen während eines laufenden Exports und die entsprechende Windows-Gerätewechselprüfung sind damit nicht auf realer Hardware abgenommen. Die automatisierten Tests decken zusätzliche simulierte Austausch- und Verbindungsverlustfälle ab. Die Praxisergebnisse gelten nicht rückwirkend für veröffentlichte Beta.5-Downloads.
