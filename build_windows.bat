@@ -31,7 +31,9 @@ set "VENV_PYTHON=%CD%\.venv\Scripts\python.exe"
 if errorlevel 1 goto env_failed
 
 echo [3/5] PyInstaller installieren/pruefen...
-"%VENV_PYTHON%" -m pip install --disable-pip-version-check "pyinstaller>=6,<7" >> "%BUILD_LOG%" 2>&1
+"%VENV_PYTHON%" -m pip install --disable-pip-version-check --require-hashes --only-binary=:all: --force-reinstall -r "requirements-build-windows.txt" >> "%BUILD_LOG%" 2>&1
+if errorlevel 1 goto install_failed
+"%VENV_PYTHON%" -m pip check >> "%BUILD_LOG%" 2>&1
 if errorlevel 1 goto install_failed
 
 echo [4/5] Tenshi.exe mit Programmsymbol und Versionsinformationen bauen...
@@ -41,6 +43,10 @@ if errorlevel 1 goto build_failed
 "%VENV_PYTHON%" -m PyInstaller --noconfirm --clean --windowed --onefile --name Tenshi --icon "recoverydesk/assets/tenshi.ico" --version-file "build/version_info.txt" --add-data "recoverydesk/assets;recoverydesk/assets" --add-data "build/identity/recoverydesk/_build_info.json;recoverydesk" main.py >> "%BUILD_LOG%" 2>&1
 if errorlevel 1 goto build_failed
 if not exist "dist\Tenshi.exe" goto missing_exe
+"%VENV_PYTHON%" -m pip freeze --all > "build\windows-build-requirements.txt" 2>> "%BUILD_LOG%"
+if errorlevel 1 goto build_failed
+"%VENV_PYTHON%" -VV > "build\windows-build-python.txt" 2>> "%BUILD_LOG%"
+if errorlevel 1 goto build_failed
 
 echo [5/5] Portable-Paket bei Bedarf ueber build_portable.bat erstellen.
 echo.

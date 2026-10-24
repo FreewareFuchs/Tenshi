@@ -99,6 +99,8 @@ jobs:
           name: Tenshi-3.0.2-Windows-release
           path: |
             windows-build-info.json
+            build/windows-build-requirements.txt
+            build/windows-build-python.txt
             dist/Tenshi.exe
             portable_output/Tenshi_Portable_3.0.2_Win64.zip
             installer_output/Tenshi_Setup_3.0.2.exe
