@@ -111,6 +111,31 @@ class DeviceIdentityTests(unittest.TestCase):
                     export_batch(str(source), index, selected, str(target))
             self.assertEqual(list(target.iterdir()), [])
 
+    def test_geometry_or_missing_path_after_scan_reports_source_loss(self):
+        from recoverydesk import batch_export
+        index = SimpleNamespace(_device_identity={'offset': 0, 'serial': 'known'})
+        for failure in (OSError('Nicht unterstützte Datenträgergeometrie.'),
+                        ValueError('Die Quelle muss eine vorhandene RAW-Image-Datei sein.')):
+            with self.subTest(failure=str(failure)), \
+                    patch.object(batch_export, 'source_size', side_effect=failure):
+                with self.assertRaisesRegex(device.DeviceSourceChanged, 'Quelle nicht mehr erreichbar') as caught:
+                    batch_export._identity('missing-source', index)
+                self.assertIs(caught.exception.__cause__, failure)
+        unbound = SimpleNamespace()
+        with patch.object(batch_export, 'source_size', side_effect=OSError('Nicht unterstützte Datenträgergeometrie.')):
+            with self.assertRaisesRegex(OSError, 'Nicht unterstützte Datenträgergeometrie') as caught:
+                batch_export._identity('new-source', unbound)
+            self.assertNotIsInstance(caught.exception, device.DeviceSourceChanged)
+
+    def test_failure_during_snapshot_capture_is_normalized(self):
+        from recoverydesk import batch_export
+        index = SimpleNamespace(_device_identity={'offset': 0, 'serial': 'known'})
+        with patch.object(batch_export, 'source_size', return_value=1024), \
+                patch.object(batch_export, 'is_device_source', return_value=True), \
+                patch.object(batch_export, 'capture_device_identity', side_effect=OSError('geometry lost')):
+            with self.assertRaisesRegex(device.DeviceSourceChanged, 'Quelle nicht mehr erreichbar'):
+                batch_export._identity('device', index)
+
     def test_replacement_during_write_removes_partial_and_retry_then_resume(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

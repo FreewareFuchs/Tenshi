@@ -64,6 +64,21 @@ def _digest(value) -> str:
 
 
 def _identity(source: str, index) -> dict:
+    expected = getattr(index, '_device_identity', None)
+    try:
+        identity = _read_identity(source, index)
+        if expected is not None and identity.get('device_snapshot') != expected:
+            raise DeviceSourceChanged('Datenträger wurde ausgetauscht oder geändert. Quelle erneut einlesen.')
+        return identity
+    except DeviceSourceChanged:
+        raise
+    except (OSError, ValueError) as exc:
+        if expected is not None:
+            raise DeviceSourceChanged('Quelle nicht mehr erreichbar. Datenträger erneut einlesen.') from exc
+        raise
+
+
+def _read_identity(source: str, index) -> dict:
     # Identity is a useful consistency check, not a cryptographic fingerprint of the source disk.
     identity = {'source': os.path.normcase(os.path.abspath(source)),
                 'size': source_size(source),
