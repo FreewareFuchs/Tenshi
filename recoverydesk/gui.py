@@ -26,7 +26,7 @@ from .session_store import (save_session, load_session, fingerprint_image,
                             check_fingerprint, SessionError)
 from .core import list_volumes
 from .partition_scan import analyze_image, format_partition_findings
-from .partition_health import inspect_partition, format_partition_details
+from .partition_health import inspect_partition, format_partition_details, format_partition_confidence
 from .ntfs import iter_stream
 from .recovery_quality import assess
 from .recovery_preflight import inspect_selection, MAX_DETAIL_ROWS
@@ -1439,11 +1439,11 @@ class RecoveryDeskApp(tk.Tk):
         self._draw_usage_bar()
         if result:
             self._write_partition_details(format_partition_details(part, result,
-                self.partition_source or self.source_path.get().strip()))
+                self.partition_source or self.source_path.get().strip(), self.language))
         else:
             self._write_partition_details(
                 f'Partition {part.index}: {part.filesystem} · Offset {part.offset_bytes:,} Byte\n'
-                f'Plausibilität: {part.confidence} (Metadaten, keine Rettungsgarantie)\n'
+                + format_partition_confidence(part.confidence, self.language) + '\n'
                 + '\n'.join('• ' + item for item in part.evidence) + '\n'
                 + (('Warnung: ' + part.warning + '\n') if part.warning else '')
                 + 'Noch nicht geprüft. „Ausgewählte Partition prüfen“ anklicken.')
@@ -1501,7 +1501,7 @@ class RecoveryDeskApp(tk.Tk):
         if iid in self.part_tree.selection():
             self._usage_for_chart = result
             self._draw_usage_bar()
-            self._write_partition_details(format_partition_details(part, result, source))
+            self._write_partition_details(format_partition_details(part, result, source, self.language))
         self.status.set('Partitions-Metadaten geprüft: ' + result.status +
                         ' · * Belegung aus Dateisystem-Metadaten, keine Integritätsprüfung.')
 
@@ -1553,7 +1553,7 @@ class RecoveryDeskApp(tk.Tk):
             from .sources import ensure_safe_destination
             ensure_safe_destination(source, filename)
             with open(filename, 'x', encoding='utf-8') as stream:
-                stream.write(format_partition_details(self.partitions[idx], result, source))
+                stream.write(format_partition_details(self.partitions[idx], result, source, self.language))
         except (OSError, ValueError) as e:
             messagebox.showerror('Partitionsbericht', str(e), parent=self)
             return

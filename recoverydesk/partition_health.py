@@ -233,14 +233,27 @@ def inspect_partition(path: str, part: Partition) -> PartitionDetails:
     return d
 
 
-def format_partition_details(part: Partition, details: PartitionDetails, source: str) -> str:
+def format_partition_confidence(confidence: str, language: str = 'de') -> str:
+    """Describe detection evidence without implying recovery odds or file health."""
+    levels = {'Hoch': 'hohe Plausibilität', 'Mittel': 'mittlere Plausibilität',
+              'Niedrig': 'geringe Plausibilität'}
+    label = 'Partitionserkennung: ' + levels.get(confidence, confidence)
+    scope = 'Diese Bewertung sagt nichts über den Zustand der Dateien oder die Rettungschancen aus.'
+    if language != 'de':
+        from .i18n import translate
+        label, scope = translate(label, language), translate(scope, language)
+    return label + '\n' + scope
+
+
+def format_partition_details(part: Partition, details: PartitionDetails, source: str,
+                             language: str = 'de') -> str:
     def amount(n):
         return 'unbekannt' if n is None else f'{n:,} Bytes ({n/1024**3:.3f} GiB)'
     rows = [
         'Tenshi – schreibgeschützter Partitionsbericht',
         f'Quelle: {source}',
         f'Partition: {part.index} / {part.scheme}',
-        f'Plausibilität: {part.confidence} (keine Erfolgswahrscheinlichkeit)',
+        format_partition_confidence(part.confidence, language),
         *(('- ' + item) for item in part.evidence),
         f'Dateisystem: {details.filesystem}',
         f'Startoffset: {part.offset_bytes:,} Bytes',
