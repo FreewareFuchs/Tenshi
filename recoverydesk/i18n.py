@@ -31,6 +31,20 @@ TRANSLATIONS = {}
 def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
+# exFAT sessions created before initialized-length tracking require a new scan.
+add('exFAT-ValidDataLength fehlt oder ist ungültig. Quelle erneut einlesen.',
+    'exFAT ValidDataLength is missing or invalid. Scan the source again.',
+    'Falta ValidDataLength de exFAT o no es válido. Vuelva a analizar el origen.',
+    'exFAT ValidDataLength 缺失或无效。请重新扫描源。',
+    'Значение exFAT ValidDataLength отсутствует или неверно. Повторно просканируйте источник.',
+    'exFATのValidDataLengthが不明または無効です。ソースを再スキャンしてください。')
+add('exFAT-ValidDataLength fehlt. Quelle erneut einlesen.',
+    'exFAT ValidDataLength is missing. Scan the source again.',
+    'Falta ValidDataLength de exFAT. Vuelva a analizar el origen.',
+    'exFAT ValidDataLength 缺失。请重新扫描源。',
+    'Значение exFAT ValidDataLength отсутствует. Повторно просканируйте источник.',
+    'exFATのValidDataLengthが不明です。ソースを再スキャンしてください。')
+
 # Device identity mismatch and loss during read-only operations.
 add('Datenträger wurde ausgetauscht oder geändert. Quelle erneut einlesen.',
     'The device was replaced or changed. Scan the source again.',

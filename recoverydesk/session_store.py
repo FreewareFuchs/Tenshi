@@ -419,7 +419,7 @@ def _decode_index(raw: dict, source: str):
             raise SessionError('Das gespeicherte Dateisystem passt nicht mehr zum Image.')
         allowed = {f.name for f in fields(GenericEntry)}
         for d in rows:
-            if not isinstance(d, dict) or set(d) != allowed:
+            if not isinstance(d, dict) or set(d) not in (allowed, allowed - {'valid_data_length'}):
                 raise SessionError('Ungültiger Dateisystemeintrag.')
             d = dict(d)
             d['locator'] = _decode_locator(d['locator'])
@@ -430,6 +430,11 @@ def _decode_index(raw: dict, source: str):
                 type(entry.record_number) is not int or entry.record_number < 0 or
                 type(entry.parent_record) is not int or entry.parent_record < -1):
                 raise SessionError('Ungültige Dateisystem-Metadaten in Sitzung.')
+            if entry.valid_data_length is not None and (
+                    type(entry.valid_data_length) is not int or not 0 <= entry.valid_data_length <= entry.size):
+                raise SessionError('Ungültige exFAT-ValidDataLength in Sitzung.')
+            if volume.label == 'exFAT' and entry.size and entry.valid_data_length is None:
+                entry.unsupported_reason = entry.unsupported_reason or 'exFAT-ValidDataLength fehlt. Quelle erneut einlesen.'
             entries.append(entry)
         permitted = {f.name for f in fields(GenericIndex)} - {'filesystem', 'offset', 'entries', 'volumes', 'children'}
         if set(props) != permitted:

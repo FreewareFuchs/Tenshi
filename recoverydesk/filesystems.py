@@ -55,6 +55,7 @@ class GenericEntry:
     is_deleted: bool = False
     unsupported_reason: str = ''
     link_index: int = 0
+    valid_data_length: int | None = None  # exFAT initialized prefix; None requires a rescan
     @property
     def key(self): return f'{self.record_number}:{self.link_index}'
     @property
@@ -480,6 +481,7 @@ class ExFAT(VolumeBase):
             data=read_exact(f,self.cluster_offset(c),min(self.cluster_size,remaining))
             yield data
             remaining-=len(data)
+            if remaining == 0: return
         if remaining: raise FileSystemError('exFAT-Clusterkette kürzer als Datenlänge')
 
     def iter_file(self,f,entry,max_bytes=None):
@@ -507,6 +509,20 @@ class ExFAT(VolumeBase):
                     return
                 if not self._bitmap_free(f, start, size):
                     raise FileSystemError('Gelöschte exFAT-Datencluster sind nicht verifiziert frei')
+            if not entry.is_deleted:
+                valid = entry.valid_data_length
+                if type(valid) is not int or not 0 <= valid <= size:
+                    raise FileSystemError('exFAT-ValidDataLength fehlt oder ist ungültig. Quelle erneut einlesen.')
+                wanted = min(size, max_bytes) if max_bytes is not None else size
+                initialized = min(valid, wanted)
+                if initialized:
+                    yield from self._bytes(f, start, size, contiguous, initialized)
+                remaining = wanted - initialized
+                while remaining:
+                    take = min(remaining, 1024 * 1024)
+                    yield bytes(take)
+                    remaining -= take
+                return
             yield from self._bytes(f,start,size,contiguous,max_bytes)
 
     def list_directory(self,f,locator):
@@ -561,7 +577,8 @@ class ExFAT(VolumeBase):
             valid_len=u64(stream,8)
             contiguous=bool(stream[1]&0x02)
             unsupported=''
-            if data_len>MAX_FILE_SIZE or valid_len>data_len:
+            if (data_len>MAX_FILE_SIZE or data_len>self.cluster_count*self.cluster_size or
+                valid_len>data_len or (directory and valid_len != data_len)):
                 unsupported='Ungültige exFAT-Datenlänge'
             if data_len and not (2<=start_cluster<self.cluster_count+2):
                 unsupported='Ungültiger exFAT-Startcluster'
@@ -583,7 +600,7 @@ class ExFAT(VolumeBase):
             loc = ((start_cluster,contiguous,data_len,recovery_chain)
                    if recovery_chain is not None else
                    (start_cluster,contiguous,data_len))
-            rows.append((name,directory,data_len,loc,unsupported,deleted))
+            rows.append((name,directory,data_len,loc,unsupported,deleted,valid_len))
         return rows
 
 
@@ -1001,7 +1018,10 @@ def scan_tree(path: str, offset: int = 0, max_entries: int = MAX_ENTRIES,
                     progress(len(entries), max_entries)
                 continue
             for row in rows:
-                if len(row) == 6:
+                valid_data_length = None
+                if len(row) == 7:
+                    name, directory, size, loc, reason, deleted, valid_data_length = row
+                elif len(row) == 6:
                     name, directory, size, loc, reason, deleted = row
                 else:
                     name, directory, size, loc, reason = row
@@ -1011,7 +1031,8 @@ def scan_tree(path: str, offset: int = 0, max_entries: int = MAX_ENTRIES,
                                           'nur Teilansicht. Limit im Code erhöhen')
                 serial += 1
                 entry = GenericEntry(serial, name, parent, directory, size, loc,
-                                     is_deleted=deleted, unsupported_reason=reason)
+                                     is_deleted=deleted, unsupported_reason=reason,
+                                     valid_data_length=valid_data_length)
                 entries.append(entry)
                 by_id[entry.record_number] = entry
                 children[parent].append(entry)
