@@ -17,6 +17,10 @@ class NTFSError(ValueError):
     """Invalid/unsupported NTFS metadata or incomplete data."""
 
 
+class RunlistBoundsError(NTFSError):
+    """A decoded physical data run falls outside the declared NTFS volume."""
+
+
 @dataclass(frozen=True)
 class NTFSInfo:
     partition_offset: int
@@ -145,7 +149,7 @@ def parse_runlist(blob: bytes, total_clusters: int) -> list[DataRun]:
             delta = int.from_bytes(blob[pos:pos+off_width], "little", signed=True)
             lcn += delta
             if lcn < 0 or lcn + clusters > total_clusters:
-                raise NTFSError("Runlist zeigt außerhalb des NTFS-Volumes.")
+                raise RunlistBoundsError("Runlist zeigt außerhalb des NTFS-Volumes.")
             runs.append(DataRun(lcn, clusters))
             pos += off_width
     raise NTFSError("Zu viele Runlist-Abschnitte.")

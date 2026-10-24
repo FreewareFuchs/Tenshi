@@ -53,6 +53,7 @@ class NtfsDiagnosticTests(unittest.TestCase):
              patch.object(browser, '_read_mft_piece', return_value=records):
             index = browser.scan_ntfs_tree(str(self.source))
         self.assertEqual(index.damaged_records, 3)
+        self.assertEqual(index.deleted_outside_volume_records, 1)
         self.assertEqual(index.record_error_states, {'deleted': 1, 'in_use': 1, 'unknown': 1})
         self.assertEqual([x['state'] for x in index.record_error_samples], ['deleted', 'in_use', 'unknown'])
         self.assertFalse(index.entries)
@@ -82,8 +83,12 @@ class NtfsDiagnosticTests(unittest.TestCase):
         raw = _encode_index(index)
         restored = _decode_index(raw, str(self.source))
         self.assertEqual(restored.record_error_reasons, index.record_error_reasons)
+        bad = copy.deepcopy(raw)
+        bad['properties']['deleted_outside_volume_records'] = 999
+        with self.assertRaises(SessionError):
+            _decode_index(bad, str(self.source))
         old = copy.deepcopy(raw)
-        for key in ('record_error_reasons', 'record_error_states', 'record_error_samples', 'attribute_list_limit_skipped', 'index_parse_failures'):
+        for key in ('record_error_reasons', 'record_error_states', 'record_error_samples', 'attribute_list_limit_skipped', 'index_parse_failures', 'deleted_outside_volume_records'):
             old['properties'].pop(key)
         restored = _decode_index(old, str(self.source))
         self.assertEqual(restored.record_error_reasons, {})
@@ -97,5 +102,6 @@ class NtfsDiagnosticTests(unittest.TestCase):
         for language in ('en', 'es', 'zh', 'ru', 'ja'):
             for text in ('MFT-Auswertungsfehler', 'MFT-Lesefehler',
                          'Attributlisten-Limit: nicht untersuchte Basisrecords',
-                         'Verzeichnisindex-Auswertungsmeldungen'):
+                         'Verzeichnisindex-Auswertungsmeldungen', 'Sonstige MFT-Auswertungsfehler',
+                         'Gelöschte Records: Clusterverweise außerhalb des Volumes'):
                 self.assertNotEqual(translate(text, language), text)

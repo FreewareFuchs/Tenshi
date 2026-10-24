@@ -14,7 +14,7 @@ import os
 import re
 import struct
 
-from .ntfs import (NTFSError, NTFSInfo, DataRun, parse_boot_sector,
+from .ntfs import (NTFSError, RunlistBoundsError, NTFSInfo, DataRun, parse_boot_sector,
                    apply_update_sequence, attributes, parse_runlist, iter_stream,
                    _read_exact, _u16, _u64)
 from .sources import open_source, ensure_safe_destination, is_device_source
@@ -103,6 +103,7 @@ class FileIndex:
     record_error_samples: list[dict] = field(default_factory=list)
     attribute_list_limit_skipped: int = 0
     index_parse_failures: int = 0
+    deleted_outside_volume_records: int = 0
 
     def list_dir(self, parent: int, show_deleted: bool = True) -> list[FileEntry]:
         items = self.children.get(parent, [])
@@ -302,6 +303,7 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
     damaged_records = 0
     record_error_reasons = {}
     record_error_states = {}
+    deleted_outside_volume_records = 0
     record_error_samples = []
     attribute_list_limit_skipped = 0
     unreadable_records = 0
@@ -379,6 +381,8 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
                     damaged_records += 1
                     allocation_state = _record_allocation_state(rec, info)
                     record_error_states[allocation_state] = record_error_states.get(allocation_state, 0) + 1
+                    if allocation_state == 'deleted' and isinstance(exc, RunlistBoundsError):
+                        deleted_outside_volume_records += 1
                     reason = type(exc).__name__ + ': ' + str(exc).replace('\n', ' ')[:160]
                     if reason not in record_error_reasons and len(record_error_reasons) >= 20:
                         reason = 'Weitere Fehlergründe (zusammengefasst)'
@@ -419,6 +423,7 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
                        tolerant=tolerate_read_errors)
     result.record_error_reasons = record_error_reasons
     result.record_error_states = record_error_states
+    result.deleted_outside_volume_records = deleted_outside_volume_records
     result.record_error_samples = record_error_samples
     result.attribute_list_limit_skipped = attribute_list_limit_skipped
     result.index_parse_failures = allocation_parse_failures

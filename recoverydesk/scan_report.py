@@ -29,6 +29,10 @@ def format_scan_report(source, index) -> str:
             f'Wegen Attributlisten-Limit nicht untersuchte Basisrecords: {getattr(index, "attribute_list_limit_skipped", 0)}',
             f'Verzeichnisindex-Auswertungsmeldungen: {getattr(index, "index_parse_failures", 0)}',
         ])
+        outside = getattr(index, 'deleted_outside_volume_records', 0)
+        lines.append(f'Davon gelöschte Records mit Clusterverweisen außerhalb des aktuellen Volumes: {outside}')
+        if outside:
+            lines.append('Diese Verweise können veraltet sein, etwa nach einer Verkleinerung. Ursache nicht nachgewiesen; Einträge bleiben nicht exportierbar.')
         states = getattr(index, 'record_error_states', {})
         lines.append('Statusflags der nicht auswertbaren MFT-Records (nur nach bestandener Fixup-Prüfung):')
         for state, label in (('in_use', 'Als belegt markiert'), ('deleted', 'Als gelöscht markiert'),

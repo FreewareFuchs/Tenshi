@@ -2170,7 +2170,9 @@ class RecoveryDeskApp(tk.Tk):
             limited = getattr(index, 'attribute_list_limit_skipped', 0)
             index_errors = getattr(index, 'index_parse_failures', 0)
             if index.damaged_records or index.unreadable_records or limited or index_errors:
-                counts = ((index.damaged_records, 'MFT-Auswertungsfehler'),
+                outside = getattr(index, 'deleted_outside_volume_records', 0)
+                counts = ((index.damaged_records - outside, 'Sonstige MFT-Auswertungsfehler'),
+                          (outside, 'Gelöschte Records: Clusterverweise außerhalb des Volumes'),
                           (index.unreadable_records, 'MFT-Lesefehler'),
                           (limited, 'Attributlisten-Limit: nicht untersuchte Basisrecords'),
                           (index_errors, 'Verzeichnisindex-Auswertungsmeldungen'))
@@ -2179,6 +2181,10 @@ class RecoveryDeskApp(tk.Tk):
                 message += '\n\n' + translate(
                     'Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Diagnose… → Analysebericht speichern.',
                     self.language)
+                if outside:
+                    message += '\n\n' + translate(
+                        'Diese Löschverweise können veraltet sein, etwa nach einer Partitionsverkleinerung. Die Ursache ist nicht nachgewiesen. Betroffene Einträge bleiben nicht exportierbar.',
+                        self.language)
                 messagebox.showwarning('NTFS-Analyse unvollständig', message)
 
         else:

@@ -44,6 +44,15 @@ add('Vorschau: technische Metadaten und Fehlercodes. Keine Pfade, Dateinamen ode
     'Предпросмотр: технические метаданные и коды ошибок. Без путей, имён и содержимого файлов. Отчёт сохраняется только локально.',
     'プレビュー：技術メタデータとエラーコード。パス、ファイル名、ファイル内容は含みません。保存先はローカルのみです。')
 
+add('Sonstige MFT-Auswertungsfehler', 'Other MFT parsing errors', 'Otros errores de interpretación MFT', '其他 MFT 解析错误', 'Другие ошибки разбора MFT', 'その他のMFT解析エラー')
+add('Gelöschte Records: Clusterverweise außerhalb des Volumes', 'Deleted records: cluster references outside the volume', 'Registros borrados: referencias a clústeres fuera del volumen', '已删除记录：簇引用超出卷范围', 'Удалённые записи: ссылки на кластеры за пределами тома', '削除済みレコード：ボリューム外のクラスタ参照')
+add('Diese Löschverweise können veraltet sein, etwa nach einer Partitionsverkleinerung. Die Ursache ist nicht nachgewiesen. Betroffene Einträge bleiben nicht exportierbar.',
+    'These deleted-file references may be stale, for example after shrinking a partition. The cause is not proven. Affected entries remain unavailable for export.',
+    'Estas referencias de archivos borrados pueden estar obsoletas, por ejemplo tras reducir una partición. La causa no está demostrada. Las entradas afectadas no se pueden exportar.',
+    '这些删除文件的引用可能已过时，例如在缩小分区后。原因尚未证实。相关记录仍无法导出。',
+    'Эти ссылки удалённых файлов могут устареть, например после уменьшения раздела. Причина не доказана. Экспорт затронутых записей остаётся недоступен.',
+    'これらの削除ファイル参照は、パーティション縮小後などに古くなっている可能性があります。原因は未確定です。該当レコードは引き続きエクスポートできません。')
+
 # NTFS diagnostics distinguish interpretation failures from read failures.
 add('nicht auswertbare und', 'unparsed and', 'no interpretados y', '无法解析及', 'не разобрано и', '解析不能、および')
 add('MFT-Auswertungsfehler', 'MFT parsing errors', 'Errores de interpretación MFT', 'MFT 解析错误', 'Ошибки разбора MFT', 'MFT解析エラー')
