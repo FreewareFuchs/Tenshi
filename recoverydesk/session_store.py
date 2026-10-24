@@ -378,9 +378,35 @@ def _decode_index(raw: dict, source: str):
                 running_clusters * info.cluster_size < entry.size):
                 raise SessionError('Unvollständige NTFS-Datenläufe in der Sitzung.')
             entries.append(entry)
+        # Older sessions predate the optional bounded diagnostic counters.
+        props = dict(props)
+        props.setdefault('record_error_reasons', {})
+        props.setdefault('record_error_states', {})
+        props.setdefault('record_error_samples', [])
+        props.setdefault('attribute_list_limit_skipped', 0)
+        props.setdefault('index_parse_failures', 0)
+        props.setdefault('deleted_outside_volume_records', 0)
         permitted = {f.name for f in fields(FileIndex)} - {'info', 'entries', 'children', 'by_record'}
         if set(props) != permitted:
             raise SessionError('Ungültige NTFS-Indexfelder.')
+        reasons, samples = props['record_error_reasons'], props['record_error_samples']
+        states = props['record_error_states']
+        if (not isinstance(states, dict) or set(states) - {'in_use', 'deleted', 'unknown'} or
+            any(type(v) is not int or v < 0 for v in states.values()) or
+            not isinstance(reasons, dict) or len(reasons) > 21 or
+            any(not isinstance(k, str) or len(k) > 220 or type(v) is not int or v < 0
+                for k, v in reasons.items()) or
+            not isinstance(samples, list) or len(samples) > 20 or
+            any(not isinstance(x, dict) or set(x) not in ({'record', 'reason'}, {'record', 'reason', 'state'}) or
+                x.get('state', 'unknown') not in ('in_use', 'deleted', 'unknown') or
+                type(x['record']) is not int or x['record'] < 0 or
+                not isinstance(x['reason'], str) or len(x['reason']) > 220 for x in samples) or
+            any(type(props[k]) is not int or props[k] < 0 for k in
+                ('attribute_list_limit_skipped', 'index_parse_failures', 'deleted_outside_volume_records'))):
+            raise SessionError('Ungültige NTFS-Diagnosedaten.')
+        if (type(props['damaged_records']) is not int or props['damaged_records'] < 0 or
+                props['deleted_outside_volume_records'] > props['damaged_records']):
+            raise SessionError('Inkonsistente NTFS-Diagnosezähler.')
         index = FileIndex(info, entries, **props)
         index.by_record = {}
         for entry in entries:

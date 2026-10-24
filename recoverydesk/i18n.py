@@ -44,6 +44,28 @@ add('Vorschau: technische Metadaten und Fehlercodes. Keine Pfade, Dateinamen ode
     'Предпросмотр: технические метаданные и коды ошибок. Без путей, имён и содержимого файлов. Отчёт сохраняется только локально.',
     'プレビュー：技術メタデータとエラーコード。パス、ファイル名、ファイル内容は含みません。保存先はローカルのみです。')
 
+add('Sonstige MFT-Auswertungsfehler', 'Other MFT parsing errors', 'Otros errores de interpretación MFT', '其他 MFT 解析错误', 'Другие ошибки разбора MFT', 'その他のMFT解析エラー')
+add('Gelöschte Records: Clusterverweise außerhalb des Volumes', 'Deleted records: cluster references outside the volume', 'Registros borrados: referencias a clústeres fuera del volumen', '已删除记录：簇引用超出卷范围', 'Удалённые записи: ссылки на кластеры за пределами тома', '削除済みレコード：ボリューム外のクラスタ参照')
+add('Diese Löschverweise können veraltet sein, etwa nach einer Partitionsverkleinerung. Die Ursache ist nicht nachgewiesen. Betroffene Einträge bleiben nicht exportierbar.',
+    'These deleted-file references may be stale, for example after shrinking a partition. The cause is not proven. Affected entries remain unavailable for export.',
+    'Estas referencias de archivos borrados pueden estar obsoletas, por ejemplo tras reducir una partición. La causa no está demostrada. Las entradas afectadas no se pueden exportar.',
+    '这些删除文件的引用可能已过时，例如在缩小分区后。原因尚未证实。相关记录仍无法导出。',
+    'Эти ссылки удалённых файлов могут устареть, например после уменьшения раздела. Причина не доказана. Экспорт затронутых записей остаётся недоступен.',
+    'これらの削除ファイル参照は、パーティション縮小後などに古くなっている可能性があります。原因は未確定です。該当レコードは引き続きエクスポートできません。')
+
+# NTFS diagnostics distinguish interpretation failures from read failures.
+add('nicht auswertbare und', 'unparsed and', 'no interpretados y', '无法解析及', 'не разобрано и', '解析不能、および')
+add('MFT-Auswertungsfehler', 'MFT parsing errors', 'Errores de interpretación MFT', 'MFT 解析错误', 'Ошибки разбора MFT', 'MFT解析エラー')
+add('MFT-Lesefehler', 'MFT read errors', 'Errores de lectura MFT', 'MFT 读取错误', 'Ошибки чтения MFT', 'MFT読み取りエラー')
+add('Attributlisten-Limit: nicht untersuchte Basisrecords', 'Attribute-list limit: unexamined base records', 'Límite de listas de atributos: registros base no examinados', '属性列表上限：未检查的基础记录', 'Лимит списков атрибутов: непроверенные базовые записи', '属性リスト上限：未調査の基本レコード')
+add('Verzeichnisindex-Auswertungsmeldungen', 'Directory index parsing notices', 'Avisos de interpretación de índices de directorio', '目录索引解析提示', 'Сообщения разбора индексов каталогов', 'ディレクトリ索引の解析通知')
+add('Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Diagnose… → Analysebericht speichern.',
+    'The file list may be incomplete. Parsing errors or reached limits do not prove drive damage. Details: Diagnostics… → Save analysis report.',
+    'La lista puede estar incompleta. Los errores de interpretación o límites alcanzados no demuestran daños en la unidad. Detalles: Diagnóstico… → Guardar informe de análisis.',
+    '文件列表可能不完整。解析错误或达到上限并不能证明磁盘损坏。详情：诊断… → 保存分析报告。',
+    'Список файлов может быть неполным. Ошибки разбора или достижение лимитов не доказывают повреждение диска. Подробности: Диагностика… → Сохранить отчёт анализа.',
+    'ファイル一覧は不完全な可能性があります。解析エラーや上限到達だけではディスクの損傷を証明しません。詳細：診断… → 解析レポートを保存。')
+
 # Imaging controls (Tenshi 2.7.0)
 add('Leseversuche:', 'Read retries:', 'Reintentos:', '重试读取：', 'Повторы чтения:', '再読み取り回数:')
 add('Bei Medienfehler:', 'On media error:', 'Ante error del medio:', '介质错误时：', 'При ошибке носителя:', '媒体エラー時:')
