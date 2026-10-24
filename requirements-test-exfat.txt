@@ -1,0 +1,3 @@
+# Optional integration-test tools only; not an application dependency.
+FATtools==1.1.23
+hexdump==3.3
