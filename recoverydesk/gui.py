@@ -26,6 +26,7 @@ from .session_store import (save_session, load_session, fingerprint_image,
                             check_fingerprint, SessionError)
 from .core import list_volumes
 from .partition_scan import analyze_image, format_partition_findings
+from .device_identity import capture_device_identity, check_device_identity
 from .partition_health import inspect_partition, format_partition_details, format_partition_confidence
 from .ntfs import iter_stream
 from .recovery_quality import assess
@@ -1965,6 +1966,7 @@ class RecoveryDeskApp(tk.Tk):
                 fp = None
                 if not is_device_source(source):
                     fp = fingerprint_image(source, [offset])
+                device_identity = capture_device_identity(source, offset)
                 with open_source(source) as f:
                     from .filesystems import detect_volume
                     from .ntfs import parse_boot_sector
@@ -1981,6 +1983,8 @@ class RecoveryDeskApp(tk.Tk):
                                             progress=progress, cancel=self.browser_cancel.is_set,
                                             tolerate_read_errors=tolerant)
                     fs_name = index.filesystem
+                check_device_identity(source, device_identity)
+                index._device_identity = device_identity
                 if fp is not None:
                     check_fingerprint(source, fp, original=source)
                 # Prepare the O(N) metadata maps off the GUI thread. Large
@@ -3209,6 +3213,8 @@ class RecoveryDeskApp(tk.Tk):
         notice.pack(anchor='w')
         def worker():
             try:
+                device_identity = getattr(index, '_device_identity', None)
+                check_device_identity(source, device_identity)
                 # Image previews only when the entire image is small enough.
                 limit = IMAGE_LIMIT if item.size <= IMAGE_LIMIT else PREVIEW_LIMIT
                 with open_source(source) as f:
@@ -3219,6 +3225,7 @@ class RecoveryDeskApp(tk.Tk):
                             0, min(item.initialized_size, limit)))
                     else:
                         data = b''.join(index.volumes.iter_file(f, item, max_bytes=limit))
+                check_device_identity(source, device_identity)
                 self._post_scan_callback(lambda d=data: show_preview(d))
             except Exception as exc:
                 self._post_scan_callback(lambda msg=str(exc): show_error(msg))

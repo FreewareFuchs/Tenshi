@@ -31,6 +31,26 @@ TRANSLATIONS = {}
 def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
+# Device identity mismatch and loss during read-only operations.
+add('Datenträger wurde ausgetauscht oder geändert. Quelle erneut einlesen.',
+    'The device was replaced or changed. Scan the source again.',
+    'El dispositivo se ha sustituido o modificado. Vuelva a analizar el origen.',
+    '设备已被更换或发生变化。请重新扫描源。',
+    'Устройство заменено или изменено. Повторно просканируйте источник.',
+    'デバイスが交換または変更されました。ソースを再スキャンしてください。')
+add('Quelle nicht mehr erreichbar. Datenträger erneut einlesen.',
+    'The source is no longer accessible. Scan the device again.',
+    'El origen ya no está accesible. Vuelva a analizar el dispositivo.',
+    '源已无法访问。请重新扫描设备。',
+    'Источник больше недоступен. Повторно просканируйте устройство.',
+    'ソースにアクセスできなくなりました。デバイスを再スキャンしてください。')
+add('Datenträgerkennung konnte nicht vollständig gelesen werden.',
+    'The device identifier could not be read completely.',
+    'No se pudo leer por completo el identificador del dispositivo.',
+    '无法完整读取设备标识。',
+    'Не удалось полностью прочитать идентификатор устройства.',
+    'デバイス識別情報を完全に読み取れませんでした。')
+
 # Partition detection confidence is separate from recovery prospects.
 add('Partitionserkennung: hohe Plausibilität', 'Partition detection: high plausibility', 'Detección de partición: plausibilidad alta', '分区识别：高可信度', 'Обнаружение раздела: высокая достоверность', 'パーティション検出：高い妥当性')
 add('Partitionserkennung: mittlere Plausibilität', 'Partition detection: medium plausibility', 'Detección de partición: plausibilidad media', '分区识别：中等可信度', 'Обнаружение раздела: средняя достоверность', 'パーティション検出：中程度の妥当性')
