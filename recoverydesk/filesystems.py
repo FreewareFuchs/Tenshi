@@ -279,6 +279,12 @@ class FAT32(VolumeBase):
             directory=bool(e[11]&0x10)
             shortbase=(b'?' + e[1:8] if deleted else e[:8]).decode('cp437','replace').rstrip()
             ext=e[8:11].decode('cp437','replace').rstrip()
+            # NTRes case bits describe base and extension independently.
+            # LFN checksum validation below still uses the unchanged 11 bytes.
+            if e[12] & 0x08:
+                shortbase = shortbase.lower()
+            if e[12] & 0x10:
+                ext = ext.lower()
             shortname=shortbase+('.'+ext if ext else '')
             name=shortname
             if lfn and not deleted:
