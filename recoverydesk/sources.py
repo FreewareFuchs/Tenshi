@@ -79,7 +79,7 @@ def _kernel():
     return k
 
 
-def _device_ioctl(path: str, code: int, length: int = 16) -> bytes:
+def _device_ioctl(path: str, code: int, length: int = 16, input_data: bytes | None = None) -> bytes:
     if os.name != 'nt':
         raise OSError('Nur auf Windows verfügbar.')
     kernel = _kernel()
@@ -90,7 +90,9 @@ def _device_ioctl(path: str, code: int, length: int = 16) -> bytes:
     try:
         output = ctypes.create_string_buffer(length)
         returned = wintypes.DWORD()
-        if not kernel.DeviceIoControl(h, code, None, 0, output, length, ctypes.byref(returned), None):
+        query = ctypes.create_string_buffer(input_data) if input_data is not None else None
+        if not kernel.DeviceIoControl(h, code, query, len(input_data) if input_data is not None else 0,
+                                     output, length, ctypes.byref(returned), None):
             raise ctypes.WinError(ctypes.get_last_error())
         return output.raw[:returned.value]
     finally:

@@ -94,6 +94,30 @@ class SourceScanFailureTests(unittest.TestCase):
         self.assertEqual(publish.call_args.args[:2], (str(self.source), self.index))
         self.assertIsNotNone(self.app._browser_fingerprint)
 
+    def test_same_path_device_replacement_during_scan_cannot_publish(self):
+        from recoverydesk.device_identity import DeviceSourceChanged
+        snapshot = {'offset': 0, 'serial_sha256': 'first-device'}
+        with patch('recoverydesk.gui.capture_device_identity', return_value=snapshot), \
+                patch('recoverydesk.gui.check_device_identity', side_effect=DeviceSourceChanged('replaced')):
+            self.run_scan(lambda *args, **kwargs: self.index)
+        with patch.object(self.app, '_show_browser_index') as publish, \
+                patch('recoverydesk.gui.messagebox.showerror') as error:
+            self.drain()
+        publish.assert_not_called()
+        error.assert_called_once()
+        self.assertIsNone(self.app.browser_index)
+        self.assertFalse(self.app.ntfs_scanning)
+
+    def test_stable_device_scan_binds_snapshot_to_published_index(self):
+        snapshot = {'offset': 0, 'serial_sha256': 'stable-device'}
+        with patch('recoverydesk.gui.capture_device_identity', return_value=snapshot), \
+                patch('recoverydesk.gui.check_device_identity') as check:
+            self.run_scan(lambda *args, **kwargs: self.index)
+        check.assert_called_once_with(str(self.source), snapshot)
+        with patch.object(self.app, '_show_browser_index') as publish:
+            self.drain()
+        self.assertEqual(publish.call_args.args[1]._device_identity, snapshot)
+
     def test_partition_details_ignore_manual_path_edit_including_errors(self):
         part = object()
         self.app.partitions = [part]

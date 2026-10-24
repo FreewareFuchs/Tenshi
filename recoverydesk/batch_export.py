@@ -22,6 +22,7 @@ from .ntfs_browser import safe_name, export_file as export_ntfs_file
 from .filesystems import export_file as export_other_file
 from .export_io import ExportCancelled
 from .sources import ensure_safe_destination, is_device_source, source_size
+from .device_identity import capture_device_identity, check_device_identity, DeviceSourceChanged
 from .secure_target import (mkdir_checked, atomic_json_checkpoint,
                             atomic_bytes_checkpoint, open_regular_input)
 
@@ -75,7 +76,12 @@ def _identity(source: str, index) -> dict:
         with open(source, 'rb') as f:
             identity['header_sha256'] = hashlib.sha256(f.read(65536)).hexdigest()
     else:
-        identity['device_warning'] = 'Datenträgeridentität kann nicht kryptografisch geprüft werden.'
+        snapshot = capture_device_identity(source, identity['offset'])
+        expected = getattr(index, '_device_identity', None)
+        if expected is not None and snapshot != expected:
+            raise DeviceSourceChanged('Datenträger wurde ausgetauscht oder geändert. Quelle erneut einlesen.')
+        identity['device_snapshot'] = snapshot
+        identity['device_warning'] = 'Gerätekennungen sind kein Nachweis identischer oder intakter Dateiinhalte.'
     return identity
 
 
@@ -262,6 +268,15 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
     if not plan:
         raise ValueError('Keine Einträge ausgewählt.')
     identity = _identity(source, index)
+    device_snapshot = identity.get('device_snapshot')
+    last_device_check = time.monotonic()
+    def check_device(force=False):
+        nonlocal last_device_check
+        now = time.monotonic()
+        if device_snapshot is not None and (force or now - last_device_check >= .5):
+            check_device_identity(source, device_snapshot)
+            last_device_check = now
+    source_changed = False
     signature = _digest({'identity': identity, 'tasks': [_task_desc(i) for i in plan]})
     # New exports use the Tenshi brand; existing RecoveryDesk jobs keep their
     # original directory for trustworthy checkpoint-based resume.
@@ -317,6 +332,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
         if cancel and cancel():
             result.cancelled = True
             break
+        check_device()
         path = content.joinpath(*task.path.split('/'))
         _safe_dir(path, content)
         ensure_safe_destination(source, str(path))
@@ -324,10 +340,13 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
         completed_status = ''
         buffered_bytes = 0
         last_byte_event = time.monotonic()
+        file_bytes = 0
         if event:
             event({'type': 'start', 'path': task.path, 'number': n})
         def on_bytes(delta):
-            nonlocal buffered_bytes, last_byte_event
+            nonlocal buffered_bytes, last_byte_event, file_bytes
+            file_bytes += delta
+            check_device(force=file_bytes >= task.entry.size)
             if byte_progress:
                 byte_progress(delta)
             if event:
@@ -404,6 +423,10 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                     result.bytes_written += written
                     state['results'][task.path] = {'status': 'Erfolgreich', 'bytes': written,
                                                    'sha256': signature_file}
+                except DeviceSourceChanged as exc:
+                    source_changed = True
+                    result.failed += 1
+                    state['results'][task.path] = {'status': 'Fehler', 'detail': str(exc)}
                 except ExportCancelled:
                     result.cancelled = True
                     state['results'][task.path] = {'status': 'Abgebrochen', 'detail': 'Unvollständige Datei entfernt'}
@@ -420,7 +443,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                    'status': completed_status or current.get('status', 'Unbekannt'),
                    'detail': current.get('detail', ''),
                    'size': max(0, int(task.entry.size)) if not task.is_directory else 0})
-        if result.cancelled:
+        if result.cancelled or source_changed:
             break
     _write_log(log_path, state, result)
     result.errors = [f'{k}: {v.get("detail", "")}' for k,v in state['results'].items()
