@@ -69,6 +69,9 @@ def _identity(source: str, index) -> dict:
                 'size': source_size(source),
                 'filesystem': str(getattr(index, 'filesystem', 'NTFS')),
                 'offset': int(getattr(index, 'offset', getattr(getattr(index, 'info', None), 'partition_offset', 0)))}
+    if identity['filesystem'] == 'exFAT':
+        # Old exports may contain undefined physical bytes beyond ValidDataLength.
+        identity['reader_semantics'] = 'exfat-valid-data-length-v1'
     if not is_device_source(source):
         st = os.stat(source)
         identity['modified_ns'] = st.st_mtime_ns
@@ -147,11 +150,14 @@ def plan_selection(index, selection: Iterable[object]) -> list[PlannedItem]:
 
 def _task_desc(item: PlannedItem) -> dict:
     e = item.entry
-    return {'path': item.path, 'id': _key(e), 'size': int(e.size),
+    descriptor = {'path': item.path, 'id': _key(e), 'size': int(e.size),
             'directory': item.is_directory, 'deleted': bool(e.is_deleted),
             'locator': str(getattr(e, 'locator', '')),
             'data_kind': getattr(e, 'data_kind', None),
             'reason': getattr(e, 'unsupported_reason', '')}
+    if getattr(e, 'valid_data_length', None) is not None:
+        descriptor['valid_data_length'] = e.valid_data_length
+    return descriptor
 
 
 def _atomic_json(dest: Path, data: dict, *, source: str | None = None):
@@ -423,6 +429,8 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                     result.bytes_written += written
                     state['results'][task.path] = {'status': 'Erfolgreich', 'bytes': written,
                                                    'sha256': signature_file}
+                    if getattr(index, 'filesystem', None) == 'exFAT':
+                        state['results'][task.path]['valid_data_length'] = task.entry.valid_data_length
                 except DeviceSourceChanged as exc:
                     source_changed = True
                     result.failed += 1
