@@ -28,8 +28,16 @@ def format_scan_report(source, index) -> str:
             'Auswertungsfehler sind kein alleiniger Nachweis eines Datenträgerschadens.',
             f'Wegen Attributlisten-Limit nicht untersuchte Basisrecords: {getattr(index, "attribute_list_limit_skipped", 0)}',
             f'Verzeichnisindex-Auswertungsmeldungen: {getattr(index, "index_parse_failures", 0)}',
-            'MFT-Auswertungsfehler nach Grund (maximal 20 Gründe, weitere zusammengefasst):',
         ])
+        states = getattr(index, 'record_error_states', {})
+        lines.append('Statusflags der nicht auswertbaren MFT-Records (nur nach bestandener Fixup-Prüfung):')
+        for state, label in (('in_use', 'Als belegt markiert'), ('deleted', 'Als gelöscht markiert'),
+                             ('unknown', 'Status nicht sicher auswertbar')):
+            lines.append(f'  {label}: {states.get(state, 0)}')
+        if not states and index.damaged_records:
+            lines.append('  Statusverteilung in dieser Sitzung nicht erfasst.')
+        lines.append('Gelöschte Records können veraltete Clusterverweise enthalten; eine Partitionsverkleinerung ist daraus allein nicht nachgewiesen.')
+        lines.append('MFT-Auswertungsfehler nach Grund (maximal 20 Gründe, weitere zusammengefasst):')
         reasons = getattr(index, 'record_error_reasons', {})
         if reasons:
             lines.extend(f'  {count}: {reason}' for reason, count in reasons.items())
@@ -38,7 +46,7 @@ def format_scan_report(source, index) -> str:
         samples = getattr(index, 'record_error_samples', [])
         if samples:
             lines.append('Beispiele (maximal 20 MFT-Recordnummern):')
-            lines.extend(f'  MFT {sample["record"]}: {sample["reason"]}' for sample in samples)
+            lines.extend(f'  MFT {sample["record"]} [{sample.get("state", "unknown")}]: {sample["reason"]}' for sample in samples)
         ranges = index.read_error_ranges
         lines.append('Nicht lesbare MFT-Bereiche (Recordnummern):')
         if ranges:
