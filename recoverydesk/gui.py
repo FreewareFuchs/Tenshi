@@ -1985,7 +1985,7 @@ class RecoveryDeskApp(tk.Tk):
                     check_fingerprint(source, fp, original=source)
                 # Prepare the O(N) metadata maps off the GUI thread. Large
                 # file systems otherwise freeze the main window after scanning.
-                paths = construct_paths(index.entries)
+                paths = construct_paths(index.entries, lazy=True)
                 warning_records = folder_warning_records(
                     visible_entries(index.entries, display_tmp))
                 self._post_scan_callback(lambda name=fs_name, g=scan_source_generation: (
@@ -2148,7 +2148,7 @@ class RecoveryDeskApp(tk.Tk):
         self.browser_source = source
         if prepared is None:
             # Still support direct/manual callers and existing test harnesses.
-            self.browser_paths = construct_paths(index.entries)
+            self.browser_paths = construct_paths(index.entries, lazy=True)
             self.browser_warning_records = folder_warning_records(
                 visible_entries(index.entries, self.show_tmp.get()))
         else:
@@ -2540,7 +2540,8 @@ class RecoveryDeskApp(tk.Tk):
                 if (not show_tmp and is_temporary_file(entry)) or (
                         not show_deleted and entry.is_deleted):
                     continue
-                if match(entry, paths.get(entry.key, entry.name)):
+                if match(entry, paths.get(entry.key, entry.name)
+                         if criteria.in_path and criteria.name.strip() else entry.name):
                     found.append(entry)
             if stop < len(entries):
                 self.browser_path.set(

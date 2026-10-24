@@ -5,6 +5,8 @@ metadata is explicitly displayed as unknown; never guess timestamps or types.
 """
 from __future__ import annotations
 
+from collections import OrderedDict
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from fnmatch import fnmatchcase
@@ -226,12 +228,43 @@ def matches_query(entry, criteria: SearchCriteria, path: str = '') -> bool:
 def search_entries(entries: Iterable, criteria: SearchCriteria,
                    paths: dict[str, str] | None = None) -> list:
     match = compile_search(criteria)
-    if paths is None:
+    if paths is None or not criteria.in_path or not criteria.name.strip():
         return [entry for entry in entries if match(entry, entry.name)]
     return [entry for entry in entries if match(entry, paths.get(entry.key, entry.name))]
 
 
-def construct_paths(entries: Iterable, root: int = 5, max_depth: int = 256) -> dict[str, str]:
+class EntryPaths(Mapping):
+    """Read-only path mapping; file path strings have a bounded LRU cache.
+
+    Retains entry references and shared parent prefixes, never a full string per
+    file. Entries are a snapshot and must not be mutated while this map is used.
+    """
+    def __init__(self, entries, parents, cache_size=256):
+        self._entries = entries
+        self._parents = parents
+        self._cache = OrderedDict()
+        self._cache_size = cache_size
+
+    def __len__(self):
+        return len(self._entries)
+
+    def __iter__(self):
+        return iter(self._entries)
+
+    def __getitem__(self, key):
+        if key in self._cache:
+            value = self._cache.pop(key)
+        else:
+            entry = self._entries[key]
+            value = self._parents[entry.parent_record] + '\\' + entry.name
+        self._cache[key] = value
+        if len(self._cache) > self._cache_size:
+            self._cache.popitem(last=False)
+        return value
+
+
+def construct_paths(entries: Iterable, root: int = 5, max_depth: int = 256, *,
+                    lazy: bool = False) -> Mapping[str, str]:
     """Build best-effort directory paths, preserving explicit orphan/cycle markers.
 
     Do not merge same-parent hard links; indexed file entry keys stay unique.
@@ -268,6 +301,12 @@ def construct_paths(entries: Iterable, root: int = 5, max_depth: int = 256) -> d
             cache[record] = prefix
         return cache.get(parent, prefix)
 
+    if lazy:
+        parents = {}
+        for e in seq:
+            if e.parent_record not in parents:
+                parents[e.parent_record] = parent_path(e.parent_record)
+        return EntryPaths({e.key: e for e in seq}, parents)
     return {e.key: (parent_path(e.parent_record) + '\\' + e.name) for e in seq}
 
 
