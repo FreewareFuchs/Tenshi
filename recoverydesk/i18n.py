@@ -31,6 +31,17 @@ TRANSLATIONS = {}
 def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
+# Partition detection confidence is separate from recovery prospects.
+add('Partitionserkennung: hohe Plausibilität', 'Partition detection: high plausibility', 'Detección de partición: plausibilidad alta', '分区识别：高可信度', 'Обнаружение раздела: высокая достоверность', 'パーティション検出：高い妥当性')
+add('Partitionserkennung: mittlere Plausibilität', 'Partition detection: medium plausibility', 'Detección de partición: plausibilidad media', '分区识别：中等可信度', 'Обнаружение раздела: средняя достоверность', 'パーティション検出：中程度の妥当性')
+add('Partitionserkennung: geringe Plausibilität', 'Partition detection: low plausibility', 'Detección de partición: plausibilidad baja', '分区识别：低可信度', 'Обнаружение раздела: низкая достоверность', 'パーティション検出：低い妥当性')
+add('Diese Bewertung sagt nichts über den Zustand der Dateien oder die Rettungschancen aus.',
+    'This rating says nothing about the condition of the files or the chances of recovery.',
+    'Esta valoración no indica el estado de los archivos ni las posibilidades de recuperación.',
+    '此评级不反映文件状况或恢复成功的可能性。',
+    'Эта оценка ничего не говорит о состоянии файлов или шансах восстановления.',
+    'この評価は、ファイルの状態や復元の見込みを示すものではありません。')
+
 # Online-independent help access (Tenshi 3.0.0)
 add('Hilfe', 'Help', 'Ayuda', '帮助', 'Справка', 'ヘルプ')
 
