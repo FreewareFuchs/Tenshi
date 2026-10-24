@@ -2,7 +2,7 @@
 
 Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Untersuchen von Partitionen, Durchsuchen unterstützter Dateisysteme und Exportieren wiederherstellbarer Dateien auf einen separaten Datenträger.
 
-**Windows 10/11 · 64 Bit · Linux aus dem Quellcode (auf Linux Mint Cinnamon geprüft) · Experimentelle Beta**
+**Windows 10/11 · 64 Bit · Linux Mint 22.x: DEB-Paket oder Quellcode · Experimentelle Beta**
 
 [Website](https://freewarefuchs.de/tenshi/) · [Downloads](https://freewarefuchs.de/tenshi/#downloads) · [Bedienungsanleitung](https://freewarefuchs.de/tenshi/anleitung/) · [English](https://freewarefuchs.de/en/tenshi/)
 
@@ -12,12 +12,13 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 ## Herunterladen und starten
 
-Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Die [Website](https://freewarefuchs.de/tenshi/#downloads) führt direkt zu den beiden Windows-Varianten.
+Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Der veröffentlichte [Release v3.0.2-beta.5](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2-beta.5) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.txt`.
 
 | Variante | Verwendung |
 | --- | --- |
 | Windows-Installer | Setup herunterladen und Tenshi auf dem PC installieren. |
 | Portable ZIP | ZIP vollständig entpacken und die enthaltene `Tenshi.exe` starten. Keine Installation erforderlich. |
+| Linux-DEB | Unter Linux Mint 22.x mit APT installieren; Start über das Anwendungsmenü oder `tenshi`. |
 
 Die portable Variante kann Einstellungen und Fehlerprotokolle im Windows-Benutzerprofil speichern. Der GitHub-Quellcode-Download ist kein fertiges Windows-Programmpaket.
 
@@ -25,14 +26,14 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 
 ## Unter Linux starten
 
-Die Linux-Unterstützung ist auf `main` integriert. Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. `v3.0.2-beta.3` korrigiert die Übersetzung des Hilfe-Buttons. Der nächste Release `v3.0.2-beta.4` behebt falsche FAT32-Exporte bei deaktivierter FAT-Spiegelung und aktiver zweiter FAT.
+Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. `v3.0.2-beta.5` ist veröffentlicht und enthält auch die FAT32-Korrektur aus Beta.4 für deaktivierte FAT-Spiegelung und eine aktive zweite FAT. Spätere Änderungen auf `main` sind noch nicht Teil dieses Releases.
 
 ### DEB-Paket für Linux Mint 22.x
 
-Die Datei `tenshi_3.0.2.beta.4-1_all.deb` aus dem entsprechenden GitHub-Release herunterladen. Im Downloadordner installieren:
+Die Datei `tenshi_3.0.2.beta.5-1_all.deb` aus dem entsprechenden GitHub-Release herunterladen. Im Downloadordner installieren:
 
 ```bash
-sudo apt install ./tenshi_3.0.2.beta.4-1_all.deb
+sudo apt install ./tenshi_3.0.2.beta.5-1_all.deb
 ```
 
 Danach **Tenshi** im Anwendungsmenü öffnen oder `tenshi` im Terminal starten. Tenshi läuft als normaler Benutzer. Das Paket installiert benötigte Systemabhängigkeiten über APT; es ändert keine Geräteberechtigungen. Deinstallation: `sudo apt remove tenshi`.
@@ -99,7 +100,9 @@ Fenstertitel, Offline-Hilfe unter „Über Tenshi“ und `tenshi --version` zeig
 
 Tenshi bleibt experimentelle Beta-Software. Automatisierte Tests mit synthetischen Images und simulierten Fehlerfällen ersetzen keine Prüfung auf beschädigter Hardware.
 
-Für den integrierten Linux-Stand sind 569 lokale Tests unter virtuellem X11 erfolgreich. Linux- und Windows-CI auf `main` sind für Merge-Commit `ade614a` erfolgreich. Linux-CI prüft außerdem unabhängig formatierte ext4-, Btrfs- und XFS-Images.
+Stand 24.10.2026: Die lokale Testsuite umfasst 633 Tests und läuft unter virtuellem X11 ohne Fehler durch; zwei Tests werden übersprungen. Linux- und Windows-CI sind für [`a96d584`](https://github.com/FreewareFuchs/Tenshi/commit/a96d58469e0a14f22b01fd3a17cbd6c9d69c14f0) erfolgreich: [Linux](https://github.com/FreewareFuchs/Tenshi/actions/runs/40104529828) · [Windows](https://github.com/FreewareFuchs/Tenshi/actions/runs/40104529847). Linux-CI prüft unabhängig formatierte FAT32-, NTFS-, ext4-, Btrfs- und XFS-Images. Die neuen FAT32- und NTFS-Referenztests vergleichen direkte und Stapel-Exporte mit bekannten Originaldaten per SHA-256 und prüfen das Fortsetzen sowie den unveränderten Quellinhalt.
+
+Zusätzliche Windows-Praxistests bestätigten Quellwechsel während einer Analyse, das Verwerfen alter Dateilisten, die Bedienung großer Dateibäume sowie Export und Fortsetzen mit passenden SHA-256-Werten. Für den Build aus `a96d584` wurde außerdem die verständlichere Bewertung der Partitionserkennung in Anzeige und gespeichertem Partitionsbericht bestätigt. Diese Ergebnisse beziehen sich auf die jeweiligen Entwicklungsstände. Sie sind keine nachträgliche Abnahme der unveränderten Beta.5-Downloads.
 
 Auf Linux Mint wurde eine physische USB-SSD mit 128.035.676.160 Bytes vollständig in ein Image kopiert und bitgenau verglichen, ohne unlesbare Bytes. Navigation und Exporte aus dem erstellten exFAT-Image wurden bestätigt. Windows-Praxistests mit dem während der Linux-Entwicklung erzeugten Build umfassen Referenzexport, Vorschau, Sitzungen, Sprachen und Themewechsel. Diese Prüfungen beziehen sich auf die getesteten Entwicklungsstände, nicht rückwirkend auf bestehende Release-Downloads.
 
