@@ -13,7 +13,7 @@ def format_scan_report(source, index) -> str:
     if hasattr(index, 'damaged_records'):
         lines.extend([
             f'MFT-Datensätze geprüft: {index.scanned_records} / {index.total_records}',
-            f'Beschädigte MFT-Datensätze: {index.damaged_records}',
+            f'Nicht auswertbare MFT-Datensätze: {index.damaged_records}',
             f'Nicht lesbare MFT-Datensätze: {index.unreadable_records}',
             f'Nicht zugeordnete Datei-/Ordnernamen: {index.orphan_count}',
             f'Nicht zugeordnete Stammordner/-einträge: {getattr(index, "orphan_roots", 0)}',
@@ -24,6 +24,21 @@ def format_scan_report(source, index) -> str:
             f'Nicht auflösbare NTFS-Datenattributlisten: {getattr(index, "unresolved_attribute_lists", 0)}',
             f'Fehlertoleranter Image-Scan: {"Ja" if index.tolerant else "Nein"}',
         ])
+        lines.extend([
+            'Auswertungsfehler sind kein alleiniger Nachweis eines Datenträgerschadens.',
+            f'Wegen Attributlisten-Limit nicht untersuchte Basisrecords: {getattr(index, "attribute_list_limit_skipped", 0)}',
+            f'Verzeichnisindex-Auswertungsmeldungen: {getattr(index, "index_parse_failures", 0)}',
+            'MFT-Auswertungsfehler nach Grund (maximal 20 Gründe, weitere zusammengefasst):',
+        ])
+        reasons = getattr(index, 'record_error_reasons', {})
+        if reasons:
+            lines.extend(f'  {count}: {reason}' for reason, count in reasons.items())
+        else:
+            lines.append('  Keine Details vorhanden (bei älteren Sitzungen nicht erfasst).')
+        samples = getattr(index, 'record_error_samples', [])
+        if samples:
+            lines.append('Beispiele (maximal 20 MFT-Recordnummern):')
+            lines.extend(f'  MFT {sample["record"]}: {sample["reason"]}' for sample in samples)
         ranges = index.read_error_ranges
         lines.append('Nicht lesbare MFT-Bereiche (Recordnummern):')
         if ranges:

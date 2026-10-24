@@ -47,7 +47,7 @@ class ToleranceTests(unittest.TestCase):
         self.assertEqual(result.unreadable_records, 0)
         self.assertIn('bericht.txt', [e.name for e in result.entries])
         self.assertNotIn('gelöscht.keine_endung', [e.name for e in result.entries])
-        self.assertIn('Beschädigte MFT-Datensätze: 1', format_scan_report(self.path, result))
+        self.assertIn('Nicht auswertbare MFT-Datensätze: 1', format_scan_report(self.path, result))
 
     def test_salvage_skips_fault_only_and_keeps_neighbors(self):
         off = MFT_LCN * CLUSTER + 9 * SIZE

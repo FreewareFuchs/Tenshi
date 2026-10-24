@@ -2161,17 +2161,26 @@ class RecoveryDeskApp(tk.Tk):
         if self.browser_fs == 'NTFS':
             self.status.set(f'NTFS: {len(index.entries):,} Einträge aus '
                             f'{index.scanned_records:,} MFT-Datensätzen; '
-                            f'{index.damaged_records:,} beschädigte und '
+                            f'{index.damaged_records:,} {translate("nicht auswertbare und", self.language)} '
                             f'{index.unreadable_records:,} nicht lesbare Datensätze; '
                             f'{index.orphan_count:,} nicht zugeordnet; '
                             f'{index.reconstructed_index_hints:,} Index-Hinweise '
                             f'(davon {index.allocation_index_hints:,} aus Index-Allocation); '
                             f'{index.resolved_attribute_lists:,} Datenattributlisten zusammengesetzt.')
-            if index.damaged_records or index.unreadable_records:
-                messagebox.showwarning('NTFS-Analyse unvollständig',
-                    f'{index.damaged_records} beschädigte und {index.unreadable_records} nicht lesbare '
-                    'MFT-Datensätze. Die angezeigten Dateien sind möglicherweise unvollständig. '
-                    'Einzelheiten unter „Analysebericht speichern“.')
+            limited = getattr(index, 'attribute_list_limit_skipped', 0)
+            index_errors = getattr(index, 'index_parse_failures', 0)
+            if index.damaged_records or index.unreadable_records or limited or index_errors:
+                counts = ((index.damaged_records, 'MFT-Auswertungsfehler'),
+                          (index.unreadable_records, 'MFT-Lesefehler'),
+                          (limited, 'Attributlisten-Limit: nicht untersuchte Basisrecords'),
+                          (index_errors, 'Verzeichnisindex-Auswertungsmeldungen'))
+                message = '\n'.join(f'{translate(label, self.language)}: {count:,}'
+                                    for count, label in counts)
+                message += '\n\n' + translate(
+                    'Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Diagnose… → Analysebericht speichern.',
+                    self.language)
+                messagebox.showwarning('NTFS-Analyse unvollständig', message)
+
         else:
             deleted = sum(bool(e.is_deleted) for e in index.entries)
             self.status.set(f'{index.filesystem}: {len(index.entries):,} Einträge; '

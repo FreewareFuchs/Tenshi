@@ -66,6 +66,9 @@ class FileEntry:
         return 'Vorhanden'
 
 
+MAX_ATTRIBUTE_BASES = 10_000
+
+
 @dataclass
 class FileIndex:
     info: NTFSInfo
@@ -86,6 +89,10 @@ class FileIndex:
     allocation_index_hints: int = 0
     orphan_roots: int = 0
     orphan_cycles: int = 0
+    record_error_reasons: dict[str, int] = field(default_factory=dict)
+    record_error_samples: list[dict] = field(default_factory=list)
+    attribute_list_limit_skipped: int = 0
+    index_parse_failures: int = 0
 
     def list_dir(self, parent: int, show_deleted: bool = True) -> list[FileEntry]:
         items = self.children.get(parent, [])
@@ -283,6 +290,9 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
                         'defekte Datenträger nicht mehrfach lesen.')
     entries = []
     damaged_records = 0
+    record_error_reasons = {}
+    record_error_samples = []
+    attribute_list_limit_skipped = 0
     unreadable_records = 0
     failed_ranges = []
     warnings = []
@@ -327,10 +337,12 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
                     parsed = _read_entry_records(rec, rec_no, info)
                     entries.extend(parsed)
                     if parsed and not parsed[0].is_directory and parsed[0].unsupported_reason.startswith('Attributliste'):
-                        if len(attr_bases) < 10_000:
+                        if len(attr_bases) < MAX_ATTRIBUTE_BASES:
                             attr_bases[rec_no] = rec
-                        elif len(warnings) < 20:
-                            warnings.append('Sicherheitslimit für NTFS-Attributlisten erreicht.')
+                        else:
+                            attribute_list_limit_skipped += 1
+                            if attribute_list_limit_skipped == 1 and len(warnings) < 20:
+                                warnings.append('Sicherheitslimit für NTFS-Attributlisten erreicht.')
                     if parsed and parsed[0].is_directory and len(dir_hints) < 100_000:
                         try:
                             dir_hints.extend(directory_index_hints(rec, info, rec_no,
@@ -352,8 +364,14 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
                             # Corrupt index metadata must not hide the valid MFT entry.
                             if len(warnings) < 20:
                                 warnings.append(f'Verzeichnisindex MFT {rec_no} teilweise unlesbar: {exc}')
-                except (NTFSError, ValueError, OverflowError, struct.error):
+                except (NTFSError, ValueError, OverflowError, struct.error) as exc:
                     damaged_records += 1
+                    reason = type(exc).__name__ + ': ' + str(exc).replace('\n', ' ')[:160]
+                    if reason not in record_error_reasons and len(record_error_reasons) >= 20:
+                        reason = 'Weitere Fehlergründe (zusammengefasst)'
+                    record_error_reasons[reason] = record_error_reasons.get(reason, 0) + 1
+                    if len(record_error_samples) < 20:
+                        record_error_samples.append({'record': rec_no, 'reason': reason})
             if progress:
                 progress(start+n, total)
         # Validate extension references against the actual MFT stream. Never
@@ -386,6 +404,10 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
                        read_error_ranges=failed_ranges,
                        scan_warnings=warnings,
                        tolerant=tolerate_read_errors)
+    result.record_error_reasons = record_error_reasons
+    result.record_error_samples = record_error_samples
+    result.attribute_list_limit_skipped = attribute_list_limit_skipped
+    result.index_parse_failures = allocation_parse_failures
     result.resolved_attribute_lists = resolved_lists
     result.unresolved_attribute_lists = failed_lists
     by_record = {}
