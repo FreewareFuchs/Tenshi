@@ -1,2 +1,2 @@
 # Runtime: Python standard library only.
-# Packaging: pyinstaller>=6.0
+# Windows packaging tools: requirements-build-windows.txt

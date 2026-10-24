@@ -121,8 +121,11 @@ Voraussetzung: Windows und Python 3.11 oder neuer in 64 Bit, erreichbar über `p
 1. Repository herunterladen oder klonen und in den Projektordner wechseln.
 2. `check_windows.bat` für die nicht invasive Umgebungsprüfung ausführen.
 3. `build_windows.bat` ausführen. Die Anwendung wird als `dist\Tenshi.exe` erstellt.
+
 4. Automatisierte Tests separat mit `run_tests.bat` ausführen.
 5. Optional mit `build_portable.bat` eine portable ZIP oder mit `build_installer.bat` einen Installer erstellen. Der Installer-Build benötigt Inno Setup 6.3 oder neuer.
+
+Die Windows-Bauwerkzeuge sind in `requirements-build-windows.txt` mit festen Versionen und SHA-256-Prüfsummen hinterlegt. Das Build-Skript installiert diese Pakete bei jedem Build erneut und prüft ihre Hashes. `build/windows-build-requirements.txt` und `build/windows-build-python.txt` dokumentieren die verwendeten Python-Pakete und die Python-Version; die Windows-CI liefert beide Dateien im Build-Artefakt mit. Python, pip, Inno Setup und das Betriebssystem sind damit noch nicht festgeschrieben; die EXE ist dadurch nicht automatisch bitidentisch reproduzierbar.
 
 `Tenshi.exe --smoke-test` prüft gebündelte Komponenten ohne Fenster und ohne Laufwerkszugriff. Ein erfolgreicher Build oder Smoke-Test ist kein Nachweis erfolgreicher Datenrettung.
 
