@@ -2831,8 +2831,10 @@ class RecoveryDeskApp(tk.Tk):
         tb.configure(state='disabled')
 
     def _check_exported_zip(self, parent, folder):
+        files_folder = os.path.join(folder, 'files')
+        initial_folder = files_folder if os.path.isdir(files_folder) else folder
         path = filedialog.askopenfilename(parent=parent, title='Exportierte ZIP-Datei prüfen …',
-            initialdir=folder, filetypes=[('ZIP', '*.zip'), ('Alle Dateien', '*')])
+            initialdir=initial_folder, filetypes=[('ZIP', '*.zip'), ('Alle Dateien', '*')])
         if not path:
             return
         win = tk.Toplevel(parent)
