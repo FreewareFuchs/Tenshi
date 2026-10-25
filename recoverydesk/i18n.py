@@ -31,6 +31,33 @@ TRANSLATIONS = {}
 def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
+# Optional read-only CRC/structure verification of exported ZIP files.
+add('Exportierte ZIP-Datei prüfen …', 'Check exported ZIP file …', 'Comprobar ZIP exportado …', '检查导出的 ZIP 文件…', 'Проверить экспортированный ZIP…', 'エクスポートしたZIPを検査…')
+add('ZIP-Inhaltsprüfung', 'ZIP content check', 'Comprobación del contenido ZIP', 'ZIP 内容检查', 'Проверка содержимого ZIP', 'ZIP内容検査')
+add('Prüft ZIP-Struktur und interne CRC-Prüfsummen. Kein Vergleich mit dem Original und keine Prüfung des Inhaltsformats enthaltener Dateien.',
+    'Checks ZIP structure and internal CRC checksums. No comparison with the original and no validation of the formats of contained files.',
+    'Comprueba la estructura ZIP y las sumas CRC internas. No compara con el original ni valida el formato de los archivos contenidos.',
+    '检查 ZIP 结构和内部 CRC 校验和。不与原文件比较，也不验证所含文件的内容格式。',
+    'Проверяет структуру ZIP и внутренние суммы CRC. Не сравнивает с оригиналом и не проверяет формат содержимого вложенных файлов.',
+    'ZIP構造と内部CRCを検査します。元ファイルとの比較や、格納ファイルの内容形式の検証は行いません。')
+add('Grenzen: 512 MiB Archiv, 512 MiB entpackte Daten, 10.000 Einträge.',
+    'Limits: 512 MiB archive, 512 MiB expanded data, 10,000 entries.',
+    'Límites: archivo de 512 MiB, datos descomprimidos de 512 MiB, 10.000 entradas.',
+    '限制：压缩文件 512 MiB，解压数据 512 MiB，10,000 个条目。',
+    'Ограничения: архив 512 МиБ, распакованные данные 512 МиБ, 10 000 записей.',
+    '上限：アーカイブ512 MiB、展開データ512 MiB、10,000項目。')
+add('ZIP-Inhalt wird geprüft …', 'Checking ZIP content …', 'Comprobando contenido ZIP …', '正在检查 ZIP 内容…', 'Проверка содержимого ZIP…', 'ZIP内容を検査中…')
+add('Nur reguläre Dateien können geprüft werden.', 'Only regular files can be checked.', 'Solo se pueden comprobar archivos regulares.', '只能检查普通文件。', 'Можно проверять только обычные файлы.', '通常のファイルのみ検査できます。')
+add('ZIP-Prüfgrenze erreicht. Keine vollständige Prüfung.', 'ZIP check limit reached. Check incomplete.', 'Se alcanzó el límite de comprobación ZIP. Comprobación incompleta.', '已达到 ZIP 检查限制。检查不完整。', 'Достигнут лимит проверки ZIP. Проверка неполная.', 'ZIP検査の上限に達しました。検査は未完了です。')
+add('Verschlüsselte ZIP-Inhalte werden nicht geprüft.', 'Encrypted ZIP content is not checked.', 'No se comprueba el contenido ZIP cifrado.', '不检查加密的 ZIP 内容。', 'Зашифрованное содержимое ZIP не проверяется.', '暗号化されたZIPの内容は検査しません。')
+add('Datei während der Prüfung geändert. Keine Bestätigung möglich.', 'File changed during the check. No confirmation possible.', 'El archivo cambió durante la comprobación. No se puede confirmar.', '文件在检查期间发生变化。无法确认。', 'Файл изменён во время проверки. Подтверждение невозможно.', '検査中にファイルが変更されました。確認できません。')
+add('ZIP-Struktur und CRC-Prüfsummen ohne Fehler geprüft.', 'ZIP structure and CRC checksums checked without errors.', 'Estructura ZIP y sumas CRC comprobadas sin errores.', 'ZIP 结构和 CRC 校验和检查未发现错误。', 'Структура ZIP и суммы CRC проверены без ошибок.', 'ZIP構造とCRCの検査でエラーは見つかりませんでした。')
+add('ZIP beschädigt, unvollständig oder kein unterstütztes ZIP-Archiv.', 'ZIP damaged, incomplete, or not a supported ZIP archive.', 'ZIP dañado, incompleto o no compatible.', 'ZIP 已损坏、不完整或不是受支持的 ZIP 压缩文件。', 'ZIP повреждён, неполон или не является поддерживаемым ZIP-архивом.', 'ZIPが破損、不完全、または対応するZIP形式ではありません。')
+add('ZIP-Kompression wird nicht unterstützt. Keine vollständige Prüfung.', 'ZIP compression is unsupported. Check incomplete.', 'Compresión ZIP no compatible. Comprobación incompleta.', '不支持此 ZIP 压缩方式。检查不完整。', 'Сжатие ZIP не поддерживается. Проверка неполная.', 'ZIP圧縮方式に対応していません。検査は未完了です。')
+add('Datei konnte nicht vollständig gelesen werden.', 'The file could not be read completely.', 'No se pudo leer el archivo por completo.', '无法完整读取文件。', 'Не удалось полностью прочитать файл.', 'ファイルを完全に読み取れませんでした。')
+add('Geprüfte Dateien', 'Checked files', 'Archivos comprobados', '已检查文件', 'Проверено файлов', '検査済みファイル')
+add('Prüfung abgebrochen.', 'Check cancelled.', 'Comprobación cancelada.', '检查已取消。', 'Проверка отменена.', '検査を中止しました。')
+
 # exFAT sessions created before initialized-length tracking require a new scan.
 add('exFAT-ValidDataLength fehlt oder ist ungültig. Quelle erneut einlesen.',
     'exFAT ValidDataLength is missing or invalid. Scan the source again.',
