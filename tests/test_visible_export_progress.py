@@ -26,6 +26,30 @@ class ProgressVisibilityTests(unittest.TestCase):
         q.handle({'type':'done','path':'d1','size':0,'status':'Ordner erstellt'})
         self.assertAlmostEqual(q.overall_fraction,.5)
 
+    def test_cancelled_batch_clears_bar_after_last_item_done(self):
+        from types import SimpleNamespace
+        from recoverydesk.gui import RecoveryDeskApp
+        for written in (0, 1000, 4000):
+            with self.subTest(written=written):
+                app = RecoveryDeskApp()
+                try:
+                    app._handle_export_event({'type': 'plan', 'total': 1, 'total_bytes': 4000,
+                        'items': [{'path': 'huge.bin', 'size': 4000, 'directory': False}]})
+                    app._handle_export_event({'type': 'start', 'path': 'huge.bin'})
+                    app._handle_export_event({'type': 'bytes', 'path': 'huge.bin', 'delta': written})
+                    app._handle_export_event({'type': 'done', 'path': 'huge.bin', 'size': 4000,
+                        'status': 'Abgebrochen', 'detail': 'Unvollständige Datei entfernt'})
+                    app._handle_export_event({'type': 'complete', 'cancelled': True})
+                    app._handle_export_event({'type': 'run_finish', 'result': SimpleNamespace(
+                        cancelled=True, exported=0, verified_existing=0, failed=0,
+                        skipped=0, bytes_written=written)})
+                    app._paint_export_progress()
+                    self.assertEqual(app.export_queue_percent.get(), '0.0 %')
+                    self.assertEqual(float(app.export_queue_bar.cget('value')), 0)
+                    self.assertTrue(app.export_queue_summary.get().startswith('Abgebrochen:'))
+                finally:
+                    app.destroy()
+
     def test_bar_visible_in_main_window_on_multiple_sizes(self):
         from recoverydesk.gui import RecoveryDeskApp
         for geometry in ('1340x830','1024x650'):
