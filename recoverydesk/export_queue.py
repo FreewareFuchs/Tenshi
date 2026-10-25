@@ -41,6 +41,7 @@ class QueueProgress:
     resumed: bool = False
     ended: bool = False
     cancelled: bool = False
+    failed: bool = False
     active_path: str = ''
     active_written: int = 0
     visible_items: dict[str, dict] = field(default_factory=dict)
@@ -58,7 +59,7 @@ class QueueProgress:
             self.done_count = self.done_bytes = self.written_bytes = 0
             self.root, self.log = event.get('root', ''), event.get('log', '')
             self.resumed = bool(event.get('resumed'))
-            self.cancelled = self.ended = False
+            self.failed = self.cancelled = self.ended = False
             self.active_path = ''
             self.active_written = self._active_size = 0
             self._current_seen.clear()
@@ -82,6 +83,8 @@ class QueueProgress:
             self._samples.append((now, self.written_bytes))
             self._trim(now)
         elif kind == 'done':
+            if event.get('status') == 'Fehler':
+                self.failed = True
             name = event['path']
             if name not in self._current_seen:
                 self._current_seen.add(name)
@@ -134,7 +137,7 @@ class QueueProgress:
         For directories/zero-size jobs use the item count. This indicates
         completion of processing, NOT how many files are recoverable.
         """
-        if self.cancelled or self.total <= 0:
+        if self.cancelled or (self.ended and self.failed) or self.total <= 0:
             return 0.0
         if self.total_bytes <= 0:
             return min(1.0, max(0.0, self.item_fraction))
