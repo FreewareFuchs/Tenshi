@@ -34,7 +34,9 @@ class ZipVerificationGuiTests(unittest.TestCase):
     def test_export_report_action_checks_real_zip_and_keeps_report(self):
         report = self.root / 'report.txt'
         report.write_text('Original export report', encoding='utf-8')
-        archive = self.root / 'export.zip'
+        files = self.root / 'files'
+        files.mkdir()
+        archive = files / 'export.zip'
         with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as out:
             out.writestr('test.txt', b'known reference')
         before = archive.read_bytes()
@@ -42,8 +44,9 @@ class ZipVerificationGuiTests(unittest.TestCase):
         self.app._show_export_results()
         button = next(w for w in self.walk(self.app) if isinstance(w, ttk.Button)
                       and w.cget('text') == 'Exportierte ZIP-Datei prüfen …')
-        with patch('recoverydesk.gui.filedialog.askopenfilename', return_value=str(archive)):
+        with patch('recoverydesk.gui.filedialog.askopenfilename', return_value=str(archive)) as picker:
             button.invoke()
+        self.assertEqual(picker.call_args.kwargs['initialdir'], str(files))
         deadline = time.monotonic() + 5
         while time.monotonic() < deadline:
             self.app.update()
@@ -59,8 +62,9 @@ class ZipVerificationGuiTests(unittest.TestCase):
 
     def test_cancelling_file_picker_does_not_start_check(self):
         before = self.app.winfo_children()
-        with patch('recoverydesk.gui.filedialog.askopenfilename', return_value=''), \
+        with patch('recoverydesk.gui.filedialog.askopenfilename', return_value='') as picker, \
                 patch('recoverydesk.gui.verify_zip') as check:
             self.app._check_exported_zip(self.app, str(self.root))
+        self.assertEqual(picker.call_args.kwargs['initialdir'], str(self.root))
         check.assert_not_called()
         self.assertEqual(self.app.winfo_children(), before)
