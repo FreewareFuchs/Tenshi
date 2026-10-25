@@ -11,6 +11,8 @@ Die stabile Ausgabe übernimmt den unter Windows und Linux geprüften Funktionss
 
 ## Enthaltene Verbesserungen
 
+- Der optionale Start am Ende des Windows-Installers erfolgt über die Windows-Shell. So kann Windows bei erforderlichen erhöhten Rechten die UAC-Abfrage anzeigen, statt den direkten Start mit Fehler 740 abzulehnen. Es werden keine pauschalen Administratorrechte für Installation oder Anwendung erzwungen.
+
 - Exportordner heißen `Tenshi_Export_<Signatur>`; ältere `RecoveryDesk_Export_*`-Aufträge bleiben sicher fortsetzbar.
 - Nach neuer Quellenauswahl startet automatisch die nur lesende Schnellanalyse im Register „Partitionen“. Die ersten 64 MiB und gültige Partitionstabellen ersetzen keinen vollständigen Tiefenscan.
 
