@@ -31,17 +31,19 @@ class ReleasePreparationTests(unittest.TestCase):
         create_portable(self.exe, self.inputs / f'Tenshi_Portable_{__version__}_Win64.zip')
         self.make_deb()
 
-    def make_deb(self, identity=None):
+    def make_deb(self, identity=None, release='beta.99'):
+        suffix = '' if release == 'stable' else '~' + release
+        version = f'{__version__}{suffix}-1'
         stage = self.root / 'stage'
         (stage / 'DEBIAN').mkdir(parents=True, exist_ok=True)
         (stage / 'DEBIAN/control').write_text(
-            f'Package: tenshi\nVersion: {__version__}~beta.99-1\nArchitecture: all\n'
+            f'Package: tenshi\nVersion: {version}\nArchitecture: all\n'
             'Maintainer: Test <test@example.com>\nDescription: test\n', encoding='utf-8')
         path = stage / 'usr/share/tenshi/recoverydesk/_build_info.json'
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(identity or self.identity), encoding='utf-8')
         subprocess.run(['dpkg-deb', '--build', str(stage),
-                        str(self.inputs / f'tenshi_{__version__}.beta.99-1_all.deb')],
+                        str(self.inputs / f'tenshi_{version.replace("~", ".")}_all.deb')],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
     def run_prepare(self):
@@ -88,6 +90,25 @@ class ReleasePreparationTests(unittest.TestCase):
         self.exe.unlink()
         with self.assertRaisesRegex(ValueError, 'exactly one'):
             self.run_prepare()
+        self.assertFalse(self.output.exists())
+
+    def test_stable_bundle_names_identity_and_deb_version(self):
+        self.identity['release'] = 'stable'
+        (self.inputs / 'windows-build-info.json').write_text(json.dumps(self.identity))
+        self.make_deb(release='stable')
+        prepare(self.inputs, self.output, 'stable', self.commit)
+        manifest = json.loads((self.output / 'release_manifest.json').read_text())
+        self.assertEqual(manifest['tag'], 'v3.0.2')
+        self.assertEqual({a['file'] for a in manifest['artifacts']}, {
+            'Tenshi_Setup_3.0.2_Win64.exe', 'Tenshi_Portable_3.0.2_Win64.zip',
+            'tenshi_3.0.2-1_all.deb'})
+        self.assertIn('Stabile Version.', (self.output / 'RELEASE_NOTES.md').read_text())
+        for row in manifest['artifacts']:
+            self.assertEqual(hashlib.sha256((self.output / row['file']).read_bytes()).hexdigest(), row['sha256'])
+
+    def test_stable_rejects_beta_build_identity(self):
+        with self.assertRaisesRegex(ValueError, 'exactly one|identity'):
+            prepare(self.inputs, self.output, 'stable', self.commit)
         self.assertFalse(self.output.exists())
 
     def test_invalid_release_input(self):

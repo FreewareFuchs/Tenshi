@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release:
-        description: 'Release label, e.g. beta.5 (does not publish a release)'
+        description: 'Release label: stable or beta.N (does not publish a release)'
         required: true
         type: string
 

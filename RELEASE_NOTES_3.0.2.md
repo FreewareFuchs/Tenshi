@@ -1,23 +1,33 @@
-# Tenshi 3.0.2 – Quellenwechsel und Exportnamen
+# Tenshi 3.0.2 – stabile Version in Vorbereitung
 
-## Neue Funktionen
+Die stabile Ausgabe übernimmt den unter Windows und Linux geprüften Funktionsstand von Beta.6. Diese Datei dokumentiert die Vorbereitung; die Veröffentlichung erfolgt erst nach Prüfung der neu gebauten Pakete.
 
-- Neu begonnene Stapel-Exporte verwenden `Tenshi_Export_<Signatur>`; die exportierten Dateien liegen weiterhin in `files/`.
-- Ältere `RecoveryDesk_Export_<Signatur>`-Aufträge bleiben bestehen und werden bei gleicher Quelle und Auswahl sicher über die vorhandene Statusdatei fortgesetzt. Keine automatische Umbenennung, kein Überschreiben bereits exportierter Dateien.
-- Nach einer neuen Quellenauswahl (Image, physischer Datenträger oder logisches Windows-Laufwerk) springt Tenshi automatisch zu „Partitionen“ und startet die Schnellanalyse (erste 64 MiB und gültige Partitionstabellen), ausschließlich lesend.
-- Im Eingabefeld „Ausgewählte Quelle“ kann eine manuell eingetragene Quelle mit Enter übernommen und analysiert werden.
-- Bei laufendem alten Partitionsscan wartet eine neu angeforderte Schnellanalyse dessen Ende ab. Ergebnisse alter Quellen werden nicht mehr angezeigt.
-- Das Laden einer zuvor geprüften Analysesitzung bleibt unverändert: Wiederherstellung ohne unnötigen neuen Scan.
+## Bereitstellung
 
-## Sicherheit und Einschränkungen
+- Windows 10/11, 64 Bit: `Tenshi_Setup_3.0.2_Win64.exe` und `Tenshi_Portable_3.0.2_Win64.zip`.
+- Linux Mint 22.x / Python ab 3.11: `tenshi_3.0.2-1_all.deb`, Debian-Version `3.0.2-1`.
+- Gemeinsame `SHA256SUMS.txt`; vorgesehener Git-Tag `v3.0.2`.
+- Nur saubere, bekannte Git-Commits erhalten eine explizite Release-Kennung. Unveröffentlichte Entwicklungsstände tragen weiterhin `+dev`.
 
-- Schnellanalyse ist kein vollständiger Datenträgerscan. Für außerhalb des Suchbereichs liegende oder beschädigte Strukturen die Tiefensuche manuell verwenden.
-- Physisch beschädigte Laufwerke können auch durch reine Lesezugriffe zusätzlich belastet werden; in solchen Fällen zuerst ein schonendes Image erwägen.
-- Export-Ziele sollten nach wie vor auf einem anderen physischen Datenträger liegen.
-- GUI- und Datenrettungsfunktionen sind mit synthetischen Medien automatisiert getestet. Ein neues Windows-Build muss auf Windows gebaut und dort geprüft werden.
+## Enthaltene Verbesserungen
 
-## Windows
+- Exportordner heißen `Tenshi_Export_<Signatur>`; ältere `RecoveryDesk_Export_*`-Aufträge bleiben sicher fortsetzbar.
+- Nach neuer Quellenauswahl startet automatisch die nur lesende Schnellanalyse im Register „Partitionen“. Die ersten 64 MiB und gültige Partitionstabellen ersetzen keinen vollständigen Tiefenscan.
 
-1. `run_tests.bat` für automatische Tests; `tenshi-tests.log` prüfen.
-2. `build_windows.bat` für `dist\Tenshi.exe`.
-3. Optional `build_portable.bat` / `build_installer.bat`.
+- Read-only-Quellenprüfung mit Erkennung entfernter oder geänderter Geräte und ungültiger älterer Scan-Ergebnisse.
+- FAT32-Auswahl der aktiven FAT und exFAT-Berücksichtigung der gültigen Dateidatenlänge.
+- Stapel-Export mit Fortsetzen, Prüfung vorhandener Exporte und Schutz vor dem Überschreiben veränderter Zieldateien.
+- Deutliche Warnmeldung und Fehleranzeige bei fehlgeschlagenen Exporten; korrigierte Abbruchanzeige.
+- Optionale ZIP-Struktur-/CRC-Prüfung mit Fortschritt und Abbruch. Grenzen: je 512 MiB Archiv/entpackte Daten und 10.000 Einträge.
+- Geringerer Speicherbedarf großer Dateibäume, genauere NTFS-Diagnose und verständlichere Angaben zur Partitionserkennung.
+- Sechs Oberflächensprachen, unabhängige Dateisystem-Referenztests und festgelegte Windows-Buildwerkzeuge.
+
+## Bestätigter Teststand vor der stabilen Paketierung
+
+Beta.6 wurde auf Windows und Linux manuell geprüft: Paketstart/Versionsanzeige, Export-Abbruch und erneuter Export, SHA-256-Vergleich mit dem Original, Erkennung vorhandener und nachträglich veränderter Zieldateien sowie sichtbare Export-Warnungen. Die veröffentlichten Beta.6-Pakete wurden vom Anwender ebenfalls positiv geprüft.
+
+Die stabilen Pakete werden neu gebaut und benötigen anschließend noch die kurze Paketabnahme.
+
+## Grenzen bleiben bestehen
+
+Eine stabile Programmversion garantiert keine erfolgreiche Datenrettung oder unbeschädigte Dateiinhalte. Gelöschte Dateien und eingeschränkte Dateisystemfunktionen bleiben entsprechend gekennzeichnet. ZIP-CRC-Prüfung ersetzt keinen Originalvergleich. Gerettete Daten und Images auf einem anderen physischen Datenträger speichern. Linux Mint 21.x mit Python 3.10 ist kein unterstütztes DEB-Ziel.

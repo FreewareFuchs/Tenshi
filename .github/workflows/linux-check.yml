@@ -56,7 +56,7 @@ jobs:
         env:
           RELEASE_LABEL: ${{ inputs.release }}
         run: |
-          [[ "$RELEASE_LABEL" =~ ^beta\.[1-9][0-9]*$ ]] || exit 2
+          [[ "$RELEASE_LABEL" =~ ^(stable|beta\.[1-9][0-9]*)$ ]] || exit 2
           echo "TENSHI_RELEASE=$RELEASE_LABEL" >> "$GITHUB_ENV"
       - name: Install Tk and Xvfb
         run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb e2fsprogs btrfs-progs xfsprogs desktop-file-utils dosfstools mtools ntfs-3g exfatprogs python3-venv
@@ -139,7 +139,11 @@ jobs:
           desktop-file-validate packaging/linux/de.freewarefuchs.Tenshi.desktop
           if [ -n "${TENSHI_RELEASE:-}" ]; then
             VERSION=$(python3 -c 'from recoverydesk import __version__; print(__version__)')
-            python3 build_deb.py --package-version "$VERSION~$TENSHI_RELEASE-1"
+            if [ "$TENSHI_RELEASE" = stable ]; then
+              python3 build_deb.py --package-version "$VERSION-1"
+            else
+              python3 build_deb.py --package-version "$VERSION~$TENSHI_RELEASE-1"
+            fi
           else
             python3 build_deb.py
           fi

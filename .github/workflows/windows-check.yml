@@ -36,7 +36,7 @@ jobs:
         env:
           RELEASE_LABEL: ${{ inputs.release }}
         run: |
-          [[ "$RELEASE_LABEL" =~ ^beta\.[1-9][0-9]*$ ]] || exit 2
+          [[ "$RELEASE_LABEL" =~ ^(stable|beta\.[1-9][0-9]*)$ ]] || exit 2
           echo "TENSHI_RELEASE=$RELEASE_LABEL" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v7
         with:
