@@ -85,7 +85,39 @@ class ZipVerificationGuiTests(unittest.TestCase):
                 bar = next(w for w in self.walk(win) if isinstance(w, ttk.Progressbar))
                 self.assertEqual(str(bar.cget('mode')), 'determinate')
                 self.assertLess(float(bar.cget('value')), 100)
+                if state == 'cancelled':
+                    self.assertEqual(float(bar.cget('value')), 0)
                 win.destroy()
+
+    def test_cancel_after_worker_finished_before_result_display(self):
+        import threading
+        from recoverydesk.zip_verification import ZipCheckResult
+        finished = threading.Event()
+        def check(path, *, cancel, progress):
+            progress(1, 10, 10)
+            finished.set()
+            return ZipCheckResult('passed', 1, 10,
+                                  'ZIP-Struktur und CRC-Prüfsummen ohne Fehler geprüft.')
+        with patch('recoverydesk.gui.filedialog.askopenfilename', return_value='chosen.zip'), \
+                patch('recoverydesk.gui.verify_zip', side_effect=check):
+            self.app._check_exported_zip(self.app, str(self.root))
+            self.assertTrue(finished.wait(5))
+            win = next(w for w in self.app.winfo_children() if isinstance(w, tk.Toplevel))
+            stop = next(w for w in self.walk(win) if isinstance(w, ttk.Button)
+                        and w.cget('text') == 'Prüfung abbrechen')
+            stop.invoke()
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                self.app.update()
+                if str(stop.cget('state')) == 'disabled':
+                    break
+                time.sleep(.01)
+            else:
+                self.fail('Cancelled result was not displayed')
+            bar = next(w for w in self.walk(win) if isinstance(w, ttk.Progressbar))
+            self.assertEqual(float(bar.cget('value')), 0)
+            labels = [w.cget('text') for w in self.walk(win) if isinstance(w, ttk.Label)]
+            self.assertTrue(any(text.startswith('Prüfung abgebrochen.') for text in labels))
 
     def test_cancelling_file_picker_does_not_start_check(self):
         before = self.app.winfo_children()
