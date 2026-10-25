@@ -39,7 +39,7 @@ from .explorer import (SearchCriteria, search_entries, construct_paths, sorted_e
                        compile_search, is_temporary_file)
 from .batch_export import export_batch
 from .export_queue import QueueProgress, readable_bytes
-from .zip_verification import verify_zip, ZIP_CHECK_SCOPE
+from .zip_verification import verify_zip, ZIP_CHECK_SCOPE, ZipCheckResult
 from .preview import describe, PREVIEW_LIMIT, IMAGE_LIMIT
 from .file_verification import verify_file, MAX_VERIFY_BYTES, VerificationCancelled
 from .imaging import create_image, sidecar_path, describe_bad_ranges, ImagingProgress
@@ -2893,7 +2893,12 @@ class RecoveryDeskApp(tk.Tk):
                 return
             bar.stop()
             bar.configure(mode='determinate', maximum=100)
-            if result is not None and result.status == 'passed':
+            if cancel.is_set() and result is not None:
+                result = ZipCheckResult('cancelled', result.files, result.checked_bytes,
+                                        'Prüfung abgebrochen.')
+            if result is not None and result.status == 'cancelled':
+                bar.configure(value=0)
+            elif result is not None and result.status == 'passed':
                 bar.configure(value=100)
             else:
                 bar.configure(value=min(99, float(bar.cget('value'))))
