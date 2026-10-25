@@ -39,6 +39,7 @@ from .explorer import (SearchCriteria, search_entries, construct_paths, sorted_e
                        compile_search, is_temporary_file)
 from .batch_export import export_batch
 from .export_queue import QueueProgress, readable_bytes
+from .zip_verification import verify_zip, ZIP_CHECK_SCOPE
 from .preview import describe, PREVIEW_LIMIT, IMAGE_LIMIT
 from .file_verification import verify_file, MAX_VERIFY_BYTES, VerificationCancelled
 from .imaging import create_image, sidecar_path, describe_bad_ranges, ImagingProgress
@@ -2809,6 +2810,9 @@ class RecoveryDeskApp(tk.Tk):
         ttk.Label(win, text=f'Bericht: {report}', wraplength=930).pack(anchor='w', padx=14, pady=10)
         ttk.Label(win, text=EXPORT_SCOPE + '\n' + RESUME_SCOPE,
                   wraplength=930).pack(anchor='w', padx=14, pady=(0, 8))
+        ttk.Button(win, text='Exportierte ZIP-Datei prüfen …',
+                   command=lambda: self._check_exported_zip(win, os.path.dirname(report))).pack(
+                       anchor='w', padx=14, pady=(0, 8))
         area = ttk.Frame(win, padding=(14, 0, 14, 14))
         area.pack(fill='both', expand=True)
         scrollbar = ttk.Scrollbar(area, orient='vertical')
@@ -2825,6 +2829,61 @@ class RecoveryDeskApp(tk.Tk):
         except OSError as exc:
             tb.insert('1.0', f'Bericht konnte nicht geöffnet werden: {exc}')
         tb.configure(state='disabled')
+
+    def _check_exported_zip(self, parent, folder):
+        path = filedialog.askopenfilename(parent=parent, title='Exportierte ZIP-Datei prüfen …',
+            initialdir=folder, filetypes=[('ZIP', '*.zip'), ('Alle Dateien', '*')])
+        if not path:
+            return
+        win = tk.Toplevel(parent)
+        win.title('ZIP-Inhaltsprüfung')
+        win.geometry('760x340')
+        panel = ttk.Frame(win, padding=14)
+        panel.pack(fill='both', expand=True)
+        ttk.Label(panel, text=path, wraplength=710).pack(anchor='w')
+        ttk.Label(panel, text=ZIP_CHECK_SCOPE, wraplength=710).pack(anchor='w', pady=(10, 6))
+        ttk.Label(panel, text='Grenzen: 512 MiB Archiv, 512 MiB entpackte Daten, 10.000 Einträge.',
+                  wraplength=710).pack(anchor='w')
+        status = ttk.Label(panel, text='ZIP-Inhalt wird geprüft …', wraplength=710)
+        status.pack(anchor='w', pady=10)
+        bar = ttk.Progressbar(panel, mode='indeterminate')
+        bar.pack(fill='x')
+        bar.start(30)
+        cancel = threading.Event()
+        results = queue.SimpleQueue()
+        def close():
+            cancel.set()
+            win.destroy()
+        buttons = ttk.Frame(panel)
+        buttons.pack(fill='x', pady=(12, 0))
+        stop = ttk.Button(buttons, text='Prüfung abbrechen', command=cancel.set)
+        stop.pack(side='left')
+        ttk.Button(buttons, text='Schließen', command=close).pack(side='right')
+        win.protocol('WM_DELETE_WINDOW', close)
+        win.bind('<Destroy>', lambda event: cancel.set() if event.widget is win else None, add='+')
+        def worker():
+            try:
+                results.put(verify_zip(path, cancel=cancel.is_set))
+            except Exception:
+                results.put(None)
+        def drain():
+            if not win.winfo_exists():
+                return
+            try:
+                result = results.get_nowait()
+            except queue.Empty:
+                self._after_window(win, 100, drain)
+                return
+            bar.stop()
+            stop.configure(state='disabled')
+            if result is None:
+                status.configure(text=translate('Datei konnte nicht vollständig gelesen werden.', self.language))
+            else:
+                status.configure(text=translate(result.message, self.language) + '\n' +
+                    translate('Geprüfte Dateien', self.language) + f': {result.files} · ' +
+                    readable_bytes(result.checked_bytes))
+        threading.Thread(target=worker, daemon=True).start()
+        self._after_window(win, 100, drain)
 
     def _handle_export_event(self, data):
         kind = data.get('type')

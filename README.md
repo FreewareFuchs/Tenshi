@@ -69,6 +69,7 @@ Der Imaging-Dialog wählt „Sicher anhalten“ bei Medienfehlern. Die zusätzli
 - Dateien und Ordner im Stapel auf einen separaten Datenträger exportieren; unterstützte Aufträge fortsetzen.
 - RAW-, IMG- und DD-Abbilder lesen sowie Datenträger-Images erstellen, pausieren und fortsetzen.
 - Analysesitzungen regulärer Image-Dateien speichern und wieder laden.
+- Exportierte ZIP-Dateien im Ergebnisbericht optional auf lesbare ZIP-Struktur und interne CRC-Prüfsummen prüfen. Die Prüfung vergleicht nicht mit einem Original und validiert keine enthaltenen Dokumentformate.
 - Integrierte Offline-Hilfe mit F1, Hell-/Dunkelmodus und sechs Oberflächensprachen nutzen: Deutsch, Englisch, Spanisch, vereinfachtes Chinesisch, Russisch und Japanisch.
 
 ### Unterstützte Dateisysteme und Grenzen
