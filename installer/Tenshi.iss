@@ -39,4 +39,4 @@ Name: "{autodesktop}\Tenshi"; Filename: "{app}\Tenshi.exe"; Tasks: desktopicon
 Name: "desktopicon"; Description: "Desktop-Verknuepfung erstellen"; GroupDescription: "Zusaetzliche Symbole:"; Flags: unchecked
 
 [Run]
-Filename: "{app}\Tenshi.exe"; Description: "Tenshi starten"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Tenshi.exe"; Description: "Tenshi starten"; Flags: nowait postinstall skipifsilent shellexec
