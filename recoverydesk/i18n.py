@@ -31,6 +31,15 @@ TRANSLATIONS = {}
 def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
+# Batch completion must distinguish failed exports from successful processing.
+add('Beendet mit Fehlern', 'Completed with errors', 'Finalizado con errores', '完成，但有错误', 'Завершено с ошибками', 'エラーありで終了')
+add('Beim Stapel-Export sind {count} Fehler aufgetreten. Nicht alle Dateien konnten exportiert oder bestätigt werden. Details stehen im Ergebnisbericht.',
+    'Batch export encountered {count} errors. Not all files could be exported or verified. See the result report for details.',
+    'La exportación por lotes encontró {count} errores. No se pudieron exportar o verificar todos los archivos. Consulte los detalles en el informe de resultados.',
+    '批量导出发生 {count} 个错误。部分文件无法导出或验证。详情请查看结果报告。',
+    'При пакетном экспорте возникло ошибок: {count}. Не все файлы удалось экспортировать или проверить. Подробности в отчёте о результатах.',
+    '一括エクスポートで{count}件のエラーが発生しました。一部のファイルをエクスポートまたは検証できませんでした。詳細は結果レポートをご覧ください。')
+
 # Optional read-only CRC/structure verification of exported ZIP files.
 add('Exportierte ZIP-Datei prüfen …', 'Check exported ZIP file …', 'Comprobar ZIP exportado …', '检查导出的 ZIP 文件…', 'Проверить экспортированный ZIP…', 'エクスポートしたZIPを検査…')
 add('ZIP-Inhaltsprüfung', 'ZIP content check', 'Comprobación del contenido ZIP', 'ZIP 内容检查', 'Проверка содержимого ZIP', 'ZIP内容検査')

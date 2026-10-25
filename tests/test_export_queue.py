@@ -136,6 +136,38 @@ class ExportQueueTests(unittest.TestCase):
                 self.assertEqual(app.export_result.verified_existing, 3)
                 statuses = [row['status'] for row in app.export_progress.visible_items.values()]
                 self.assertIn('Bereits verifiziert', statuses)
+                # A modified target must raise a visible warning, not a full success bar.
+                bad = Path(app.export_result.root) / 'files' / 'Dokumente' / 'bericht.txt'
+                bad.write_bytes(b'changed target')
+                with patch('recoverydesk.gui.filedialog.askdirectory', return_value=str(target)), \
+                     patch('recoverydesk.gui.messagebox.askyesno', return_value=True), \
+                     patch('recoverydesk.gui.messagebox.showwarning') as warning:
+                    app.export_browser_selection()
+                    limit = time.monotonic() + 5
+                    while app.export_running and time.monotonic() < limit:
+                        app.update()
+                        time.sleep(.02)
+                    self.assertFalse(app.export_running)
+                    warning.assert_called_once()
+                    self.assertIn('1 Fehler', warning.call_args.args[1])
+                self.assertEqual(app.export_result.failed, 1)
+                self.assertEqual(app.export_queue_percent.get(), 'Fehler')
+                self.assertEqual(float(app.export_queue_bar.cget('value')), 0)
+                self.assertTrue(app.export_queue_summary.get().startswith('Beendet mit Fehlern:'))
+                self.assertEqual(bad.read_bytes(), b'changed target')
+                # A later clean run must clear the failure state.
+                fresh = root / 'fresh'; fresh.mkdir()
+                with patch('recoverydesk.gui.filedialog.askdirectory', return_value=str(fresh)), \
+                     patch('recoverydesk.gui.messagebox.askyesno', return_value=True), \
+                     patch('recoverydesk.gui.messagebox.showwarning') as warning:
+                    app.export_browser_selection()
+                    limit = time.monotonic() + 5
+                    while app.export_running and time.monotonic() < limit:
+                        app.update()
+                        time.sleep(.02)
+                    self.assertFalse(app.export_running)
+                    warning.assert_not_called()
+                self.assertEqual(app.export_queue_percent.get(), '100.0 %')
             finally:
                 app.destroy()
 

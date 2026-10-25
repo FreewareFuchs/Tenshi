@@ -2921,15 +2921,25 @@ class RecoveryDeskApp(tk.Tk):
             self.export_cancel_button.configure(state='disabled')
             self.export_result_button.configure(state='normal')
             rep = self.export_result
-            label = 'Abgebrochen' if rep.cancelled else 'Beendet'
+            self.export_progress.failed = bool(rep.failed)
+            self.export_progress.ended = True
+            label = translate('Beendet mit Fehlern', self.language) if rep.failed else (
+                'Abgebrochen' if rep.cancelled else 'Beendet')
             self.status.set(f'Stapel-Export {label.lower()}: {rep.exported} neu, '
                             f'{rep.verified_existing} {translate(RESUME_LABEL, self.language)}, {rep.failed} Fehler.')
             self.export_queue_summary.set(
                 f'{label}: {rep.exported} neu · {rep.verified_existing} {translate(RESUME_LABEL, self.language)} · '
                 f'{rep.failed} Fehler · {rep.skipped} übersprungen · '
                 f'{readable_bytes(rep.bytes_written)} geschrieben')
+            self._paint_export_progress()
+            if rep.failed:
+                messagebox.showwarning(translate('Beendet mit Fehlern', self.language),
+                    translate('Beim Stapel-Export sind {count} Fehler aufgetreten. Nicht alle Dateien konnten exportiert oder bestätigt werden. Details stehen im Ergebnisbericht.',
+                              self.language).format(count=rep.failed), parent=self)
             return
         if kind == 'run_error':
+            self.export_progress.failed = self.export_progress.ended = True
+            self._paint_export_progress()
             self.export_running = False
             self.export_button.configure(state='normal')
             self.export_cancel_button.configure(state='disabled')
@@ -2963,7 +2973,10 @@ class RecoveryDeskApp(tk.Tk):
         """Update widgets only from Tk's main thread using byte-aware progress."""
         percent = round(100 * self.export_progress.overall_fraction, 1)
         self.export_queue_bar.configure(value=percent)
-        self.export_queue_percent.set(f'{percent:.1f} %')
+        if self.export_progress.ended and self.export_progress.failed:
+            self.export_queue_percent.set(translate('Fehler', self.language))
+        else:
+            self.export_queue_percent.set(f'{percent:.1f} %')
 
     def _drain_export_events(self):
         count = 0
