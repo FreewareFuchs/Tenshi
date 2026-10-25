@@ -49,6 +49,7 @@ class ExportQueueTests(unittest.TestCase):
                   'status': 'Abgebrochen', 'detail': 'Unvollständig entfernt'}, now=9)
         q.handle({'type': 'complete', 'cancelled': True}, now=9)
         self.assertTrue(q.cancelled)
+        self.assertEqual(q.overall_fraction, 0)
         self.assertEqual(q.visible_items['a']['status'], 'Abgebrochen')
         self.assertIn('200 B', q.summary(now=9))
         self.assertEqual(readable_bytes(1024), '1.0 KiB')

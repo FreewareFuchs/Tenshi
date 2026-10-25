@@ -134,7 +134,7 @@ class QueueProgress:
         For directories/zero-size jobs use the item count. This indicates
         completion of processing, NOT how many files are recoverable.
         """
-        if self.total <= 0:
+        if self.cancelled or self.total <= 0:
             return 0.0
         if self.total_bytes <= 0:
             return min(1.0, max(0.0, self.item_fraction))
