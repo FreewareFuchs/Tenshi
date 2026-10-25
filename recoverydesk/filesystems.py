@@ -44,7 +44,7 @@ def read_exact(f, where, n):
     return data
 
 
-@dataclass
+@dataclass(slots=True)
 class GenericEntry:
     record_number: int
     name: str
