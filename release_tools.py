@@ -33,8 +33,8 @@ Fehlerprotokolle werden weiterhin im Windows-Benutzerprofil gespeichert
 (z. B. %%APPDATA%%\\Tenshi und %%LOCALAPPDATA%%\\Tenshi\\Logs).
 Das Programm und seine Konfiguration sind NICHT komplett USB-portabel.
 
-Der Quell-Datentraeger wird nur lesend verwendet. Die Software ist experimentell;
-auch eine scheinbar erfolgreich wiederhergestellte Datei kann beschaedigt sein.
+Der Quell-Datentraeger wird nur lesend verwendet. Auch eine scheinbar erfolgreich
+wiederhergestellte Datei kann beschaedigt sein.
 Dieses ZIP enthaelt keinerlei Original-Dateien, Datentraegerabbilder oder Logs.
 
 Die Datei LICENSE enthaelt die MIT-Lizenz des Tenshi-Projekts.\nSHA256SUMS.txt nennt den SHA-256-Pruefwert der beigelegten Tenshi.exe.

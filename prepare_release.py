@@ -9,6 +9,7 @@ import tarfile
 import tempfile
 
 from recoverydesk import __version__
+from recoverydesk.version_info import release_suffix
 from release_finalize import check_pe
 from release_tools import file_sha256, verify_portable
 
@@ -22,8 +23,7 @@ def validate_identity(data, release, commit):
 
 
 def prepare(artifacts: Path, output: Path, release: str, commit: str) -> Path:
-    if not re.fullmatch(r'beta\.[1-9][0-9]*', release):
-        raise ValueError('Release must have the form beta.N')
+    suffix = release_suffix(release)
     if not re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', commit):
         raise ValueError('A full Git commit hash is required')
     if output.exists() or output.is_symlink():
@@ -38,7 +38,7 @@ def prepare(artifacts: Path, output: Path, release: str, commit: str) -> Path:
     exe = one('Tenshi.exe')
     installer = one(f'Tenshi_Setup_{__version__}.exe')
     portable = one(f'Tenshi_Portable_{__version__}_Win64.zip')
-    package_version = f'{__version__}~{release}-1'
+    package_version = f'{__version__}{suffix.replace("-", "~", 1)}-1'
     deb = one(f'tenshi_{package_version.replace("~", ".")}_all.deb')
     identity = one('windows-build-info.json')
     validate_identity(json.loads(identity.read_text(encoding='utf-8')), release, commit)
@@ -62,10 +62,10 @@ def prepare(artifacts: Path, output: Path, release: str, commit: str) -> Path:
             with archive.extractfile(names[0]) as metadata:
                 validate_identity(json.load(metadata), release, commit)
 
-    tag = f'v{__version__}-{release}'
+    tag = f'v{__version__}{suffix}'
     download = f'https://github.com/FreewareFuchs/Tenshi/releases/download/{tag}/'
-    files = [(installer, f'Tenshi_Setup_{__version__}-{release}_Win64.exe'),
-             (portable, f'Tenshi_Portable_{__version__}-{release}_Win64.zip'),
+    files = [(installer, f'Tenshi_Setup_{__version__}{suffix}_Win64.exe'),
+             (portable, f'Tenshi_Portable_{__version__}{suffix}_Win64.zip'),
              (deb, deb.name)]
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output.parent, prefix='.release-') as temporary:
@@ -84,12 +84,12 @@ def prepare(artifacts: Path, output: Path, release: str, commit: str) -> Path:
         (stage / 'release_manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
         (stage / 'SHA256SUMS.txt').write_text(''.join(f'{r["sha256"]}  {r["file"]}\n' for r in rows), encoding='ascii')
         (stage / 'RELEASE_NOTES.md').write_text(
-            f'# Tenshi {__version__} {release.replace("beta.", "Beta.")}\n\n'
+            f'# Tenshi {__version__}{"" if release == "stable" else " " + release.replace("beta.", "Beta.")}\n\n'
             f'Quellstand: `{commit}`\n\n'
             f'- [Windows Installer]({download}{rows[0]["file"]})\n'
             f'- [Windows Portable]({download}{rows[1]["file"]})\n'
             f'- [Linux DEB – Linux Mint 22.x / Python ≥ 3.11]({download}{rows[2]["file"]})\n\n'
-            'Experimentelle Beta. Quellen werden nur lesend geöffnet. Gerettete Dateien können beschädigt sein.\n\n'
+            f'{"Stabile Version." if release == "stable" else "Experimentelle Beta."} Quellen werden nur lesend geöffnet. Gerettete Dateien können beschädigt sein.\n\n'
             'Änderungen und manuelle Tests vor Veröffentlichung ergänzen. '
             'Dieses Paket wurde nur vorbereitet; es wurde kein GitHub-Release angelegt.\n', encoding='utf-8')
         stage.rename(output)

@@ -11,10 +11,10 @@ import re
 import shutil
 import subprocess
 import tempfile
-from recoverydesk.version_info import write_build_info
+from recoverydesk.version_info import write_build_info, release_suffix
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_VERSION = '3.0.2~beta.4-1'
+DEFAULT_VERSION = '3.0.2-1'
 
 
 def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = None) -> Path:
@@ -22,8 +22,10 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
                             (ROOT / 'recoverydesk/__init__.py').read_text()).group(1)
     if not re.fullmatch(re.escape(app_version) + r'(?:~[a-zA-Z0-9.+]+)?-[1-9][0-9]*', version):
         raise ValueError('Package version must match the application version and include a Debian revision.')
-    if release is not None and not version.startswith(f'{app_version}~{release}-'):
-        raise ValueError('Release identity must match the Debian package version.')
+    if release is not None:
+        suffix = release_suffix(release).replace('-', '~', 1)
+        if not version.startswith(f'{app_version}{suffix}-'):
+            raise ValueError('Release identity must match the Debian package version.')
     if not shutil.which('dpkg-deb'):
         raise RuntimeError('dpkg-deb is required (Debian/Ubuntu/Linux Mint: dpkg).')
     epoch = int(os.environ.get('SOURCE_DATE_EPOCH') or subprocess.check_output(
@@ -53,7 +55,7 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
              'usr/share/applications/de.freewarefuchs.Tenshi.desktop')
         copy(ROOT / 'recoverydesk/assets/tenshi_icon.png',
              'usr/share/icons/hicolor/256x256/apps/tenshi.png')
-        for name in ('README.md', 'THIRD_PARTY_NOTICES.md', 'RELEASE_NOTES_LINUX_BETA.md', 'RELEASE_NOTES_3.0.2_BETA4.md'):
+        for name in ('README.md', 'THIRD_PARTY_NOTICES.md', 'RELEASE_NOTES_LINUX_BETA.md', 'RELEASE_NOTES_3.0.2_BETA4.md', 'RELEASE_NOTES_3.0.2.md'):
             copy(ROOT / name, f'usr/share/doc/tenshi/{name}')
         copy(ROOT / 'LICENSE', 'usr/share/doc/tenshi/copyright')
         changelog = stage / 'usr/share/doc/tenshi/changelog.gz'
@@ -67,7 +69,7 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
             f'Installed-Size: {installed_size}\n'
             'Depends: python3 (>= 3.11), python3-tk, util-linux\n'
             'Homepage: https://github.com/FreewareFuchs/Tenshi\n'
-            'Description: Read-only disk analysis and file recovery (experimental beta)\n'
+            'Description: Read-only disk analysis and file recovery\n'
             ' Browse supported filesystems, export recoverable files to another drive,\n'
             ' and create or resume disk images. Sources are opened read-only.\n'
             ' Physical device access requires separately configured read permissions.\n', encoding='utf-8')
@@ -95,6 +97,6 @@ if __name__ == '__main__':
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'deb_output')
     parser.add_argument('--package-version', default=DEFAULT_VERSION)
     parser.add_argument('--release', default=os.environ.get('TENSHI_RELEASE'),
-                        help='Explicit beta.N release identity; requires a clean Git tree')
+                        help='Explicit stable or beta.N release identity; requires a clean Git tree')
     args = parser.parse_args()
     print(build(args.output_dir, args.package_version, args.release))

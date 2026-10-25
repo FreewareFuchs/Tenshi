@@ -2,7 +2,7 @@
 
 Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Untersuchen von Partitionen, Durchsuchen unterstützter Dateisysteme und Exportieren wiederherstellbarer Dateien auf einen separaten Datenträger.
 
-**Windows 10/11 · 64 Bit · Linux Mint 22.x: DEB-Paket oder Quellcode · Experimentelle Beta**
+**Windows 10/11 · 64 Bit · Linux Mint 22.x: DEB-Paket oder Quellcode**
 
 [Website](https://freewarefuchs.de/tenshi/) · [Downloads](https://freewarefuchs.de/tenshi/#downloads) · [Bedienungsanleitung](https://freewarefuchs.de/tenshi/anleitung/) · [English](https://freewarefuchs.de/en/tenshi/)
 
@@ -12,7 +12,7 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 ## Herunterladen und starten
 
-Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Der veröffentlichte [Release v3.0.2-beta.5](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2-beta.5) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.txt`.
+Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Der veröffentlichte [Release v3.0.2-beta.6](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2-beta.6) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.txt`.
 
 | Variante | Verwendung |
 | --- | --- |
@@ -26,14 +26,14 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 
 ## Unter Linux starten
 
-Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. `v3.0.2-beta.5` ist veröffentlicht und enthält auch die FAT32-Korrektur aus Beta.4 für deaktivierte FAT-Spiegelung und eine aktive zweite FAT. Spätere Änderungen auf `main` sind noch nicht Teil dieses Releases.
+Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. `v3.0.2-beta.6` ist veröffentlicht. Die stabile Version 3.0.2 wird vorbereitet; bis zu ihrer Veröffentlichung bleibt Beta.6 der verfügbare Download. [Vorbereitung und Versionshinweise](RELEASE_NOTES_3.0.2.md).
 
 ### DEB-Paket für Linux Mint 22.x
 
-Die Datei `tenshi_3.0.2.beta.5-1_all.deb` aus dem entsprechenden GitHub-Release herunterladen. Im Downloadordner installieren:
+Die Datei `tenshi_3.0.2.beta.6-1_all.deb` aus dem entsprechenden GitHub-Release herunterladen. Im Downloadordner installieren:
 
 ```bash
-sudo apt install ./tenshi_3.0.2.beta.5-1_all.deb
+sudo apt install ./tenshi_3.0.2.beta.6-1_all.deb
 ```
 
 Danach **Tenshi** im Anwendungsmenü öffnen oder `tenshi` im Terminal starten. Tenshi läuft als normaler Benutzer. Das Paket installiert benötigte Systemabhängigkeiten über APT; es ändert keine Geräteberechtigungen. Deinstallation: `sudo apt remove tenshi`.

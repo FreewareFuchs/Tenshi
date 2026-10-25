@@ -1,3 +1,10 @@
+# Tenshi 3.0.2 – stabile Veröffentlichung in Vorbereitung
+
+- Stabile Build-Kennung `stable`, Versionsanzeige ohne Beta-Zusatz und Tag `v3.0.2` ergänzt. Entwicklungsstände bleiben als `+dev` erkennbar.
+- DEB-Version `3.0.2-1` sortiert nach den bisherigen Beta-Paketen. Windows-Installer und Portable-ZIP erhalten Dateinamen ohne Beta-Suffix.
+- Gemeinsamer Release-Workflow prüft weiterhin Commit, sauberen Quellstand, Paketidentitäten und SHA-256-Werte; Veröffentlichung bleibt ein separater Schritt.
+- Der geprüfte Beta.6-Funktionsstand bleibt erhalten. [Versionshinweise und Paketabnahme](RELEASE_NOTES_3.0.2.md).
+
 # Tenshi 3.0.2 Beta.4 – vorbereitet, noch nicht veröffentlicht
 
 - FAT32: Bei deaktivierter Spiegelung wird die aktive FAT für Datei- und Verzeichnisketten berücksichtigt. Dadurch werden gleich große, aber inhaltlich falsche Exporte aus veralteten inaktiven FAT-Ketten vermieden.

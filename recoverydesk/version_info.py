@@ -9,6 +9,15 @@ import subprocess
 from . import __release__, __version__
 
 
+def release_suffix(release: str) -> str:
+    """Validate the explicit identity and return its public version suffix."""
+    if release == 'stable':
+        return ''
+    if re.fullmatch(r'beta\.[1-9][0-9]*', release):
+        return '-' + release
+    raise ValueError('Release must be stable or have the form beta.N')
+
+
 @dataclass(frozen=True)
 class BuildInfo:
     version: str = __version__
@@ -18,13 +27,13 @@ class BuildInfo:
     released: bool = False
 
     def display(self):
-        label = self.release.replace('beta.', 'Beta.', 1)
+        label = '' if self.release == 'stable' else self.release.replace('beta.', 'Beta.', 1)
         if not self.released:
             label += '+dev'
         commit = self.commit[:10] if self.commit else '?'
         if self.dirty:
             commit += '+dirty'
-        return f'{self.version} {label} ({commit})'
+        return f'{self.version}{" " + label if label else ""} ({commit})'
 
 
 def collect_build_info(root: Path, release: str | None = None) -> BuildInfo:
@@ -45,14 +54,16 @@ def collect_build_info(root: Path, release: str | None = None) -> BuildInfo:
         if release is not None:
             raise ValueError('A release build requires a known clean Git commit')
         return BuildInfo()
-    if release is not None and not re.fullmatch(r'beta\.[1-9][0-9]*', release):
-        raise ValueError('Release must have the form beta.N')
+    if release is not None:
+        release_suffix(release)
     if release is not None and dirty:
         raise ValueError('A release build requires a clean working tree')
     if release is None and not dirty:
         matching = [tag.removeprefix(f'v{__version__}-') for tag in tags
                     if re.fullmatch(r'v' + re.escape(__version__) + r'-beta\.[1-9][0-9]*', tag)]
-        if len(matching) == 1:
+        if f'v{__version__}' in tags:
+            release = 'stable'
+        elif len(matching) == 1:
             release = matching[0]
     return BuildInfo(commit=commit, dirty=dirty, release=release or __release__,
                      released=release is not None)
@@ -73,7 +84,8 @@ def build_info() -> BuildInfo:
             raise ValueError('Oversized build metadata')
         data = json.loads(path.read_text(encoding='utf-8'))
         if (data['schema'] != 1 or data['version'] != __version__ or
-            not re.fullmatch(r'beta\.[1-9][0-9]*', data['release']) or
+            not isinstance(data['release'], str) or
+            (data['release'] != 'stable' and not re.fullmatch(r'beta\.[1-9][0-9]*', data['release'])) or
             type(data['dirty']) is not bool or type(data['released']) is not bool or
             (data['commit'] is not None and not re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', data['commit'])) or
             (data['released'] and (data['dirty'] or not data['commit']))):

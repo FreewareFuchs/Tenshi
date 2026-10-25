@@ -80,6 +80,43 @@ class IdentityTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 identity.collect_build_info(child, 'beta.5')
 
+    def test_stable_embedded_identity_has_no_beta_or_dev_suffix(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            module = Path(tmp) / 'recoverydesk/version_info.py'
+            module.parent.mkdir()
+            data = dict(schema=1, version=__version__, release='stable',
+                        commit='c' * 40, dirty=False, released=True)
+            module.with_name('_build_info.json').write_text(json.dumps(data))
+            with patch.object(identity, '__file__', str(module)), patch.object(
+                    identity.subprocess, 'check_output', side_effect=AssertionError('Git must not run')):
+                self.assertEqual(identity.display_version(), '3.0.2 (cccccccccc)')
+        self.assertIn('+dev', identity.BuildInfo(release='stable').display())
+
+    def test_stable_source_tag_and_explicit_clean_build(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            def git(*args):
+                return subprocess.check_output(['git', '-C', str(root), *args],
+                                               stderr=subprocess.DEVNULL, text=True).strip()
+            git('init')
+            source = root / 'app.py'; source.write_text('original')
+            git('add', 'app.py')
+            git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+                '-c', 'commit.gpgsign=false', 'commit', '-m', 'test')
+            explicit = identity.collect_build_info(root, 'stable')
+            self.assertTrue(explicit.released)
+            self.assertNotIn('+dev', explicit.display())
+            git('tag', f'v{__version__}')
+            self.assertEqual(identity.collect_build_info(root), explicit)
+            source.write_text('modified')
+            self.assertIn('+dev', identity.collect_build_info(root).display())
+            with self.assertRaises(ValueError):
+                identity.collect_build_info(root, 'stable')
+            source.write_text('original')
+            for label in ('', 'stable; command', 'stable.1', 'beta.0'):
+                with self.subTest(label=label), self.assertRaises(ValueError):
+                    identity.collect_build_info(root, label)
+
     def test_windows_build_embeds_generated_metadata(self):
         root = Path(__file__).resolve().parents[1]
         script = (root / 'build_windows.bat').read_text()

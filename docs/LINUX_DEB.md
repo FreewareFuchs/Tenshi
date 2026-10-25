@@ -1,14 +1,14 @@
 # Natives Linux-DEB – Beta-Paket
 
-Der veröffentlichte [GitHub-Release `v3.0.2-beta.5`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2-beta.5) enthält:
+Der veröffentlichte [GitHub-Release `v3.0.2-beta.6`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2-beta.6) enthält:
 
 | Datei | Plattform |
 | --- | --- |
-| `tenshi_3.0.2.beta.5-1_all.deb` | Linux Mint 22.x / kompatible Debian-Systeme mit Python >= 3.11 |
-| `Tenshi_Setup_3.0.2-beta.5_Win64.exe` | Windows 10/11 64 Bit |
-| `Tenshi_Portable_3.0.2-beta.5_Win64.zip` | Windows 10/11 64 Bit |
+| `tenshi_3.0.2.beta.6-1_all.deb` | Linux Mint 22.x / kompatible Debian-Systeme mit Python >= 3.11 |
+| `Tenshi_Setup_3.0.2-beta.6_Win64.exe` | Windows 10/11 64 Bit |
+| `Tenshi_Portable_3.0.2-beta.6_Win64.zip` | Windows 10/11 64 Bit |
 
-`all` bezeichnet architekturunabhängigen Python-Code und ersetzt keine Hardwareabnahme. Das bisherige Linux-Praxistestgerät war ein 64-Bit-System mit Linux Mint. Linux Mint 21.x verwendet standardmäßig Python 3.10 und ist kein unterstütztes Paket-Ziel. Die Programmversion bleibt 3.0.2; die Debian-Paketversion `3.0.2~beta.5-1` sortiert vor einer späteren stabilen Version 3.0.2.
+`all` bezeichnet architekturunabhängigen Python-Code und ersetzt keine Hardwareabnahme. Das bisherige Linux-Praxistestgerät war ein 64-Bit-System mit Linux Mint. Linux Mint 21.x verwendet standardmäßig Python 3.10 und ist kein unterstütztes Paket-Ziel. Die Programmversion bleibt 3.0.2; die Debian-Paketversion `3.0.2~beta.6-1` sortiert vor einer späteren stabilen Version 3.0.2.
 
 Der Download-Dateiname verwendet Punkte, damit GitHub ihn beim Hochladen nicht verändert. Die Paketversion im DEB behält die Debian-Tilde bei; Beta.5 wird dadurch als neuer als Beta.4 erkannt.
 
@@ -17,7 +17,7 @@ Der Download-Dateiname verwendet Punkte, damit GitHub ihn beim Hochladen nicht v
 Im Ordner mit dem heruntergeladenen Paket:
 
 ```bash
-sudo apt install ./tenshi_3.0.2.beta.5-1_all.deb
+sudo apt install ./tenshi_3.0.2.beta.6-1_all.deb
 tenshi
 ```
 
@@ -54,3 +54,7 @@ Am 23.10.2026 wurde das lokal gebaute DEB unter Linux Mint erfolgreich installie
 Der Workflow `.github/workflows/prepare-release.yml` bereitet Windows- und Linux-Pakete aus demselben Commit mit expliziter Beta-Kennung vor. Er prüft die Build-Kennungen und erstellt das gemeinsame Paket mit `SHA256SUMS.txt`; die Veröffentlichung bleibt ein eigener Schritt. Beta.5 wurde bereits auf diesem Weg veröffentlicht. Spätere Änderungen auf `main` sind noch nicht in dessen Downloads enthalten.
 
 Der einfache lokale Aufruf von `build_deb.py` verwendet weiterhin die im Skript hinterlegte Standard-Paketversion. Er erzeugt damit nicht automatisch ein offizielles Beta.5-Paket; für eine Release-Vorbereitung den gemeinsamen Workflow mit expliziter Kennung verwenden.
+
+## Stabile Paketierung in Vorbereitung
+
+`python3 build_deb.py` baut standardmäßig `tenshi_3.0.2-1_all.deb`. Der Vorbereitungs-Workflow mit Kennung `stable` erzeugt geprüfte Release-Pakete mit dieser Version; `beta.N` bleibt möglich. `3.0.2-1` sortiert nach `3.0.2~beta.6-1`. Entwicklungs-Builds ohne explizite saubere Release-Identität bleiben in der Programmversion als `+dev` erkennbar. Die Veröffentlichung der stabilen Downloads erfolgt separat.

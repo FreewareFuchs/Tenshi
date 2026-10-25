@@ -26,7 +26,7 @@ class DebPackageTests(unittest.TestCase):
             self.assertIn(f'Version: {DEFAULT_VERSION}', metadata)
             self.assertNotIn('~', first.name)
             subprocess.run(['dpkg', '--compare-versions', DEFAULT_VERSION, 'gt',
-                            '3.0.2~beta.3-1'], check=True)
+                            '3.0.2~beta.6-1'], check=True)
             self.assertIn('Architecture: all', metadata)
             self.assertIn('Depends: python3 (>= 3.11), python3-tk, util-linux', metadata)
             archive = subprocess.check_output(['dpkg-deb', '--fsys-tarfile', str(first)])
@@ -53,6 +53,13 @@ class DebPackageTests(unittest.TestCase):
                 # No installer hooks may change device permissions or user groups.
                 self.assertEqual({m.name for m in tar.getmembers() if m.isfile()},
                                  {'./control', './md5sums'})
+
+    def test_explicit_stable_rejects_beta_package_version(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(ValueError, 'Release identity'):
+                build(Path(tmp), '3.0.2~beta.6-1', 'stable')
+            with self.assertRaisesRegex(ValueError, 'Release identity'):
+                build(Path(tmp), '3.0.2-1', 'beta.6')
 
 
 if __name__ == '__main__':
