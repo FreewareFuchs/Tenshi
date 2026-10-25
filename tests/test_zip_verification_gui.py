@@ -56,9 +56,36 @@ class ZipVerificationGuiTests(unittest.TestCase):
             time.sleep(.01)
         else:
             self.fail('ZIP worker did not report a successful check')
+        bars = [w for w in self.walk(self.app) if isinstance(w, ttk.Progressbar)]
+        self.assertTrue(any(str(w.cget('mode')) == 'determinate' and float(w.cget('value')) == 100 for w in bars))
         self.assertEqual(archive.read_bytes(), before)
         self.assertEqual(report.read_text(), 'Original export report')
         self.assertTrue(any('Kein Vergleich mit dem Original' in text for text in labels))
+
+    def test_incomplete_results_never_display_full_progress(self):
+        from recoverydesk.zip_verification import ZipCheckResult
+        for state in ('failed', 'incomplete', 'cancelled'):
+            with self.subTest(state=state):
+                def check(path, *, cancel, progress):
+                    progress(0, 10, 10)
+                    return ZipCheckResult(state, 0, 10, 'Prüfung abgebrochen.')
+                with patch('recoverydesk.gui.filedialog.askopenfilename', return_value='chosen.zip'), \
+                        patch('recoverydesk.gui.verify_zip', side_effect=check):
+                    self.app._check_exported_zip(self.app, str(self.root))
+                    win = next(w for w in self.app.winfo_children() if isinstance(w, tk.Toplevel))
+                    deadline = time.monotonic() + 5
+                    while time.monotonic() < deadline:
+                        self.app.update()
+                        labels = [w.cget('text') for w in self.walk(win) if isinstance(w, ttk.Label)]
+                        if any(text.startswith('Prüfung abgebrochen.') for text in labels):
+                            break
+                        time.sleep(.01)
+                    else:
+                        self.fail('Result was not displayed')
+                bar = next(w for w in self.walk(win) if isinstance(w, ttk.Progressbar))
+                self.assertEqual(str(bar.cget('mode')), 'determinate')
+                self.assertLess(float(bar.cget('value')), 100)
+                win.destroy()
 
     def test_cancelling_file_picker_does_not_start_check(self):
         before = self.app.winfo_children()

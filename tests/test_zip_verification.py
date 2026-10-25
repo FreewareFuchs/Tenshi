@@ -39,6 +39,17 @@ class ZipVerificationTests(unittest.TestCase):
         result = verify_zip(self.path)
         self.assertEqual((result.status, result.files, result.checked_bytes), ('passed', 0, 0))
 
+    def test_progress_reports_monotonic_bytes_and_completed_members(self):
+        self.make_zip(zipfile.ZIP_DEFLATED)
+        events = []
+        result = verify_zip(self.path, progress=lambda files, count, total: events.append((files, count, total)))
+        self.assertEqual(result.status, 'passed')
+        self.assertGreaterEqual(len(events), 2)
+        self.assertEqual(events[0], (0, 0, result.checked_bytes))
+        self.assertEqual(events[-1], (result.files, result.checked_bytes, result.checked_bytes))
+        self.assertEqual([e[1] for e in events], sorted(e[1] for e in events))
+        self.assertTrue(all(0 <= count <= total for _, count, total in events))
+
     def test_crc_corruption_and_truncation_never_pass(self):
         valid = self.make_zip()
         corrupted = valid.replace(b'UNIQUE_PAYLOAD_FOR_CRC', b'WRONG__PAYLOAD_FOR_CRC', 1)
