@@ -30,7 +30,7 @@ class ScanCancelled(NTFSError):
     pass
 
 
-@dataclass
+@dataclass(slots=True)
 class FileEntry:
     record_number: int
     sequence: int

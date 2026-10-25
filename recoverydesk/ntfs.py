@@ -36,7 +36,7 @@ class NTFSInfo:
         return self.total_sectors * self.bytes_per_sector
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DataRun:
     lcn: int | None  # None means sparse/zero-filled
     clusters: int
