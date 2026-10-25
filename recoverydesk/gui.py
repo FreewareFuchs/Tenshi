@@ -2865,18 +2865,38 @@ class RecoveryDeskApp(tk.Tk):
         win.bind('<Destroy>', lambda event: cancel.set() if event.widget is win else None, add='+')
         def worker():
             try:
-                results.put(verify_zip(path, cancel=cancel.is_set))
+                result = verify_zip(path, cancel=cancel.is_set,
+                    progress=lambda files, count, total: results.put(('progress', (files, count, total))))
+                results.put(('result', result))
             except Exception:
-                results.put(None)
+                results.put(('result', None))
         def drain():
             if not win.winfo_exists():
                 return
-            try:
-                result = results.get_nowait()
-            except queue.Empty:
+            for _ in range(100):
+                try:
+                    kind, value = results.get_nowait()
+                except queue.Empty:
+                    self._after_window(win, 100, drain)
+                    return
+                if kind == 'result':
+                    result = value
+                    break
+                files, count, total = value
+                bar.stop()
+                bar.configure(mode='determinate', maximum=100, value=min(99, 100 * count / max(1, total)))
+                status.configure(text=translate('ZIP-Inhalt wird geprüft …', self.language) + '\n' +
+                    translate('Geprüfte Dateien', self.language) + f': {files} · ' +
+                    readable_bytes(count) + ' / ' + readable_bytes(total))
+            else:
                 self._after_window(win, 100, drain)
                 return
             bar.stop()
+            bar.configure(mode='determinate', maximum=100)
+            if result is not None and result.status == 'passed':
+                bar.configure(value=100)
+            else:
+                bar.configure(value=min(99, float(bar.cget('value'))))
             stop.configure(state='disabled')
             if result is None:
                 status.configure(text=translate('Datei konnte nicht vollständig gelesen werden.', self.language))

@@ -6,6 +6,7 @@ comparison and does not validate Office/XML content inside ZIP containers.
 from dataclasses import dataclass
 import os
 import stat
+import time
 import zipfile
 import zlib
 
@@ -26,12 +27,19 @@ class ZipCheckResult:
     message: str
 
 
-def verify_zip(path, *, cancel=None, max_archive_bytes=MAX_ARCHIVE_BYTES,
+def verify_zip(path, *, cancel=None, progress=None, max_archive_bytes=MAX_ARCHIVE_BYTES,
                max_expanded_bytes=MAX_EXPANDED_BYTES, max_members=MAX_MEMBERS):
     """Read ZIP members to EOF (including CRC validation), without extraction."""
     if min(max_archive_bytes, max_expanded_bytes, max_members) < 1:
         raise ValueError('ZIP check limits must be positive')
-    files = count = 0
+    files = count = total = 0
+    last_progress = 0.
+    def notify(force=False):
+        nonlocal last_progress
+        now = time.monotonic()
+        if progress and (force or now - last_progress >= .1):
+            progress(files, count, total)
+            last_progress = now
     def result(status, message):
         return ZipCheckResult(status, files, count, message)
     def cancelled():
@@ -49,8 +57,10 @@ def verify_zip(path, *, cancel=None, max_archive_bytes=MAX_ARCHIVE_BYTES,
                 return result('incomplete', 'ZIP-Prüfgrenze erreicht. Keine vollständige Prüfung.')
             with zipfile.ZipFile(stream) as archive:
                 members = archive.infolist()
-                if len(members) > max_members or sum(m.file_size for m in members) > max_expanded_bytes:
+                total = sum(m.file_size for m in members)
+                if len(members) > max_members or total > max_expanded_bytes:
                     return result('incomplete', 'ZIP-Prüfgrenze erreicht. Keine vollständige Prüfung.')
+                notify(force=True)
                 for member in members:
                     if cancelled():
                         return result('cancelled', 'Prüfung abgebrochen.')
@@ -66,13 +76,16 @@ def verify_zip(path, *, cancel=None, max_archive_bytes=MAX_ARCHIVE_BYTES,
                             count += len(block)
                             if count > max_expanded_bytes:
                                 return result('incomplete', 'ZIP-Prüfgrenze erreicht. Keine vollständige Prüfung.')
+                            notify()
                     if not member.is_dir():
                         files += 1
+                    notify()
             after = os.fstat(stream.fileno())
             if (before.st_size, before.st_mtime_ns, before.st_ino) != (after.st_size, after.st_mtime_ns, after.st_ino):
                 return result('incomplete', 'Datei während der Prüfung geändert. Keine Bestätigung möglich.')
         if cancelled():
             return result('cancelled', 'Prüfung abgebrochen.')
+        notify(force=True)
         return result('passed', 'ZIP-Struktur und CRC-Prüfsummen ohne Fehler geprüft.')
     except (zipfile.BadZipFile, EOFError, zlib.error):
         return result('failed', 'ZIP beschädigt, unvollständig oder kein unterstütztes ZIP-Archiv.')
