@@ -20,32 +20,49 @@
       "name": "tcl",
       "buildsystem": "autotools",
       "subdir": "unix",
-      "config-opts": ["--enable-threads", "--enable-shared"],
-      "sources": [{
-        "type": "archive",
-        "url": "https://prdownloads.sourceforge.net/tcl/tcl9.0.0-src.tar.gz",
-        "sha256": "3bfda6dbaee8e9b1eeacc1511b4e18a07a91dff82d9954cdb9c729d8bca4bbb7"
-      }]
+      "config-opts": [
+        "--enable-threads",
+        "--enable-shared"
+      ],
+      "sources": [
+        {
+          "type": "archive",
+          "url": "https://prdownloads.sourceforge.net/tcl/tcl9.0.0-src.tar.gz",
+          "sha256": "3bfda6dbaee8e9b1eeacc1511b4e18a07a91dff82d9954cdb9c729d8bca4bbb7"
+        }
+      ],
+      "post-install": [
+        "chmod u+w /app/lib/libtcl9.0.so"
+      ]
     },
     {
       "name": "tk",
       "buildsystem": "autotools",
       "subdir": "unix",
-      "sources": [{
-        "type": "archive",
-        "url": "https://prdownloads.sourceforge.net/tcl/tk9.0.0-src.tar.gz",
-        "sha256": "f166e3c20773c82243f753cef4b091d05267cb7f87da64be88cb2ca5a2ba027e"
-      }]
+      "sources": [
+        {
+          "type": "archive",
+          "url": "https://prdownloads.sourceforge.net/tcl/tk9.0.0-src.tar.gz",
+          "sha256": "f166e3c20773c82243f753cef4b091d05267cb7f87da64be88cb2ca5a2ba027e"
+        }
+      ],
+      "post-install": [
+        "chmod u+w /app/lib/libtcl9tk9.0.so"
+      ]
     },
     {
       "name": "tkinter",
       "buildsystem": "simple",
-      "build-commands": ["python3 -m pip install --no-index --no-deps --no-build-isolation --prefix=/app ."],
-      "sources": [{
-        "type": "git",
-        "url": "https://github.com/iwalton3/tkinter-standalone.git",
-        "commit": "8e78e38ef0cceb44a3a0062e1c314a4ff3f981db"
-      }]
+      "build-commands": [
+        "python3 -m pip install --no-index --no-deps --no-build-isolation --prefix=/app ."
+      ],
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://github.com/iwalton3/tkinter-standalone.git",
+          "commit": "8e78e38ef0cceb44a3a0062e1c314a4ff3f981db"
+        }
+      ]
     },
     {
       "name": "tenshi",
@@ -55,7 +72,12 @@
         "command -v lsblk",
         "python3 -EsB /app/share/tenshi/main.py --smoke-test"
       ],
-      "sources": [{"type": "dir", "path": "tenshi-src"}]
+      "sources": [
+        {
+          "type": "dir",
+          "path": "tenshi-src"
+        }
+      ]
     }
   ]
 }
