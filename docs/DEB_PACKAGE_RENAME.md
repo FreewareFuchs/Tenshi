@@ -1,7 +1,8 @@
 # Linux-Paketwechsel: tenshi → tenshi-recovery
 
-Status: vorbereitete Änderung, noch kein neuer Release und noch kein neuer
-Upload in die eigene APT-Quelle. Windows und Flatpak bleiben unverändert.
+Status 26.10.2026: Paket 3.0.2-2 ist in der eigenen APT-Quelle veröffentlicht
+und unter Mint geprüft. Der alte Paketeintrag wurde öffentlich entfernt.
+Die bisherigen GitHub-Release-Dateien bleiben unverändert.
 
 Ubuntu liefert bereits das unabhängige Logüberwachungsprogramm `tenshi`.
 Unser bisheriges Datenrettungs-DEB hatte versehentlich denselben Paketnamen.
@@ -69,7 +70,7 @@ Ein installiertes Ubuntu-Logüberwachungsprogramm gleichen Namens nicht entferne
 Keine automatische Übergangspaket-Lösung verwenden, da die gemeinsame alte
 Paketkennung den Ursprung nicht eindeutig unterscheidet.
 
-Nach Veröffentlichung des neuen Pakets in der aktualisierten Quelle:
+Mit der aktualisierten Quelle:
 
 ```bash
 sudo apt update
@@ -88,3 +89,9 @@ Das veröffentlichte GitHub-DEB 3.0.2-1 und seine Prüfsumme bleiben historische
 Release-Artefakte. Keine alten Downloads oder Prüfsummen durch neue Dateien ersetzen.
 
 Referenz: https://packages.ubuntu.com/noble/tenshi
+
+## Persönliche Menüanpassungen
+
+Eine persönliche Kopie von `de.freewarefuchs.Tenshi.desktop` mit dem alten
+Startbefehl kann den Systemstarter überlagern. Diagnose und Sicherung stehen
+in der [APT-Installationsanleitung](APT_REPOSITORY.md#menüeintrag-fehlt-nach-dem-paketwechsel).

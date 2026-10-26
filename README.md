@@ -18,7 +18,7 @@ Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releas
 | --- | --- |
 | Windows-Installer | Setup herunterladen und Tenshi auf dem PC installieren. |
 | Portable ZIP | ZIP vollständig entpacken und die enthaltene `Tenshi.exe` starten. Keine Installation erforderlich. |
-| Linux-DEB | Unter Linux Mint 22.x mit APT installieren; Start über das Anwendungsmenü oder `tenshi`. |
+| Linux-DEB | Unter Linux Mint 22.x mit APT installieren; Start über das Anwendungsmenü oder `tenshi-recovery`. |
 
 Die portable Variante kann Einstellungen und Fehlerprotokolle im Windows-Benutzerprofil speichern. Der GitHub-Quellcode-Download ist kein fertiges Windows-Programmpaket.
 
@@ -30,27 +30,39 @@ Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein 
 
 ### DEB-Paket für Linux Mint 22.x
 
-**Linux-Paketumstellung:** Der aktuelle Quellcode verwendet Paketname und
-Terminalbefehl `tenshi-recovery`, damit keine Kollision mit Ubuntus anderem
-`tenshi`-Programm entsteht. Der sichtbare Name bleibt Tenshi.
-Das neue Paket `tenshi-recovery_3.0.2-2_all.deb` ist noch nicht veröffentlicht.
-Das bisherige DEB im Release 3.0.2 verwendet weiterhin den alten Paketnamen;
-es wird nicht nachträglich ausgetauscht. Vor Verwendung einer eigenen
-APT-Quelle oder einem Paketwechsel die [Umstiegsanleitung](docs/DEB_PACKAGE_RENAME.md)
-lesen.
-
-Nach Veröffentlichung bzw. für ein selbst gebautes neues Paket:
+Die signierte [FreewareFuchs-APT-Quelle](docs/APT_REPOSITORY.md) bietet
+`tenshi-recovery 3.0.2-2` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
+beschreibt die einmalige Einrichtung und Prüfung des Schlüsselfingerabdrucks.
+Danach:
 
 ```bash
-sudo apt install ./tenshi-recovery_3.0.2-2_all.deb
+sudo apt update &&
+sudo apt install tenshi-recovery
 tenshi-recovery
 ```
 
-Danach **Tenshi** im Anwendungsmenü öffnen. Als normaler Benutzer starten.
-Deinstallation des neuen Pakets: `sudo apt remove tenshi-recovery`.
-Das Paket ändert keine Geräteberechtigungen.
+Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.2-2_all.deb).
+SHA256: `cc1f65e169f7a4759728153ea5a94cd3d51d9df40ae7a6905911892afccf2dd6`.
+Nach Prüfsummenvergleich im Downloadordner installieren:
 
-Erforderlich sind Python ab 3.11, Tkinter und util-linux. Linux Mint 21.x mit seinem standardmäßigen Python 3.10 ist kein unterstütztes Paket-Ziel. Das DEB ist ein direkter Download und bindet keine Paketquelle für automatische Tenshi-Updates ein. Eine allgemeine Auffindbarkeit im Mint-Anwendungsmanager ist damit noch nicht verbunden.
+```bash
+sudo apt install ./tenshi-recovery_3.0.2-2_all.deb
+```
+
+Danach **Tenshi** im Anwendungsmenü öffnen. Ohne sudo starten;
+das Paket ändert keine Geräteberechtigungen.
+Deinstallation: `sudo apt remove tenshi-recovery`.
+
+Voraussetzungen: Python >= 3.11, Tkinter und util-linux; Ziel ist Linux Mint
+22.x auf amd64. Mint 21.x mit Python 3.10 wird nicht unterstützt.
+Ein direkter DEB-Download bindet keine Quelle ein. Die eigene Quelle muss
+auf jedem Rechner hinzugefügt werden; sie ist keine Aufnahme in die
+offiziellen Mint-Paketquellen.
+
+Das neue Paket vermeidet die Kollision mit Ubuntus unabhängigem `tenshi`-
+Logüberwachungsprogramm. Bei einer alten Datenrettungsinstallation zuerst
+die [Umstiegsanleitung](docs/DEB_PACKAGE_RENAME.md) lesen.
+Das bisherige DEB im GitHub-Release 3.0.2 bleibt unverändert.
 
 [Paketbau und Prüfung](docs/LINUX_DEB.md)
 
@@ -109,7 +121,7 @@ Die Quelle wird nur lesend geöffnet. Bei mechanischen Auffälligkeiten oder wer
 
 ## Entwicklungs- und Teststatus
 
-Fenstertitel, Offline-Hilfe unter „Über Tenshi“ und `tenshi --version` zeigen die Programmversion und die kurze Git-Commit-Kennung. Die stabile Version wird beispielsweise als `3.0.2 (abfd4c973a)` angezeigt; Beta-Pakete enthalten zusätzlich ihre Beta-Kennung. Entwicklungsstände erhalten `+dev`, lokal geänderte Quellen zusätzlich `+dirty`; ohne bekannte Build-Information steht beim Commit `?`. Details: [Build-Kennung](docs/BUILD_IDENTITY.md).
+Fenstertitel, Offline-Hilfe unter „Über Tenshi“ und `tenshi-recovery --version` zeigen die Programmversion und die kurze Git-Commit-Kennung. Die stabile Version wird beispielsweise als `3.0.2 (abfd4c973a)` angezeigt; Beta-Pakete enthalten zusätzlich ihre Beta-Kennung. Entwicklungsstände erhalten `+dev`, lokal geänderte Quellen zusätzlich `+dirty`; ohne bekannte Build-Information steht beim Commit `?`. Details: [Build-Kennung](docs/BUILD_IDENTITY.md).
 
 3.0.2 ist als stabile Version veröffentlicht. Die dokumentierten Einschränkungen einzelner Dateisystemfunktionen bleiben bestehen. Automatisierte Tests mit synthetischen Images und simulierten Fehlerfällen ersetzen keine Prüfung auf beschädigter Hardware.
 
