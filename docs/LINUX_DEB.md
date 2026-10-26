@@ -92,3 +92,13 @@ aus `ba9576020c` ist erfolgreich. Das finale DEB zeigt `3.0.2 (ba9576020c)` ohne
 von freewarefuchs.de wurden bestätigt. Der fehlende Menüeintrag wurde auf
 eine alte persönliche Desktop-Datei mit `Exec=tenshi` zurückgeführt und durch
 Sichern dieser Datei behoben.
+
+Am 26.10.2026 wurde zusätzlich der vollständige Installationsweg in einem
+frischen Mint-Live-System vom Nutzer bestätigt: Einrichtung der Paketquelle
+nach der Webseiten-Anleitung, Aktualisierung der Paketliste in der
+Anwendungsverwaltung, Auffinden von `tenshi-recovery`, Installation und Start.
+Der Test bestätigt diesen Installationsweg; Neustartverhalten und ein Update
+zwischen zwei verschiedenen Paketversionen wurden damit nicht geprüft.
+
+Zur Suche in der Mint-Anwendungsverwaltung deren Paketliste aktualisieren
+und nach `tenshi-recovery` suchen. Einzelheiten: [APT-Quelle](APT_REPOSITORY.md#installation-über-die-mint-anwendungsverwaltung).
