@@ -61,7 +61,7 @@ def _verified_rows(bundle: Path, manifest: dict) -> dict:
         sums.append(f'{digest}  {name}\n')
     checksum_file = bundle / 'SHA256SUMS.txt'
     if (checksum_file.is_symlink() or not checksum_file.is_file()
-            or checksum_file.read_bytes() != ''.join(sums).encode('ascii')):
+            or checksum_file.read_text(encoding='ascii') != ''.join(sums)):
         raise ValueError('SHA256SUMS.txt differs from manifest')
     return verified
 

@@ -81,6 +81,21 @@ class WebsiteCatalogTests(unittest.TestCase):
             self.assertFalse(self.output.exists())
             path.write_bytes(original)
 
+    def test_checksum_list_accepts_lf_and_crlf_but_rejects_changed_digest(self):
+        path = self.bundle / 'SHA256SUMS.txt'
+        text = ''.join(f'{r["sha256"]}  {r["file"]}\n' for r in self.rows)
+        for newline in ['\n', '\r\n']:
+            with self.subTest(newline=repr(newline)):
+                payload = text.replace('\n', newline).encode('ascii')
+                path.write_bytes(payload)
+                self.assertEqual(self.generate()['programs'][1]['currentTag'], 'v42.7.19')
+                replacement = b'0' if payload[:1] != b'0' else b'1'
+                path.write_bytes(replacement + payload[1:])
+                with self.assertRaisesRegex(ValueError, 'SHA256SUMS.txt differs'):
+                    prepare(self.bundle, self.catalog_path, self.notes_path,
+                            '2026-10-26', self.output)
+                self.assertFalse(self.output.exists())
+
     def test_manifest_rejects_beta_wrong_tag_duplicate_or_unsafe_artifacts(self):
         cases = [('release', 'beta.1'), ('tag', 'v42.7.20'), ('schema', True),
                  ('commit', 'short'), ('artifacts', [self.rows[0]] * 3),

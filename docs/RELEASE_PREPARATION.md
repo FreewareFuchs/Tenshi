@@ -91,7 +91,8 @@ python3 prepare_website_catalog.py --bundle release_bundle \
 
 Das Ausgabeziel darf noch nicht existieren. Die drei Paketdateien werden erneut
 vollständig gelesen und mit Byteanzahl und SHA256 aus `release_manifest.json`
-verglichen; auch `SHA256SUMS.txt` muss exakt zum Manifest passen. Dies setzt das
+verglichen; auch `SHA256SUMS.txt` muss inhaltlich exakt zum Manifest passen.
+LF- und Windows-CRLF-Zeilenenden werden dabei gleich behandelt. Dies setzt das
 vertrauenswürdige, zuvor mit `prepare_release.py` geprüfte Bundle voraus. Das
 Werkzeug bestätigt weder eine digitale Signatur noch die öffentliche Erreichbarkeit
 der Downloads und prüft die eingebetteten Build-Metadaten nicht ein zweites Mal.
