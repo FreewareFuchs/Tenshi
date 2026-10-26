@@ -5,8 +5,8 @@ exchanged a directory or symlink. Every write-open resolves the leaf beneath
 an opened parent directory descriptor, rejects links and special files, and
 verifies the *opened parent's* physical backing against a block-device source.
 
-The Windows branch checks the opened file identity before exposing a writable
-handle. Its parent-directory resolution remains path-based.
+Windows pins each parent without write/delete sharing, opens the final file
+without following reparse points and checks its identity before yielding it.
 """
 from __future__ import annotations
 
@@ -74,7 +74,12 @@ def open_regular_output(path: str, mode: str, source: str, *,
     if mode not in ('xb', 'r+b'):
         raise ValueError('Ungültiger Ausgabe-Modus.')
     if not _linux():
-        with open(path, mode, buffering=0) as out:
+        if sys.platform == 'win32':
+            from .windows_target import open_output
+            opener = open_output(path, mode, source)
+        else:
+            opener = open(path, mode, buffering=0)
+        with opener as out:
             _validate_output(out.fileno(), source, expected_identity)
             yield out
         return
