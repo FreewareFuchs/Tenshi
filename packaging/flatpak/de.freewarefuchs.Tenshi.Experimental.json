@@ -1,0 +1,61 @@
+{
+  "app-id": "de.freewarefuchs.Tenshi.Experimental",
+  "branch": "test",
+  "runtime": "org.freedesktop.Sdk",
+  "runtime-version": "25.08",
+  "sdk": "org.freedesktop.Sdk",
+  "command": "tenshi-flatpak",
+  "finish-args": [
+    "--socket=x11",
+    "--share=ipc",
+    "--device=all",
+    "--filesystem=home",
+    "--filesystem=/media",
+    "--filesystem=/mnt",
+    "--filesystem=/run/media",
+    "--filesystem=/run/udev:ro"
+  ],
+  "modules": [
+    {
+      "name": "tcl",
+      "buildsystem": "autotools",
+      "subdir": "unix",
+      "config-opts": ["--enable-threads", "--enable-shared"],
+      "sources": [{
+        "type": "archive",
+        "url": "https://prdownloads.sourceforge.net/tcl/tcl9.0.0-src.tar.gz",
+        "sha256": "3bfda6dbaee8e9b1eeacc1511b4e18a07a91dff82d9954cdb9c729d8bca4bbb7"
+      }]
+    },
+    {
+      "name": "tk",
+      "buildsystem": "autotools",
+      "subdir": "unix",
+      "sources": [{
+        "type": "archive",
+        "url": "https://prdownloads.sourceforge.net/tcl/tk9.0.0-src.tar.gz",
+        "sha256": "f166e3c20773c82243f753cef4b091d05267cb7f87da64be88cb2ca5a2ba027e"
+      }]
+    },
+    {
+      "name": "tkinter",
+      "buildsystem": "simple",
+      "build-commands": ["python3 -m pip install --no-index --no-deps --no-build-isolation --prefix=/app ."],
+      "sources": [{
+        "type": "git",
+        "url": "https://github.com/iwalton3/tkinter-standalone.git",
+        "commit": "8e78e38ef0cceb44a3a0062e1c314a4ff3f981db"
+      }]
+    },
+    {
+      "name": "tenshi",
+      "buildsystem": "simple",
+      "build-commands": [
+        "python3 packaging/flatpak/install.py /app",
+        "command -v lsblk",
+        "python3 -EsB /app/share/tenshi/main.py --smoke-test"
+      ],
+      "sources": [{"type": "dir", "path": "tenshi-src"}]
+    }
+  ]
+}

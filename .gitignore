@@ -49,3 +49,8 @@ Thumbs.db
 # Prepared release output and CI build identity
 release_bundle/
 windows-build-info.json
+
+# Experimental Flatpak build contexts, caches, repositories and bundles
+flatpak_output/
+.flatpak-builder/
+*.flatpak
