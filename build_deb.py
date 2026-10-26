@@ -14,7 +14,13 @@ import tempfile
 from recoverydesk.version_info import write_build_info, release_suffix
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_VERSION = '3.0.2-1'
+PACKAGE_NAME = 'tenshi-recovery'
+DEBIAN_REVISION = 2
+DEFAULT_VERSION = f'3.0.2-{DEBIAN_REVISION}'
+
+
+def package_version_for_release(version: str, release: str) -> str:
+    return f'{version}{release_suffix(release).replace("-", "~", 1)}-{DEBIAN_REVISION}'
 
 
 def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = None) -> Path:
@@ -33,7 +39,7 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     # GitHub replaces '~' in asset names; use its safe spelling from the start.
-    destination = output / f'tenshi_{version.replace("~", ".")}_all.deb'
+    destination = output / f'{PACKAGE_NAME}_{version.replace("~", ".")}_all.deb'
     if destination.exists():
         raise FileExistsError(destination)
     with tempfile.TemporaryDirectory(prefix='tenshi-deb-') as temporary:
@@ -45,26 +51,26 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
             shutil.copyfile(source, path)
             path.chmod(mode)
 
-        copy(ROOT / 'main.py', 'usr/share/tenshi/main.py')
-        write_build_info(stage / 'usr/share/tenshi/recoverydesk/_build_info.json', ROOT, release)
+        copy(ROOT / 'main.py', 'usr/share/tenshi-recovery/main.py')
+        write_build_info(stage / 'usr/share/tenshi-recovery/recoverydesk/_build_info.json', ROOT, release)
         for source in sorted((ROOT / 'recoverydesk').rglob('*')):
             if source.is_file() and '__pycache__' not in source.parts and source.suffix in ('.py', '.png', '.ico'):
-                copy(source, 'usr/share/tenshi/' + source.relative_to(ROOT).as_posix())
-        copy(ROOT / 'packaging/linux/tenshi', 'usr/bin/tenshi', 0o755)
+                copy(source, 'usr/share/tenshi-recovery/' + source.relative_to(ROOT).as_posix())
+        copy(ROOT / 'packaging/linux/tenshi-recovery', 'usr/bin/tenshi-recovery', 0o755)
         copy(ROOT / 'packaging/linux/de.freewarefuchs.Tenshi.desktop',
              'usr/share/applications/de.freewarefuchs.Tenshi.desktop')
         copy(ROOT / 'recoverydesk/assets/tenshi_icon.png',
-             'usr/share/icons/hicolor/256x256/apps/tenshi.png')
+             'usr/share/icons/hicolor/256x256/apps/tenshi-recovery.png')
         for name in ('README.md', 'THIRD_PARTY_NOTICES.md', 'RELEASE_NOTES_LINUX_BETA.md', 'RELEASE_NOTES_3.0.2_BETA4.md', 'RELEASE_NOTES_3.0.2.md'):
-            copy(ROOT / name, f'usr/share/doc/tenshi/{name}')
-        copy(ROOT / 'LICENSE', 'usr/share/doc/tenshi/copyright')
-        changelog = stage / 'usr/share/doc/tenshi/changelog.gz'
+            copy(ROOT / name, f'usr/share/doc/tenshi-recovery/{name}')
+        copy(ROOT / 'LICENSE', 'usr/share/doc/tenshi-recovery/copyright')
+        changelog = stage / 'usr/share/doc/tenshi-recovery/changelog.gz'
         changelog.write_bytes(gzip.compress((ROOT / 'CHANGELOG.md').read_bytes(), mtime=0))
         installed_size = sum((p.stat().st_size + 1023) // 1024 for p in stage.rglob('*') if p.is_file())
         control = stage / 'DEBIAN'
         control.mkdir()
         (control / 'control').write_text(
-            f'Package: tenshi\nVersion: {version}\nSection: utils\nPriority: optional\n'
+            f'Package: {PACKAGE_NAME}\nVersion: {version}\nSection: utils\nPriority: optional\n'
             'Architecture: all\nMaintainer: FreewareFuchs <344442684+FreewareFuchs@users.noreply.github.com>\n'
             f'Installed-Size: {installed_size}\n'
             'Depends: python3 (>= 3.11), python3-tk, util-linux\n'
@@ -77,7 +83,7 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
             hashlib.md5(p.read_bytes()).hexdigest() + '  ' + p.relative_to(stage).as_posix() + '\n'
             for p in sorted(stage.rglob('*')) if p.is_file() and control not in p.parents), encoding='ascii')
         for path in [stage, *stage.rglob('*')]:
-            path.chmod(0o755 if path.is_dir() or path == stage / 'usr/bin/tenshi' else 0o644)
+            path.chmod(0o755 if path.is_dir() or path == stage / 'usr/bin/tenshi-recovery' else 0o644)
             os.utime(path, (epoch, epoch))
         # Build in temporary space: a failed dpkg invocation leaves no partial deliverable.
         package = Path(temporary) / destination.name

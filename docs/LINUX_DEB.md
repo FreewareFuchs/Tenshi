@@ -1,4 +1,16 @@
-# Natives Linux-DEB – stabile Version 3.0.2
+# Natives Linux-DEB – Umstellung auf tenshi-recovery
+
+Der aktuelle Quellcode baut `tenshi-recovery_3.0.2-2_all.deb` mit Paketname
+und Startbefehl `tenshi-recovery`. Der sichtbare Name bleibt Tenshi.
+Dieses neue Paket ist noch nicht veröffentlicht oder unter Mint abgenommen.
+Die Umstellung vermeidet eine Kollision mit Ubuntus unabhängigem
+Logüberwachungsprogramm `tenshi`.
+
+Die folgenden Release-Dateien dokumentieren den bisherigen Stand 3.0.2;
+das veröffentlichte `tenshi_3.0.2-1_all.deb` wird nicht stillschweigend ersetzt.
+Für Umstieg und eigene APT-Quelle: [Paketwechsel](DEB_PACKAGE_RENAME.md).
+
+## Bisheriger veröffentlichter Release
 
 Der veröffentlichte [GitHub-Release `v3.0.2`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2) enthält:
 
@@ -14,11 +26,11 @@ Bei älteren Beta-Paketen ersetzte der Download-Dateiname die Debian-Tilde durch
 
 ## Installation, Start und Entfernung
 
-Im Ordner mit dem heruntergeladenen Paket:
+Nach Veröffentlichung oder mit einem selbst gebauten neuen Paket (die neue Datei ist noch kein Release-Download):
 
 ```bash
-sudo apt install ./tenshi_3.0.2-1_all.deb
-tenshi
+sudo apt install ./tenshi-recovery_3.0.2-2_all.deb
+tenshi-recovery
 ```
 
 Alternativ den neuen Tenshi-Eintrag im Anwendungsmenü verwenden. Für die Paketinstallation sind Administratorrechte erforderlich, die Anwendung selbst ohne `sudo` starten. Das Paket enthält weder Installationsskripte zur Rechtevergabe noch Gruppenänderungen oder udev-Regeln. Leserechte für physische Quellen müssen bei Bedarf gezielt außerhalb der Anwendung eingerichtet werden.
@@ -26,7 +38,7 @@ Alternativ den neuen Tenshi-Eintrag im Anwendungsmenü verwenden. Für die Paket
 Zum Entfernen:
 
 ```bash
-sudo apt remove tenshi
+sudo apt remove tenshi-recovery
 ```
 
 Eigene Images, Exporte und Benutzereinstellungen werden nicht vom Paket verwaltet. Neue Tenshi-Versionen müssen als DEB heruntergeladen und wieder mit `apt install ./DATEINAME.deb` installiert werden. Es wird keine zusätzliche Paketquelle eingerichtet; das Paket erscheint durch den Download nicht automatisch im allgemeinen Katalog des Mint-Anwendungsmanagers.
@@ -41,7 +53,7 @@ cd deb_output
 sha256sum -c *.deb.sha256
 ```
 
-Der Bau benötigt weder root noch pip. Die Anwendung wird unter `/usr/share/tenshi` installiert; `/usr/bin/tenshi` verwendet den Systeminterpreter, ignoriert benutzerdefinierte Python-Modulpfade und schreibt keine Bytecode-Dateien in die Installation. Der Menüeintrag und das 256-Pixel-Icon werden an den üblichen Systemorten installiert. Die Laufzeitabhängigkeiten sind `python3 (>= 3.11)`, `python3-tk` und `util-linux`.
+Der Bau benötigt weder root noch pip. Die Anwendung wird unter `/usr/share/tenshi-recovery` installiert; `/usr/bin/tenshi-recovery` verwendet den Systeminterpreter, ignoriert benutzerdefinierte Python-Modulpfade und schreibt keine Bytecode-Dateien in die Installation. Der Menüeintrag und das 256-Pixel-Icon werden an den üblichen Systemorten installiert. Die Laufzeitabhängigkeiten sind `python3 (>= 3.11)`, `python3-tk` und `util-linux`.
 
 Für identische Quellen verwendet der Bau den Zeitstempel des letzten Git-Commits (oder `SOURCE_DATE_EPOCH`). Der Pakettest vergleicht zwei Builds byteweise und kontrolliert Dateiinhalte, Eigentümer und fehlende Installationsskripte. Bereits vorhandene DEB-Zieldateien werden nicht überschrieben.
 
@@ -57,10 +69,10 @@ Der [Release-Build für 3.0.2](https://github.com/FreewareFuchs/Tenshi/actions/r
 
 ## Paketkennung
 
-`python3 build_deb.py` baut standardmäßig `tenshi_3.0.2-1_all.deb`. Ein solcher lokaler Bau ist nicht automatisch eine offizielle Veröffentlichung. Für einen ausdrücklich gekennzeichneten Release-Build sind ein bekannter sauberer Git-Commit und eine passende Paketversion erforderlich:
+`python3 build_deb.py` baut standardmäßig `tenshi-recovery_3.0.2-2_all.deb`. Ein solcher lokaler Bau ist nicht automatisch eine offizielle Veröffentlichung. Für einen ausdrücklich gekennzeichneten Release-Build sind ein bekannter sauberer Git-Commit und eine passende Paketversion erforderlich:
 
 ```bash
-python3 build_deb.py --package-version 3.0.2-1 --release stable
+python3 build_deb.py --package-version 3.0.2-2 --release stable
 ```
 
 Ohne explizite saubere Release-Kennung oder passenden Git-Tag zeigt die Anwendung weiterhin `+dev`. Einzelheiten: [Build-Kennung](BUILD_IDENTITY.md) und [Release-Vorbereitung](RELEASE_PREPARATION.md).

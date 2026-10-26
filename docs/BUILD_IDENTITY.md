@@ -18,10 +18,10 @@ Explizite Kennungen sind `stable` und `beta.N` (positive ganze Zahl). Sie erford
 
 ```bash
 python3 write_build_info.py --release stable
-python3 build_deb.py --package-version 3.0.2-1 --release stable
+python3 build_deb.py --package-version 3.0.2-2 --release stable
 ```
 
-Für eine Beta passen beispielsweise `--package-version 3.0.2~beta.6-1 --release beta.6` zusammen. Exakt passende Git-Tags `v3.0.2` beziehungsweise `v3.0.2-beta.N` werden ebenfalls erkannt. Der Debian-Dateiname allein macht einen Build nicht zum veröffentlichten Release.
+Für eine Beta passen beispielsweise `--package-version 3.0.2~beta.6-2 --release beta.6` zusammen. Exakt passende Git-Tags `v3.0.2` beziehungsweise `v3.0.2-beta.N` werden ebenfalls erkannt. Der Debian-Dateiname allein macht einen Build nicht zum veröffentlichten Release.
 
 Unter Windows vor dem Build in einer Eingabeaufforderung:
 
