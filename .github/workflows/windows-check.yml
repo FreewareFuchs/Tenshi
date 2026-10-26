@@ -69,13 +69,13 @@ jobs:
         shell: pwsh
         run: |
           $v = (Get-Item 'dist/Tenshi.exe').VersionInfo
-          if ($v.FileVersion -ne '3.0.2.0') { throw "Unexpected file version: $($v.FileVersion)" }
+          if ($v.FileVersion -ne '3.0.3.0') { throw "Unexpected file version: $($v.FileVersion)" }
       - name: Build and verify portable package
         shell: pwsh
         run: |
           cmd /c build_portable.bat --no-pause
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python release_tools.py verify portable_output/Tenshi_Portable_3.0.2_Win64.zip
+          python release_tools.py verify portable_output/Tenshi_Portable_3.0.3_Win64.zip
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Install Inno Setup 6 when needed
         shell: pwsh
@@ -96,12 +96,12 @@ jobs:
       - name: Upload Windows release artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: Tenshi-3.0.2-Windows-release
+          name: Tenshi-3.0.3-Windows-release
           path: |
             windows-build-info.json
             build/windows-build-requirements.txt
             build/windows-build-python.txt
             dist/Tenshi.exe
-            portable_output/Tenshi_Portable_3.0.2_Win64.zip
-            installer_output/Tenshi_Setup_3.0.2.exe
+            portable_output/Tenshi_Portable_3.0.3_Win64.zip
+            installer_output/Tenshi_Setup_3.0.3.exe
           if-no-files-found: error

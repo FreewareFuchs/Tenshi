@@ -16,17 +16,17 @@ if not errorlevel 1 (
   set "PYTHON_CMD=python"
 )
 :package
-echo [Tenshi 3.0.2] Portable ZIP mit SHA-256-Pruefung erstellen...
+echo [Tenshi 3.0.3] Portable ZIP mit SHA-256-Pruefung erstellen...
 if exist ".venv\Scripts\python.exe" (
-  "%PYTHON_CMD%" release_tools.py portable --exe "dist\Tenshi.exe" --output "portable_output\Tenshi_Portable_3.0.2_Win64.zip" --overwrite
+  "%PYTHON_CMD%" release_tools.py portable --exe "dist\Tenshi.exe" --output "portable_output\Tenshi_Portable_3.0.3_Win64.zip" --overwrite
 ) else (
-  %PYTHON_CMD% release_tools.py portable --exe "dist\Tenshi.exe" --output "portable_output\Tenshi_Portable_3.0.2_Win64.zip" --overwrite
+  %PYTHON_CMD% release_tools.py portable --exe "dist\Tenshi.exe" --output "portable_output\Tenshi_Portable_3.0.3_Win64.zip" --overwrite
 )
 if errorlevel 1 (
   echo FEHLER: Portable-Paket wurde nicht erstellt.
   if /I not "%~1"=="--no-pause" if not defined CI pause
   exit /b 1
 )
-echo ERFOLG: portable_output\Tenshi_Portable_3.0.2_Win64.zip
+echo ERFOLG: portable_output\Tenshi_Portable_3.0.3_Win64.zip
 if /I not "%~1"=="--no-pause" if not defined CI pause
 exit /b 0

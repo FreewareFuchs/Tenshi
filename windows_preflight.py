@@ -1,4 +1,4 @@
-"""Non-invasive Windows preflight for Tenshi 3.0.2.
+"""Non-invasive Windows preflight for Tenshi 3.0.3.
 
 Never opens, enumerates, mounts or writes to any source drive. The generated
 report contains no user paths, device serials, disk contents or filenames.
