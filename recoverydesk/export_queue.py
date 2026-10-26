@@ -44,6 +44,9 @@ class QueueProgress:
     failed: bool = False
     active_path: str = ''
     active_written: int = 0
+    verifying: bool = False
+    verified_bytes: int = 0
+    verification_size: int = 0
     visible_items: dict[str, dict] = field(default_factory=dict)
     _active_size: int = 0
     _samples: deque = field(default_factory=deque)
@@ -53,6 +56,9 @@ class QueueProgress:
         if now is None:
             now = time.monotonic()
         kind = event['type']
+        if kind in ('plan', 'start', 'done', 'complete'):
+            self.verifying = False
+            self.verified_bytes = self.verification_size = 0
         if kind == 'plan':
             self.total = int(event['total'])
             self.total_bytes = max(0, int(event['total_bytes']))
@@ -72,7 +78,7 @@ class QueueProgress:
             self.active_path = event['path']
             self.active_written = 0
             item = self.visible_items.get(self.active_path)
-            self._active_size = item['size'] if item else 0
+            self._active_size = max(0, int(event.get('size', item['size'] if item else 0)))
             if item:
                 item['status'] = 'Läuft'
         elif kind == 'bytes':
@@ -82,6 +88,15 @@ class QueueProgress:
                 self.active_written += delta
             self._samples.append((now, self.written_bytes))
             self._trim(now)
+        elif kind == 'verify':
+            if event['path'] != self.active_path:
+                return
+            self.verifying = True
+            self.verification_size = max(0, int(event['size']))
+            self.verified_bytes = min(self.verification_size, max(0, int(event['read'])))
+            item = self.visible_items.get(self.active_path)
+            if item:
+                item['status'] = 'SHA256 prüfen'
         elif kind == 'done':
             if event.get('status') == 'Fehler':
                 self.failed = True
@@ -122,9 +137,16 @@ class QueueProgress:
 
     def eta(self, now: float | None = None) -> float | None:
         rate = self.speed(now)
-        if rate <= 0 or self.ended:
+        if rate <= 0 or self.ended or self.verifying:
             return None
         return self.remaining_bytes / rate
+
+    @property
+    def verification_fraction(self) -> float:
+        # Reading the final byte still precedes digest/checkpoint completion.
+        if not self.verifying or self.ended or self.verification_size <= 0:
+            return 0.0
+        return min(.999, self.verified_bytes / self.verification_size)
 
     @property
     def item_fraction(self) -> float:
