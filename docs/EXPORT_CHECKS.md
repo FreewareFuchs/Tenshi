@@ -37,3 +37,26 @@ Ein Prozessabsturz vor dem Speichern des Prüfstands kann weiterhin eine Datei
 hinterlassen, die mangels Nachweis nicht automatisch bestätigt werden darf.
 
 Diese Ergänzung ist noch nicht Bestandteil der veröffentlichten Version 3.0.3.
+
+## Entwicklungsstand: Windows-Ziele während des Schreibens sichern
+
+Beim Öffnen von Image- und Exportdateien hält Tenshi unter Windows nun alle
+Elternverzeichnisse vom Laufwerks- bzw. Freigabestamm bis zum Zielordner geöffnet.
+Diese Handles erlauben weder Schreib- noch Löschfreigabe. Ein gewöhnlicher
+Ordneraustausch oder das nachträgliche Umwandeln eines gehaltenen Verzeichnisses
+in einen Reparse Point soll dadurch während des Schreibens scheitern.
+Die physische Quell-/Zieltrennung wird bei Gerätequellen nochmals geprüft,
+während diese Verzeichnisse gehalten werden.
+
+Junctions, symbolische Links und andere Reparse Points werden am tatsächlich
+geöffneten Handle abgelehnt, auch bei der Zieldatei selbst. Neue Dateien werden
+weiterhin ausschließlich neu angelegt; bestehende Dateien werden beim Öffnen
+nicht gekürzt. Dateiidentität und Ausschluss einer mit der Quelle identischen
+Datei werden vor Übergabe an den schreibenden Aufrufer geprüft.
+
+Als Ausgabeziel ist ein gewöhnlicher Ordner ohne solche Umleitungen zu wählen.
+Der Schutz gilt für die Lebensdauer des Schreibhandles. Status-/Berichtsdateien,
+Aufräumvorgänge nach dem Schließen und spätere erneute Öffnungen sind damit
+nicht pauschal abgesichert. Er ist keine Sicherheitsgrenze gegen Administratoren,
+veränderte Laufwerkszuordnungen, Mounts oder Dateisystemtreiber.
+Diese Ergänzung ist noch nicht Bestandteil der veröffentlichten Version 3.0.3.
