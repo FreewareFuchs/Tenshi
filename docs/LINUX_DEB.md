@@ -1,6 +1,6 @@
 # Natives Linux-DEB – Umstellung auf tenshi-recovery
 
-Der aktuelle Quellcode baut `tenshi-recovery_3.0.2-2_all.deb` mit Paketname
+Der aktuelle Quellcode baut `tenshi-recovery_3.0.3-1_all.deb` mit Paketname
 und Startbefehl `tenshi-recovery`. Der sichtbare Name bleibt Tenshi.
 Dieses Paket ist seit 26.10.2026 in der signierten [APT-Quelle](APT_REPOSITORY.md)
 veröffentlicht; Installation, stabile Versionskennung und Start sind unter Mint bestätigt.
@@ -11,7 +11,12 @@ Die folgenden Release-Dateien dokumentieren den bisherigen Stand 3.0.2;
 das veröffentlichte `tenshi_3.0.2-1_all.deb` wird nicht stillschweigend ersetzt.
 Für Umstieg und eigene APT-Quelle: [Paketwechsel](DEB_PACKAGE_RENAME.md).
 
-## Bisheriger veröffentlichter Release
+## Aktuelle stabile Version 3.0.3
+
+[Finaler Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40363573058) aus Commit `18d973dd88346157da8e3bbf9856bc44ebe71f25` mit Kennung `stable`.
+Veröffentlicht als [v3.0.3](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.3). Die finalen Mint-Pakettests und die erneute Installation aus der öffentlichen Quelle sind bestätigt. [Details und Grenzen](../RELEASE_NOTES_3.0.3.md).
+
+## Historischer Release 3.0.2
 
 Der veröffentlichte [GitHub-Release `v3.0.2`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2) enthält:
 
@@ -36,7 +41,7 @@ sudo apt update && sudo apt install tenshi-recovery
 Oder nach Prüfsummenvergleich des direkten DEB-Downloads:
 
 ```bash
-sudo apt install ./tenshi-recovery_3.0.2-2_all.deb
+sudo apt install ./tenshi-recovery_3.0.3-1_all.deb
 tenshi-recovery
 ```
 
@@ -66,7 +71,7 @@ Für identische Quellen verwendet der Bau den Zeitstempel des letzten Git-Commit
 
 ## CI und Release
 
-Der Linux-Workflow stellt das Artefakt `Tenshi-3.0.2-Linux-DEB` bereit. Er installiert das Paket, startet die installierte Anwendung ohne Gerätezugriff, prüft Logo, Offline-Hilfe und GUI unter virtuellem X11 und entfernt das Paket anschließend wieder. Diese Tests laufen unter Ubuntu und ersetzen den manuellen Pakettest auf Linux Mint nicht.
+Der Linux-Workflow stellt das Artefakt `Tenshi-3.0.3-Linux-DEB` bereit. Er installiert das Paket, startet die installierte Anwendung ohne Gerätezugriff, prüft Logo, Offline-Hilfe und GUI unter virtuellem X11 und entfernt das Paket anschließend wieder. Diese Tests laufen unter Ubuntu und ersetzen den manuellen Pakettest auf Linux Mint nicht.
 
 Am 23.10.2026 wurde das lokal gebaute DEB unter Linux Mint erfolgreich installiert und gestartet. Die Anzeige des vorhandenen `liteon-test.img` sowie der Export einer kleinen und einer größeren Datei wurden bestätigt. Anschließend wurde das Paket mit `apt remove tenshi` erfolgreich entfernt. Die früheren Linux-Praxistests bezogen sich auf den Quellcodestart; dieser zusätzliche Test bezieht sich auf das DEB-Paket. Die Linux-CI einschließlich DEB-Bau, Installation, Startprüfung und Entfernung ist inzwischen erfolgreich, zuletzt für [`a96d584`](https://github.com/FreewareFuchs/Tenshi/actions/runs/40104529828). Der manuelle Mint-Test bleibt dem damals getesteten Entwicklungsstand zugeordnet.
 
@@ -76,10 +81,10 @@ Der [Release-Build für 3.0.2](https://github.com/FreewareFuchs/Tenshi/actions/r
 
 ## Paketkennung
 
-`python3 build_deb.py` baut standardmäßig `tenshi-recovery_3.0.2-2_all.deb`. Ein solcher lokaler Bau ist nicht automatisch eine offizielle Veröffentlichung. Für einen ausdrücklich gekennzeichneten Release-Build sind ein bekannter sauberer Git-Commit und eine passende Paketversion erforderlich:
+`python3 build_deb.py` baut standardmäßig `tenshi-recovery_3.0.3-1_all.deb`. Ein solcher lokaler Bau ist nicht automatisch eine offizielle Veröffentlichung. Für einen ausdrücklich gekennzeichneten Release-Build sind ein bekannter sauberer Git-Commit und eine passende Paketversion erforderlich:
 
 ```bash
-python3 build_deb.py --package-version 3.0.2-2 --release stable
+python3 build_deb.py --package-version 3.0.3-1 --release stable
 ```
 
 Ohne explizite saubere Release-Kennung oder passenden Git-Tag zeigt die Anwendung weiterhin `+dev`. Einzelheiten: [Build-Kennung](BUILD_IDENTITY.md) und [Release-Vorbereitung](RELEASE_PREPARATION.md).

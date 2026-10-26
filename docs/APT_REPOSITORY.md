@@ -1,7 +1,7 @@
 # APT-Quelle für Linux Mint 22.x
 
 Stand 26.10.2026: Die eigene signierte Quelle unter
-https://freewarefuchs.de/tenshi/apt/ bietet `tenshi-recovery 3.0.2-2` für
+https://freewarefuchs.de/tenshi/apt/ bietet `tenshi-recovery 3.0.3-1` für
 Mint 22.x (amd64). Benötigt werden Python >= 3.11, Tkinter und util-linux.
 Mint 21.x mit Python 3.10 ist kein unterstütztes Paket-Ziel.
 
@@ -69,7 +69,7 @@ tenshi-recovery --version
 tenshi-recovery
 ```
 
-Das veröffentlichte Paket zeigt `Tenshi 3.0.2 (ba9576020c)`.
+Das veröffentlichte Paket zeigt `Tenshi 3.0.3 (18d973dd88)`.
 Das Paket vergibt keine Geräteberechtigungen. Leserechte für physische
 Quellen müssen bei Bedarf gezielt außerhalb der Anwendung eingerichtet werden.
 
@@ -146,7 +146,15 @@ Release-Metadaten; möglichst atomar veröffentlichen. Alte Downloadziele
 zunächst behalten. Den alten Paketnamen `tenshi` nicht wieder anbieten.
 Schlüsselablauf: 25.10.2028; rechtzeitig Verlängerung bzw. Wechsel planen.
 
-## Geprüfter Stand und Grenzen
+## Aktueller Prüfstand 3.0.3
+
+[Finaler Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40363573058) aus Commit `18d973dd88346157da8e3bbf9856bc44ebe71f25` mit Kennung `stable`.
+DEB: `tenshi-recovery_3.0.3-1_all.deb`, 740270 Bytes.
+SHA256: `153ec71e9597f614f7d1adf610db3486cc91b7d20745a1573af1d8e072aa1a34`.
+
+Installation und Start unter Mint sowie erneute Installation aus der öffentlichen APT-Quelle sind bestätigt. Signatur, Paketindex und DEB stimmen mit dem freigegebenen Build überein. [Release und vollständiger Prüfumfang](../RELEASE_NOTES_3.0.3.md). Ein tatsächlicher Versionswechsel von einer installierten 3.0.2-2 über die öffentliche Quelle ist noch nicht separat bestätigt.
+
+## Historischer Prüfstand 3.0.2-2
 
 [Vorbereitungs-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40316163730)
 aus Commit `ba9576020ca020210e44fe70984e78f8e9efe852`.

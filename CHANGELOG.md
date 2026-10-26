@@ -1,12 +1,13 @@
-# Tenshi 3.0.3 – in Vorbereitung
+# Tenshi 3.0.3 – stabil veröffentlicht (26.10.2026)
 
-Noch nicht veröffentlicht. Die Paketprüfung dieser Version steht aus.
+[GitHub-Release v3.0.3](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.3)
 
 - Die SHA256-Berechnung beim Stapel-Export und bei der Prüfung vorhandener Exporte lässt sich abbrechen. Vollständig geschriebene Dateien bleiben erhalten; unvollständige Prüfungen erhalten keinen Erfolgsstatus. Unbestätigte vorhandene Dateien werden weiterhin nicht überschrieben.
-- Der Funktionsstand aus PR #47 wurde unter Linux und Windows automatisiert und manuell geprüft. Das ersetzt nicht die Abnahme der noch zu bauenden finalen Pakete 3.0.3.
-- Windows-Installer und Portable-ZIP erhalten Version 3.0.3. Linux bleibt beim Paketnamen und Startbefehl `tenshi-recovery`, Paketversion 3.0.3-1. Diese sortiert nach 3.0.2-2.
-- Die signierte APT-Quelle und ihre Einrichtung bleiben bestehen. Ein Update von 3.0.2-2 auf 3.0.3-1 muss vor der Veröffentlichung getestet werden.
-- Quelle weiterhin ausschließlich lesend verwenden; Exporte und Images auf einem anderen physischen Datenträger speichern. Eine Prüfsumme garantiert keine erfolgreiche Wiederherstellung.
+- Windows-Installer und Portable-ZIP verwenden Version 3.0.3. Linux verwendet Paketname und Startbefehl `tenshi-recovery`, Paketversion `3.0.3-1`. Diese sortiert nach `3.0.2-2`.
+- Die signierte FreewareFuchs-APT-Quelle bietet das geprüfte Paket an; die [Einrichtung](docs/APT_REPOSITORY.md) bleibt unverändert.
+
+
+Details: [Versionshinweise und Pakettests](RELEASE_NOTES_3.0.3.md).
 
 # Tenshi 3.0.2 – stabil veröffentlicht (26.10.2026)
 
