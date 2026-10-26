@@ -8,7 +8,7 @@ class ExportCancelled(Exception):
     pass
 
 def write_chunks(out, chunks: Iterable[bytes], *, cancel: Callable[[], bool] | None = None,
-                 byte_progress: Callable[[int], None] | None = None) -> int:
+                 byte_progress: Callable[[int], None] | None = None, data_digest=None) -> int:
     written = 0
     if cancel and cancel():
         raise ExportCancelled('Export abgebrochen.')
@@ -22,6 +22,8 @@ def write_chunks(out, chunks: Iterable[bytes], *, cancel: Callable[[], bool] | N
                 count = out.write(piece)
                 if count is None or count <= 0:
                     raise OSError('Unvollständiger Schreibvorgang auf dem Ziellaufwerk.')
+                if data_digest is not None:
+                    data_digest.update(piece[:count])
                 written += count
                 if byte_progress:
                     byte_progress(count)

@@ -173,7 +173,7 @@ class SafeBatchMetadataTests(unittest.TestCase):
                 batch_export._hash_file(target, source=str(self.source))
         self.assertEqual(victim.read_bytes(), b'do-not-use')
 
-    def test_export_hash_uses_original_parent_handle_after_swap(self):
+    def test_export_hash_rejects_parent_swap_after_reading_pinned_file(self):
         import hashlib
         outside = self.root / 'outside-hash'
         outside.mkdir()
@@ -196,9 +196,14 @@ class SafeBatchMetadataTests(unittest.TestCase):
         with self.simulated_block(), \
              mock.patch('recoverydesk.secure_target.os.open',
                         side_effect=swap_before_file_open):
-            digest = batch_export._hash_file(target, source=str(self.source))
+            reads = []
+            with self.assertRaisesRegex(OSError, 'Exportdatei während der Prüfung geändert'):
+                batch_export._hash_file(target, source=str(self.source), progress=reads.append)
         self.assertEqual(swapped, [True])
-        self.assertEqual(digest, hashlib.sha256(expected).hexdigest())
+        # The secured handle still read the original file, not the unrelated one.
+        # A digest must not confirm the now redirected destination pathname.
+        self.assertEqual(reads, [0, len(expected)])
+        self.assertEqual((original / target.name).read_bytes(), expected)
         self.assertEqual((outside / target.name).read_bytes(), other)
 
 

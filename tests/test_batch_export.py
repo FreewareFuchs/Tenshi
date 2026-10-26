@@ -69,9 +69,13 @@ class BatchExportTests(unittest.TestCase):
             self.assertEqual(record['status'], 'Abgebrochen')
             self.assertIn('Datei erhalten', record['detail'])
             self.assertNotIn('sha256', record)
-            # An unverified complete file must not be overwritten on retry.
+            # The saved copied-stream hash permits a read-only retry, not a recopy.
+            self.assertTrue(record['verification_pending'])
+            self.assertEqual(len(record['copied_sha256']), 64)
             retry = export_batch(str(src), index, [chosen], str(target))
-            self.assertEqual(retry.failed, 1)
+            self.assertEqual(retry.failed, 0)
+            self.assertEqual(retry.exported, 0)
+            self.assertEqual(retry.verified_existing, 1)
 
     def test_folder_tree_and_second_run_verifies_existing(self):
         with tempfile.TemporaryDirectory() as temp:
