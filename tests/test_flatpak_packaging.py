@@ -2,6 +2,7 @@
 from dataclasses import replace
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -62,7 +63,8 @@ class FlatpakPackagingTests(unittest.TestCase):
             manifest = prepare_flatpak.prepare(Path(temp) / 'context')
             prefix = Path(temp) / 'app'
             module.install(manifest.parent / 'tenshi-src', prefix)
-            self.assertEqual((prefix / 'bin/tenshi-flatpak').stat().st_mode & 0o777, 0o755)
+            if os.name == 'posix':
+                self.assertEqual((prefix / 'bin/tenshi-flatpak').stat().st_mode & 0o777, 0o755)
             result = subprocess.run([sys.executable, '-EsB', str(prefix / 'share/tenshi/main.py'),
                                      '--version'], check=True, capture_output=True, text=True)
             self.assertIn('+dev', result.stdout)
