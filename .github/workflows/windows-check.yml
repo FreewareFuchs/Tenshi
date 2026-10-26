@@ -15,6 +15,7 @@ on:
       - '**/*.bat'
       - '**/*.iss'
       - '**/*.spec'
+      - 'build/version_info.txt'
       - 'requirements*.txt'
       - 'assets/**'
       - '.github/workflows/windows-check.yml'
@@ -42,6 +43,8 @@ jobs:
         with:
           python-version: '3.12'
           architecture: x64
+      - name: Check generated version metadata
+        run: python sync_release_version.py --check
       - name: Test suite (isolated settings and logs)
         timeout-minutes: 10
         shell: pwsh

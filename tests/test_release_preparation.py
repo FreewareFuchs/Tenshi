@@ -99,10 +99,10 @@ class ReleasePreparationTests(unittest.TestCase):
         self.make_deb(release='stable')
         prepare(self.inputs, self.output, 'stable', self.commit)
         manifest = json.loads((self.output / 'release_manifest.json').read_text())
-        self.assertEqual(manifest['tag'], 'v3.0.3')
+        self.assertEqual(manifest['tag'], f'v{__version__}')
         self.assertEqual({a['file'] for a in manifest['artifacts']}, {
-            'Tenshi_Setup_3.0.3_Win64.exe', 'Tenshi_Portable_3.0.3_Win64.zip',
-            'tenshi-recovery_3.0.3-1_all.deb'})
+            f'Tenshi_Setup_{__version__}_Win64.exe', f'Tenshi_Portable_{__version__}_Win64.zip',
+            f'tenshi-recovery_{__version__}-1_all.deb'})
         self.assertIn('Stabile Version.', (self.output / 'RELEASE_NOTES.md').read_text())
         for row in manifest['artifacts']:
             self.assertEqual(hashlib.sha256((self.output / row['file']).read_bytes()).hexdigest(), row['sha256'])

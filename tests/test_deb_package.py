@@ -1,4 +1,5 @@
 """Validate actual DEB contents and reproducibility without root or raw devices."""
+from recoverydesk import __version__
 import hashlib
 import io
 import json
@@ -26,7 +27,7 @@ class DebPackageTests(unittest.TestCase):
             self.assertIn(f'Version: {DEFAULT_VERSION}', metadata)
             self.assertNotIn('~', first.name)
             subprocess.run(['dpkg', '--compare-versions', DEFAULT_VERSION, 'gt',
-                            '3.0.3~beta.6-1'], check=True)
+                            f'{__version__}~beta.6-1'], check=True)
             subprocess.run(['dpkg', '--compare-versions', DEFAULT_VERSION, 'gt',
                             '3.0.2-2'], check=True)
             self.assertIn('Package: tenshi-recovery\n', metadata)
@@ -39,7 +40,7 @@ class DebPackageTests(unittest.TestCase):
             with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
                 metadata = json.load(tar.extractfile('./usr/share/tenshi-recovery/recoverydesk/_build_info.json'))
                 self.assertEqual(metadata['schema'], 1)
-                self.assertEqual(metadata['version'], '3.0.3')
+                self.assertEqual(metadata['version'], f'{__version__}')
                 self.assertEqual(len(metadata['commit']), 40)
                 for member in tar.getmembers():
                     self.assertEqual((member.uid, member.gid), (0, 0))
@@ -64,9 +65,9 @@ class DebPackageTests(unittest.TestCase):
     def test_explicit_stable_rejects_beta_package_version(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(ValueError, 'Release identity'):
-                build(Path(tmp), '3.0.3~beta.6-1', 'stable')
+                build(Path(tmp), f'{__version__}~beta.6-1', 'stable')
             with self.assertRaisesRegex(ValueError, 'Release identity'):
-                build(Path(tmp), '3.0.3-1', 'beta.6')
+                build(Path(tmp), f'{__version__}-1', 'beta.6')
 
 
 if __name__ == '__main__':

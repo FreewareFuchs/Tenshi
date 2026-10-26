@@ -10,6 +10,7 @@ on:
       - 'main.py'
       - 'start_linux.sh'
       - 'build_deb.py'
+      - 'sync_release_version.py'
       - 'write_build_info.py'
       - 'prepare_release.py'
       - 'release_tools.py'
@@ -25,6 +26,7 @@ on:
       - 'main.py'
       - 'start_linux.sh'
       - 'build_deb.py'
+      - 'sync_release_version.py'
       - 'write_build_info.py'
       - 'prepare_release.py'
       - 'release_tools.py'
@@ -58,6 +60,8 @@ jobs:
         run: |
           [[ "$RELEASE_LABEL" =~ ^(stable|beta\.[1-9][0-9]*)$ ]] || exit 2
           echo "TENSHI_RELEASE=$RELEASE_LABEL" >> "$GITHUB_ENV"
+      - name: Check generated version metadata
+        run: python3 sync_release_version.py --check
       - name: Install Tk and Xvfb
         run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb e2fsprogs btrfs-progs xfsprogs desktop-file-utils dosfstools mtools ntfs-3g exfatprogs python3-venv
       - name: Compile source modules

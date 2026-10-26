@@ -2,13 +2,15 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 echo =====================================================
-echo  Tenshi 3.0.3 Beta - Windows Release-Vorbereitung
+echo  Tenshi 3.0.3 - Windows Release-Vorbereitung
  echo =====================================================
 echo.
 echo Es werden Tests, EXE, Portable-ZIP und Installer erstellt.
 echo Voraussetzung: Windows 64 Bit, Python 3.11+, Inno Setup 6.3+
 echo Keine Images oder Quell-Laufwerke werden automatisch geoeffnet.
 echo.
+py -3 sync_release_version.py --check
+if errorlevel 1 goto failed
 py -3 open_source_preflight.py
 if errorlevel 1 goto failed
 call check_windows.bat --no-pause

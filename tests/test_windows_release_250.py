@@ -29,7 +29,7 @@ class PortableArchiveTests(unittest.TestCase):
             with zipfile.ZipFile(archive) as z:
                 self.assertEqual(set(z.namelist()), set(release_tools.PACKAGE_ITEMS))
                 self.assertEqual(z.read('Tenshi.exe'), exe.read_bytes())
-                self.assertIn(b'Tenshi 3.0.3', z.read('PORTABLE_START.txt'))
+                self.assertIn((f'Tenshi {__version__}'.encode('ascii')), z.read('PORTABLE_START.txt'))
                 self.assertIn(b'APPDATA', z.read('PORTABLE_START.txt'))
                 self.assertNotIn(b'tenshi-errors.log\n2026', z.read('PORTABLE_START.txt'))
 
@@ -106,16 +106,16 @@ class PortableArchiveTests(unittest.TestCase):
 
 class ReleaseIntegrationTests(unittest.TestCase):
     def test_version_sync_across_sources_installer_exe_and_portable(self):
-        self.assertEqual(__version__, '3.0.3')
+        self.assertRegex(__version__, r'^[0-9]+\.[0-9]+\.[0-9]+$')
         installer = (ROOT / 'installer/Tenshi.iss').read_text(encoding='utf-8')
         version_info = (ROOT / 'build/version_info.txt').read_text(encoding='utf-8')
         build = (ROOT / 'build_windows.bat').read_text(encoding='ascii')
         portable = (ROOT / 'build_portable.bat').read_text(encoding='ascii')
         for target in (installer, build, portable, version_info):
-            self.assertIn('3.0.3', target)
-        self.assertIn('filevers=(3, 0, 3, 0)', version_info)
-        self.assertIn('prodvers=(3, 0, 3, 0)', version_info)
-        self.assertIn('Tenshi_Setup_3.0.3.exe', (ROOT / 'build_installer.bat').read_text(encoding='ascii'))
+            self.assertIn(f'{__version__}', target)
+        self.assertIn(f'filevers={tuple(map(int, __version__.split("."))) + (0,)}', version_info)
+        self.assertIn(f'prodvers={tuple(map(int, __version__.split("."))) + (0,)}', version_info)
+        self.assertIn(f'Tenshi_Setup_{__version__}.exe', (ROOT / 'build_installer.bat').read_text(encoding='ascii'))
 
     def test_version_and_smoke_mode_without_creating_gui(self):
         with patch('recoverydesk.gui.RecoveryDeskApp', side_effect=AssertionError('GUI started')):
@@ -144,7 +144,7 @@ class ReleaseIntegrationTests(unittest.TestCase):
         workflow = (ROOT / '.github/workflows/windows-check.yml').read_text(encoding='utf-8')
         for required in ('windows-latest', 'unittest discover', 'build_windows.bat',
                          '--smoke-test', 'build_portable.bat', 'release_tools.py verify',
-                         'build_installer.bat', 'Tenshi_Portable_3.0.3_Win64.zip'):
+                         'build_installer.bat', f'Tenshi_Portable_{__version__}_Win64.zip'):
             self.assertIn(required, workflow)
 
     def test_portable_instructions_warn_of_nonportable_config(self):
