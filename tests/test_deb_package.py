@@ -27,11 +27,15 @@ class DebPackageTests(unittest.TestCase):
             self.assertNotIn('~', first.name)
             subprocess.run(['dpkg', '--compare-versions', DEFAULT_VERSION, 'gt',
                             '3.0.2~beta.6-1'], check=True)
+            self.assertIn('Package: tenshi-recovery\n', metadata)
+            for field in ('Conflicts:', 'Replaces:', 'Provides:', 'Breaks:'):
+                self.assertNotIn(field, metadata)
+            self.assertTrue(first.name.startswith('tenshi-recovery_'))
             self.assertIn('Architecture: all', metadata)
             self.assertIn('Depends: python3 (>= 3.11), python3-tk, util-linux', metadata)
             archive = subprocess.check_output(['dpkg-deb', '--fsys-tarfile', str(first)])
             with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-                metadata = json.load(tar.extractfile('./usr/share/tenshi/recoverydesk/_build_info.json'))
+                metadata = json.load(tar.extractfile('./usr/share/tenshi-recovery/recoverydesk/_build_info.json'))
                 self.assertEqual(metadata['schema'], 1)
                 self.assertEqual(metadata['version'], '3.0.2')
                 self.assertEqual(len(metadata['commit']), 40)
@@ -40,14 +44,15 @@ class DebPackageTests(unittest.TestCase):
                     self.assertFalse(member.issym() or member.islnk())
                     self.assertFalse(member.mode & 0o6022, member.name)
                     self.assertNotIn('__pycache__', member.name)
-                self.assertEqual(tar.extractfile('./usr/share/tenshi/main.py').read(),
+                self.assertEqual(tar.extractfile('./usr/share/tenshi-recovery/main.py').read(),
                                  (ROOT / 'main.py').read_bytes())
                 for source in (ROOT / 'recoverydesk').rglob('*.py'):
-                    target = './usr/share/tenshi/' + source.relative_to(ROOT).as_posix()
+                    target = './usr/share/tenshi-recovery/' + source.relative_to(ROOT).as_posix()
                     self.assertEqual(tar.extractfile(target).read(), source.read_bytes())
-                self.assertTrue(tar.extractfile('./usr/share/icons/hicolor/256x256/apps/tenshi.png').read().startswith(b'\x89PNG'))
-                launcher = tar.extractfile('./usr/bin/tenshi').read().decode()
-                self.assertIn('/usr/bin/python3 -EsB /usr/share/tenshi/main.py "$@"', launcher)
+                self.assertTrue(tar.extractfile('./usr/share/icons/hicolor/256x256/apps/tenshi-recovery.png').read().startswith(b'\x89PNG'))
+                self.assertNotIn('./usr/bin/tenshi', tar.getnames())
+                launcher = tar.extractfile('./usr/bin/tenshi-recovery').read().decode()
+                self.assertIn('/usr/bin/python3 -EsB /usr/share/tenshi-recovery/main.py "$@"', launcher)
             controls = subprocess.check_output(['dpkg-deb', '--ctrl-tarfile', str(first)])
             with tarfile.open(fileobj=io.BytesIO(controls)) as tar:
                 # No installer hooks may change device permissions or user groups.

@@ -10,6 +10,7 @@ import unittest
 from recoverydesk import __version__
 from release_tools import create_portable
 from prepare_release import prepare
+from build_deb import package_version_for_release
 
 
 @unittest.skipUnless(shutil.which('dpkg-deb'), 'Linux package tools required')
@@ -33,17 +34,17 @@ class ReleasePreparationTests(unittest.TestCase):
 
     def make_deb(self, identity=None, release='beta.99'):
         suffix = '' if release == 'stable' else '~' + release
-        version = f'{__version__}{suffix}-1'
+        version = package_version_for_release(__version__, release)
         stage = self.root / 'stage'
         (stage / 'DEBIAN').mkdir(parents=True, exist_ok=True)
         (stage / 'DEBIAN/control').write_text(
-            f'Package: tenshi\nVersion: {version}\nArchitecture: all\n'
+            f'Package: tenshi-recovery\nVersion: {version}\nArchitecture: all\n'
             'Maintainer: Test <test@example.com>\nDescription: test\n', encoding='utf-8')
-        path = stage / 'usr/share/tenshi/recoverydesk/_build_info.json'
+        path = stage / 'usr/share/tenshi-recovery/recoverydesk/_build_info.json'
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(identity or self.identity), encoding='utf-8')
         subprocess.run(['dpkg-deb', '--build', str(stage),
-                        str(self.inputs / f'tenshi_{version.replace("~", ".")}_all.deb')],
+                        str(self.inputs / f'tenshi-recovery_{version.replace("~", ".")}_all.deb')],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
     def run_prepare(self):
@@ -101,7 +102,7 @@ class ReleasePreparationTests(unittest.TestCase):
         self.assertEqual(manifest['tag'], 'v3.0.2')
         self.assertEqual({a['file'] for a in manifest['artifacts']}, {
             'Tenshi_Setup_3.0.2_Win64.exe', 'Tenshi_Portable_3.0.2_Win64.zip',
-            'tenshi_3.0.2-1_all.deb'})
+            'tenshi-recovery_3.0.2-2_all.deb'})
         self.assertIn('Stabile Version.', (self.output / 'RELEASE_NOTES.md').read_text())
         for row in manifest['artifacts']:
             self.assertEqual(hashlib.sha256((self.output / row['file']).read_bytes()).hexdigest(), row['sha256'])

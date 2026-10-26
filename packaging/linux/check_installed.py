@@ -3,7 +3,7 @@ import runpy
 import sys
 from pathlib import Path
 
-installed = Path('/usr/share/tenshi')
+installed = Path('/usr/share/tenshi-recovery')
 sys.path.insert(0, str(installed))
 entry = runpy.run_path(str(installed / 'main.py'))
 assert entry['smoke_test']() == 0

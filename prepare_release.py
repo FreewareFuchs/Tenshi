@@ -8,6 +8,7 @@ import subprocess
 import tarfile
 import tempfile
 
+from build_deb import PACKAGE_NAME, package_version_for_release
 from recoverydesk import __version__
 from recoverydesk.version_info import release_suffix
 from release_finalize import check_pe
@@ -38,15 +39,15 @@ def prepare(artifacts: Path, output: Path, release: str, commit: str) -> Path:
     exe = one('Tenshi.exe')
     installer = one(f'Tenshi_Setup_{__version__}.exe')
     portable = one(f'Tenshi_Portable_{__version__}_Win64.zip')
-    package_version = f'{__version__}{suffix.replace("-", "~", 1)}-1'
-    deb = one(f'tenshi_{package_version.replace("~", ".")}_all.deb')
+    package_version = package_version_for_release(__version__, release)
+    deb = one(f'{PACKAGE_NAME}_{package_version.replace("~", ".")}_all.deb')
     identity = one('windows-build-info.json')
     validate_identity(json.loads(identity.read_text(encoding='utf-8')), release, commit)
     check_pe(exe)
     check_pe(installer)
     if verify_portable(portable) != file_sha256(exe):
         raise ValueError('Portable executable differs from the Windows build')
-    for field, expected in [('Package', 'tenshi'), ('Version', package_version), ('Architecture', 'all')]:
+    for field, expected in [('Package', PACKAGE_NAME), ('Version', package_version), ('Architecture', 'all')]:
         value = subprocess.check_output(['dpkg-deb', '-f', str(deb), field], text=True).strip()
         if value != expected:
             raise ValueError(f'Unexpected DEB {field}: {value}')
@@ -56,7 +57,7 @@ def prepare(artifacts: Path, output: Path, release: str, commit: str) -> Path:
         stream.seek(0)
         with tarfile.open(fileobj=stream, mode='r:') as archive:
             names = [m for m in archive.getmembers()
-                     if m.name.removeprefix('./') == 'usr/share/tenshi/recoverydesk/_build_info.json']
+                     if m.name.removeprefix('./') == 'usr/share/tenshi-recovery/recoverydesk/_build_info.json']
             if len(names) != 1 or not names[0].isfile() or names[0].size > 4096:
                 raise ValueError('Missing or invalid DEB build identity')
             with archive.extractfile(names[0]) as metadata:

@@ -139,11 +139,8 @@ jobs:
           desktop-file-validate packaging/linux/de.freewarefuchs.Tenshi.desktop
           if [ -n "${TENSHI_RELEASE:-}" ]; then
             VERSION=$(python3 -c 'from recoverydesk import __version__; print(__version__)')
-            if [ "$TENSHI_RELEASE" = stable ]; then
-              python3 build_deb.py --package-version "$VERSION-1"
-            else
-              python3 build_deb.py --package-version "$VERSION~$TENSHI_RELEASE-1"
-            fi
+            PACKAGE_VERSION=$(python3 -c 'import os; from recoverydesk import __version__; from build_deb import package_version_for_release; print(package_version_for_release(__version__, os.environ["TENSHI_RELEASE"]))')
+            python3 build_deb.py --package-version "$PACKAGE_VERSION"
           else
             python3 build_deb.py
           fi
@@ -157,16 +154,16 @@ jobs:
         run: |
           sudo apt-get install -y ./deb_output/*.deb
           cd /tmp
-          /usr/bin/tenshi --version
-          /usr/bin/tenshi --smoke-test
+          /usr/bin/tenshi-recovery --version
+          /usr/bin/tenshi-recovery --smoke-test
           xvfb-run -a /usr/bin/python3 -EsB "$GITHUB_WORKSPACE/packaging/linux/check_installed.py"
       - name: Verify package removal
         run: |
-          sudo apt-get purge -y tenshi
-          test ! -e /usr/bin/tenshi
-          test ! -e /usr/share/tenshi/main.py
+          sudo apt-get purge -y tenshi-recovery
+          test ! -e /usr/bin/tenshi-recovery
+          test ! -e /usr/share/tenshi-recovery/main.py
           test ! -e /usr/share/applications/de.freewarefuchs.Tenshi.desktop
-          test ! -e /usr/share/icons/hicolor/256x256/apps/tenshi.png
+          test ! -e /usr/share/icons/hicolor/256x256/apps/tenshi-recovery.png
       - name: Upload Linux release artifact
         uses: actions/upload-artifact@v4
         with:

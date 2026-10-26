@@ -30,13 +30,25 @@ Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein 
 
 ### DEB-Paket für Linux Mint 22.x
 
-Die Datei `tenshi_3.0.2-1_all.deb` aus dem entsprechenden GitHub-Release herunterladen. Im Downloadordner installieren:
+**Linux-Paketumstellung:** Der aktuelle Quellcode verwendet Paketname und
+Terminalbefehl `tenshi-recovery`, damit keine Kollision mit Ubuntus anderem
+`tenshi`-Programm entsteht. Der sichtbare Name bleibt Tenshi.
+Das neue Paket `tenshi-recovery_3.0.2-2_all.deb` ist noch nicht veröffentlicht.
+Das bisherige DEB im Release 3.0.2 verwendet weiterhin den alten Paketnamen;
+es wird nicht nachträglich ausgetauscht. Vor Verwendung einer eigenen
+APT-Quelle oder einem Paketwechsel die [Umstiegsanleitung](docs/DEB_PACKAGE_RENAME.md)
+lesen.
+
+Nach Veröffentlichung bzw. für ein selbst gebautes neues Paket:
 
 ```bash
-sudo apt install ./tenshi_3.0.2-1_all.deb
+sudo apt install ./tenshi-recovery_3.0.2-2_all.deb
+tenshi-recovery
 ```
 
-Danach **Tenshi** im Anwendungsmenü öffnen oder `tenshi` im Terminal starten. Tenshi läuft als normaler Benutzer. Das Paket installiert benötigte Systemabhängigkeiten über APT; es ändert keine Geräteberechtigungen. Deinstallation: `sudo apt remove tenshi`.
+Danach **Tenshi** im Anwendungsmenü öffnen. Als normaler Benutzer starten.
+Deinstallation des neuen Pakets: `sudo apt remove tenshi-recovery`.
+Das Paket ändert keine Geräteberechtigungen.
 
 Erforderlich sind Python ab 3.11, Tkinter und util-linux. Linux Mint 21.x mit seinem standardmäßigen Python 3.10 ist kein unterstütztes Paket-Ziel. Das DEB ist ein direkter Download und bindet keine Paketquelle für automatische Tenshi-Updates ein. Eine allgemeine Auffindbarkeit im Mint-Anwendungsmanager ist damit noch nicht verbunden.
 
