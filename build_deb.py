@@ -11,12 +11,13 @@ import re
 import shutil
 import subprocess
 import tempfile
+from recoverydesk import __version__
 from recoverydesk.version_info import write_build_info, release_suffix
 
 ROOT = Path(__file__).resolve().parent
 PACKAGE_NAME = 'tenshi-recovery'
-DEBIAN_REVISION = 2
-DEFAULT_VERSION = f'3.0.2-{DEBIAN_REVISION}'
+DEBIAN_REVISION = 1
+DEFAULT_VERSION = f'{__version__}-{DEBIAN_REVISION}'
 
 
 def package_version_for_release(version: str, release: str) -> str:
@@ -61,7 +62,7 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
              'usr/share/applications/de.freewarefuchs.Tenshi.desktop')
         copy(ROOT / 'recoverydesk/assets/tenshi_icon.png',
              'usr/share/icons/hicolor/256x256/apps/tenshi-recovery.png')
-        for name in ('README.md', 'THIRD_PARTY_NOTICES.md', 'RELEASE_NOTES_LINUX_BETA.md', 'RELEASE_NOTES_3.0.2_BETA4.md', 'RELEASE_NOTES_3.0.2.md'):
+        for name in ('README.md', 'THIRD_PARTY_NOTICES.md', 'RELEASE_NOTES_LINUX_BETA.md', 'RELEASE_NOTES_3.0.2_BETA4.md', 'RELEASE_NOTES_3.0.2.md', 'RELEASE_NOTES_3.0.3.md'):
             copy(ROOT / name, f'usr/share/doc/tenshi-recovery/{name}')
         copy(ROOT / 'LICENSE', 'usr/share/doc/tenshi-recovery/copyright')
         changelog = stage / 'usr/share/doc/tenshi-recovery/changelog.gz'

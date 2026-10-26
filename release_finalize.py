@@ -1,4 +1,4 @@
-"""Local, stdlib-only release check/copy step for Tenshi 3.0.2.
+"""Local, stdlib-only release check/copy step for Tenshi 3.0.3.
 
 Builds nothing and uploads nothing. It will not create a misleading release if a
 Windows binary is missing, not a PE file, or the portable ZIP fails verification.
@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from release_tools import verify_portable, file_sha256
 from open_source_preflight import check as mit_preflight
 
-VERSION = "3.0.2"
+VERSION = "3.0.3"
 BASE = Path(__file__).resolve().parent
 OUT = BASE / "VEROEFFENTLICHUNG" / "UPLOAD"
 ENTRIES = {
@@ -58,7 +58,7 @@ def main() -> int:
     (OUT / "SHA256SUMS.txt").write_text("\n".join(lines) + "\n", encoding="ascii")
     (OUT / "release_manifest.json").write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     (OUT / "VOR_UPLOAD_LESEN.txt").write_text(
-        "Tenshi 3.0.2 Beta (MIT): Rechteinhaber und Drittkomponenten, Impressum, "
+        "Tenshi 3.0.3 Beta (MIT): Rechteinhaber und Drittkomponenten, Impressum, "
         "Datenschutz, Code-Signierung und finalen Windows-Test vor "
         "Veroeffentlichung pruefen. SHA256SUMS.txt nur fuer diese zwei "
         "unveraenderten Pakete verwenden.\n", encoding="utf-8")

@@ -167,7 +167,7 @@ jobs:
       - name: Upload Linux release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Tenshi-3.0.2-Linux-DEB
+          name: Tenshi-3.0.3-Linux-DEB
           path: |
             deb_output/*.deb
             deb_output/*.deb.sha256

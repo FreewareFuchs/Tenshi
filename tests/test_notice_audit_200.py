@@ -36,7 +36,7 @@ PHYSICAL_NOTICE = (
 
 class NoticeLogicTests(unittest.TestCase):
     def test_version(self):
-        self.assertEqual(__version__, '3.0.2')
+        self.assertEqual(__version__, '3.0.3')
 
     def test_all_five_notices_have_all_six_languages(self):
         for notice in (BROWSER_NOTICE, FOOTER_NOTICE, IMAGING_DEST_NOTICE,

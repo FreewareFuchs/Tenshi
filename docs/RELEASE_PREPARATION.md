@@ -38,4 +38,16 @@ herunterladen. Der Workflow besitzt ausschließlich lesende Repository-Rechte.
 
 ## Stabile Version 3.0.2
 
-Die [veröffentlichte 3.0.2](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2) wurde mit `stable` vom Commit `abfd4c973a253c2a8571d238e15a0fb77b013dec` erstellt ([Workflow](https://github.com/FreewareFuchs/Tenshi/actions/runs/40242121217)). Sie enthält `Tenshi_Setup_3.0.2_Win64.exe`, `Tenshi_Portable_3.0.2_Win64.zip`, `tenshi-recovery_3.0.2-2_all.deb` und `SHA256SUMS.txt`. Die Debian-Metadaten enthalten Version `3.0.2-1`, der Git-Tag ist `v3.0.2`. Der Workflow selbst erstellt weiterhin weder Tags noch Veröffentlichungen.
+Die [veröffentlichte 3.0.2](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2) wurde mit `stable` vom Commit `abfd4c973a253c2a8571d238e15a0fb77b013dec` erstellt ([Workflow](https://github.com/FreewareFuchs/Tenshi/actions/runs/40242121217)). Sie enthält `Tenshi_Setup_3.0.2_Win64.exe`, `Tenshi_Portable_3.0.2_Win64.zip`, `tenshi_3.0.2-1_all.deb` und `SHA256SUMS.txt`. Die Debian-Metadaten enthalten Version `3.0.2-1`, der Git-Tag ist `v3.0.2`. Der Workflow selbst erstellt weiterhin weder Tags noch Veröffentlichungen.
+
+
+## Nächste Ausgabe 3.0.3 (noch nicht veröffentlicht)
+
+Versionsangaben für Windows, DEB und CI sind auf 3.0.3 vorbereitet. Der
+DEB-Dateiname lautet `tenshi-recovery_3.0.3-1_all.deb`. Die getestete
+Abbruchkorrektur aus PR #47 ist enthalten. [Versionshinweise](../RELEASE_NOTES_3.0.3.md).
+
+Nach Merge der Vorbereitung `stable` vom freigegebenen Commit bauen.
+Finale Pakete unter Windows und Mint testen. Zusätzlich den APT-Wechsel von
+3.0.2-2 auf 3.0.3-1 prüfen, bevor die öffentliche Quelle aktualisiert wird.
+Bestehende Release-Dateien nicht ersetzen; 3.0.3 separat veröffentlichen.
