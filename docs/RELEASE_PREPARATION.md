@@ -72,3 +72,45 @@ Veröffentlicht als [v3.0.3](https://github.com/FreewareFuchs/Tenshi/releases/ta
 Das Release enthält `Tenshi_Setup_3.0.3_Win64.exe`, `Tenshi_Portable_3.0.3_Win64.zip`, `tenshi-recovery_3.0.3-1_all.deb` und `SHA256SUMS.txt`. [Pakettests und Grenzen](../RELEASE_NOTES_3.0.3.md).
 
 Die finalen Pakete wurden manuell bestätigt. Die APT-Quelle ist veröffentlicht und die erneute Installation daraus geprüft. Ein gesonderter Upgrade-Test von installierter 3.0.2-2 über die öffentliche Quelle bleibt offen. Bestehende Dateien älterer Releases wurden nicht ersetzt.
+
+## Website-Katalog aus dem geprüften Bundle vorbereiten
+
+`prepare_website_catalog.py` erzeugt eine neue lokale `software.json` für eine
+**neuere stabile Version**. Es arbeitet ohne Netzwerk und veröffentlicht nichts.
+Als Eingabe dienen das unveränderte vorbereitete Release-Bundle, eine aktuelle
+Kopie von `/programme/software.json` der Website und freigegebene Änderungsnotizen
+als JSON-Objekt mit genau den Schlüsseln `de`, `en`, `es`, `zh`, `ru`, `ja`.
+Jeder Sprachwert ist eine nicht leere Liste nicht leerer Texte. Das Datum wird
+explizit als `YYYY-MM-DD` übergeben, nicht vom Buildzeitpunkt abgeleitet.
+
+```bash
+python3 prepare_website_catalog.py --bundle release_bundle \
+  --catalog software-current.json --notes website-notes.json \
+  --date 2026-10-26 --output software-new.json
+```
+
+Das Ausgabeziel darf noch nicht existieren. Die drei Paketdateien werden erneut
+vollständig gelesen und mit Byteanzahl und SHA256 aus `release_manifest.json`
+verglichen; auch `SHA256SUMS.txt` muss exakt zum Manifest passen. Dies setzt das
+vertrauenswürdige, zuvor mit `prepare_release.py` geprüfte Bundle voraus. Das
+Werkzeug bestätigt weder eine digitale Signatur noch die öffentliche Erreichbarkeit
+der Downloads und prüft die eingebetteten Build-Metadaten nicht ein zweites Mal.
+Die Kennung `published: false` im vorbereiteten Manifest bleibt unverändert;
+sie wird nicht als Nachweis einer Veröffentlichung behandelt.
+
+Aus dem Manifest stammen Version, Tag, Paketnamen, Dateigrößen, Prüfsummen und
+Quellcommit. Die Windows-Links und der Prüfsummenlink verwenden das zugehörige
+GitHub-Release; der Linux-Link verwendet den festen FreewareFuchs-APT-Pool und
+die Paketversion aus dem geprüften DEB-Dateinamen. Alte Release-Einträge, andere
+Programme und sonstige Katalogfelder werden erhalten. Bereits vorhandene
+Release-Einträge dürfen nicht verändert werden; identische Wiederholungen erzeugen
+keinen doppelten Eintrag. Downgrades und Beta-Bundles werden abgelehnt.
+
+Die neue JSON-Datei vor dem Upload prüfen. Erst wenn Release und signierte
+APT-Paketquelle tatsächlich veröffentlicht und erreichbar sind, die geprüfte
+Datei als `/programme/software.json` hochladen. Die sechs Programmseiten und
+sechs Anleitungsseiten enthalten zusätzlich statische Versions-/Downloadangaben;
+diese HTML-Dateien werden von diesem Werkzeug noch nicht angepasst und müssen
+weiterhin abgeglichen werden. Anschließend öffentliche Download-Links, Versionen
+und Prüfsummen kontrollieren. Ein vorbereiteter Katalog ist keine Freigabe zum
+Veröffentlichen eines Releases oder zum Ändern der Website.
