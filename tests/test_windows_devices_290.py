@@ -1,4 +1,4 @@
-"""Tenshi 3.0.2: USB / Windows-device failure simulations and read-only safety."""
+"""Tenshi 3.0.3: USB / Windows-device failure simulations and read-only safety."""
 import errno
 import io
 import json
@@ -145,7 +145,7 @@ class WindowsPreflightTests(unittest.TestCase):
              redirect_stdout(buffer):
             self.assertEqual(windows_preflight.main([]), 0)
         obj = json.loads(buffer.getvalue())
-        self.assertEqual(obj['tenshi_version'], '3.0.2')
+        self.assertEqual(obj['tenshi_version'], '3.0.3')
         self.assertFalse(obj['installer_tested'])
 
 
