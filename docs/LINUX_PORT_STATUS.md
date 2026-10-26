@@ -1,9 +1,15 @@
 # Linux-Portierung – Stand und Hardware-Abnahme
 
-## Aktueller Stand vom 23.10.2026
+## Veröffentlichter Stand vom 26.10.2026
+
+Linux-DEB, Windows-Installer und Portable-ZIP sind als [stabile Version 3.0.2](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2) veröffentlicht. Der gemeinsame [Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40242121217) für `abfd4c973a253c2a8571d238e15a0fb77b013dec` ist erfolgreich. Aktuelle Installationshinweise: [Linux-DEB](LINUX_DEB.md); Funktionsumfang und Teststand: [Versionshinweise](../RELEASE_NOTES_3.0.2.md).
+
+Die nachfolgenden datierten Abschnitte dokumentieren frühere Entwicklungsstände. Damalige Entwurfs- und Freigabestatus sind historische Angaben; die Testgrenzen und die Zuordnung von Hardwaretests zum jeweiligen Quellstand bleiben relevant.
+
+## Historischer Stand vom 23.10.2026
 
 Geprüfter Programmstand: `bb5c374828b626ff3e7bad00bd3f3dc78fc503e0` auf `feature/linux-readonly-port`.
-[PR #2](https://github.com/FreewareFuchs/Tenshi/pull/2) ist ein Entwurf; Zusammenführung und Veröffentlichung sind noch nicht erfolgt.
+[PR #2](https://github.com/FreewareFuchs/Tenshi/pull/2) war zu diesem damaligen Prüfstand noch ein Entwurf. Diese Statusangabe beschreibt nicht den oben genannten aktuellen Release.
 
 ### Bestätigte Prüfungen
 

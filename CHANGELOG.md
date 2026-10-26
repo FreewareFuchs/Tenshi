@@ -1,17 +1,18 @@
-# Tenshi 3.0.2 – stabile Veröffentlichung in Vorbereitung
+# Tenshi 3.0.2 – stabil veröffentlicht (26.10.2026)
 
 - Stabile Build-Kennung `stable`, Versionsanzeige ohne Beta-Zusatz und Tag `v3.0.2` ergänzt. Entwicklungsstände bleiben als `+dev` erkennbar.
 - DEB-Version `3.0.2-1` sortiert nach den bisherigen Beta-Paketen. Windows-Installer und Portable-ZIP erhalten Dateinamen ohne Beta-Suffix.
 - Gemeinsamer Release-Workflow prüft weiterhin Commit, sauberen Quellstand, Paketidentitäten und SHA-256-Werte; Veröffentlichung bleibt ein separater Schritt.
-- Der geprüfte Beta.6-Funktionsstand bleibt erhalten. [Versionshinweise und Paketabnahme](RELEASE_NOTES_3.0.2.md).
+- Der geprüfte Beta.6-Funktionsstand bleibt erhalten. Der automatische Start am Ende des Windows-Installers nutzt die Windows-Shell für erforderliche UAC-Abfragen (Fehler 740 korrigiert).
+- [Veröffentlichtes Release](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2), Commit `abfd4c973a253c2a8571d238e15a0fb77b013dec`. [Versionshinweise und Teststand](RELEASE_NOTES_3.0.2.md).
 
-# Tenshi 3.0.2 Beta.4 – vorbereitet, noch nicht veröffentlicht
+# Tenshi 3.0.2 Beta.4 – veröffentlicht (23.10.2026)
 
 - FAT32: Bei deaktivierter Spiegelung wird die aktive FAT für Datei- und Verzeichnisketten berücksichtigt. Dadurch werden gleich große, aber inhaltlich falsche Exporte aus veralteten inaktiven FAT-Ketten vermieden.
 - Ungültige aktive FAT-Nummern werden abgewiesen; Regressionstests für Export, Vorschau und Verzeichnisfortsetzungen ergänzt.
 - Linux-Paketversion auf `3.0.2~beta.4-1` erhöht. Details: [Beta.4-Versionshinweise](RELEASE_NOTES_3.0.2_BETA4.md).
 
-# Noch nicht veröffentlicht – Linux-Unterstützung (2026-10-23)
+# Linux-Unterstützung – historischer Entwicklungsstand (23.10.2026)
 
 - Linux-Blockgeräte, lesender Quellzugriff und geprüfte Quell-/Zieltrennung integriert.
 - Imaging-Vollvergleich, abgesicherte Statusdateien und verbesserte Export-Wiederaufnahme.
