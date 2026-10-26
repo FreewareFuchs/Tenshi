@@ -27,7 +27,7 @@ class IdentityTests(unittest.TestCase):
             path.write_text(json.dumps(data))
             with patch.object(identity, '__file__', str(module)), patch.object(
                     identity.subprocess, 'check_output', side_effect=AssertionError('Git must not run')):
-                self.assertEqual(identity.display_version(), '3.0.3 Beta.5 (aaaaaaaaaa)')
+                self.assertEqual(identity.display_version(), f'{__version__} Beta.5 (aaaaaaaaaa)')
                 for invalid in ('{}', 'not json', json.dumps({**data, 'commit': 'invalid'}),
                                 json.dumps({**data, 'version': '0.0.0'}),
                                 json.dumps({**data, 'dirty': True}), 'x' * 4097):
@@ -66,7 +66,7 @@ class IdentityTests(unittest.TestCase):
             self.assertFalse(clean.released)
             self.assertIn('+dev', clean.display())
             git('tag', f'v{__version__}-beta.5')
-            self.assertEqual(identity.collect_build_info(root).display(), f'3.0.3 Beta.5 ({sha[:10]})')
+            self.assertEqual(identity.collect_build_info(root).display(), f'{__version__} Beta.5 ({sha[:10]})')
             source.write_text('modified')
             dirty = identity.collect_build_info(root)
             self.assertTrue(dirty.dirty)
@@ -89,7 +89,7 @@ class IdentityTests(unittest.TestCase):
             module.with_name('_build_info.json').write_text(json.dumps(data))
             with patch.object(identity, '__file__', str(module)), patch.object(
                     identity.subprocess, 'check_output', side_effect=AssertionError('Git must not run')):
-                self.assertEqual(identity.display_version(), '3.0.3 (cccccccccc)')
+                self.assertEqual(identity.display_version(), f'{__version__} (cccccccccc)')
         self.assertIn('+dev', identity.BuildInfo(release='stable').display())
 
     def test_stable_source_tag_and_explicit_clean_build(self):

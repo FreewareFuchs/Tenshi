@@ -19,7 +19,9 @@ jobs:
       - name: Validate release identity
         env:
           RELEASE_LABEL: ${{ inputs.release }}
-        run: python3 write_build_info.py --release "$RELEASE_LABEL"
+        run: |
+          python3 sync_release_version.py --check
+          python3 write_build_info.py --release "$RELEASE_LABEL"
   linux:
     needs: validate
     uses: ./.github/workflows/linux-check.yml

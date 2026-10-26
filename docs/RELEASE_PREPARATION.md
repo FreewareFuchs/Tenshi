@@ -36,6 +36,30 @@ die Pakete auf Windows/Linux testen und die Prüfsummen kontrollieren. Die besch
 Release-Assets und funktionieren erst nach deren Veröffentlichung. Actions-Artefakte innerhalb ihrer Aufbewahrungsfrist
 herunterladen. Der Workflow besitzt ausschließlich lesende Repository-Rechte.
 
+## Versionsangaben zentral abgleichen
+
+Die Programmversion wird ausschließlich in `recoverydesk/__init__.py` geändert.
+Danach die abgeleiteten Windows-/Installer-/CI-Angaben erzeugen:
+
+```bash
+python3 sync_release_version.py --write
+python3 sync_release_version.py --check
+```
+
+Die Änderungen prüfen und gemeinsam committen, bevor ein Release-Build mit
+sauberem Git-Stand gestartet wird. Der Abgleich ändert keine Tags, Releases,
+Quellgeräte oder bereits veröffentlichten Pakete. Historische Release-Notizen
+und Abhängigkeiten werden nicht umnummeriert. Die Debian-Paketrevision bleibt
+als separate Paketierungsangabe in `build_deb.py` bestehen.
+
+Der Windows-Build und die drei CI-Workflows prüfen den Abgleich vor dem Bau.
+Veraltete oder fehlende Versionsfelder stoppen den Vorgang. Die Tests für
+Build-Kennung und Paketinhalt verwenden die Programmversion statt einer
+separaten festen Release-Nummer. Zusätzliche Tests simulieren eine künftige
+Version und prüfen die daraus entstehenden Windows-Ressourcen, Dateinamen
+und Actions-Artefakte sowie den Abbruch ohne Teiländerungen bei ungültigen
+Eingaben. Die bekannten Build-Einstiegspunkte bleiben verwendbar.
+
 ## Stabile Version 3.0.2
 
 Die [veröffentlichte 3.0.2](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2) wurde mit `stable` vom Commit `abfd4c973a253c2a8571d238e15a0fb77b013dec` erstellt ([Workflow](https://github.com/FreewareFuchs/Tenshi/actions/runs/40242121217)). Sie enthält `Tenshi_Setup_3.0.2_Win64.exe`, `Tenshi_Portable_3.0.2_Win64.zip`, `tenshi_3.0.2-1_all.deb` und `SHA256SUMS.txt`. Die Debian-Metadaten enthalten Version `3.0.2-1`, der Git-Tag ist `v3.0.2`. Der Workflow selbst erstellt weiterhin weder Tags noch Veröffentlichungen.

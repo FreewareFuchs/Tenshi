@@ -20,6 +20,8 @@ if not errorlevel 1 (
 )
 %PYTHON_CMD% -c "import sys,struct; print(sys.version); sys.exit(0 if sys.version_info >= (3,11) and struct.calcsize('P')==8 else 1)" >> "%BUILD_LOG%" 2>&1
 if errorlevel 1 goto unsupported_python
+%PYTHON_CMD% sync_release_version.py --check >> "%BUILD_LOG%" 2>&1
+if errorlevel 1 goto build_failed
 
 echo [2/5] Virtuelle Python-Umgebung vorbereiten...
 if not exist ".venv\Scripts\python.exe" (
