@@ -108,3 +108,23 @@ Quellen:
 - https://docs.flatpak.org/en/latest/sandbox-permissions.html
 - https://docs.flathub.org/docs/for-app-authors/requirements
 - https://docs.flathub.org/docs/for-app-authors/verification
+
+## Stand nach PR #43 (26.10.2026)
+
+Flatpak-, Linux- und Windows-CI für `886be30f95` sind erfolgreich.
+Unter Mint wurden Start, Image-Einlesen, USB-Export mit identischem SHA256
+und die Ablehnung eines Exportziels auf dem Quelldatenträger bestätigt.
+Dies ist eine Abnahme des getesteten Aufbaus, keine allgemeine Hardwaregarantie.
+
+Die aktuelle Flathub-Richtlinie verbietet KI-generierte oder KI-unterstützte
+Manifeste sowie automatisierte Einreichungs-PRs und entsprechende KI-generierte
+Einreichungstexte. Das experimentelle Manifest wurde mit KI erstellt und ist
+somit keine zulässige Flathub-Einreichung. Andere bekannte KI-Anteile müssen
+mit Umfang offengelegt werden; über die Aufnahme entscheidet Flathub.
+Zusätzlich ist die Eignung als Systemwerkzeug mit Datenträgerzugriff ungeklärt.
+Ein menschlicher Paketbetreuer müsste eine regelkonforme Einreichung übernehmen.
+
+Quelle: https://docs.flathub.org/docs/for-app-authors/requirements#generative-ai-policy
+
+Eine eigene native Paketquelle wird separat in [APT_REPOSITORY.md](APT_REPOSITORY.md)
+vorbereitet. Es wurde noch keine solche Quelle veröffentlicht.
