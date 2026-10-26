@@ -23,6 +23,56 @@ class BatchExportTests(unittest.TestCase):
         target.mkdir()
         return src, index, parent, target
 
+    def test_cancel_hash_of_existing_export_preserves_checkpoint(self):
+        from recoverydesk import batch_export
+        with tempfile.TemporaryDirectory() as temp:
+            src, index, parent, target = self.fixture(Path(temp))
+            first = export_batch(str(src), index, [parent], str(target))
+            before = json.loads(Path(first.manifest).read_text())['results']
+            original = batch_export._hash_file
+            def cancel_hash(path, **kwargs):
+                calls = 0
+                def stop():
+                    nonlocal calls
+                    calls += 1
+                    return calls >= 3
+                return original(path, source=kwargs['source'], cancel=stop)
+            with patch('recoverydesk.batch_export._hash_file', side_effect=cancel_hash):
+                stopped = export_batch(str(src), index, [parent], str(target))
+            self.assertTrue(stopped.cancelled)
+            self.assertEqual(stopped.verified_existing, 0)
+            self.assertEqual(stopped.failed, 0)
+            self.assertEqual(json.loads(Path(first.manifest).read_text())['results'], before)
+            resumed = export_batch(str(src), index, [parent], str(target))
+            self.assertEqual(resumed.verified_existing, 3)
+
+    def test_cancel_hash_after_copy_keeps_file_without_success_status(self):
+        from recoverydesk import batch_export
+        with tempfile.TemporaryDirectory() as temp:
+            src, index, parent, target = self.fixture(Path(temp))
+            chosen = next(e for e in index.list_dir(parent.record_number) if e.name == 'bericht.txt')
+            original = batch_export._hash_file
+            def cancel_hash(path, **kwargs):
+                calls = 0
+                def stop():
+                    nonlocal calls
+                    calls += 1
+                    return calls >= 3
+                return original(path, source=kwargs['source'], cancel=stop)
+            with patch('recoverydesk.batch_export._hash_file', side_effect=cancel_hash):
+                stopped = export_batch(str(src), index, [chosen], str(target))
+            self.assertTrue(stopped.cancelled)
+            self.assertEqual(stopped.exported, 0)
+            self.assertEqual((Path(stopped.root) / 'files/bericht.txt').read_bytes(), b'FIRST')
+            state = json.loads(Path(stopped.manifest).read_text())
+            record = state['results']['bericht.txt']
+            self.assertEqual(record['status'], 'Abgebrochen')
+            self.assertIn('Datei erhalten', record['detail'])
+            self.assertNotIn('sha256', record)
+            # An unverified complete file must not be overwritten on retry.
+            retry = export_batch(str(src), index, [chosen], str(target))
+            self.assertEqual(retry.failed, 1)
+
     def test_folder_tree_and_second_run_verifies_existing(self):
         with tempfile.TemporaryDirectory() as temp:
             src, index, parent, target = self.fixture(Path(temp))

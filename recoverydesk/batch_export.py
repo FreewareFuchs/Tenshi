@@ -230,17 +230,28 @@ def _write_log(path: Path, state: dict, result: BatchResult):
                 pass
 
 
-def _hash_file(path: Path, *, source: str | None = None) -> str:
-    """Verify an output by its opened inode, not a stale path preflight."""
+def _hash_file(path: Path, *, source: str | None = None,
+               cancel: Callable[[], bool] | None = None) -> str:
+    """Verify an output by its opened inode, checking cancellation per MiB."""
     digest = hashlib.sha256()
+    def check_cancel():
+        if cancel and cancel():
+            raise ExportCancelled('SHA-256-Prüfung abgebrochen.')
+    def read_digest(stream):
+        while True:
+            check_cancel()
+            chunk = stream.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+        check_cancel()
+    check_cancel()
     if source is not None and sys.platform.startswith('linux'):
         with open_regular_input(str(path), source) as stream:
-            while chunk := stream.read(1024 * 1024):
-                digest.update(chunk)
+            read_digest(stream)
     else:
         with path.open('rb') as stream:
-            while chunk := stream.read(1024 * 1024):
-                digest.update(chunk)
+            read_digest(stream)
     return digest.hexdigest()
 
 
@@ -395,6 +406,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                 else:
                     state['results'][task.path] = {'status': 'Ordner erstellt'}
             else:
+                copy_complete = False
                 try:
                     if not path.parent.is_dir():
                         raise OSError('Übergeordneter Ordner konnte nicht erstellt werden.')
@@ -418,18 +430,23 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                 try:
                     if (prior.get('status') == 'Erfolgreich' and path.is_file() and
                             path.stat().st_size == task.entry.size and
-                            _hash_file(path, source=source) == prior.get('sha256')):
+                            _hash_file(path, source=source, cancel=cancel) == prior.get('sha256')):
                         result.verified_existing += 1
                         completed_status = 'Bereits verifiziert'
                     else:
                         result.failed += 1
                         state['results'][task.path] = {'status': 'Fehler',
                             'detail': 'Zieldatei existiert und kann nicht als vorheriger Export bestätigt werden'}
+                except ExportCancelled:
+                    result.cancelled = True
+                    completed_status = 'Abgebrochen'
+                    # Keep the prior checkpoint; a later run must hash it again.
                 except (OSError, ValueError) as exc:
                     result.failed += 1
                     state['results'][task.path] = {'status': 'Fehler',
                         'detail': f'Vorhandene Exportdatei konnte nicht geprüft werden: {exc}'}
             else:
+                copy_complete = False
                 try:
                     if not path.parent.is_dir():
                         raise OSError('Übergeordneter Zielordner fehlt.')
@@ -439,7 +456,8 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                     else:
                         written = exporter(source, index, task.entry, str(path),
                                            cancel=cancel, byte_progress=on_bytes)
-                    signature_file = _hash_file(path, source=source)
+                    copy_complete = True
+                    signature_file = _hash_file(path, source=source, cancel=cancel)
                     result.exported += 1
                     result.bytes_written += written
                     state['results'][task.path] = {'status': 'Erfolgreich', 'bytes': written,
@@ -452,7 +470,9 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                     state['results'][task.path] = {'status': 'Fehler', 'detail': str(exc)}
                 except ExportCancelled:
                     result.cancelled = True
-                    state['results'][task.path] = {'status': 'Abgebrochen', 'detail': 'Unvollständige Datei entfernt'}
+                    state['results'][task.path] = {'status': 'Abgebrochen', 'detail': (
+                        'Vollständig geschriebene Datei erhalten; SHA-256-Prüfung abgebrochen'
+                        if copy_complete else 'Unvollständige Datei entfernt')}
                 except (OSError, ValueError) as exc:
                     result.failed += 1
                     state['results'][task.path] = {'status': 'Fehler', 'detail': str(exc)}
