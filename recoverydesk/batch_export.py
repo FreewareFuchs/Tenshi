@@ -242,6 +242,7 @@ def _hash_file(path: Path, *, source: str | None = None,
             raise ExportCancelled('SHA-256-Prüfung abgebrochen.')
     def read_digest(stream):
         before = os.fstat(stream.fileno())
+        named_before = path.lstat()
         if not stat.S_ISREG(before.st_mode):
             raise ValueError('Nur reguläre Exportdateien dürfen geprüft werden.')
         read_bytes = 0
@@ -263,8 +264,13 @@ def _hash_file(path: Path, *, source: str | None = None,
         current = path.lstat()
         identity = lambda meta: (meta.st_dev, meta.st_ino, meta.st_size,
                                  meta.st_mtime_ns, meta.st_ctime_ns)
+        # Windows may report different timestamp values through fstat and
+        # lstat for the same file. Compare timestamps only within each API.
+        same_file = lambda meta: (meta.st_dev, meta.st_ino, meta.st_size)
         if (read_bytes != before.st_size or identity(before) != identity(after) or
-                identity(after) != identity(current) or not stat.S_ISREG(current.st_mode)):
+                identity(named_before) != identity(current) or
+                same_file(after) != same_file(current) or
+                not stat.S_ISREG(current.st_mode)):
             raise OSError('Exportdatei während der Prüfung geändert.')
     check_cancel()
     if source is not None and sys.platform.startswith('linux'):

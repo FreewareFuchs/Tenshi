@@ -2,6 +2,8 @@
 from contextlib import contextmanager
 import hashlib
 import json
+import os
+from types import SimpleNamespace
 from pathlib import Path
 import tempfile
 import unittest
@@ -108,9 +110,38 @@ class PendingVerificationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp)/'file';p.write_bytes(b'original')
             def mutate(count):
-                if count:p.write_bytes(b'tampered')
+                if count:
+                    old=p.stat()
+                    p.write_bytes(b'tampered')
+                    os.utime(p,ns=(old.st_atime_ns,old.st_mtime_ns+2_000_000_000))
             with self.assertRaisesRegex(OSError,'geändert'):
                 _hash_file(p,progress=mutate)
+
+    def test_handle_and_path_timestamps_need_not_match(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p=Path(tmp)/'file';p.write_bytes(b'unchanged')
+            real_fstat=os.fstat
+            def shifted(fd):
+                meta=real_fstat(fd)
+                values={key:getattr(meta,key) for key in
+                        ('st_dev','st_ino','st_size','st_mode','st_mtime_ns','st_ctime_ns')}
+                values['st_mtime_ns']-=500
+                values['st_ctime_ns']+=12345
+                return SimpleNamespace(**values)
+            with patch('recoverydesk.batch_export.os.fstat',side_effect=shifted):
+                self.assertEqual(_hash_file(p),hashlib.sha256(b'unchanged').hexdigest())
+
+    def test_path_change_is_detected_even_if_handle_metadata_is_cached(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p=Path(tmp)/'file';p.write_bytes(b'original')
+            with p.open('rb') as stream:cached=os.fstat(stream.fileno())
+            def mutate(count):
+                if count:
+                    p.write_bytes(b'tampered')
+                    os.utime(p,ns=(cached.st_atime_ns,cached.st_mtime_ns+2_000_000_000))
+            with patch('recoverydesk.batch_export.os.fstat',return_value=cached):
+                with self.assertRaisesRegex(OSError,'geändert'):
+                    _hash_file(p,progress=mutate)
 
     def test_stream_digest_handles_partial_writes(self):
         class ShortWriter:
