@@ -12,7 +12,7 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 ## Herunterladen und starten
 
-Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Der veröffentlichte [Release v3.0.2-beta.6](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2-beta.6) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.txt`.
+Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.2](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.txt`.
 
 | Variante | Verwendung |
 | --- | --- |
@@ -26,14 +26,14 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 
 ## Unter Linux starten
 
-Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. `v3.0.2-beta.6` ist veröffentlicht. Die stabile Version 3.0.2 wird vorbereitet; bis zu ihrer Veröffentlichung bleibt Beta.6 der verfügbare Download. [Vorbereitung und Versionshinweise](RELEASE_NOTES_3.0.2.md).
+Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.2`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.2.md).
 
 ### DEB-Paket für Linux Mint 22.x
 
-Die Datei `tenshi_3.0.2.beta.6-1_all.deb` aus dem entsprechenden GitHub-Release herunterladen. Im Downloadordner installieren:
+Die Datei `tenshi_3.0.2-1_all.deb` aus dem entsprechenden GitHub-Release herunterladen. Im Downloadordner installieren:
 
 ```bash
-sudo apt install ./tenshi_3.0.2.beta.6-1_all.deb
+sudo apt install ./tenshi_3.0.2-1_all.deb
 ```
 
 Danach **Tenshi** im Anwendungsmenü öffnen oder `tenshi` im Terminal starten. Tenshi läuft als normaler Benutzer. Das Paket installiert benötigte Systemabhängigkeiten über APT; es ändert keine Geräteberechtigungen. Deinstallation: `sudo apt remove tenshi`.
@@ -97,11 +97,13 @@ Die Quelle wird nur lesend geöffnet. Bei mechanischen Auffälligkeiten oder wer
 
 ## Entwicklungs- und Teststatus
 
-Fenstertitel, Offline-Hilfe unter „Über Tenshi“ und `tenshi --version` zeigen Beta- und Build-Kennung. Entwicklungsstände erhalten `+dev`, lokal geänderte Quellen zusätzlich `+dirty`; ohne bekannte Build-Information steht beim Commit `?`. Details: [Build-Kennung](docs/BUILD_IDENTITY.md).
+Fenstertitel, Offline-Hilfe unter „Über Tenshi“ und `tenshi --version` zeigen die Programmversion und die kurze Git-Commit-Kennung. Die stabile Version wird beispielsweise als `3.0.2 (abfd4c973a)` angezeigt; Beta-Pakete enthalten zusätzlich ihre Beta-Kennung. Entwicklungsstände erhalten `+dev`, lokal geänderte Quellen zusätzlich `+dirty`; ohne bekannte Build-Information steht beim Commit `?`. Details: [Build-Kennung](docs/BUILD_IDENTITY.md).
 
-Tenshi bleibt experimentelle Beta-Software. Automatisierte Tests mit synthetischen Images und simulierten Fehlerfällen ersetzen keine Prüfung auf beschädigter Hardware.
+3.0.2 ist als stabile Version veröffentlicht. Die dokumentierten Einschränkungen einzelner Dateisystemfunktionen bleiben bestehen. Automatisierte Tests mit synthetischen Images und simulierten Fehlerfällen ersetzen keine Prüfung auf beschädigter Hardware.
 
-Stand 24.10.2026: Die lokale Testsuite umfasst 633 Tests und läuft unter virtuellem X11 ohne Fehler durch; zwei Tests werden übersprungen. Linux- und Windows-CI sind für [`a96d584`](https://github.com/FreewareFuchs/Tenshi/commit/a96d58469e0a14f22b01fd3a17cbd6c9d69c14f0) erfolgreich: [Linux](https://github.com/FreewareFuchs/Tenshi/actions/runs/40104529828) · [Windows](https://github.com/FreewareFuchs/Tenshi/actions/runs/40104529847). Linux-CI prüft unabhängig formatierte FAT32-, NTFS-, ext4-, Btrfs- und XFS-Images. Die neuen FAT32- und NTFS-Referenztests vergleichen direkte und Stapel-Exporte mit bekannten Originaldaten per SHA-256 und prüfen das Fortsetzen sowie den unveränderten Quellinhalt.
+Stand 26.10.2026: Die vollständige lokale Suite der stabilen Vorbereitung lief mit 665 Tests ohne Fehler unter virtuellem X11; zwei Tests wurden übersprungen. Der [gemeinsame Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40242121217) für den veröffentlichten Commit `abfd4c973a253c2a8571d238e15a0fb77b013dec` ist erfolgreich: Linux- und Windows-Prüfungen, EXE-/Portable-/Installer-Bau, DEB-Installation und gemeinsame Paket-/Prüfsummenprüfung. Die Linux-CI prüft unabhängig formatierte FAT32-, NTFS-, exFAT-, ext4-, Btrfs- und XFS-Images.
+
+Beta.6 wurde unter Linux und Windows manuell geprüft: Paketstart/Versionsanzeige, Export-Abbruch und erneuter Export, passende Original-/Export-SHA-256-Werte, Bestätigung vorhandener Exporte, Erkennung veränderter Zieldateien und sichtbare Fehlerwarnungen. Für die stabilen Pakete wurden die Versionsanzeigen sowie der automatische Windows-Start nach der Installer-Korrektur bestätigt.
 
 Zusätzliche Windows-Praxistests bestätigten Quellwechsel während einer Analyse, das Verwerfen alter Dateilisten, die Bedienung großer Dateibäume sowie Export und Fortsetzen mit passenden SHA-256-Werten. Für den Build aus `a96d584` wurde außerdem die verständlichere Bewertung der Partitionserkennung in Anzeige und gespeichertem Partitionsbericht bestätigt. Diese Ergebnisse beziehen sich auf die jeweiligen Entwicklungsstände. Sie sind keine nachträgliche Abnahme der unveränderten Beta.5-Downloads.
 

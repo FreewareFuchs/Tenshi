@@ -1,12 +1,12 @@
-# Tenshi 3.0.2 – stabile Version in Vorbereitung
+# Tenshi 3.0.2 – stabile Version (26.10.2026)
 
-Die stabile Ausgabe übernimmt den unter Windows und Linux geprüften Funktionsstand von Beta.6. Diese Datei dokumentiert die Vorbereitung; die Veröffentlichung erfolgt erst nach Prüfung der neu gebauten Pakete.
+Die stabile Ausgabe ist [auf GitHub veröffentlicht](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2). Sie übernimmt den geprüften Funktionsstand von Beta.6 und enthält die Korrektur für den automatischen Start am Ende der Windows-Installation. Quellstand: `abfd4c973a253c2a8571d238e15a0fb77b013dec`.
 
 ## Bereitstellung
 
 - Windows 10/11, 64 Bit: `Tenshi_Setup_3.0.2_Win64.exe` und `Tenshi_Portable_3.0.2_Win64.zip`.
 - Linux Mint 22.x / Python ab 3.11: `tenshi_3.0.2-1_all.deb`, Debian-Version `3.0.2-1`.
-- Gemeinsame `SHA256SUMS.txt`; vorgesehener Git-Tag `v3.0.2`.
+- Gemeinsame `SHA256SUMS.txt`; Git-Tag `v3.0.2`.
 - Nur saubere, bekannte Git-Commits erhalten eine explizite Release-Kennung. Unveröffentlichte Entwicklungsstände tragen weiterhin `+dev`.
 
 ## Enthaltene Verbesserungen
@@ -24,11 +24,11 @@ Die stabile Ausgabe übernimmt den unter Windows und Linux geprüften Funktionss
 - Geringerer Speicherbedarf großer Dateibäume, genauere NTFS-Diagnose und verständlichere Angaben zur Partitionserkennung.
 - Sechs Oberflächensprachen, unabhängige Dateisystem-Referenztests und festgelegte Windows-Buildwerkzeuge.
 
-## Bestätigter Teststand vor der stabilen Paketierung
+## Bestätigter Teststand
 
 Beta.6 wurde auf Windows und Linux manuell geprüft: Paketstart/Versionsanzeige, Export-Abbruch und erneuter Export, SHA-256-Vergleich mit dem Original, Erkennung vorhandener und nachträglich veränderter Zieldateien sowie sichtbare Export-Warnungen. Die veröffentlichten Beta.6-Pakete wurden vom Anwender ebenfalls positiv geprüft.
 
-Die stabilen Pakete werden neu gebaut und benötigen anschließend noch die kurze Paketabnahme.
+Der [gemeinsame stabile Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40242121217) mit Linux-/Windows-Prüfungen und Paketvalidierung ist erfolgreich. Die vollständige lokale Suite der Vorbereitung bestand 665 Tests ohne Fehler; zwei Tests wurden übersprungen. Der Anwender bestätigte die Versionsanzeigen der stabilen Pakete und den automatischen Windows-Start ohne Fehler 740.
 
 ## Grenzen bleiben bestehen
 
