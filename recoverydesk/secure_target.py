@@ -5,7 +5,8 @@ exchanged a directory or symlink. Every write-open resolves the leaf beneath
 an opened parent directory descriptor, rejects links and special files, and
 verifies the *opened parent's* physical backing against a block-device source.
 
-The Windows branch preserves the established path-based behavior.
+The Windows branch checks the opened file identity before exposing a writable
+handle. Its parent-directory resolution remains path-based.
 """
 from __future__ import annotations
 
@@ -46,6 +47,22 @@ def secure_parent(path: str, source: str):
         os.close(fd)
 
 
+def _validate_output(fd: int, source: str,
+                     expected_identity: tuple[int, int] | None) -> None:
+    """Validate the actual opened file before callers can write or truncate it."""
+    identity = os.fstat(fd)
+    if not stat.S_ISREG(identity.st_mode):
+        raise ValueError('Nur reguläre Image-/Exportdateien sind als Ziel erlaubt.')
+    actual = (identity.st_dev, identity.st_ino)
+    if expected_identity is not None and actual != expected_identity:
+        raise ValueError('Zieldatei wurde seit der Erstellung ausgetauscht.')
+    from .sources import is_device_source
+    if not is_device_source(source):
+        source_meta = os.stat(source)
+        if (source_meta.st_dev, source_meta.st_ino) == actual:
+            raise ValueError('Quelle und Ziel dürfen nicht dieselbe Datei sein.')
+
+
 @contextmanager
 def open_regular_output(path: str, mode: str, source: str, *,
                         expected_identity: tuple[int, int] | None = None):
@@ -58,6 +75,7 @@ def open_regular_output(path: str, mode: str, source: str, *,
         raise ValueError('Ungültiger Ausgabe-Modus.')
     if not _linux():
         with open(path, mode, buffering=0) as out:
+            _validate_output(out.fileno(), source, expected_identity)
             yield out
         return
     with secure_parent(path, source) as parent_fd:
@@ -66,17 +84,7 @@ def open_regular_output(path: str, mode: str, source: str, *,
                  (os.O_WRONLY | os.O_CREAT | os.O_EXCL if mode == 'xb' else os.O_RDWR))
         fd = os.open(name, flags, 0o600, dir_fd=parent_fd)
         try:
-            identity = os.fstat(fd)
-            if not stat.S_ISREG(identity.st_mode):
-                raise ValueError('Nur reguläre Image-/Exportdateien sind als Ziel erlaubt.')
-            actual = (identity.st_dev, identity.st_ino)
-            if expected_identity is not None and actual != expected_identity:
-                raise ValueError('Zieldatei wurde seit der Erstellung ausgetauscht.')
-            from .sources import is_device_source
-            if not is_device_source(source):
-                source_meta = os.stat(source)
-                if (source_meta.st_dev, source_meta.st_ino) == actual:
-                    raise ValueError('Quelle und Ziel dürfen nicht dieselbe Datei sein.')
+            _validate_output(fd, source, expected_identity)
             with os.fdopen(fd, mode.replace('x', 'w'), buffering=0) as out:
                 fd = -1
                 yield out
