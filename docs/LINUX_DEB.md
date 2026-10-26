@@ -2,7 +2,8 @@
 
 Der aktuelle Quellcode baut `tenshi-recovery_3.0.2-2_all.deb` mit Paketname
 und Startbefehl `tenshi-recovery`. Der sichtbare Name bleibt Tenshi.
-Dieses neue Paket ist noch nicht veröffentlicht oder unter Mint abgenommen.
+Dieses Paket ist seit 26.10.2026 in der signierten [APT-Quelle](APT_REPOSITORY.md)
+veröffentlicht; Installation, stabile Versionskennung und Start sind unter Mint bestätigt.
 Die Umstellung vermeidet eine Kollision mit Ubuntus unabhängigem
 Logüberwachungsprogramm `tenshi`.
 
@@ -26,7 +27,13 @@ Bei älteren Beta-Paketen ersetzte der Download-Dateiname die Debian-Tilde durch
 
 ## Installation, Start und Entfernung
 
-Nach Veröffentlichung oder mit einem selbst gebauten neuen Paket (die neue Datei ist noch kein Release-Download):
+Über die eingerichtete [APT-Quelle](APT_REPOSITORY.md):
+
+```bash
+sudo apt update && sudo apt install tenshi-recovery
+```
+
+Oder nach Prüfsummenvergleich des direkten DEB-Downloads:
 
 ```bash
 sudo apt install ./tenshi-recovery_3.0.2-2_all.deb
@@ -41,7 +48,7 @@ Zum Entfernen:
 sudo apt remove tenshi-recovery
 ```
 
-Eigene Images, Exporte und Benutzereinstellungen werden nicht vom Paket verwaltet. Neue Tenshi-Versionen müssen als DEB heruntergeladen und wieder mit `apt install ./DATEINAME.deb` installiert werden. Es wird keine zusätzliche Paketquelle eingerichtet; das Paket erscheint durch den Download nicht automatisch im allgemeinen Katalog des Mint-Anwendungsmanagers.
+Eigene Images, Exporte und Benutzereinstellungen werden nicht vom Paket verwaltet. Mit separat eingerichteter APT-Quelle sind Updates über APT möglich. Ein lokal installiertes DEB allein fügt die Quelle nicht hinzu. Anleitung und geprüfter Stand: [APT-Paketquelle](APT_REPOSITORY.md).
 
 ## Bauen
 
@@ -76,3 +83,12 @@ python3 build_deb.py --package-version 3.0.2-2 --release stable
 ```
 
 Ohne explizite saubere Release-Kennung oder passenden Git-Tag zeigt die Anwendung weiterhin `+dev`. Einzelheiten: [Build-Kennung](BUILD_IDENTITY.md) und [Release-Vorbereitung](RELEASE_PREPARATION.md).
+
+## Abnahme des umbenannten Pakets am 26.10.2026
+
+Der [Vorbereitungs-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40316163730)
+aus `ba9576020c` ist erfolgreich. Das finale DEB zeigt `3.0.2 (ba9576020c)` ohne
+`+dev`. Mint-Installation und Start sowie erneuter Download/Installation
+von freewarefuchs.de wurden bestätigt. Der fehlende Menüeintrag wurde auf
+eine alte persönliche Desktop-Datei mit `Exec=tenshi` zurückgeführt und durch
+Sichern dieser Datei behoben.
