@@ -86,6 +86,21 @@ Die Quelle separat deaktivieren, indem
 `/etc/apt/sources.list.d/tenshi.sources` aus dem Verzeichnis verschoben wird;
 das deinstalliert Tenshi nicht.
 
+## Installation über die Mint-Anwendungsverwaltung
+
+Nach der einmaligen Einrichtung der Paketquelle die Anwendungsverwaltung
+öffnen und im Menü oben rechts die **Liste der Pakete aktualisieren**.
+Danach nach **`tenshi-recovery`** suchen und das Paket installieren.
+Der Menüname der installierten Anwendung lautet **Tenshi**.
+
+Ein Suchtreffer `tenshi` mit Version `0.13-7` und einer Beschreibung zur
+Protokollüberwachung gehört zu einem anderen Programm. Für die Datenrettung
+ist der Paketname `tenshi-recovery` maßgeblich.
+
+Wenn APT das Paket bereits erkennt, es aber in der Anwendungsverwaltung
+noch fehlt, deren eigene Paketliste aktualisieren. Ein `sudo apt update`
+allein reichte im bestätigten Mint-Test nicht für die Suchanzeige aus.
+
 ## Menüeintrag fehlt nach dem Paketwechsel
 
 Eine im Menüeditor angepasste oder ausgeblendete persönliche Desktop-Datei
@@ -146,6 +161,13 @@ DEB-Hash und Dateigröße; alter Paketeintrag entfernt.
 Unter Mint manuell bestätigt: Installation, stabile Versionsanzeige,
 Programmstart und erneuter Download/Installation direkt von der APT-Quelle.
 Der Menüstart funktionierte nach Sicherung einer alten persönlichen Starterdatei.
+
+Am 26.10.2026 wurde zusätzlich der vollständige Installationsweg in einem
+frischen Mint-Live-System vom Nutzer bestätigt: Einrichtung der Paketquelle
+nach der Webseiten-Anleitung, Aktualisierung der Paketliste in der
+Anwendungsverwaltung, Auffinden von `tenshi-recovery`, Installation und Start.
+Der Test bestätigt diesen Installationsweg; Neustartverhalten und ein Update
+zwischen zwei verschiedenen Paketversionen wurden damit nicht geprüft.
 
 Dies belegt noch kein Update zwischen zwei verschiedenen Versionen und keine
 neue allgemeine Hardwareabnahme. Das DEB wird separat über diese Quelle
