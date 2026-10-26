@@ -32,6 +32,7 @@
         }
       ],
       "post-install": [
+        "make install-libraries",
         "chmod u+w /app/lib/libtcl9.0.so"
       ]
     },
@@ -47,6 +48,7 @@
         }
       ],
       "post-install": [
+        "make install-libraries",
         "chmod u+w /app/lib/libtcl9tk9.0.so"
       ]
     },
