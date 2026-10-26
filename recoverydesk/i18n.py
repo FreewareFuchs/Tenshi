@@ -31,6 +31,10 @@ TRANSLATIONS = {}
 def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
+# Explicit transfer and checksum phases for batch export progress.
+add('Datei kopieren', 'Copying file', 'Copiando archivo', '正在复制文件', 'Копирование файла', 'ファイルをコピー中')
+add('SHA256 prüfen', 'Checking SHA256', 'Comprobando SHA256', '正在校验 SHA256', 'Проверка SHA256', 'SHA256 を検査中')
+
 # Batch completion must distinguish failed exports from successful processing.
 add('Beendet mit Fehlern', 'Completed with errors', 'Finalizado con errores', '完成，但有错误', 'Завершено с ошибками', 'エラーありで終了')
 add('Beim Stapel-Export sind {count} Fehler aufgetreten. Nicht alle Dateien konnten exportiert oder bestätigt werden. Details stehen im Ergebnisbericht.',

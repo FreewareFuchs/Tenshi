@@ -231,19 +231,26 @@ def _write_log(path: Path, state: dict, result: BatchResult):
 
 
 def _hash_file(path: Path, *, source: str | None = None,
-               cancel: Callable[[], bool] | None = None) -> str:
+               cancel: Callable[[], bool] | None = None,
+               progress: Callable[[int], None] | None = None) -> str:
     """Verify an output by its opened inode, checking cancellation per MiB."""
     digest = hashlib.sha256()
     def check_cancel():
         if cancel and cancel():
             raise ExportCancelled('SHA-256-Prüfung abgebrochen.')
     def read_digest(stream):
+        read_bytes = 0
+        if progress:
+            progress(0)
         while True:
             check_cancel()
             chunk = stream.read(1024 * 1024)
             if not chunk:
                 break
             digest.update(chunk)
+            read_bytes += len(chunk)
+            if progress:
+                progress(read_bytes)
         check_cancel()
     check_cancel()
     if source is not None and sys.platform.startswith('linux'):
@@ -374,7 +381,8 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
         last_byte_event = time.monotonic()
         file_bytes = 0
         if event:
-            event({'type': 'start', 'path': task.path, 'number': n})
+            event({'type': 'start', 'path': task.path, 'number': n,
+                   'size': max(0, int(task.entry.size)) if not task.is_directory else 0})
         def on_bytes(delta):
             nonlocal buffered_bytes, last_byte_event, file_bytes
             file_bytes += delta
@@ -393,6 +401,15 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
             if event and buffered_bytes:
                 event({'type': 'bytes', 'path': task.path, 'delta': buffered_bytes})
                 buffered_bytes = 0
+        last_hash_event = 0.0
+        def on_hash(read_bytes):
+            nonlocal last_hash_event
+            now = time.monotonic()
+            if event and (read_bytes == 0 or read_bytes >= task.entry.size or
+                          now - last_hash_event >= .15):
+                event({'type': 'verify', 'path': task.path, 'read': read_bytes,
+                       'size': max(0, int(task.entry.size))})
+                last_hash_event = now
         if progress:
             progress(n, len(plan), task.path, 'Prüfung')
         if task.is_directory:
@@ -430,7 +447,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                 try:
                     if (prior.get('status') == 'Erfolgreich' and path.is_file() and
                             path.stat().st_size == task.entry.size and
-                            _hash_file(path, source=source, cancel=cancel) == prior.get('sha256')):
+                            _hash_file(path, source=source, cancel=cancel, progress=on_hash) == prior.get('sha256')):
                         result.verified_existing += 1
                         completed_status = 'Bereits verifiziert'
                     else:
@@ -457,7 +474,8 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                         written = exporter(source, index, task.entry, str(path),
                                            cancel=cancel, byte_progress=on_bytes)
                     copy_complete = True
-                    signature_file = _hash_file(path, source=source, cancel=cancel)
+                    flush_bytes()
+                    signature_file = _hash_file(path, source=source, cancel=cancel, progress=on_hash)
                     result.exported += 1
                     result.bytes_written += written
                     state['results'][task.path] = {'status': 'Erfolgreich', 'bytes': written,

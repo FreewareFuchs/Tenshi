@@ -2958,7 +2958,7 @@ class RecoveryDeskApp(tk.Tk):
                 self._export_iids[path] = iid
             if data.get('resumed'):
                 self.status.set('Vorhandenen Export prüfen und fortsetzen …')
-        elif kind in ('start', 'done'):
+        elif kind in ('start', 'verify', 'done'):
             path = data['path']
             iid = self._export_iids.get(path)
             if iid:
@@ -2971,9 +2971,14 @@ class RecoveryDeskApp(tk.Tk):
 
     def _paint_export_progress(self):
         """Update widgets only from Tk's main thread using byte-aware progress."""
-        percent = round(100 * self.export_progress.overall_fraction, 1)
+        q = self.export_progress
+        fraction = q.verification_fraction if q.verifying and not q.ended else q.overall_fraction
+        percent = round(100 * fraction, 1)
         self.export_queue_bar.configure(value=percent)
-        if self.export_progress.ended and self.export_progress.failed:
+        if q.verifying and not q.ended:
+            label = translate('SHA256 prüfen', self.language)
+            self.export_queue_percent.set(f'{label}: {percent:.1f} %')
+        elif self.export_progress.ended and self.export_progress.failed:
             self.export_queue_percent.set(translate('Fehler', self.language))
         else:
             self.export_queue_percent.set(f'{percent:.1f} %')
@@ -2989,7 +2994,15 @@ class RecoveryDeskApp(tk.Tk):
             count += 1
         self._paint_export_progress()
         if self.export_running or not self._export_events.empty():
-            self.export_queue_summary.set(self.export_progress.summary())
+            q = self.export_progress
+            if q.verifying:
+                label = translate('SHA256 prüfen', self.language)
+                self.export_queue_summary.set(
+                    f'{label}: {readable_bytes(q.verified_bytes)} / '
+                    f'{readable_bytes(q.verification_size)} · {q.active_path}')
+            else:
+                label = translate('Datei kopieren', self.language)
+                self.export_queue_summary.set(f'{label} · {q.summary()}')
             self.after(110, self._drain_export_events)
 
     def export_browser_selection(self):
