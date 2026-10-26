@@ -1,0 +1,3 @@
+#!/bin/sh
+# Keep the runtime's Python, bundled Tk and installed source; never elevate.
+exec /usr/bin/python3 -EsB /app/share/tenshi/main.py "$@"

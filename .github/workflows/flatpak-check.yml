@@ -1,0 +1,78 @@
+name: Experimental Flatpak checks
+
+on:
+  pull_request:
+    paths:
+      - 'packaging/flatpak/**'
+      - 'prepare_flatpak.py'
+      - 'tests/test_flatpak_packaging.py'
+      - '.github/workflows/flatpak-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flatpak-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install builder and fixture tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder desktop-file-utils appstream xvfb dosfstools mtools
+      - name: Validate desktop entry, metadata and staging
+        run: |
+          desktop-file-validate packaging/flatpak/*.desktop
+          appstreamcli validate --no-net packaging/flatpak/*.metainfo.xml
+          python3 -m unittest discover -s tests -p test_flatpak_packaging.py -v
+          python3 prepare_flatpak.py
+      - name: Install test runtime
+        run: |
+          flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak --user install --assumeyes --noninteractive flathub org.freedesktop.Sdk//25.08
+      - name: Build and install experimental package
+        run: |
+          flatpak-builder --user --disable-rofiles-fuse --install --repo=flatpak_output/repo flatpak_output/build flatpak_output/context/de.freewarefuchs.Tenshi.Experimental.json
+          flatpak run de.freewarefuchs.Tenshi.Experimental//test --version
+          flatpak run de.freewarefuchs.Tenshi.Experimental//test --smoke-test
+      - name: Create independent regular-file FAT32 fixture
+        run: |
+          mkdir -p flatpak_output/fixture
+          truncate -s 64M flatpak_output/fixture/source.img
+          mkfs.fat -F 32 -s 1 flatpak_output/fixture/source.img
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path('flatpak_output/fixture')
+          files = {'hello.txt': b'Tenshi Flatpak reference\r\n',
+                   'binary.bin': bytes(range(256)) * 8192 + b'partial cluster'}
+          for name, data in files.items():
+              (root / name).write_bytes(data)
+          (root / 'expected.json').write_text(json.dumps({
+              name: hashlib.sha256(data).hexdigest() for name, data in files.items()}))
+          PY
+          mcopy -i flatpak_output/fixture/source.img flatpak_output/fixture/hello.txt ::/hello.txt
+          mcopy -i flatpak_output/fixture/source.img flatpak_output/fixture/binary.bin ::/binary.bin
+          chmod 444 flatpak_output/fixture/source.img
+      - name: Installed GUI, export and imaging checks (no physical device)
+        run: |
+          xvfb-run -a flatpak run --command=python3 de.freewarefuchs.Tenshi.Experimental//test "$PWD/packaging/flatpak/smoke_test.py" "$PWD/flatpak_output/fixture/source.img" "$PWD/flatpak_output/fixture/expected.json"
+      - name: Create test bundle
+        run: |
+          flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo flatpak_output/repo flatpak_output/Tenshi-experimental-x86_64.flatpak de.freewarefuchs.Tenshi.Experimental test
+          cd flatpak_output
+          sha256sum Tenshi-experimental-x86_64.flatpak > Tenshi-experimental-x86_64.flatpak.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tenshi-experimental-Flatpak
+          path: |
+            flatpak_output/Tenshi-experimental-x86_64.flatpak
+            flatpak_output/Tenshi-experimental-x86_64.flatpak.sha256
+          retention-days: 7
+          if-no-files-found: error

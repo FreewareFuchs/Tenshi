@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>de.freewarefuchs.Tenshi.Experimental</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Tenshi (Flatpak Test)</name>
+  <summary>Test read-only disk analysis and file recovery in a Flatpak sandbox</summary>
+  <description>
+    <p>This experimental package tests Tenshi in a Flatpak sandbox. Browse supported
+    filesystems in disk images, export files to a separate drive and create disk images.</p>
+    <p>Sources are opened read-only. Recovery is not guaranteed. Physical devices
+    require separately configured read permissions. This package is not a stable release.</p>
+  </description>
+  <launchable type="desktop-id">de.freewarefuchs.Tenshi.Experimental.desktop</launchable>
+  <url type="homepage">https://freewarefuchs.de/tenshi/</url>
+  <url type="bugtracker">https://github.com/FreewareFuchs/Tenshi/issues</url>
+  <url type="vcs-browser">https://github.com/FreewareFuchs/Tenshi</url>
+  <developer id="de.freewarefuchs"><name>FreewareFuchs</name></developer>
+  <content_rating type="oars-1.1"/>
+</component>

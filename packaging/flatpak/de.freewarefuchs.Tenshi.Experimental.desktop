@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Tenshi (Flatpak Test)
+Name[de]=Tenshi (Flatpak-Test)
+GenericName=Data recovery
+GenericName[de]=Datenrettung
+Comment=Experimental Flatpak build for read-only recovery tests
+Comment[de]=Experimenteller Flatpak-Build für schreibgeschützte Datenrettungstests
+Exec=tenshi-flatpak
+Icon=de.freewarefuchs.Tenshi.Experimental
+Terminal=false
+Categories=System;Utility;
+Keywords=recovery;disk;image;Datenrettung;
+StartupNotify=true
