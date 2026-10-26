@@ -1065,7 +1065,7 @@ def scan_tree(path: str, offset: int = 0, max_entries: int = MAX_ENTRIES,
 
 
 def export_file(source, index: GenericIndex, entry: GenericEntry, dest: str,
-                cancel=None, byte_progress=None) -> int:
+                cancel=None, byte_progress=None, data_digest=None) -> int:
     if not entry.recoverable:
         raise FileSystemError(entry.unsupported_reason or 'Kein Datei-Eintrag')
     ensure_safe_destination(source, dest)
@@ -1077,7 +1077,8 @@ def export_file(source, index: GenericIndex, entry: GenericEntry, dest: str,
             with open_regular_output(dest, 'xb', source) as out:
                 created = True
                 written = write_chunks(out, index.volumes.iter_file(f, entry),
-                                       cancel=cancel, byte_progress=byte_progress)
+                                       cancel=cancel, byte_progress=byte_progress,
+                                       data_digest=data_digest)
                 if written != entry.size:
                     raise FileSystemError(f'Unvollständige Datei ({written} von {entry.size} Bytes)')
                 out.flush()

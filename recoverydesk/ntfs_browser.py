@@ -553,7 +553,7 @@ def _new_path(folder: str, name: str, entry: FileEntry) -> str:
 
 
 def export_file(source: str, info: NTFSInfo, entry: FileEntry, dest: str,
-                cancel=None, byte_progress=None) -> int:
+                cancel=None, byte_progress=None, data_digest=None) -> int:
     """Read-only source; buffered streaming export; remove partial target on errors."""
     if not entry.recoverable:
         raise NTFSError(entry.unsupported_reason or 'Nicht als Datei exportierbar.')
@@ -582,7 +582,8 @@ def export_file(source: str, info: NTFSInfo, entry: FileEntry, dest: str,
                             yield bytes(take)
                             rest -= take
                     chunks = iter_content()
-                count = write_chunks(dst, chunks, cancel=cancel, byte_progress=byte_progress)
+                count = write_chunks(dst, chunks, cancel=cancel, byte_progress=byte_progress,
+                                     data_digest=data_digest)
                 if count != entry.size:
                     raise NTFSError(f'Unvollständiger Datenstrom: {count} von {entry.size} Bytes')
                 dst.flush()

@@ -35,6 +35,39 @@ def add(de, en, es, zh, ru, ja):
 add('Datei kopieren', 'Copying file', 'Copiando archivo', '正在复制文件', 'Копирование файла', 'ファイルをコピー中')
 add('SHA256 prüfen', 'Checking SHA256', 'Comprobando SHA256', '正在校验 SHA256', 'Проверка SHA256', 'SHA256 を検査中')
 
+# Copied-stream checkpoints authorize verification only, never overwriting.
+add('Neue Exporte: Zieldatei mit der Prüfsumme des kopierten Datenstroms verglichen. Kein Nachweis ursprünglicher Integrität.',
+    'New exports: destination compared with the checksum of the copied data stream. Not proof of original integrity.',
+    'Nuevas exportaciones: destino comparado con la suma del flujo de datos copiado. No demuestra la integridad original.',
+    '新导出：将目标文件与已复制数据流的校验和比较。这不能证明原始数据完整。',
+    'Новые экспорты: файл назначения сравнен с контрольной суммой скопированного потока. Это не доказывает исходную целостность.',
+    '新規出力：コピーしたデータストリームのチェックサムと出力先を比較。元データの完全性の証明ではありません。')
+add('Fortsetzen: Größe und SHA-256 mit dem gespeicherten Prüfwert verglichen. Kein erneutes Lesen der Quelle für den Inhaltsvergleich.',
+    'Resume: size and SHA-256 compared with the saved checksum. The source is not reread for this content comparison.',
+    'Reanudación: tamaño y SHA-256 comparados con la suma guardada. No se relee el origen para esta comparación del contenido.',
+    '继续：将大小和 SHA-256 与保存的校验值比较。此次内容比较不会重新读取源。',
+    'Продолжение: размер и SHA-256 сравнены с сохранённой суммой. Источник не перечитывается для этого сравнения содержимого.',
+    '再開：サイズとSHA-256を保存した値と比較。この内容比較のためにソースを再読込しません。')
+add('Mit der beim Kopieren gespeicherten Prüfsumme bestätigt',
+    'Confirmed against the checksum saved during copying',
+    'Confirmado con la suma guardada durante la copia',
+    '已通过复制时保存的校验和确认',
+    'Подтверждено по сумме, сохранённой при копировании',
+    'コピー時に保存したチェックサムで確認済み')
+add('Zieldatei stimmt nicht mit den kopierten Daten überein.',
+    'Destination does not match the copied data.',
+    'El destino no coincide con los datos copiados.',
+    '目标文件与复制的数据不一致。',
+    'Файл назначения не соответствует скопированным данным.',
+    '出力先がコピーしたデータと一致しません。')
+
+add('Exportdatei während der Prüfung geändert.',
+    'Export file changed during verification.',
+    'El archivo exportado cambió durante la comprobación.',
+    '导出文件在校验期间发生变化。',
+    'Экспортированный файл изменён во время проверки.',
+    '検証中に出力ファイルが変更されました。')
+
 # Batch completion must distinguish failed exports from successful processing.
 add('Beendet mit Fehlern', 'Completed with errors', 'Finalizado con errores', '完成，但有错误', 'Завершено с ошибками', 'エラーありで終了')
 add('Beim Stapel-Export sind {count} Fehler aufgetreten. Nicht alle Dateien konnten exportiert oder bestätigt werden. Details stehen im Ergebnisbericht.',

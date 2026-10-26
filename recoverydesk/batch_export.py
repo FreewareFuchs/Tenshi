@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import re
+import stat
 import sys
 import time
 from pathlib import Path
@@ -239,6 +241,9 @@ def _hash_file(path: Path, *, source: str | None = None,
         if cancel and cancel():
             raise ExportCancelled('SHA-256-Prüfung abgebrochen.')
     def read_digest(stream):
+        before = os.fstat(stream.fileno())
+        if not stat.S_ISREG(before.st_mode):
+            raise ValueError('Nur reguläre Exportdateien dürfen geprüft werden.')
         read_bytes = 0
         if progress:
             progress(0)
@@ -247,11 +252,20 @@ def _hash_file(path: Path, *, source: str | None = None,
             chunk = stream.read(1024 * 1024)
             if not chunk:
                 break
+            if read_bytes + len(chunk) > before.st_size:
+                raise OSError('Exportdatei während der Prüfung geändert.')
             digest.update(chunk)
             read_bytes += len(chunk)
             if progress:
                 progress(read_bytes)
         check_cancel()
+        after = os.fstat(stream.fileno())
+        current = path.lstat()
+        identity = lambda meta: (meta.st_dev, meta.st_ino, meta.st_size,
+                                 meta.st_mtime_ns, meta.st_ctime_ns)
+        if (read_bytes != before.st_size or identity(before) != identity(after) or
+                identity(after) != identity(current) or not stat.S_ISREG(current.st_mode)):
+            raise OSError('Exportdatei während der Prüfung geändert.')
     check_cancel()
     if source is not None and sys.platform.startswith('linux'):
         with open_regular_input(str(path), source) as stream:
@@ -260,6 +274,19 @@ def _hash_file(path: Path, *, source: str | None = None,
         with path.open('rb') as stream:
             read_digest(stream)
     return digest.hexdigest()
+
+
+def _pending_copy(prior: dict, size: int) -> bool:
+    """Only our completed-copy checkpoint can authorize a new hash attempt.
+
+    Older cancelled exports and foreign files have no copied-stream digest.
+    Never infer authorization from a human-readable error message or size alone.
+    """
+    return (prior.get('verification_pending') is True and
+            prior.get('status') in ('Abgebrochen', 'Fehler') and
+            type(prior.get('bytes')) is int and prior['bytes'] == size and
+            isinstance(prior.get('copied_sha256'), str) and
+            re.fullmatch(r'[0-9a-f]{64}', prior['copied_sha256']) is not None)
 
 
 def _is_unsafe_link(path: Path) -> bool:
@@ -445,41 +472,65 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                     'detail': '; '.join(preflight.details)}
             elif path.exists() or _is_unsafe_link(path):
                 try:
-                    if (prior.get('status') == 'Erfolgreich' and path.is_file() and
+                    pending = _pending_copy(prior, task.entry.size)
+                    expected = prior.get('copied_sha256') if pending else prior.get('sha256')
+                    if ((pending or prior.get('status') == 'Erfolgreich') and
+                            not _is_unsafe_link(path) and path.is_file() and
                             path.stat().st_size == task.entry.size and
-                            _hash_file(path, source=source, cancel=cancel, progress=on_hash) == prior.get('sha256')):
+                            _hash_file(path, source=source, cancel=cancel, progress=on_hash) == expected):
+                        check_device(force=True)
                         result.verified_existing += 1
                         completed_status = 'Bereits verifiziert'
+                        if pending:
+                            state['results'][task.path] = {
+                                'status': 'Erfolgreich', 'bytes': task.entry.size,
+                                'sha256': expected, 'copied_sha256': expected,
+                                'detail': 'Mit der beim Kopieren gespeicherten Prüfsumme bestätigt'}
+                            if getattr(index, 'filesystem', None) == 'exFAT':
+                                state['results'][task.path]['valid_data_length'] = task.entry.valid_data_length
                     else:
                         result.failed += 1
-                        state['results'][task.path] = {'status': 'Fehler',
+                        state['results'][task.path] = {**(prior if pending else {}), 'status': 'Fehler',
                             'detail': 'Zieldatei existiert und kann nicht als vorheriger Export bestätigt werden'}
+                except DeviceSourceChanged as exc:
+                    source_changed = True
+                    result.failed += 1
+                    state['results'][task.path] = {**prior, 'status': 'Fehler', 'detail': str(exc)}
                 except ExportCancelled:
                     result.cancelled = True
                     completed_status = 'Abgebrochen'
                     # Keep the prior checkpoint; a later run must hash it again.
                 except (OSError, ValueError) as exc:
                     result.failed += 1
-                    state['results'][task.path] = {'status': 'Fehler',
+                    state['results'][task.path] = {**(prior if pending else {}), 'status': 'Fehler',
                         'detail': f'Vorhandene Exportdatei konnte nicht geprüft werden: {exc}'}
             else:
                 copy_complete = False
+                copied_digest = hashlib.sha256()
+                pending_record = {}
                 try:
                     if not path.parent.is_dir():
                         raise OSError('Übergeordneter Zielordner fehlt.')
                     if exporter is export_ntfs_file:
                         written = exporter(source, index.info, task.entry, str(path),
-                                           cancel=cancel, byte_progress=on_bytes)
+                                           cancel=cancel, byte_progress=on_bytes,
+                                           data_digest=copied_digest)
                     else:
                         written = exporter(source, index, task.entry, str(path),
-                                           cancel=cancel, byte_progress=on_bytes)
+                                           cancel=cancel, byte_progress=on_bytes,
+                                           data_digest=copied_digest)
                     copy_complete = True
+                    pending_record = {'verification_pending': True, 'bytes': written,
+                                      'copied_sha256': copied_digest.hexdigest()}
                     flush_bytes()
                     signature_file = _hash_file(path, source=source, cancel=cancel, progress=on_hash)
+                    if signature_file != copied_digest.hexdigest():
+                        raise OSError('Zieldatei stimmt nicht mit den kopierten Daten überein.')
                     result.exported += 1
                     result.bytes_written += written
                     state['results'][task.path] = {'status': 'Erfolgreich', 'bytes': written,
-                                                   'sha256': signature_file}
+                                                   'sha256': signature_file,
+                                                   'copied_sha256': copied_digest.hexdigest()}
                     if getattr(index, 'filesystem', None) == 'exFAT':
                         state['results'][task.path]['valid_data_length'] = task.entry.valid_data_length
                 except DeviceSourceChanged as exc:
@@ -488,12 +539,12 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                     state['results'][task.path] = {'status': 'Fehler', 'detail': str(exc)}
                 except ExportCancelled:
                     result.cancelled = True
-                    state['results'][task.path] = {'status': 'Abgebrochen', 'detail': (
+                    state['results'][task.path] = {**pending_record, 'status': 'Abgebrochen', 'detail': (
                         'Vollständig geschriebene Datei erhalten; SHA-256-Prüfung abgebrochen'
                         if copy_complete else 'Unvollständige Datei entfernt')}
                 except (OSError, ValueError) as exc:
                     result.failed += 1
-                    state['results'][task.path] = {'status': 'Fehler', 'detail': str(exc)}
+                    state['results'][task.path] = {**pending_record, 'status': 'Fehler', 'detail': str(exc)}
             if progress:
                 progress(n, len(plan), task.path, state['results'].get(task.path, {}).get('status', ''))
         flush_bytes()
