@@ -137,9 +137,12 @@ def _backing_disks(dev: int, seen=None) -> set[str]:
         raise ValueError('Blockgerät ist in sysfs nicht auflösbar.')
     node = node.resolve(strict=True)
     slaves = node / 'slaves'
-    if slaves.is_dir() and any(slaves.iterdir()):
+    # Use one membership snapshot. A second directory listing can be empty
+    # after a hot-unplug even though the first identified a stacked device.
+    members = list(slaves.iterdir()) if slaves.is_dir() else []
+    if members:
         roots = set()
-        for slave in slaves.iterdir():
+        for slave in members:
             roots |= _backing_disks(os.stat('/dev/' + slave.name).st_rdev, seen.copy())
         return roots
     if (node / 'partition').exists():
@@ -168,5 +171,7 @@ def ensure_separate_device(source: str, destination: str):
         parent = os.path.dirname(parent)
     source_roots = _backing_disks(os.stat(source).st_rdev)
     target_roots = _backing_disks(os.stat(parent).st_dev)
+    if not source_roots or not target_roots:
+        raise ValueError('Quell-/Zielzuordnung nicht eindeutig.')
     if source_roots & target_roots:
         raise ValueError('Ziel befindet sich auf demselben physischen Datenträger wie die Quelle.')
