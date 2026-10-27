@@ -67,6 +67,15 @@ class WebsiteReleaseChecks(unittest.TestCase):
         self.assertEqual(self.catalog, catalog_before)
         self.assertEqual(before, {str(p): p.read_bytes() for p in self.root.rglob('*') if p.is_file()})
 
+    def test_new_sha256_download_is_accepted_but_other_names_are_rejected(self):
+        entry = self.release['downloads']['checksums']
+        entry['url'] = entry['url'].replace('SHA256SUMS.txt', 'SHA256SUMS.sha256')
+        self.assertEqual(current_release(self.catalog), self.release)
+        self.assertEqual(check_page(self.page(), self.release, True), [])
+        entry['url'] = entry['url'].replace('SHA256SUMS.sha256', 'unrelated.sha256')
+        with self.assertRaisesRegex(ValueError, 'checksums link'):
+            current_release(self.catalog)
+
     def test_every_version_size_and_download_field_is_checked(self):
         source = self.page()
         for field in ['version', 'tag', 'installerSize', 'portableSize', 'linuxSize']:

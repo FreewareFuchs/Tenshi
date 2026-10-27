@@ -16,7 +16,7 @@ from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from check_website_release import audit, current_release
-from prepare_website_catalog import _json, _LANGUAGES, _verified_rows
+from prepare_website_catalog import _json, _LANGUAGES, _verified_rows, checksum_name
 
 SITE = 'https://freewarefuchs.de/'
 APT = SITE + 'tenshi/apt/'
@@ -80,7 +80,7 @@ def build_plan(bundle, site, apt):
         # _verified_rows performs the filename and payload validation below.
         if isinstance(row, dict) and isinstance(row.get('file'), str):
             regular(bundle / row['file'])
-    regular(bundle / 'SHA256SUMS.txt')
+    regular(bundle / checksum_name(bundle))
     rows = _verified_rows(bundle, manifest)
     downloads = release['downloads']
     if set(downloads) != {'installer', 'portable', 'linux', 'checksums'}:
