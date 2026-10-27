@@ -149,3 +149,26 @@ worden sein; das Prüfwerkzeug ersetzt dessen Paketprüfung nicht.
 Vor jeder HTML-Änderung die betroffenen Originaldateien mit ihrer relativen
 Ordnerstruktur in einem datierten Backup sichern. Auch bei erfolgreicher Prüfung
 vor dem Upload etwaige zwischenzeitliche Änderungen auf dem Server berücksichtigen.
+
+
+## Release-Kandidat 3.0.4
+
+Der Quellstand bereitet Version 3.0.4 mit Linux-Paketversion 3.0.4-1 vor.
+Die [Versionshinweise](../RELEASE_NOTES_3.0.4.md) unterscheiden die übernommenen
+Änderungen von der noch offenen Prüfung der finalen Pakete. Die veröffentlichten
+3.0.3-Dateien, ihr Katalog und die APT-Paketquelle bleiben bis zur separaten
+Veröffentlichung unverändert.
+
+Nach erfolgreicher Versions-/Quellprüfung und CI den sauberen, festgehaltenen
+Kandidaten-Commit über **Prepare release bundle (no publishing)** mit `stable`
+bauen. Erwartete Dateinamen:
+
+- `Tenshi_Setup_3.0.4_Win64.exe`
+- `Tenshi_Portable_3.0.4_Win64.zip`
+- `tenshi-recovery_3.0.4-1_all.deb`
+
+Erst das daraus erzeugte `release_manifest.json` und `SHA256SUMS.txt` liefern die
+endgültigen Dateigrößen und Prüfsummen. Ein normaler PR-Build oder ein erfolgreicher
+Quelltest allein bestätigt kein fertig zusammengestelltes Release-Bundle.
+Manuelle Abnahmepunkte stehen in den Versionshinweisen. Vor Veröffentlichung keine
+neuen Downloadlinks in die öffentliche Website oder Paketquelle übernehmen.
