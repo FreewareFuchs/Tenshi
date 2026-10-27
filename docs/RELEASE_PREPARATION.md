@@ -151,24 +151,32 @@ Ordnerstruktur in einem datierten Backup sichern. Auch bei erfolgreicher Prüfun
 vor dem Upload etwaige zwischenzeitliche Änderungen auf dem Server berücksichtigen.
 
 
-## Release-Kandidat 3.0.4
+## Stabile Version 3.0.4 (27.10.2026)
 
-Der Quellstand bereitet Version 3.0.4 mit Linux-Paketversion 3.0.4-1 vor.
-Die [Versionshinweise](../RELEASE_NOTES_3.0.4.md) unterscheiden die übernommenen
-Änderungen von der noch offenen Prüfung der finalen Pakete. Die veröffentlichten
-3.0.3-Dateien, ihr Katalog und die APT-Paketquelle bleiben bis zur separaten
-Veröffentlichung unverändert.
+[Release v3.0.4](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.4)
+aus Commit `b1caea8b40f7b29d401e85a3e51a2916fc5f9e0e`, gebaut mit `stable`
+im erfolgreichen [gemeinsamen Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40466932499).
+Die finalen Pakete wurden gegen Manifest und Prüfsummenliste geprüft und vom
+Anwender manuell abgenommen. [Paketnamen, Größen, SHA256 und Testgrenzen](../RELEASE_NOTES_3.0.4.md).
 
-Nach erfolgreicher Versions-/Quellprüfung und CI den sauberen, festgehaltenen
-Kandidaten-Commit über **Prepare release bundle (no publishing)** mit `stable`
-bauen. Erwartete Dateinamen:
+Nach der Veröffentlichung wurden alle vier GitHub-Dateien öffentlich heruntergeladen
+und geprüft. Die bestehende APT-Verwaltung wurde gesichert, das neue DEB aufgenommen
+und mit dem bestehenden Archivschlüssel signiert. GPG hat die Signatur in Mint
+bestätigt; anschließend wurden die signierten Indexdaten und der Paketinhalt geprüft.
+Alle neun hochgeladenen APT-Dateien stimmen öffentlich bytegenau mit diesem Stand
+überein. Ältere Pool-Dateien bleiben erhalten; private Schlüssel wurden nicht übertragen.
 
-- `Tenshi_Setup_3.0.4_Win64.exe`
-- `Tenshi_Portable_3.0.4_Win64.zip`
-- `tenshi-recovery_3.0.4-1_all.deb`
+Erst nach der öffentlichen APT-Prüfung wurden die Website-Dateien hochgeladen.
+Die zwölf Programm-/Anleitungsseiten und der Katalog wurden anschließend öffentlich
+mit dem vorbereiteten Stand verglichen; alle 13 Dateien und vier verlinkten Downloads
+sind geprüft. Die vorherigen lokalen Website-Dateien sind gesichert.
 
-Erst das daraus erzeugte `release_manifest.json` und `SHA256SUMS.txt` liefern die
-endgültigen Dateigrößen und Prüfsummen. Ein normaler PR-Build oder ein erfolgreicher
-Quelltest allein bestätigt kein fertig zusammengestelltes Release-Bundle.
-Manuelle Abnahmepunkte stehen in den Versionshinweisen. Vor Veröffentlichung keine
-neuen Downloadlinks in die öffentliche Website oder Paketquelle übernehmen.
+In Mint sind `sudo apt update` ohne Signaturfehler sowie installierte Version und
+APT-Kandidat `3.0.4-1` bestätigt. Der Anwender bestätigt zusätzlich das Upgrade über
+APT. Die genaue Ausgangsversion wurde nicht angegeben; daraus folgt kein gesonderter
+Nachweis des älteren Paketwechsels von `3.0.2-2`.
+
+Das ursprüngliche Build-Manifest bleibt als Herkunftsnachweis unverändert: Sein
+Vorbereitungsstatus beschreibt den Zeitpunkt des Builds, nicht den heutigen
+Veröffentlichungsstatus. Die Dokumentationsänderung erzeugt keine neuen Pakete
+und verschiebt weder Tag noch Release-Commit.

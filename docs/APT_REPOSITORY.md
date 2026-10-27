@@ -1,7 +1,7 @@
 # APT-Quelle für Linux Mint 22.x
 
 Stand 26.10.2026: Die eigene signierte Quelle unter
-https://freewarefuchs.de/tenshi/apt/ bietet `tenshi-recovery 3.0.3-1` für
+https://freewarefuchs.de/tenshi/apt/ bietet `tenshi-recovery 3.0.4-1` für
 Mint 22.x (amd64). Benötigt werden Python >= 3.11, Tkinter und util-linux.
 Mint 21.x mit Python 3.10 ist kein unterstütztes Paket-Ziel.
 
@@ -69,7 +69,7 @@ tenshi-recovery --version
 tenshi-recovery
 ```
 
-Das veröffentlichte Paket zeigt `Tenshi 3.0.3 (18d973dd88)`.
+Das veröffentlichte Paket zeigt `Tenshi 3.0.4 (b1caea8b40)`.
 Das Paket vergibt keine Geräteberechtigungen. Leserechte für physische
 Quellen müssen bei Bedarf gezielt außerhalb der Anwendung eingerichtet werden.
 
@@ -146,7 +146,23 @@ Release-Metadaten; möglichst atomar veröffentlichen. Alte Downloadziele
 zunächst behalten. Den alten Paketnamen `tenshi` nicht wieder anbieten.
 Schlüsselablauf: 25.10.2028; rechtzeitig Verlängerung bzw. Wechsel planen.
 
-## Aktueller Prüfstand 3.0.3
+## Aktueller Prüfstand 3.0.4 (27.10.2026)
+
+DEB: `tenshi-recovery_3.0.4-1_all.deb`, 744178 Bytes.
+SHA256: `cbb4b862996781b95fb7a36e41228fdc9ae9a6a2758602628d2f55b624fad86e`.
+
+Die finalen Pakete sind manuell abgenommen. GPG bestätigt die Signatur mit dem
+bestehenden Archivschlüssel; signierte Indexdaten und DEB stimmen mit dem
+freigegebenen Build überein. Alle neun hochgeladenen APT-Dateien wurden öffentlich
+abgerufen und bytegenau verglichen. Schlüssel und Paket 3.0.3 sind unverändert.
+
+In Mint lädt `sudo apt update` die Quelle ohne Signaturfehler.
+`apt-cache policy tenshi-recovery` zeigt installierte Version und Kandidat
+`3.0.4-1`. Das Upgrade über APT ist vom Anwender bestätigt; die genaue
+Ausgangsversion wurde nicht angegeben. Dies ist kein gesonderter Nachweis des
+Paketwechsels von `3.0.2-2`. [Release und Prüfumfang](../RELEASE_NOTES_3.0.4.md).
+
+## Historischer Prüfstand 3.0.3
 
 [Finaler Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40363573058) aus Commit `18d973dd88346157da8e3bbf9856bc44ebe71f25` mit Kennung `stable`.
 DEB: `tenshi-recovery_3.0.3-1_all.deb`, 740270 Bytes.
