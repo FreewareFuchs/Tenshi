@@ -81,7 +81,7 @@ jobs:
         env:
           TENSHI_SETTINGS_FILE: ${{ runner.temp }}/tenshi-linux-test-settings.json
           TENSHI_LOG_DIR: ${{ runner.temp }}/tenshi-linux-test-logs
-        run: xvfb-run -a -s '-screen 0 1440x900x24' python3 -m unittest discover -s tests -q
+        run: xvfb-run -a -s '-screen 0 1920x1080x24' python3 -m unittest discover -s tests -q
       - name: Independently formatted FAT32 reference and resume test
         run: |
           command -v mkfs.fat
@@ -108,40 +108,9 @@ jobs:
           command -v mkfs.btrfs
           command -v mkfs.xfs
           python3 -m unittest discover -s tests -p 'test_real_advanced_images.py' -v
-      - name: UI test under 1024x650 virtual X11
+      - name: UI layout matrix under virtual X11 (six languages and larger text)
         run: |
-          xvfb-run -a -s '-screen 0 1024x650x24' python3 - <<'PY'
-          from recoverydesk.gui import RecoveryDeskApp
-          app = RecoveryDeskApp()
-          try:
-              app.geometry('1024x650+0+0')
-              app.update_idletasks()
-              assert app.winfo_width() <= 1024, app.winfo_geometry()
-              assert app.winfo_height() <= 650, app.winfo_geometry()
-              for key in ('partition', 'files'):
-                  app._select_main_tab(key)
-                  app.update_idletasks()
-                  assert app.tabs.winfo_height() >= 100, (key, app.tabs.winfo_height())
-                  if key == 'files':
-                      assert app.file_tree.winfo_ismapped(), 'File browser is hidden'
-                      assert app.file_tree.winfo_height() >= 70, app.file_tree.winfo_height()
-                      assert app.export_queue_collapsed, 'Queue must start collapsed'
-                      assert not app.export_queue_bar.winfo_ismapped()
-                      app._toggle_export_queue()
-                      app.update_idletasks()
-                      assert app.export_queue_bar.winfo_ismapped(), 'Progress bar is hidden after expanding'
-                      before = app.file_tree.winfo_height()
-                      app._toggle_export_queue()
-                      app.update_idletasks()
-                      assert app.export_queue_collapsed
-                      assert not app.export_queue_bar.winfo_ismapped()
-                      assert app.file_tree.winfo_height() > before, (before, app.file_tree.winfo_height())
-                      app._toggle_export_queue()
-                      app.update_idletasks()
-                      assert app.export_queue_bar.winfo_ismapped(), 'Progress bar not restored'
-          finally:
-              app.destroy()
-          PY
+          xvfb-run -a -s '-screen 0 1920x1080x24' python3 -m unittest discover -s tests -p 'test_linux_layout.py' -v
       - name: Build native DEB and validate desktop entry
         run: |
           desktop-file-validate packaging/linux/de.freewarefuchs.Tenshi.desktop
