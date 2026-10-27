@@ -19,6 +19,7 @@ _IOCTL_DISK_GET_LENGTH_INFO = 0x0007405C
 _IOCTL_DISK_GET_DRIVE_GEOMETRY = 0x00070000
 _IOCTL_DISK_GET_DRIVE_GEOMETRY_EX = 0x000700A0
 _IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS = 0x00560000
+_FSCTL_ALLOW_EXTENDED_DASD_IO = 0x00090083
 
 
 def physical_number(path: str) -> int | None:
@@ -287,6 +288,28 @@ class AlignedDeviceReader:
         return b''.join(chunks)
 
 
+def _enable_volume_tail_reads(raw) -> None:
+    """Allow reads within the partition beyond the filesystem's usable end.
+
+    Windows otherwise shortens raw-volume reads near the last filesystem
+    cluster. This setting belongs to this existing read-only handle only:
+    no write access, locking, dismount or persistent device change. The
+    AlignedDeviceReader still bounds every request to source_size().
+    """
+    import msvcrt
+    kernel = _kernel()
+    handle = msvcrt.get_osfhandle(raw.fileno())
+    returned = wintypes.DWORD()
+    if not kernel.DeviceIoControl(handle, _FSCTL_ALLOW_EXTENDED_DASD_IO,
+                                   None, 0, None, 0, ctypes.byref(returned), None):
+        error = ctypes.WinError(ctypes.get_last_error())
+        log_issue('raw_volume_boundary_setup', error)
+        raise OSError(errno.EIO,
+                      'Windows hat den ausschließlich lesenden Zugriff auf die letzten '
+                      'Volume-Sektoren nicht freigegeben. Ein vollständiger Volume-Scan '
+                      'ist daher nicht möglich; alternativ ein RAW-Image verwenden.') from error
+
+
 @contextmanager
 def open_source(path: str):
     validate_source(path)
@@ -304,6 +327,8 @@ def open_source(path: str):
                               'Bitte Windows-Administratorrechte, Freigabe und '
                               'Gerätezugriff prüfen.') from exc
     try:
+        if os.name == 'nt' and is_volume(path):
+            _enable_volume_tail_reads(raw)
         if is_device_source(path):
             yield AlignedDeviceReader(raw, source_size(path), physical_sector_size(path))
         else:

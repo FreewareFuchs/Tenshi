@@ -47,6 +47,7 @@ class VolumeSourceTests(unittest.TestCase):
         with patch.object(sources.os, 'name', 'nt'), \
              patch.object(sources, 'source_size', return_value=8192), \
              patch.object(sources, 'physical_sector_size', return_value=512), \
+             patch.object(sources, '_enable_volume_tail_reads'), \
              patch('builtins.open', return_value=disk):
             with sources.open_source(source) as reader:
                 reader.seek(11)
