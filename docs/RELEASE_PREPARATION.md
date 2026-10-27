@@ -73,6 +73,15 @@ Das Release enthält `Tenshi_Setup_3.0.3_Win64.exe`, `Tenshi_Portable_3.0.3_Win6
 
 Die finalen Pakete wurden manuell bestätigt. Die APT-Quelle ist veröffentlicht und die erneute Installation daraus geprüft. Ein gesonderter Upgrade-Test von installierter 3.0.2-2 über die öffentliche Quelle bleibt offen. Bestehende Dateien älterer Releases wurden nicht ersetzt.
 
+## Öffentliche Abschlussprüfung wiederverwenden
+
+Nach der getrennten Veröffentlichung von Downloads, signierter APT-Quelle und
+Website vergleicht `check_public_release.py` die öffentlichen Dateien mit dem
+geprüften lokalen Stand. Es prüft zuerst Bundle, Katalog und zwölf lokale Seiten,
+lädt dann die öffentlichen Referenzen und schreibt einen neuen JSON-Bericht.
+Die vorgelagerte GPG-Prüfung des APT-Exports bleibt erforderlich.
+[Aufruf, Voraussetzungen und Grenzen](PUBLIC_RELEASE_CHECK.md).
+
 ## Website-Katalog aus dem geprüften Bundle vorbereiten
 
 `prepare_website_catalog.py` erzeugt eine neue lokale `software.json` für eine
