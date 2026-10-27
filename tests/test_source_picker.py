@@ -203,3 +203,24 @@ class UnifiedPickerGuiTests(unittest.TestCase):
                 self.app.update()
                 time.sleep(.01)
         self.assertNotEqual(seen, [gui_thread])
+
+    def test_resized_picker_remains_usable_in_all_languages_and_both_themes(self):
+        from recoverydesk.i18n import LANGUAGES
+        for theme in ('light', 'dark'):
+            self.app.change_theme(theme)
+            for language in LANGUAGES:
+                with self.subTest(theme=theme, language=language):
+                    self.app.change_language(language)
+                    dialog = self.app._show_source_dialog(self.rows)
+                    dialog.transient('')
+                    dialog.deiconify()
+                    for size in ('960x560+0+0', '760x450+0+0', '900x520+0+0'):
+                        dialog.geometry(size)
+                        self.app.update()
+                        button = dialog.confirm_button
+                        self.assertTrue(button.winfo_ismapped())
+                        self.assertGreaterEqual(button.winfo_width(), button.winfo_reqwidth())
+                        self.assertLessEqual(button.winfo_rooty()+button.winfo_height(),
+                                             dialog.winfo_rooty()+dialog.winfo_height())
+                        self.assertGreater(dialog.source_tree.winfo_height(), 50)
+                    dialog.destroy()

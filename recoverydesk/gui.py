@@ -923,8 +923,15 @@ class RecoveryDeskApp(tk.Tk):
             'Bei defekten Datenträgern weitere Lesezugriffe minimieren und zuerst ein Image erstellen.',
             foreground='#9a3412', wraplength=900)
         warning.grid(row=4, column=0, sticky='ew', padx=16, pady=(0, 12))
-        win.bind('<Configure>', lambda event: [w.configure(wraplength=max(200, event.width - 32))
-            for w in (intro, selection_label, warning)] if event.widget is win else None, add='+')
+        last_wrap = [None]
+        def resize_labels(event):
+            if event.widget is win:
+                width = max(200, event.width - 32)
+                if width != last_wrap[0]:
+                    last_wrap[0] = width
+                    for widget in (intro, selection_label, warning):
+                        widget.configure(wraplength=width)
+        win.bind('<Configure>', resize_labels, add='+')
         records = {}
 
         def update_selection(_event=None):
