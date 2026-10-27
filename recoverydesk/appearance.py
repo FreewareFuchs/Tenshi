@@ -51,7 +51,7 @@ def detect_system_theme():
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
                     r'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize') as key:
                 value, _ = winreg.QueryValueEx(key, 'AppsUseLightTheme')
-                return {0: 'dark', 1: 'light'}.get(value)
+                return {0: 'dark', 1: 'light'}.get(value) if type(value) is int else None
         except OSError:
             return None
     if not sys.platform.startswith('linux'):

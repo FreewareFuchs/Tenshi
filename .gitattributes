@@ -1,0 +1,2 @@
+# Preserve the exact upstream theme data and license across Windows/Linux.
+recoverydesk/assets/sun_valley/** -text

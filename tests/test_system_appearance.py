@@ -44,7 +44,7 @@ class SystemDetectionTests(unittest.TestCase):
     def test_windows_app_preference_and_missing_value(self):
         registry = MagicMock()
         with patch.object(appearance.sys, 'platform', 'win32'), patch.dict('sys.modules', {'winreg': registry}):
-            for value, expected in ((0, 'dark'), (1, 'light'), (7, None)):
+            for value, expected in ((0, 'dark'), (1, 'light'), (7, None), (['dark'], None)):
                 registry.QueryValueEx.return_value = (value, 4)
                 self.assertEqual(appearance.detect_system_theme(), expected)
             registry.OpenKey.side_effect = OSError()
