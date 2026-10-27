@@ -56,7 +56,7 @@ class FolderPaneLayoutTests(unittest.TestCase):
         self.app.update()
         self.assertAlmostEqual(pane.sashpos(0), 410, delta=18)
 
-    def test_existing_tabs_and_green_export_button_remain(self):
+    def test_existing_tabs_and_accent_export_button_remain(self):
         self.show_files()
         self.assertEqual(len(self.app.tabs.tabs()), 2)
         self.assertEqual(self.app.export_button.cget('bg'), self.app._palette()['accent'])

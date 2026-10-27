@@ -11,6 +11,17 @@ from recoverydesk.ui_preferences import clean_ui_preferences, load_ui_preference
 
 
 class SystemDetectionTests(unittest.TestCase):
+    def test_export_and_selection_text_contrast_in_both_modes(self):
+        def luminance(color):
+            values = [int(color[i:i+2], 16) / 255 for i in (1, 3, 5)]
+            values = [v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4 for v in values]
+            return sum(v * weight for v, weight in zip(values, (.2126, .7152, .0722)))
+        for mode in ('light', 'dark'):
+            colors = appearance.palette(mode)
+            for background, foreground in (('accent', 'accent_text'), ('select', 'selection_text')):
+                low, high = sorted((luminance(colors[background]), luminance(colors[foreground])))
+                self.assertGreaterEqual((high + .05) / (low + .05), 4.5)
+
     def test_new_default_and_existing_explicit_preferences(self):
         self.assertEqual(clean_ui_preferences({})['theme'], 'system')
         for mode in ('system', 'light', 'dark'):
