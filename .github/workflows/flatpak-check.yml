@@ -62,7 +62,7 @@ jobs:
           chmod 444 flatpak_output/fixture/source.img
       - name: Installed GUI, export and imaging checks (no physical device)
         run: |
-          xvfb-run -a flatpak run --command=python3 de.freewarefuchs.Tenshi.Experimental//test "$PWD/packaging/flatpak/smoke_test.py" "$PWD/flatpak_output/fixture/source.img" "$PWD/flatpak_output/fixture/expected.json"
+          xvfb-run -a -s '-screen 0 1280x1024x24' flatpak run --command=python3 de.freewarefuchs.Tenshi.Experimental//test "$PWD/packaging/flatpak/smoke_test.py" "$PWD/flatpak_output/fixture/source.img" "$PWD/flatpak_output/fixture/expected.json"
       - name: Create test bundle
         run: |
           flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo flatpak_output/repo flatpak_output/Tenshi-experimental-x86_64.flatpak de.freewarefuchs.Tenshi.Experimental test

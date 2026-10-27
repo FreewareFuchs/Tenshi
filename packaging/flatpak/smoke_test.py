@@ -2,15 +2,15 @@
 from pathlib import Path
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import tempfile
-import tkinter as tk
+from unittest.mock import patch
 
 # Test the installed package, never a copy from the host checkout.
 sys.path.insert(0, '/app/share/tenshi')
 import recoverydesk
-from recoverydesk.branding import asset_path
 from recoverydesk.filesystems import scan_tree, export_selection
 from recoverydesk.imaging import create_image
 from recoverydesk.version_info import build_info
@@ -21,15 +21,67 @@ def digest(path: Path) -> str:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def check_installed_gui() -> None:
+    from recoverydesk import gui
+    from recoverydesk.i18n import LANGUAGES
+
+    assert Path(gui.__file__).is_relative_to('/app/share/tenshi')
+
+    class ProbeApp(gui.RecoveryDeskApp):
+        def __init__(self):
+            self.callback_errors = []
+            super().__init__()
+
+        def report_callback_exception(self, exc_type, exc, tb):
+            # Fail the probe instead of blocking CI on a modal error dialog.
+            self.callback_errors.append((exc_type.__name__, str(exc)))
+
+    with tempfile.TemporaryDirectory(prefix='tenshi-flatpak-gui-') as temporary:
+        root = Path(temporary)
+        with patch.dict(os.environ, {
+                'TENSHI_SETTINGS_FILE': str(root / 'settings.json'),
+                'TENSHI_LOG_DIR': str(root / 'logs')}), \
+                patch.object(gui, 'list_physical_sources',
+                             side_effect=AssertionError('Unexpected device enumeration')), \
+                patch.object(gui, 'list_volumes',
+                             side_effect=AssertionError('Unexpected volume enumeration')):
+            app = ProbeApp()
+            try:
+                app.geometry('1280x900+0+0')
+                app.update()
+                assert app.brand_logo.width() > 0
+                assert app.source_path.get() == '', 'Probe must not select a source'
+                for language in LANGUAGES:
+                    app.change_language(language)
+                    app.update()
+                    assert app.language == language
+                    for tab in ('partition', 'files'):
+                        app._select_main_tab(tab)
+                        app.update()
+                        assert app.tabs.winfo_height() >= 100, (language, tab)
+                    assert app.file_tree.winfo_ismapped(), language
+                    assert app.file_tree.winfo_height() >= 70, language
+                    assert app.export_button.winfo_ismapped(), language
+                    assert app.export_queue_collapsed, language
+                    app._toggle_export_queue()
+                    app.update()
+                    assert app.export_queue_bar.winfo_ismapped(), language
+                    app._toggle_export_queue()
+                    app.update()
+                    assert app.export_queue_collapsed, language
+                    assert not app.export_queue_bar.winfo_ismapped(), language
+                assert app.callback_errors == [], app.callback_errors
+                assert app.source_path.get() == ''
+            finally:
+                app.destroy()
+    print('Installed Flatpak GUI: six languages, main tabs and export queue passed.')
+
+
 def main() -> None:
     assert Path(recoverydesk.__file__).is_relative_to('/app/share/tenshi')
     assert not build_info().released
     assert build_info().commit
-    window = tk.Tk()
-    logo = tk.PhotoImage(file=str(asset_path('tenshi_logo.png')))
-    assert logo.width() > 0
-    window.update()
-    window.destroy()
+    check_installed_gui()
     # Validate the lsblk interface without reading any raw device contents.
     subprocess.run(['lsblk', '--version'], check=True)
     image = Path(sys.argv[1])
@@ -51,7 +103,7 @@ def main() -> None:
         create_image(str(image), str(copy))
         assert digest(copy) == before
     assert digest(image) == before, 'Source image changed'
-    print('Installed Flatpak: Tk/logo, FAT32 export hashes and imaging hashes passed.')
+    print('Installed Flatpak: Tenshi GUI, FAT32 export hashes and imaging hashes passed.')
 
 
 if __name__ == '__main__':
