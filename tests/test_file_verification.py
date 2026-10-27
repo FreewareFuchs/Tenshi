@@ -149,7 +149,7 @@ class VerificationGuiTests(unittest.TestCase):
         app.withdraw()
         try:
             self.assertEqual(len(app.tabs.tabs()), 2)
-            self.assertEqual(app.export_button.cget('background'), '#16803c')
+            self.assertEqual(app.export_button.cget('background'), app._palette()['accent'])
             self.assertEqual(app.export_button.cget('foreground'), '#ffffff')
             self.assertEqual(app.export_button.cget('text'), 'Stapel-Export / fortsetzen')
             self.assertTrue(callable(app.inspect_file))

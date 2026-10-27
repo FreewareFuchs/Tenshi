@@ -251,7 +251,7 @@ class SessionGuiTests(unittest.TestCase):
         self.assertTrue(self.app.session_menu_button.winfo_exists())
         self.assertTrue(self.app.session_menu_button.winfo_exists())
         self.assertEqual(len(self.app.tabs.tabs()), 2)
-        self.assertEqual(self.app.export_button.cget('bg'), '#16803c')
+        self.assertEqual(self.app.export_button.cget('bg'), self.app._palette()['accent'])
 
     def test_restored_index_moves_to_files_tab(self):
         with tempfile.TemporaryDirectory() as d:

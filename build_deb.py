@@ -55,7 +55,10 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
         copy(ROOT / 'main.py', 'usr/share/tenshi-recovery/main.py')
         write_build_info(stage / 'usr/share/tenshi-recovery/recoverydesk/_build_info.json', ROOT, release)
         for source in sorted((ROOT / 'recoverydesk').rglob('*')):
-            if source.is_file() and '__pycache__' not in source.parts and source.suffix in ('.py', '.png', '.ico'):
+            theme_asset = (source.is_relative_to(ROOT / 'recoverydesk/assets/sun_valley')
+                           and (source.suffix == '.tcl' or source.name in ('LICENSE', 'UPSTREAM.md')))
+            if (source.is_file() and '__pycache__' not in source.parts
+                    and (source.suffix in ('.py', '.png', '.ico') or theme_asset)):
                 copy(source, 'usr/share/tenshi-recovery/' + source.relative_to(ROOT).as_posix())
         copy(ROOT / 'packaging/linux/tenshi-recovery', 'usr/bin/tenshi-recovery', 0o755)
         copy(ROOT / 'packaging/linux/de.freewarefuchs.Tenshi.desktop',

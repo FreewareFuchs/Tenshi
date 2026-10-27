@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from recoverydesk.gui import RecoveryDeskApp
 from recoverydesk.i18n import LANGUAGES, save_language
+from recoverydesk.ui_preferences import save_ui_preferences
 
 
 @unittest.skipUnless(sys.platform.startswith('linux') and os.environ.get('DISPLAY'),
@@ -34,7 +35,7 @@ class LinuxLayoutTests(unittest.TestCase):
                                  name + ': bottom clipping')
             parent = parent.master
 
-    def check_layout(self, width, height, scaling):
+    def check_layout(self, width, height, scaling, theme='light'):
         # Apply scaling before application styles and widgets are created.
         class App(RecoveryDeskApp):
             def _setup_style(self):
@@ -50,6 +51,7 @@ class LinuxLayoutTests(unittest.TestCase):
                 with patch.dict(os.environ, {'TENSHI_SETTINGS_FILE': str(settings),
                                               'TENSHI_LOG_DIR': str(Path(self.temp.name) / 'logs')}):
                     save_language(language)
+                    save_ui_preferences({'theme': theme})
                     # Actions are inspected, never invoked; discovering devices is
                     # also forbidden if startup behavior changes in the future.
                     with patch('recoverydesk.gui.list_physical_sources',
@@ -107,16 +109,20 @@ class LinuxLayoutTests(unittest.TestCase):
                             app.destroy()
 
     def test_compact_1024x650(self):
-        self.check_layout(1024, 650, 4 / 3)
+        for theme in ('light', 'dark'):
+            self.check_layout(1024, 650, 4 / 3, theme)
 
     def test_laptop_1280x720(self):
-        self.check_layout(1280, 720, 4 / 3)
+        for theme in ('light', 'dark'):
+            self.check_layout(1280, 720, 4 / 3, theme)
 
     def test_full_hd_1920x1080(self):
-        self.check_layout(1920, 1080, 4 / 3)
+        for theme in ('light', 'dark'):
+            self.check_layout(1920, 1080, 4 / 3, theme)
 
     def test_full_hd_with_larger_text(self):
-        self.check_layout(1920, 1080, 2.0)
+        for theme in ('light', 'dark'):
+            self.check_layout(1920, 1080, 2.0, theme)
 
 
 if __name__ == '__main__':

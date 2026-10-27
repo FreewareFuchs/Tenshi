@@ -52,6 +52,10 @@ class DebPackageTests(unittest.TestCase):
                 for source in (ROOT / 'recoverydesk').rglob('*.py'):
                     target = './usr/share/tenshi-recovery/' + source.relative_to(ROOT).as_posix()
                     self.assertEqual(tar.extractfile(target).read(), source.read_bytes())
+                for source in (ROOT / 'recoverydesk/assets/sun_valley').rglob('*'):
+                    if source.is_file():
+                        target = './usr/share/tenshi-recovery/' + source.relative_to(ROOT).as_posix()
+                        self.assertEqual(tar.extractfile(target).read(), source.read_bytes())
                 self.assertTrue(tar.extractfile('./usr/share/icons/hicolor/256x256/apps/tenshi-recovery.png').read().startswith(b'\x89PNG'))
                 self.assertNotIn('./usr/bin/tenshi', tar.getnames())
                 launcher = tar.extractfile('./usr/bin/tenshi-recovery').read().decode()

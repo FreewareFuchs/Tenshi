@@ -16,6 +16,7 @@ messagebox = DialogProxy(_messagebox, lambda: _CURRENT_LOCALE)
 filedialog = DialogProxy(_filedialog, lambda: _CURRENT_LOCALE, is_file_dialog=True)
 from pathlib import Path
 from .branding import asset_path
+from .appearance import apply_theme, detect_system_theme, palette
 from .version_info import display_version
 from .verification_labels import (METADATA_SCOPE, READ_SCOPE, EXPORT_SCOPE, RESUME_SCOPE,
                                   RESUME_LABEL, METADATA_LABEL, export_status_label)
@@ -58,7 +59,9 @@ class RecoveryDeskApp(tk.Tk):
         super().__init__()
         self.title(f"Tenshi — Datenrettung | {display_version()}")
         self._view_settings = load_ui_preferences()
-        self.theme = self._view_settings['theme']
+        self.theme_mode = self._view_settings['theme']
+        self._system_theme = detect_system_theme() if os.name == 'nt' else None
+        self.theme = (self._system_theme or 'light') if self.theme_mode == 'system' else self.theme_mode
         geometry = self._view_settings['geometry']
         # A detached or resized monitor must not strand the saved window offscreen.
         if geometry:
@@ -97,6 +100,9 @@ class RecoveryDeskApp(tk.Tk):
         self.bind_class('Toplevel', '<Map>', self._on_popup_map, add='+')
         self._i18n.start()
         self.bind('<F1>', self._help_shortcut)
+        self._appearance_stop = threading.Event()
+        threading.Thread(target=self._watch_system_appearance, daemon=True,
+                         name='Tenshi appearance').start()
 
     def report_callback_exception(self, exc_type, exc, tb):
         """Avoid a silent Tcl callback failure; do not leak file contents to logs."""
@@ -366,6 +372,8 @@ class RecoveryDeskApp(tk.Tk):
         if getattr(self, '_closing', False):
             return
         self._closing = True
+        if hasattr(self, '_appearance_stop'):
+            self._appearance_stop.set()
         if hasattr(self, '_i18n'):
             self._i18n.stop()
         for job in tuple(getattr(self, '_pending_after', ())):
@@ -396,7 +404,7 @@ class RecoveryDeskApp(tk.Tk):
         payload = {
             'geometry': geometry,
             'maximized': self.state() == 'zoomed' if os.name == 'nt' else False,
-            'theme': self.theme,
+            'theme': self.theme_mode,
             'folder_ratio': ratio,
             'files_columns': {col: self.file_tree.column(col, 'width')
                               for col in ('#0',) + tuple(self.file_tree['columns'])},
@@ -406,14 +414,15 @@ class RecoveryDeskApp(tk.Tk):
         self._view_settings.update(payload)
         save_ui_preferences(payload)
 
-    def change_theme(self, theme):
-        if theme not in ('light', 'dark'):
+    def change_theme(self, theme, *, automatic=False):
+        if theme not in ('system', 'light', 'dark'):
             raise ValueError('Unbekannte Darstellung')
         self.update_idletasks()
         geometry = self.geometry() if self.state() == 'normal' else None
         sash = (self.browser_paned.sashpos(0)
                 if getattr(self, '_browser_sash_initialized', False) else None)
-        self.theme = theme
+        self.theme_mode = theme
+        self.theme = (self._system_theme or 'light') if theme == 'system' else theme
         self._theme_var.set(theme)
         self._apply_theme()
         self.update_idletasks()
@@ -426,20 +435,30 @@ class RecoveryDeskApp(tk.Tk):
             help_window.refresh_theme()
         # Save the theme immediately, even if the application is terminated later.
         try:
-            save_ui_preferences({'theme': theme})
+            if not automatic:
+                save_ui_preferences({'theme': theme})
         except OSError as exc:
             messagebox.showwarning('Darstellung', str(exc), parent=self)
 
+    def _watch_system_appearance(self):
+        # Only plain Python objects cross threads; Tk remains on the UI thread.
+        previous = object()
+        while not self._appearance_stop.is_set():
+            mode = detect_system_theme()
+            if self._appearance_stop.is_set():
+                break
+            if mode != previous:
+                previous = mode
+                self._post_scan_callback(lambda value=mode: self._system_appearance_changed(value))
+            self._appearance_stop.wait(5)
+
+    def _system_appearance_changed(self, mode):
+        self._system_theme = mode
+        if self.theme_mode == 'system' and self.theme != (mode or 'light'):
+            self.change_theme('system', automatic=True)
+
     def _palette(self):
-        if self.theme == 'dark':
-            return {'bg':'#151c27', 'panel':'#202b3a', 'text':'#eef3f8',
-                    'muted':'#b9c8d9', 'input':'#101722', 'select':'#31577d',
-                    'inactive':'#29394b', 'inactive_fg':'#e3edf8',
-                    'nav':'#2b66a5', 'warning':'#ffbb75', 'divider':'#42536a'}
-        return {'bg':'#f3f5f8', 'panel':'#ffffff', 'text':'#182230',
-                'muted':'#526174', 'input':'#ffffff', 'select':'#b6d5f5',
-                'inactive':'#e1e9f3', 'inactive_fg':'#173653',
-                'nav':'#103e70', 'warning':'#9a3412', 'divider':'#d4d9e1'}
+        return palette(self.theme)
 
     def _style_native_widgets(self, root):
         colors = self._palette()
@@ -453,9 +472,12 @@ class RecoveryDeskApp(tk.Tk):
                 elif isinstance(widget, tk.Text):
                     widget.configure(bg=colors['input'], fg=colors['text'],
                         insertbackground=colors['text'], selectbackground=colors['select'],
-                        selectforeground=colors['text'])
+                        selectforeground=colors['selection_text'])
                 elif isinstance(widget, tk.Canvas):
                     widget.configure(bg=colors['divider'])
+                elif isinstance(widget, ttk.Label):
+                    if str(widget.cget('foreground')) in ('#9a3412', '#ffbb75'):
+                        widget.configure(foreground=colors['warning'])
                 elif isinstance(widget, tk.Label):
                     fg = colors['warning'] if widget.cget('foreground') in ('#9a3412', '#ffbb75') else colors['text']
                     # Keep the original navy/cyan logo readable against dark mode.
@@ -464,15 +486,16 @@ class RecoveryDeskApp(tk.Tk):
                     widget.configure(bg=label_bg, fg=fg)
                 elif isinstance(widget, tk.Menu):
                     widget.configure(bg=colors['panel'], fg=colors['text'],
-                        activebackground=colors['select'], activeforeground=colors['text'])
+                        activebackground=colors['select'], activeforeground=colors['selection_text'])
                 elif isinstance(widget, tk.Button):
                     if widget is getattr(self, 'export_button', None):
-                        # Explicit user-requested green button in both appearances.
-                        widget.configure(bg='#16803c', fg='#ffffff', activebackground='#11632d',
-                                         activeforeground='#ffffff')
+                        widget.configure(bg=colors['accent'], fg=colors['accent_text'],
+                                         activebackground=colors['accent_active'],
+                                         activeforeground=colors['accent_text'],
+                                         disabledforeground=colors['muted'])
                     elif widget not in getattr(self, '_nav_buttons', {}).values():
                         widget.configure(bg=colors['panel'], fg=colors['text'],
-                            activebackground=colors['select'], activeforeground=colors['text'])
+                            activebackground=colors['select'], activeforeground=colors['selection_text'])
             except (tk.TclError, AttributeError):
                 continue
         if root is self:
@@ -483,50 +506,36 @@ class RecoveryDeskApp(tk.Tk):
                 for tree in (self.file_tree, self.folder_tree):
                     tree.tag_configure('deleted', foreground='#f1b85f' if self.theme == 'dark' else '#b45309')
                     tree.tag_configure('warning', foreground='#ff827d' if self.theme == 'dark' else '#b91c1c')
-            self._update_main_tab_styles()
+            if hasattr(self, '_nav_buttons'):
+                self._update_main_tab_styles()
 
     def _apply_theme(self):
         c = self._palette()
-        style = ttk.Style(self)
-        try:
-            # Appearance changes colors, not the underlying widget metrics.
-            style.theme_use('clam')
-        except tk.TclError:
-            style.theme_use('clam')
-        style.configure('TFrame', background=c['bg'])
+        style = apply_theme(self, self.theme)
+        # Keep existing Tenshi fonts and layout metrics; upstream supplies the
+        # widget artwork, interaction states and colors.
+        style.configure('.', background=c['bg'], foreground=c['text'],
+                        font='TkDefaultFont', selectbackground=c['select'],
+                        selectforeground=c['selection_text'], fieldbackground=c['input'])
         style.configure('Card.TFrame', background=c['panel'])
-        style.configure('TLabel', background=c['bg'], foreground=c['text'], font=('Segoe UI', 10))
-        style.configure('Title.TLabel', foreground=c['text'], background=c['bg'], font=('Segoe UI',20,'bold'))
-        style.configure('Sub.TLabel', foreground=c['muted'], background=c['bg'])
-        style.configure('TButton', background=c['panel'], foreground=c['text'], padding=(10,7))
-        style.configure('Accent.TButton', background=c['select'], foreground=c['text'], padding=(12,8))
-        style.map('TButton', background=[('active',c['select'])], foreground=[('disabled',c['muted'])])
-        style.configure('TEntry', fieldbackground=c['input'], foreground=c['text'])
-        style.configure('TCombobox', fieldbackground=c['input'], foreground=c['text'],
-                        background=c['panel'], arrowcolor=c['text'])
-        style.map('TCombobox', fieldbackground=[('readonly',c['input'])],
-                  foreground=[('readonly',c['text'])])
-        style.configure('TCheckbutton', background=c['bg'], foreground=c['text'])
-        style.map('TCheckbutton', background=[('active',c['bg'])])
-        style.configure('TRadiobutton', background=c['bg'], foreground=c['text'])
-        style.configure('TMenubutton', background=c['panel'], foreground=c['text'])
+        style.configure('TLabel', font=('Segoe UI', 10))
+        style.configure('Title.TLabel', font=('Segoe UI', 20, 'bold'))
+        style.configure('Sub.TLabel', foreground=c['muted'])
+        style.configure('TButton', font=('Segoe UI', 10), padding=(10, 7))
+        style.configure('Accent.TButton', font=('Segoe UI', 10, 'bold'), padding=(12, 8))
         for name in ('Header.TButton', 'Header.TMenubutton'):
             style.configure(name, font=('Segoe UI', 10), padding=(10, 7))
-        style.configure('Treeview', background=c['panel'], fieldbackground=c['panel'],
-                        foreground=c['text'], rowheight=27)
-        style.map('Treeview', background=[('selected',c['select'])],
-                  foreground=[('selected',c['text'])])
-        style.configure('Treeview.Heading', background=c['inactive'], foreground=c['text'],
-                        font=('Segoe UI',10,'bold'))
-        style.map('Treeview.Heading', background=[('active',c['select'])])
-        style.configure('TProgressbar', background='#16803c', troughcolor=c['divider'])
-        style.configure('TLabelframe', background=c['bg'], bordercolor=c['divider'])
-        style.configure('TLabelframe.Label', background=c['bg'], foreground=c['text'],
-                        font=('Segoe UI',10,'bold'))
-        style.configure('TNotebook', background=c['bg'])
+        style.configure('Treeview', font=('Segoe UI', 10), rowheight=27)
+        style.configure('Treeview.Heading', font=('Segoe UI', 10, 'bold'))
+        style.configure('TLabelframe.Label', font=('Segoe UI', 10, 'bold'))
         style.layout('TenshiHidden.TNotebook.Tab', [])
+        for option, value in (('background', c['input']), ('foreground', c['text']),
+                              ('selectBackground', c['select']),
+                              ('selectForeground', c['selection_text'])):
+            self.option_add('*TCombobox*Listbox.' + option, value)
         self._style_native_widgets(self)
-        self._update_main_tab_styles()
+        if hasattr(self, '_nav_buttons'):
+            self._update_main_tab_styles()
         if hasattr(self, '_compact_layout'):
             # Theme configuration resets padding/row heights; restore the active
             # compact metrics even when the window dimensions did not change.
@@ -539,20 +548,7 @@ class RecoveryDeskApp(tk.Tk):
             self.after_idle(lambda w=popup: self._style_native_widgets(w) if w.winfo_exists() else None)
 
     def _setup_style(self):
-        style = ttk.Style(self)
-        try:
-            style.theme_use("vista" if os.name == "nt" else "clam")
-        except tk.TclError:
-            pass
-        style.configure("TFrame", background="#f3f5f8")
-        style.configure("Card.TFrame", background="#ffffff", relief="flat")
-        style.configure("TLabel", background="#f3f5f8", foreground="#182230", font=("Segoe UI", 10))
-        style.configure("Title.TLabel", font=("Segoe UI", 20, "bold"), foreground="#14213d")
-        style.configure("Sub.TLabel", foreground="#526174")
-        style.configure("TButton", font=("Segoe UI", 10), padding=(10, 7))
-        style.configure("Accent.TButton", font=("Segoe UI", 10, "bold"), padding=(12, 8))
-        style.configure("Treeview", font=("Segoe UI", 10), rowheight=27)
-        style.configure("Treeview.Heading", font=("Segoe UI", 10, "bold"))
+        self._apply_theme()
 
     def _build(self):
         # User-provided Tenshi logo replaces the former text title.
@@ -573,11 +569,11 @@ class RecoveryDeskApp(tk.Tk):
                 command=lambda code=language_code: self.change_language(code))
         self._language_button.configure(menu=self._language_menu)
         self._language_button.grid(row=0, column=3, sticky='nsew', padx=3, pady=(9, 0))
-        self._theme_var = tk.StringVar(value=self.theme)
+        self._theme_var = tk.StringVar(value=self.theme_mode)
         self.theme_button = ttk.Menubutton(self._header_actions, text='◐  Darstellung', direction='below',
                                                style='Header.TMenubutton', width=18)
         self._theme_menu = tk.Menu(self.theme_button, tearoff=False)
-        for label, value in (('Hell', 'light'), ('Dunkel', 'dark')):
+        for label, value in (('System', 'system'), ('Hell', 'light'), ('Dunkel', 'dark')):
             self._theme_menu.add_radiobutton(label=label, value=value, variable=self._theme_var,
                 command=lambda theme=value: self.change_theme(theme))
         self.theme_button.configure(menu=self._theme_menu)
@@ -714,6 +710,12 @@ class RecoveryDeskApp(tk.Tk):
         style = ttk.Style(self)
         style.configure('TButton', padding=(7, 2) if compact else (10, 7))
         style.configure('Accent.TButton', padding=(8, 3) if compact else (12, 8))
+        for name in ('Header.TButton', 'Header.TMenubutton'):
+            style.configure(name, padding=(7, 2) if compact else (10, 7))
+        style.configure('TCheckbutton', padding=1 if compact else 4)
+        self.export_button.configure(pady=2 if compact else 7)
+        for tab in (self.partition_tab, self.ntfs_tab):
+            tab.configure(padding=(8, 4) if compact else 12)
         style.configure('Treeview', rowheight=22 if compact else 27)
 
     def _select_main_tab(self, name: str):
@@ -731,7 +733,7 @@ class RecoveryDeskApp(tk.Tk):
                 bg=colors['nav'] if active else colors['inactive'],
                 fg='#ffffff' if active else colors['inactive_fg'],
                 activebackground=colors['nav'] if active else colors['select'],
-                activeforeground='#ffffff' if active else colors['inactive_fg'],
+                activeforeground='#ffffff',
                 relief='sunken' if active else 'flat',
                 borderwidth=2 if active else 0)
 
@@ -1597,11 +1599,11 @@ class RecoveryDeskApp(tk.Tk):
         self.deleted_toggle = ttk.Checkbutton(tools, text='Gelöschte Einträge anzeigen',
                                                variable=self.show_deleted, command=self._refresh_browser)
         self.deleted_toggle.pack(side='left', padx=4)
-        # Native Tk button is deliberately used here: ttk's Windows "vista" theme
-        # ignores custom button backgrounds, so ttk.Style cannot reliably turn it green.
+        # Match the Sun Valley accent while keeping the existing button metrics.
         self.export_button = tk.Button(
             tools, text='Stapel-Export / fortsetzen', command=self.export_browser_selection,
-            bg='#16803c', fg='#ffffff', activebackground='#11632d',
+            bg=self._palette()['accent'], fg=self._palette()['accent_text'],
+            activebackground=self._palette()['accent_active'],
             activeforeground='#ffffff', disabledforeground='#dcebdd',
             font=('Segoe UI', 10, 'bold'), relief='flat', borderwidth=0,
             cursor='hand2', padx=15, pady=7,

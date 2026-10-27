@@ -63,6 +63,11 @@ class FlatpakPackagingTests(unittest.TestCase):
             manifest = prepare_flatpak.prepare(Path(temp) / 'context')
             prefix = Path(temp) / 'app'
             module.install(manifest.parent / 'tenshi-src', prefix)
+            for source in (ROOT / 'recoverydesk/assets/sun_valley').rglob('*'):
+                if source.is_file():
+                    relative = source.relative_to(ROOT)
+                    self.assertEqual((manifest.parent / 'tenshi-src' / relative).read_bytes(), source.read_bytes())
+                    self.assertEqual((prefix / 'share/tenshi' / relative).read_bytes(), source.read_bytes())
             if os.name == 'posix':
                 self.assertEqual((prefix / 'bin/tenshi-flatpak').stat().st_mode & 0o777, 0o755)
             result = subprocess.run([sys.executable, '-EsB', str(prefix / 'share/tenshi/main.py'),

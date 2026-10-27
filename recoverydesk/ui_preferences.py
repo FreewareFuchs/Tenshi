@@ -13,7 +13,7 @@ from .i18n import settings_path
 COLUMNS = ('#0', 'type', 'size', 'status', 'quality', 'mft', 'extension', 'modified', 'path')
 PARTITION_COLUMNS = ('idx', 'scheme', 'confidence', 'offset', 'size', 'filesystem',
                      'usage', 'health', 'sector', 'type', 'name')
-THEMES = ('light', 'dark')
+THEMES = ('system', 'light', 'dark')
 _GEOMETRY_RE = re.compile(r'^(\d{3,4})x(\d{3,4})([+-]\d{1,5})([+-]\d{1,5})$')
 
 
@@ -41,7 +41,7 @@ def clean_ui_preferences(raw):
         raw = {}
     split = raw.get('folder_ratio')
     return {
-        'theme': raw.get('theme') if raw.get('theme') in THEMES else 'light',
+        'theme': raw.get('theme') if raw.get('theme') in THEMES else 'system',
         'geometry': valid_geometry(raw.get('geometry')),
         'folder_ratio': float(split) if type(split) in (float, int) and 0.22 <= split <= 0.66 else None,
         'files_columns': _valid_widths(raw.get('files_columns'), COLUMNS),

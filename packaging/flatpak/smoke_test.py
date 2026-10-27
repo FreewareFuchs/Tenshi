@@ -51,6 +51,11 @@ def check_installed_gui() -> None:
                 app.update()
                 assert app.brand_logo.width() > 0
                 assert app.source_path.get() == '', 'Probe must not select a source'
+                from tkinter import ttk
+                for theme in ('dark', 'light', 'system'):
+                    app.change_theme(theme)
+                    app.update()
+                    assert ttk.Style(app).theme_use() == 'sun-valley-' + app.theme
                 for language in LANGUAGES:
                     app.change_language(language)
                     app.update()

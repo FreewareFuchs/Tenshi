@@ -113,7 +113,7 @@ class HelpWindowTests(unittest.TestCase):
         self.assertEqual(self.app.source_path.get(), 'test-image.raw')
         self.assertEqual(window.topic, 'start')
         self.assertEqual(window.topics_list.size(), 9)
-        self.assertEqual(self.app.export_button.cget('bg'), '#16803c')
+        self.assertEqual(self.app.export_button.cget('bg'), self.app._palette()['accent'])
 
     def test_f1_defaults_to_current_tab(self):
         self.app._select_main_tab('partition')

@@ -59,7 +59,7 @@ class FolderPaneLayoutTests(unittest.TestCase):
     def test_existing_tabs_and_green_export_button_remain(self):
         self.show_files()
         self.assertEqual(len(self.app.tabs.tabs()), 2)
-        self.assertEqual(self.app.export_button.cget('bg'), '#16803c')
+        self.assertEqual(self.app.export_button.cget('bg'), self.app._palette()['accent'])
 
 
 if __name__ == '__main__':

@@ -68,6 +68,11 @@ jobs:
         run: |
           $proc = Start-Process -FilePath (Resolve-Path 'dist/Tenshi.exe') -ArgumentList '--smoke-test' -Wait -PassThru
           if ($proc.ExitCode -ne 0) { throw "Tenshi.exe smoke test failed with exit code $($proc.ExitCode)" }
+      - name: Verify bundled theme and license
+        shell: pwsh
+        run: |
+          .venv/Scripts/python.exe packaging/check_windows_theme.py dist/Tenshi.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Check EXE version metadata
         shell: pwsh
         run: |

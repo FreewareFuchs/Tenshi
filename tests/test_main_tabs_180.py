@@ -13,18 +13,18 @@ class MainTabs180Tests(unittest.TestCase):
             self.assertEqual(set(app._nav_buttons), {'partition', 'files'})
             part = app._nav_buttons['partition']
             files = app._nav_buttons['files']
-            self.assertEqual(part.cget('bg'), '#103e70')
+            self.assertEqual(part.cget('bg'), app._palette()['nav'])
             self.assertEqual(part.cget('fg'), '#ffffff')
             app._select_main_tab('files')
             app.update()
             self.assertEqual(app.tabs.select(), str(app.ntfs_tab))
-            self.assertEqual(files.cget('bg'), '#103e70')
-            self.assertEqual(part.cget('bg'), '#e1e9f3')
+            self.assertEqual(files.cget('bg'), app._palette()['nav'])
+            self.assertEqual(part.cget('bg'), app._palette()['inactive'])
             app.tabs.select(app.partition_tab)  # existing internal navigation also updates buttons
             app.update()
-            self.assertEqual(part.cget('bg'), '#103e70')
-            self.assertEqual(files.cget('bg'), '#e1e9f3')
-            self.assertEqual(app.export_button.cget('bg'),'#16803c')
+            self.assertEqual(part.cget('bg'), app._palette()['nav'])
+            self.assertEqual(files.cget('bg'), app._palette()['inactive'])
+            self.assertEqual(app.export_button.cget('bg'),app._palette()['accent'])
         finally:
             app.destroy()
 

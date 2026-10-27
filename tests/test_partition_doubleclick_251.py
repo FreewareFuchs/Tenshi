@@ -55,7 +55,7 @@ class PartitionDoubleClickTests(unittest.TestCase):
         self.assertEqual(self.app.tabs.select(), str(self.app.ntfs_tab))
         self.assertEqual(self.app.source_path.get(), str(self.src))
         self.assertEqual(len(self.app.tabs.tabs()), 2)
-        self.assertEqual(self.app.export_button.cget('bg'), '#16803c')
+        self.assertEqual(self.app.export_button.cget('bg'), self.app._palette()['accent'])
         self.assertTrue(self.app.part_tree.bind('<Double-1>'))
 
     def test_4kn_partition_uses_byte_offset_not_lba(self):

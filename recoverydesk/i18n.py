@@ -31,6 +31,8 @@ TRANSLATIONS = {}
 def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
+add('System', 'System', 'Sistema', '系统', 'Система', 'システム')
+
 # Explicit transfer and checksum phases for batch export progress.
 add('Datei kopieren', 'Copying file', 'Copiando archivo', '正在复制文件', 'Копирование файла', 'ファイルをコピー中')
 add('SHA256 prüfen', 'Checking SHA256', 'Comprobando SHA256', '正在校验 SHA256', 'Проверка SHA256', 'SHA256 を検査中')
