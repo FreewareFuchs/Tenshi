@@ -123,6 +123,10 @@ class LinuxLayoutTests(unittest.TestCase):
         for theme in ('light', 'dark'):
             self.check_layout(1280, 720, 4 / 3, theme)
 
+    def test_medium_height_1024x750(self):
+        for theme in ('light', 'dark'):
+            self.check_layout(1024, 750, 4 / 3, theme)
+
     def test_full_hd_1920x1080(self):
         for theme in ('light', 'dark'):
             self.check_layout(1920, 1080, 4 / 3, theme)

@@ -62,14 +62,15 @@ class ResponsiveProgressTests(unittest.TestCase):
         self.assertTrue(self.app.ntfs_scanning)
         callbacks.pop(0)()
         self.assertIn('MFT:',self.app.status.get())
-        for size in ('1024x650+0+0','1280x720+0+0','1340x830+0+0','1024x650+0+0'):
+        for size in ('1024x650+0+0','1280x720+0+0','1024x750+0+0','1340x830+0+0','1024x650+0+0'):
             self.app.geometry(size)
             self.pump()
             self.assert_visible(self.app.status_label)
             self.app._toggle_export_queue()
             self.pump()
             self.assert_visible(self.app.status_label)
-            self.assertGreaterEqual(self.app.file_tree.winfo_height(),70)
+            self.assertGreaterEqual(self.app.file_tree.winfo_height(),70,
+                                     f'geometry={self.app.geometry()} scaling={self.app.tk.call("tk","scaling")}')
             self.app._toggle_export_queue()
         for callback in callbacks:
             callback()

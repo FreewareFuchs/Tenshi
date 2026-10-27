@@ -706,7 +706,7 @@ class RecoveryDeskApp(tk.Tk):
         """Reclaim browser height in short windows without hiding actions."""
         if event is not None and event.widget is not self:
             return
-        compact = self.winfo_height() <= 720
+        compact = self.winfo_height() <= 800
         narrow = self.winfo_width() < 1400
         layout = (compact, narrow)
         if self._compact_layout == layout:
