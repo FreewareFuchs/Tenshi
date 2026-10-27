@@ -76,6 +76,46 @@ class StackedTopologyTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'nicht auflösbar'):
                     linux_devices._backing_disks(os.makedev(253, 0))
 
+    def test_stacked_members_are_snapshotted_once(self):
+        with tempfile.TemporaryDirectory() as folder:
+            sysblock, dm = self._topology(Path(folder))
+            members = list((dm / 'slaves').iterdir())
+            original_iterdir = Path.iterdir
+            reads = []
+
+            def changing_members(path):
+                if path == dm / 'slaves':
+                    reads.append(path)
+                    return iter(members if len(reads) == 1 else [])
+                return original_iterdir(path)
+
+            p1, p2 = self._patch_paths(sysblock)
+            with p1, p2, mock.patch.object(Path, 'iterdir', changing_members):
+                roots = linux_devices._backing_disks(os.makedev(253, 0))
+                expected = (linux_devices._backing_disks(os.makedev(8, 1))
+                            | linux_devices._backing_disks(os.makedev(8, 17)))
+            self.assertEqual(roots, expected)
+            self.assertEqual(len(reads), 1)
+
+    def test_disconnected_member_aborts_instead_of_accepting_partial_mapping(self):
+        with tempfile.TemporaryDirectory() as folder:
+            sysblock, _ = self._topology(Path(folder))
+            p1, p2 = self._patch_paths(sysblock)
+            with p1, p2:
+                mapped_stat = linux_devices.os.stat
+
+                def disconnected(path, *args, **kwargs):
+                    if os.fspath(path) == '/dev/sdb1':
+                        raise FileNotFoundError('simulated unplug')
+                    return mapped_stat(path, *args, **kwargs)
+
+                with mock.patch.object(linux_devices.os, 'stat', side_effect=disconnected), \
+                        mock.patch.object(linux_devices.os, 'open',
+                                          side_effect=AssertionError('No device access')) as opened:
+                    with self.assertRaisesRegex(FileNotFoundError, 'simulated unplug'):
+                        linux_devices._backing_disks(os.makedev(253, 0))
+                    opened.assert_not_called()
+
     def test_cycle_in_virtual_device_backing_is_rejected(self):
         with tempfile.TemporaryDirectory() as folder:
             sysblock, dm0 = self._topology(Path(folder))
