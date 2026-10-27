@@ -27,3 +27,28 @@ Status bei Größenwechseln und ausgeklappter Warteschlange, gebündelte Resize-
 Arbeit und unveränderte Diagrammdaten. Die Linux-Matrix prüft beide Farbvarianten,
 sechs Sprachen sowie kleine und große Fenster mit unterschiedlicher Skalierung.
 Die installierte Tk-9-Flatpak-Oberfläche prüft die Statuszeile auch bei 1024 × 650.
+
+## Langsame Größenänderungen durch Bildkacheln
+
+Das Bündeln der Configure-Callbacks allein beseitigte die gemeldete Trägheit
+nicht. Ein lokaler Windows-Vergleich mit derselben leeren Dateiansicht und
+40 Größenänderungen benötigte mit unveränderten Sun-Valley-Flächen ca. 33,5 s,
+mit clam ca. 5,1 s. Selbst ohne Tenshis Layout-, Umbruch- und Übersetzungs-
+Callbacks brauchte Sun Valley noch ca. 24,9 s. Diese Messung umfasst synchrone
+Fenster- und Zeichenarbeit; sie ist keine Aussage zur Bildrate auf jedem System.
+
+Die Anpassung in `appearance._native_surfaces` kopiert einmal je Farbvariante
+die portablen clam-Elemente für Notebook, Tabellenflächen und -köpfe, Rahmen,
+Eingabefelder, Comboboxen, Trennlinien und Bildlaufleisten. Sie erhalten die
+Sun-Valley-Farben einschließlich Fokus, deaktiviertem Zustand und Auswahl.
+Schaltflächen und Auswahlhäkchen behalten die Sun-Valley-Grafiken. Schrift,
+Quellenleser und Scanablauf bleiben unverändert. Die Originaldateien des Themes
+werden nicht bearbeitet. Die clam-Layouts werden beim Start einmal gelesen und
+zwischengespeichert; dabei erfolgt kein Zeichnen oder Verarbeiten von Ereignissen.
+Spätere Farbwechsel benötigen keinen Wechsel zu clam.
+
+Upstream-Hinweis zur Kachelgröße:
+https://github.com/rdbende/Sun-Valley-ttk-theme/issues/106
+
+Die endgültige Beurteilung der Reaktion beim Ziehen mit der Maus erfordert
+weiterhin den Test auf der Mint-VM; der Windows-Vergleich ersetzt diesen nicht.

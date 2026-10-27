@@ -55,7 +55,14 @@ def check_installed_gui() -> None:
                 for theme in ('dark', 'light', 'system'):
                     app.change_theme(theme)
                     app.update()
-                    assert ttk.Style(app).theme_use() == 'sun-valley-' + app.theme
+                    style = ttk.Style(app)
+                    assert style.theme_use() == 'sun-valley-' + app.theme
+                    from recoverydesk.appearance import palette
+                    colors = palette(app.theme)
+                    for name in ('TEntry', 'TCombobox'):
+                        assert style.lookup(name, 'fieldbackground', ('readonly',)) == colors['input']
+                        assert style.lookup(name, 'bordercolor', ('focus',)) == colors['accent']
+                    assert style.lookup('Treeview', 'background', ('selected',)) == colors['inactive']
                 for language in LANGUAGES:
                     app.change_language(language)
                     app.update()

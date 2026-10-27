@@ -24,7 +24,80 @@ def apply_theme(root, mode):
         for name in ('light', 'dark'):
             root.tk.call('source', str(THEME_DATA / 'theme' / (name + '.tcl')))
     style.theme_use('sun-valley-' + mode)
+    _native_surfaces(root, style, mode)
     return style
+
+
+def _native_surfaces(root, style, mode):
+    """Keep Sun Valley controls, but paint expanding surfaces without PNG tiles.
+
+    Each theme owns its elements. Copy the portable clam layouts/elements once
+    per theme, without modifying upstream data. No drawing/event processing is
+    performed while reading the clam layouts; the selected theme is restored.
+    Large tiled surfaces otherwise dominate interactive resize time, especially
+    with software rendering in a VM (upstream issue #106).
+    """
+    installed = getattr(root, '_tenshi_native_surface_themes', set())
+    if mode in installed:
+        return
+    names = ('TNotebook', 'Treeview', 'TLabelframe', 'TFrame',
+             'Horizontal.TSeparator', 'Vertical.TSeparator',
+             'Horizontal.TScrollbar', 'Vertical.TScrollbar',
+             'Treeview.Heading', 'TEntry', 'TCombobox')
+    layouts = getattr(root, '_tenshi_native_surface_layouts', None)
+    if layouts is None:
+        selected = style.theme_use()
+        try:
+            style.theme_use('clam')
+            layouts = {name: style.layout(name) for name in names}
+        finally:
+            style.theme_use(selected)
+        root._tenshi_native_surface_layouts = layouts
+
+    def copy_elements(nodes):
+        result = []
+        for element, options in nodes:
+            # Treeview uses these named layout nodes to find its scrolling
+            # viewport. Preserve their identities; only its field is painted.
+            native = element if element in ('Treeview.padding', 'Treeview.treearea') else 'Tenshi.Native.' + element
+            if native != element and native not in style.element_names():
+                style.element_create(native, 'from', 'clam', element)
+            options = dict(options)
+            if 'children' in options:
+                options['children'] = copy_elements(options['children'])
+            result.append((native, options))
+        return result
+
+    for name, layout in layouts.items():
+        style.layout('Card.TFrame' if name == 'TFrame' else name,
+                     copy_elements(layout))
+    colors = palette(mode)
+    for name in ('TNotebook', 'TLabelframe', 'Card.TFrame', 'Treeview.Heading'):
+        background = colors['panel'] if name in ('Card.TFrame', 'Treeview.Heading') else colors['bg']
+        style.configure(name, background=background, bordercolor=colors['divider'],
+                        lightcolor=background, darkcolor=background)
+    style.map('Treeview.Heading', background=[('active', colors['inactive'])])
+    style.configure('Treeview', background=colors['input'],
+                    fieldbackground=colors['input'], bordercolor=colors['divider'],
+                    lightcolor=colors['input'], darkcolor=colors['input'])
+    for name in ('TEntry', 'TCombobox'):
+        style.configure(name, fieldbackground=colors['input'],
+                        bordercolor=colors['divider'], lightcolor=colors['divider'],
+                        darkcolor=colors['divider'], arrowcolor=colors['text'])
+        style.map(name, fieldbackground=[('disabled', colors['inactive']),
+                                        ('readonly', colors['input'])],
+                  bordercolor=[('invalid', colors['warning']), ('focus', colors['accent'])],
+                  lightcolor=[('focus', colors['accent'])],
+                  darkcolor=[('focus', colors['accent'])])
+    for orientation in ('Horizontal', 'Vertical'):
+        style.configure(orientation + '.TSeparator', background=colors['divider'])
+        style.configure(orientation + '.TScrollbar', background=colors['muted'],
+                        troughcolor=colors['bg'], arrowcolor=colors['text'],
+                        bordercolor=colors['bg'], lightcolor=colors['muted'],
+                        darkcolor=colors['muted'], borderwidth=0)
+        style.map(orientation + '.TScrollbar',
+                  background=[('active', colors['text']), ('disabled', colors['inactive'])])
+    root._tenshi_native_surface_themes = installed | {mode}
 
 
 def _command(args):
