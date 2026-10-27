@@ -189,3 +189,16 @@ Das ursprüngliche Build-Manifest bleibt als Herkunftsnachweis unverändert: Sei
 Vorbereitungsstatus beschreibt den Zeitpunkt des Builds, nicht den heutigen
 Veröffentlichungsstatus. Die Dokumentationsänderung erzeugt keine neuen Pakete
 und verschiebt weder Tag noch Release-Commit.
+
+## Wartungsupdate 3.0.5 vorbereiten
+
+Der Quellstand verwendet Version 3.0.5 und die abgeleiteten Windows-/CI-Felder.
+Die veröffentlichten Downloads, Website und APT-Quelle bleiben bei 3.0.4.
+[Änderungen und ausstehende Abnahme](../RELEASE_NOTES_3.0.5.md).
+
+Nach erfolgreicher Prüfung den festgehaltenen sauberen Commit über
+**Prepare release bundle (no publishing)** mit `stable` bauen. Das Bundle enthält
+Installer, Portable-ZIP und DEB mit Version 3.0.5 beziehungsweise 3.0.5-1 sowie
+Manifest und Prüfsummenliste. Die Erstellung legt weder Tag noch Release an.
+Die finalen Pakete vor Veröffentlichung manuell abnehmen; bereits bestätigte
+3.0.4- oder Flatpak-Testpakete ersetzen diese Abnahme nicht.

@@ -1,3 +1,12 @@
+# Tenshi 3.0.5 – vorbereitet, noch nicht veröffentlicht
+
+- Linux: Die vorgelagerte Quell-/Zielprüfung lehnt leere Gerätezuordnungen ab. Mitglieder zusammengesetzter Geräte werden einmal eingelesen; fehlende Informationen führen zum Abbruch. Die bestehende Prüfung am geöffneten Ausgabeordner bleibt erhalten.
+- Ein gemeinsames Werkzeug prüft öffentliche Website-, Download- und APT-Dateien gegen den lokalen geprüften Stand.
+- Zusätzliche Tests für Linux-Fenstergrößen, sechs Sprachen, Gerätewechsel und Imaging mit simulierten 4-KiB-Sektoren. Die installierte experimentelle Flatpak-Oberfläche wird ebenfalls geprüft.
+- Vorgesehen: Windows-Installer und Portable-ZIP 3.0.5 sowie `tenshi-recovery 3.0.5-1`. Die veröffentlichten Downloads bleiben bis zur Paketfreigabe bei 3.0.4.
+
+[Änderungen und ausstehende Paketabnahme](RELEASE_NOTES_3.0.5.md).
+
 # Tenshi 3.0.4 – stabil veröffentlicht (27.10.2026)
 
 - Stapel-Export: Die SHA256-Zielprüfung zeigt einen eigenen Lesefortschritt. Prüfbytes werden nicht als Kopierbytes oder Kopierrate gezählt.

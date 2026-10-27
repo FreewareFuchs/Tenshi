@@ -13,6 +13,10 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 **3.0.4 ist seit 27.10.2026 stabil veröffentlicht.** Windows-Installer, Portable-ZIP und Linux-DEB sind manuell abgenommen; Website und signierte APT-Quelle sind geprüft.
 [Änderungen und bestätigter Prüfstand](RELEASE_NOTES_3.0.4.md).
 
+Der Entwicklungsstand bereitet das Wartungsupdate **3.0.5** vor.
+[Änderungen und noch ausstehende Paketabnahme](RELEASE_NOTES_3.0.5.md).
+Die folgenden Download- und APT-Angaben beziehen sich auf die veröffentlichte 3.0.4.
+
 ## Herunterladen und starten
 
 Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.4](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.4) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.txt`.
