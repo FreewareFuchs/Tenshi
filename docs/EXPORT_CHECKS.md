@@ -12,7 +12,7 @@ Die zusätzlichen Hinweise erscheinen in allen sechs Oberflächensprachen. Der E
 Diese Änderung führt keinen zusätzlichen vollständigen Quell-Lesevorgang ein. Die beim Export berechnete Ziel-Prüfsumme ist kein unabhängiger Nachweis, dass die Dateizuordnung richtig war oder gelöschte Daten unversehrt sind. Deshalb darf eine übereinstimmende Größe oder gespeicherte Prüfsumme nicht als Bestätigung der ursprünglichen Dateiinhalte verstanden werden.
 
 
-## Entwicklungsstand: Prüfung nach Abbruch fortsetzen
+## Für 3.0.4 vorbereitet: Prüfung nach Abbruch fortsetzen
 
 Neue Stapel-Exporte berechnen während des Kopierens zusätzlich SHA256 über
 exakt die vom Leser bereitgestellten und geschriebenen Daten. Nach erfolgreichem
@@ -38,7 +38,7 @@ hinterlassen, die mangels Nachweis nicht automatisch bestätigt werden darf.
 
 Diese Ergänzung ist noch nicht Bestandteil der veröffentlichten Version 3.0.3.
 
-## Entwicklungsstand: Windows-Ziele während des Schreibens sichern
+## Für 3.0.4 vorbereitet: Windows-Ziele während des Schreibens sichern
 
 Beim Öffnen von Image- und Exportdateien hält Tenshi unter Windows nun alle
 Elternverzeichnisse vom Laufwerks- bzw. Freigabestamm bis zum Zielordner geöffnet.

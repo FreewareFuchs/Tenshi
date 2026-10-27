@@ -1,3 +1,13 @@
+# Tenshi 3.0.4 – Release-Kandidat, noch nicht veröffentlicht
+
+- Stapel-Export: Die SHA256-Zielprüfung zeigt einen eigenen Lesefortschritt. Prüfbytes werden nicht als Kopierbytes oder Kopierrate gezählt.
+- Vollständig geschriebene Exporte mit gespeichertem Prüfstand lassen sich nach einem Prüfungsabbruch erneut bestätigen, ohne sie nochmals zu kopieren. Geänderte oder unbekannte Dateien bleiben gesperrt.
+- Windows: Beim erneuten Öffnen einer Image-Zieldatei werden Dateiidentität und Ausschluss einer Quellalias-Datei vor dem Schreiben geprüft. Ausgabe-Elternverzeichnisse werden während des Schreibens gehalten; Junctions, Symlinks und andere Reparse Points werden abgelehnt.
+- Build- und Installer-Versionen werden zentral abgeglichen. Lokale Werkzeuge bereiten Website-Kataloge aus geprüften Release-Bundles vor und prüfen statische Website-Releasefelder.
+- Geplant: Windows-Installer und Portable-ZIP 3.0.4 sowie Linux-Paket `tenshi-recovery 3.0.4-1`. Die veröffentlichten Downloads bleiben bis zur gesonderten Freigabe bei 3.0.3.
+
+Details und offene Paketabnahme: [Versionshinweise 3.0.4](RELEASE_NOTES_3.0.4.md).
+
 # Tenshi 3.0.3 – stabil veröffentlicht (26.10.2026)
 
 [GitHub-Release v3.0.3](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.3)

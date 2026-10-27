@@ -10,6 +10,10 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 [![Tenshi: Dateien, Ordner und Exportprüfung](https://freewarefuchs.de/tenshi/screenshots/dateien.png)](https://freewarefuchs.de/tenshi/#screenshots)
 
+Der Entwicklungsstand bereitet **3.0.4** vor; diese Version ist noch nicht veröffentlicht.
+Die nachfolgenden Download- und APT-Angaben beziehen sich weiterhin auf das veröffentlichte Release **3.0.3**.
+[Änderungen und offene Paketabnahme für 3.0.4](RELEASE_NOTES_3.0.4.md).
+
 ## Herunterladen und starten
 
 Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.3](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.3) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.txt`.
