@@ -10,13 +10,12 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 [![Tenshi: Dateien, Ordner und Exportprüfung](https://freewarefuchs.de/tenshi/screenshots/dateien.png)](https://freewarefuchs.de/tenshi/#screenshots)
 
-Der Entwicklungsstand bereitet **3.0.4** vor; diese Version ist noch nicht veröffentlicht.
-Die nachfolgenden Download- und APT-Angaben beziehen sich weiterhin auf das veröffentlichte Release **3.0.3**.
-[Änderungen und offene Paketabnahme für 3.0.4](RELEASE_NOTES_3.0.4.md).
+**3.0.4 ist seit 27.10.2026 stabil veröffentlicht.** Windows-Installer, Portable-ZIP und Linux-DEB sind manuell abgenommen; Website und signierte APT-Quelle sind geprüft.
+[Änderungen und bestätigter Prüfstand](RELEASE_NOTES_3.0.4.md).
 
 ## Herunterladen und starten
 
-Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.3](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.3) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.txt`.
+Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.4](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.4) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.txt`.
 
 | Variante | Verwendung |
 | --- | --- |
@@ -30,12 +29,12 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 
 ## Unter Linux starten
 
-Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.3`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.3) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.3.md).
+Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.4`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.4) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.4.md).
 
 ### DEB-Paket für Linux Mint 22.x
 
 Die signierte [FreewareFuchs-APT-Quelle](docs/APT_REPOSITORY.md) bietet
-`tenshi-recovery 3.0.3-1` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
+`tenshi-recovery 3.0.4-1` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
 beschreibt die einmalige Einrichtung und Prüfung des Schlüsselfingerabdrucks.
 Danach:
 
@@ -45,12 +44,12 @@ sudo apt install tenshi-recovery
 tenshi-recovery
 ```
 
-Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.3-1_all.deb).
-SHA256: `153ec71e9597f614f7d1adf610db3486cc91b7d20745a1573af1d8e072aa1a34`.
+Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.4-1_all.deb).
+SHA256: `cbb4b862996781b95fb7a36e41228fdc9ae9a6a2758602628d2f55b624fad86e`.
 Nach Prüfsummenvergleich im Downloadordner installieren:
 
 ```bash
-sudo apt install ./tenshi-recovery_3.0.3-1_all.deb
+sudo apt install ./tenshi-recovery_3.0.4-1_all.deb
 ```
 
 Danach **Tenshi** im Anwendungsmenü öffnen. Ohne sudo starten;
@@ -125,11 +124,11 @@ Die Quelle wird nur lesend geöffnet. Bei mechanischen Auffälligkeiten oder wer
 
 ## Entwicklungs- und Teststatus
 
-Fenstertitel, Offline-Hilfe unter „Über Tenshi“ und `tenshi-recovery --version` zeigen die Programmversion und die kurze Git-Commit-Kennung. Die stabile Version wird beispielsweise als `3.0.3 (18d973dd88)` angezeigt; Beta-Pakete enthalten zusätzlich ihre Beta-Kennung. Entwicklungsstände erhalten `+dev`, lokal geänderte Quellen zusätzlich `+dirty`; ohne bekannte Build-Information steht beim Commit `?`. Details: [Build-Kennung](docs/BUILD_IDENTITY.md).
+Fenstertitel, Offline-Hilfe unter „Über Tenshi“ und `tenshi-recovery --version` zeigen die Programmversion und die kurze Git-Commit-Kennung. Die stabile Version wird beispielsweise als `3.0.4 (b1caea8b40)` angezeigt; Beta-Pakete enthalten zusätzlich ihre Beta-Kennung. Entwicklungsstände erhalten `+dev`, lokal geänderte Quellen zusätzlich `+dirty`; ohne bekannte Build-Information steht beim Commit `?`. Details: [Build-Kennung](docs/BUILD_IDENTITY.md).
 
-3.0.3 ist als stabile Version veröffentlicht. Die dokumentierten Einschränkungen einzelner Dateisystemfunktionen bleiben bestehen. Automatisierte Tests mit synthetischen Images und simulierten Fehlerfällen ersetzen keine Prüfung auf beschädigter Hardware.
+3.0.4 ist als stabile Version veröffentlicht. Die dokumentierten Einschränkungen einzelner Dateisystemfunktionen bleiben bestehen. Automatisierte Tests mit synthetischen Images und simulierten Fehlerfällen ersetzen keine Prüfung auf beschädigter Hardware.
 
-Aktueller Stand 26.10.2026: [Finaler Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40363573058) aus Commit `18d973dd88346157da8e3bbf9856bc44ebe71f25` mit Kennung `stable`. Die finalen Pakete und die erneute Linux-Installation aus der öffentlichen APT-Quelle wurden manuell bestätigt. [Prüfumfang und Grenzen](RELEASE_NOTES_3.0.3.md).
+Aktueller Stand 27.10.2026: [Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40466932499) aus Commit `b1caea8b40f7b29d401e85a3e51a2916fc5f9e0e` mit Kennung `stable`. Die finalen Pakete und das Upgrade über die öffentliche APT-Quelle wurden vom Anwender bestätigt. [Prüfumfang und Grenzen](RELEASE_NOTES_3.0.4.md).
 
 Historischer Prüfstand 3.0.2: Die vollständige lokale Suite der stabilen Vorbereitung lief mit 665 Tests ohne Fehler unter virtuellem X11; zwei Tests wurden übersprungen. Der [gemeinsame Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40242121217) für den veröffentlichten Commit `abfd4c973a253c2a8571d238e15a0fb77b013dec` ist erfolgreich: Linux- und Windows-Prüfungen, EXE-/Portable-/Installer-Bau, DEB-Installation und gemeinsame Paket-/Prüfsummenprüfung. Die Linux-CI prüft unabhängig formatierte FAT32-, NTFS-, exFAT-, ext4-, Btrfs- und XFS-Images.
 
@@ -146,6 +145,7 @@ Der [Windows-Abnahmeplan](WINDOWS_ABNAHME_3.0.0.md) ist ein Prüfplan, kein Nach
 ## Änderungen und technische Dokumentation
 
 - [Änderungsverlauf](CHANGELOG.md)
+- [Versionshinweise zu 3.0.4](RELEASE_NOTES_3.0.4.md)
 - [Versionshinweise zu 3.0.3](RELEASE_NOTES_3.0.3.md)
 - [Versionshinweise zu 3.0.2](RELEASE_NOTES_3.0.2.md)
 - [Dokumentation der Offline-Hilfe](HILFE_3.0.0.md)

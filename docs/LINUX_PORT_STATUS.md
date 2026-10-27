@@ -1,6 +1,16 @@
 # Linux-Portierung – Stand und Hardware-Abnahme
 
-## Veröffentlichter Stand vom 26.10.2026
+## Veröffentlichter Stand vom 27.10.2026
+
+Linux-DEB, Windows-Installer und Portable-ZIP sind als [stabile Version 3.0.4](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.4) veröffentlicht und manuell abgenommen.
+Der [gemeinsame Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40466932499)
+für `b1caea8b40f7b29d401e85a3e51a2916fc5f9e0e` ist erfolgreich.
+Website, öffentliche Downloads und signierte APT-Quelle sind geprüft; das Upgrade
+über APT ist vom Anwender bestätigt. Die genaue Ausgangsversion ist nicht angegeben.
+Die Mint-Ausgabe zeigt installierte Version und Kandidat `3.0.4-1` ohne Signaturfehler.
+[Versionshinweise und Testgrenzen](../RELEASE_NOTES_3.0.4.md).
+
+## Historischer Veröffentlichungsstand vom 26.10.2026
 
 Linux-DEB, Windows-Installer und Portable-ZIP sind als [stabile Version 3.0.2](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.2) veröffentlicht. Der gemeinsame [Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40242121217) für `abfd4c973a253c2a8571d238e15a0fb77b013dec` ist erfolgreich. Aktuelle Installationshinweise: [Linux-DEB](LINUX_DEB.md); Funktionsumfang und Teststand: [Versionshinweise](../RELEASE_NOTES_3.0.2.md).
 
