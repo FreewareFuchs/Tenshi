@@ -115,3 +115,37 @@ diese HTML-Dateien werden von diesem Werkzeug noch nicht angepasst und müssen
 weiterhin abgeglichen werden. Anschließend öffentliche Download-Links, Versionen
 und Prüfsummen kontrollieren. Ein vorbereiteter Katalog ist keine Freigabe zum
 Veröffentlichen eines Releases oder zum Ändern der Website.
+
+
+## Statische Website-Seiten vor dem Upload prüfen
+
+Nach dem Abgleich der sechs Programmseiten und sechs Anleitungen den neuen
+Katalog zusammen mit dem lokalen Website-Stand prüfen:
+
+```bash
+python3 check_website_release.py --site /pfad/zu/httpdocs --catalog software-new.json
+```
+
+Das Werkzeug liest nur und benötigt keine Netzwerkverbindung. Es prüft alle
+Vorkommen der markierten Versions-, Tag- und Größenfelder, die markierten
+Installer-/Portable-/Linux-/Prüfsummen-/Release-Links sowie genau einen gültigen
+Tenshi-SoftwareApplication-JSON-LD-Block pro Programmseite. In diesem Block
+müssen Version und Release-URL zum Katalog passen. Jede Anleitung benötigt ein
+`linux-install`-Element; auf den Programmseiten wird die Linux-Prüfsummenangabe
+in einem `ff-secondary`-Element erwartet. Die dort genannten Paketversionen und
+SHA256-Werte sowie explizite aktuelle `tenshi-recovery_...deb`-Links werden geprüft.
+Fehlende Seiten, Felder, ungültiges JSON-LD und widersprüchliche Wiederholungen
+werden mit dem jeweiligen Seitenpfad gemeldet. Die Seitenstruktur entspricht
+den sechs Sprachversionen `de`, `en`, `es`, `ru`, `zh`, `ja`.
+
+Exitstatus: `0` bei passenden Release-Feldern, `1` bei Seitenabweichungen und `2`
+bei ungültigem oder fehlendem Katalog. Historische Versionshinweise außerhalb
+der geprüften Release-Felder werden nicht pauschal als Fehler gewertet.
+Redaktionelle Fließtexte und Meta-Beschreibungen, allgemeine HTML-Gültigkeit,
+Layout, Paketdateien und die öffentliche Erreichbarkeit von Links sind damit
+nicht bestätigt. Der Katalog muss zuvor mit dem geprüften Bundle vorbereitet
+worden sein; das Prüfwerkzeug ersetzt dessen Paketprüfung nicht.
+
+Vor jeder HTML-Änderung die betroffenen Originaldateien mit ihrer relativen
+Ordnerstruktur in einem datierten Backup sichern. Auch bei erfolgreicher Prüfung
+vor dem Upload etwaige zwischenzeitliche Änderungen auf dem Server berücksichtigen.
