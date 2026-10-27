@@ -81,14 +81,23 @@ def check_installed_gui() -> None:
                     assert app.file_tree.winfo_ismapped(), language
                     assert app.file_tree.winfo_height() >= 70, language
                     assert app.export_button.winfo_ismapped(), language
+                    app.geometry('1024x650+0+0')
+                    app.status.set('MFT: 123,456 / 987,654 Datensätze geprüft …')
+                    app.update()
+                    assert app.status_label.winfo_ismapped(), language
+                    assert app.status_label.winfo_height() >= app.status_label.winfo_reqheight(), language
+                    assert app.status_label.winfo_rooty()+app.status_label.winfo_height() <= app.winfo_rooty()+app.winfo_height(), language
                     assert app.export_queue_collapsed, language
                     app._toggle_export_queue()
                     app.update()
                     assert app.export_queue_bar.winfo_ismapped(), language
+                    assert app.file_tree.winfo_height() >= 70, language
+                    assert app.status_label.winfo_ismapped(), language
                     app._toggle_export_queue()
                     app.update()
                     assert app.export_queue_collapsed, language
                     assert not app.export_queue_bar.winfo_ismapped(), language
+                    app.geometry('1280x900+0+0')
                 assert app.callback_errors == [], app.callback_errors
                 assert app.source_path.get() == ''
             finally:

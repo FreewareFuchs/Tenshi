@@ -84,6 +84,12 @@ class LinuxLayoutTests(unittest.TestCase):
                                 app.update()
                                 self.assertGreaterEqual(app.tabs.winfo_height(), 100)
                             self.assert_visible(app, app.file_tree, 'file browser')
+                            app.ntfs_scanning = True
+                            app.status.set('MFT: 123,456 / 987,654 Datensätze geprüft …')
+                            app.update()
+                            self.assert_visible(app, app.status_label, 'live scan progress')
+                            self.assertGreaterEqual(app.status_label.winfo_height(),
+                                                    app.status_label.winfo_reqheight())
                             self.assertGreaterEqual(app.file_tree.winfo_height(), 70)
                             self.assert_visible(app, app.export_button, 'export action')
                             self.assertTrue(app.export_queue_collapsed)
@@ -92,6 +98,7 @@ class LinuxLayoutTests(unittest.TestCase):
                             app._toggle_export_queue()
                             app.update()
                             self.assert_visible(app, app.export_queue_bar, 'expanded queue progress')
+                            self.assert_visible(app, app.status_label, 'scan progress with expanded queue')
                             self.assert_visible(app, app.file_tree, 'file browser with queue')
                             self.assertGreaterEqual(app.file_tree.winfo_height(), 70)
                             expanded_height = app.file_tree.winfo_height()

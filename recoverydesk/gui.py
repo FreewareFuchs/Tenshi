@@ -608,9 +608,9 @@ class RecoveryDeskApp(tk.Tk):
         self._header_subtitle = ttk.Label(description, text="NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner",
                   style="Sub.TLabel")
         self._header_subtitle.pack(anchor="w", fill="x")
-        description.bind("<Configure>", lambda event: (
-            self._header_title.configure(wraplength=max(100, event.width)),
-            self._header_subtitle.configure(wraplength=max(100, event.width))))
+        self._header_wrap_job = None
+        self._header_wrap_width = None
+        description.bind('<Configure>', self._schedule_header_wrap)
 
         # Two rows keep all source actions accessible even with Windows display scaling.
         source = ttk.Frame(self, padding=(12, 2, 12, 2))
@@ -680,11 +680,27 @@ class RecoveryDeskApp(tk.Tk):
         self._update_main_tab_styles()
         self._build_partitions()
         self._build_ntfs()
-        footer = ttk.Frame(self, padding=(12, 2, 12, 3))
-        footer.pack(fill="x")
-        ttk.Label(footer, textvariable=self.status, style="Sub.TLabel").pack(anchor="w")
-        ttk.Label(footer, text="Bei Hardwaredefekt weitere Lesezugriffe minimieren und möglichst ein schonendes Image erstellen. Gerettete Daten nur auf einem anderen physischen Datenträger speichern.",
-                  foreground="#9a3412").pack(anchor="w", pady=(1, 0))
+        self.status_bar = ttk.Frame(self, padding=(12, 2, 12, 3))
+        # Reserve progress BEFORE the expanding body takes its requested space.
+        self.status_bar.pack(side='bottom', fill='x', before=body)
+        self.status_label = ttk.Label(self.status_bar, textvariable=self.status, style='Sub.TLabel')
+        self.status_label.pack(anchor='w', fill='x')
+        self._footer_warning = ttk.Label(self.status_bar, text="Bei Hardwaredefekt weitere Lesezugriffe minimieren und möglichst ein schonendes Image erstellen. Gerettete Daten nur auf einem anderen physischen Datenträger speichern.",
+                                        foreground='#9a3412')
+        self._footer_warning.pack(anchor='w', pady=(1, 0))
+
+    def _schedule_header_wrap(self, event):
+        self._pending_header_width = max(100, event.width)
+        if self._header_wrap_job is None:
+            self._header_wrap_job = self.after(40, self._flush_header_wrap)
+
+    def _flush_header_wrap(self):
+        self._header_wrap_job = None
+        width = self._pending_header_width
+        if width != self._header_wrap_width:
+            self._header_wrap_width = width
+            self._header_title.configure(wraplength=width)
+            self._header_subtitle.configure(wraplength=width)
 
     def _update_compact_layout(self, event=None):
         """Reclaim browser height in short windows without hiding actions."""
@@ -715,7 +731,15 @@ class RecoveryDeskApp(tk.Tk):
         style.configure('TCheckbutton', padding=1 if compact else 4)
         self.export_button.configure(pady=2 if compact else 7)
         for tab in (self.partition_tab, self.ntfs_tab):
-            tab.configure(padding=(8, 4) if compact else 12)
+            tab.configure(padding=(8, 2) if compact else 12)
+        # Keep the live status line visible at every supported window size.
+        # The long, repeated safety caption yields space in compact mode.
+        if compact:
+            self._footer_warning.pack_forget()
+        else:
+            self._footer_warning.pack(anchor='w', pady=(1, 0))
+        for row, regular in self._browser_spacing:
+            row.pack_configure(pady=(0, 2) if compact else (0, regular))
         style.configure('Treeview', rowheight=22 if compact else 27)
 
     def _select_main_tab(self, name: str):
@@ -1322,7 +1346,9 @@ class RecoveryDeskApp(tk.Tk):
         self.usage_canvas = tk.Canvas(graphic, height=18, highlightthickness=0,
                                       background='#e5e7eb', borderwidth=0)
         self.usage_canvas.pack(fill='x', pady=(4, 4))
-        self.usage_canvas.bind('<Configure>', lambda _event: self._draw_usage_bar())
+        self._usage_redraw_job = None
+        self._usage_draw_key = None
+        self.usage_canvas.bind('<Configure>', self._schedule_usage_redraw)
         self._usage_for_chart = None
         cols = ("idx", "scheme", "confidence", "offset", "size", "filesystem", "usage", "health", "sector", "type", "name")
         self.part_tree = ttk.Treeview(self.partition_tab, columns=cols, show="headings")
@@ -1384,8 +1410,14 @@ class RecoveryDeskApp(tk.Tk):
         self.quick_btn.configure(state="disabled")
         self.deep_btn.configure(state="disabled")
         self.status.set("Suche läuft – RAW-Abbild wird ausschließlich gelesen …")
+        last_progress_post = float('-inf')
         def progress(current, total):
+            nonlocal last_progress_post
+            now = time.monotonic()
+            if current != total and now - last_progress_post < .1:
+                return
             if current == total or current % (64 * 1024 * 1024) < 4 * 1024 * 1024:
+                last_progress_post = now
                 self._post_scan_callback(lambda c=current, t=total, g=generation: (
                     self.status.set(f"Dateisystemsuche: {c / 1024**2:,.0f} / {t / 1024**2:,.0f} MiB gelesen")
                     if g == self._source_generation else None))
@@ -1467,27 +1499,43 @@ class RecoveryDeskApp(tk.Tk):
         box.insert('1.0', text)
         box.configure(state='disabled')
 
+    def _schedule_usage_redraw(self, event=None):
+        if self._usage_redraw_job is None:
+            self._usage_redraw_job = self.after(40, self._flush_usage_redraw)
+
+    def _flush_usage_redraw(self):
+        self._usage_redraw_job = None
+        self._draw_usage_bar()
+
     def _draw_usage_bar(self, details=None):
         """Show *metadata-based* used/free ratios, or grey if not available."""
         if details is not None:
             self._usage_for_chart = details
         details = self._usage_for_chart
         canvas = self.usage_canvas
-        canvas.delete('all')
         width = max(1, canvas.winfo_width())
         height = max(1, canvas.winfo_height())
+        pct = None if details is None or details.used_percent is None else max(0., min(100., details.used_percent))
+        key = (width, height, self.theme, pct)
+        if key == self._usage_draw_key:
+            return
+        self._usage_draw_key = key
+        canvas.delete('all')
         if details is None or details.used_percent is None:
             canvas.create_rectangle(0, 0, width, height, fill=self._palette()['divider'], outline='')
-            self.usage_caption.set('Speicherbelegung: unbekannt (keine vollständigen Metadaten).')
+            text = 'Speicherbelegung: unbekannt (keine vollständigen Metadaten).'
+            if self.usage_caption.get() != translate(text, self.language):
+                self.usage_caption.set(text)
             return
         pct = max(0., min(100., details.used_percent))
         used_width = round(width * pct / 100)
         canvas.create_rectangle(0, 0, width, height, fill=('#294739' if self.theme == 'dark' else '#d6f0e3'), outline='')
         if used_width:
             canvas.create_rectangle(0, 0, used_width, height, fill=('#4b9ce5' if self.theme == 'dark' else '#3275c9'), outline='')
-        self.usage_caption.set(
-            f'Belegt: {pct:.1f} % · Frei: {100-pct:.1f} % '
-            '(nur Dateisystem-Metadaten; kein Integritätsnachweis)')
+        text = (f'Belegt: {pct:.1f} % · Frei: {100-pct:.1f} % '
+                '(nur Dateisystem-Metadaten; kein Integritätsnachweis)')
+        if self.usage_caption.get() != translate(text, self.language):
+            self.usage_caption.set(text)
 
     def _on_partition_selected(self, event=None):
         selected = self.part_tree.selection()
@@ -1625,8 +1673,10 @@ class RecoveryDeskApp(tk.Tk):
         messagebox.showinfo('Partitionsbericht', 'Bericht erfolgreich gespeichert.', parent=self)
 
     def _build_ntfs(self):
+        self._browser_spacing = []
         controls = ttk.Frame(self.ntfs_tab)
         controls.pack(fill='x', pady=(0, 8))
+        self._browser_spacing.append((controls, 8))
         ttk.Label(controls, text='Partitionsoffset (Byte):').pack(side='left')
         self.ntfs_byte_offset = tk.StringVar(value='0')
         ttk.Entry(controls, textvariable=self.ntfs_byte_offset, width=16).pack(side='left', padx=5)
@@ -1637,6 +1687,7 @@ class RecoveryDeskApp(tk.Tk):
 
         tools = ttk.Frame(self.ntfs_tab)
         tools.pack(fill='x', pady=(0, 8))
+        self._browser_spacing.append((tools, 8))
         self.ntfs_scan_btn = ttk.Button(tools, text='Dateisystem einlesen',
                                         style='Accent.TButton', command=self.start_ntfs_scan)
         self.ntfs_scan_btn.pack(side='left')
@@ -1674,6 +1725,7 @@ class RecoveryDeskApp(tk.Tk):
 
         searchrow = ttk.Frame(self.ntfs_tab)
         searchrow.pack(fill='x', pady=(0, 8))
+        self._browser_spacing.append((searchrow, 8))
         ttk.Label(searchrow, text='Suche (alle Dateinamen):').pack(side='left')
         self.browser_search = tk.StringVar()
         entry = ttk.Entry(searchrow, textvariable=self.browser_search)
@@ -1695,6 +1747,7 @@ class RecoveryDeskApp(tk.Tk):
 
         filterrow = ttk.Frame(self.ntfs_tab)
         filterrow.pack(fill='x', pady=(0, 6))
+        self._browser_spacing.append((filterrow, 6))
         ttk.Label(filterrow, text='Rettbarkeitsfilter:').pack(side='left')
         self.browser_status_filter = tk.StringVar(value=FILTER_ALL)
         self.browser_status_display = tk.StringVar(value=translate(FILTER_ALL, self.language))
@@ -1714,6 +1767,7 @@ class RecoveryDeskApp(tk.Tk):
         self.browser_path = tk.StringVar(value='Noch kein Dateisystem eingelesen.')
         pathrow = ttk.Frame(self.ntfs_tab)
         pathrow.pack(fill='x', pady=(0, 5))
+        self._browser_spacing.append((pathrow, 5))
         ttk.Label(pathrow, textvariable=self.browser_path,
                   style='Sub.TLabel').pack(side='left', fill='x', expand=True)
         # Presentation-only setting: never delete or alter image entries.
@@ -1913,7 +1967,13 @@ class RecoveryDeskApp(tk.Tk):
         self.ntfs_scan_btn.configure(state='disabled')
         self.ntfs_cancel_btn.configure(state='normal')
         self.status.set('Dateisystem wird schreibgeschützt gelesen …')
+        last_progress_post = float('-inf')
         def progress(done, total):
+            nonlocal last_progress_post
+            now = time.monotonic()
+            if done != total and now - last_progress_post < .1:
+                return
+            last_progress_post = now
             self._post_scan_callback(lambda d=done, t=total, g=scan_source_generation: (
                 self.status.set(f'MFT: {d:,} / {t:,} Datensätze geprüft …')
                 if self._scan_source_matches(g, source) else None))
