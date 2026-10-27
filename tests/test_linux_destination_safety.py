@@ -49,6 +49,16 @@ class DestinationSeparationTests(unittest.TestCase):
                 self._check(os.path.join(folder, 'target.img'), {'diskA', 'diskB'},
                             {'diskB', 'diskC'})
 
+    def test_empty_source_or_destination_mapping_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            target = os.path.join(folder, 'target.img')
+            for source_roots, target_roots in [(set(), {'diskB'}),
+                                                ({'diskA'}, set()), (set(), set())]:
+                with self.subTest(source=source_roots, target=target_roots):
+                    with self.assertRaisesRegex(ValueError, 'nicht eindeutig'):
+                        self._check(target, source_roots, target_roots)
+                    self.assertFalse(os.path.lexists(target))
+
     @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux block device policy')
     def test_block_device_destination_rejected_without_file_creation(self):
         with mock.patch.object(linux_devices, 'block_path',
