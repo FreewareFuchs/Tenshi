@@ -687,10 +687,10 @@ class RecoveryDeskApp(tk.Tk):
                   foreground="#9a3412").pack(anchor="w", pady=(1, 0))
 
     def _update_compact_layout(self, event=None):
-        """Reclaim browser height at 1024x650 under X11 without hiding actions."""
+        """Reclaim browser height in short windows without hiding actions."""
         if event is not None and event.widget is not self:
             return
-        compact = self.winfo_width() <= 1100 and self.winfo_height() <= 720
+        compact = self.winfo_height() <= 720
         narrow = self.winfo_width() < 1400
         layout = (compact, narrow)
         if self._compact_layout == layout:
