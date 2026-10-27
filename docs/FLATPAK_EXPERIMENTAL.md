@@ -76,10 +76,17 @@ flatpak --user uninstall de.freewarefuchs.Tenshi.Experimental
 
 Der Workflow `Experimental Flatpak checks` prüft Desktop-/AppStream-Dateien,
 Snapshot-Grenzen und Build-Kennung, baut und installiert das Paket und prüft
-Smoke-Test, Tk/Logo sowie den Export aus einem unabhängig mit dosfstools/mtools
+Smoke-Test, das tatsächliche installierte Tenshi-Hauptfenster samt Logo sowie den Export aus einem unabhängig mit dosfstools/mtools
 erstellten FAT32-Image. Original-/Export- und Imaging-SHA256 werden verglichen;
 der Quell-Image-Hash muss unverändert bleiben. Die CI verwendet keine echten
 USB-Quellen. Ein grüner Build bestätigt daher keine Hardware-Funktionsparität.
+
+Die Oberflächenprüfung startet `RecoveryDeskApp` aus `/app/share/tenshi` mit
+temporären Einstellungen und Logs. Sie prüft alle sechs Sprachen, beide
+Hauptbereiche, die Dateiliste und das Ein-/Ausklappen der Exportwarteschlange.
+Dabei bleibt die Quellauswahl leer; Geräte- und Volume-Auflistung sind im Test
+gesperrt. Der Test prüft die tatsächliche Flatpak-Laufzeit einschließlich des
+gebündelten Tcl/Tk, nicht nur die Oberfläche des nativen DEB.
 
 Vor einer Veröffentlichung unter Mint mit einem entbehrlichen USB-Testmedium:
 
