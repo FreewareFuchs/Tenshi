@@ -60,6 +60,20 @@ def check_installed_gui() -> None:
                     app.change_language(language)
                     app.update()
                     assert app.language == language
+                    from recoverydesk.source_catalog import SourceChoice
+                    with patch.object(gui, 'open_source', side_effect=AssertionError('Unconfirmed device read')):
+                        picker = app._show_source_dialog([
+                            SourceChoice('/dev/testdisk', '/dev/testdisk', 'disk', 16384),
+                            SourceChoice('/dev/testdisk1', '/dev/testdisk1', 'volume', 8192,
+                                         filesystem='FAT32', parent='/dev/testdisk')])
+                        app.update()
+                        assert not picker.source_tree.selection()
+                        assert str(picker.confirm_button.cget('state')) == 'disabled'
+                        assert picker.source_tree.parent('/dev/testdisk1') == '/dev/testdisk'
+                        picker.source_tree.selection_set('/dev/testdisk1')
+                        app.update()
+                        assert str(picker.confirm_button.cget('state')) == 'normal'
+                        picker.destroy()
                     for tab in ('partition', 'files'):
                         app._select_main_tab(tab)
                         app.update()

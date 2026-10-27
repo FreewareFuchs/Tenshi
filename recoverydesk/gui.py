@@ -15,6 +15,7 @@ _CURRENT_LOCALE = 'de'
 messagebox = DialogProxy(_messagebox, lambda: _CURRENT_LOCALE)
 filedialog = DialogProxy(_filedialog, lambda: _CURRENT_LOCALE, is_file_dialog=True)
 from pathlib import Path
+from .source_catalog import collect_choices, device_choices, volume_choices
 from .branding import asset_path
 from .appearance import apply_theme, detect_system_theme, palette
 from .version_info import display_version
@@ -622,10 +623,9 @@ class RecoveryDeskApp(tk.Tk):
         source_actions = ttk.Frame(source)
         source_actions.grid(row=1, column=0, columnspan=3, sticky="w", pady=(5, 0))
         ttk.Button(source_actions, text="Image auswählen", command=self.choose_source).pack(side="left")
-        ttk.Button(source_actions, text="Physischer Datenträger auswählen",
-                   command=self._choose_device).pack(side="left", padx=(10, 0))
-        ttk.Button(source_actions, text="Laufwerk auswählen",
-                   command=self.show_volumes).pack(side="left", padx=(10, 0))
+        self.source_picker_button = ttk.Button(
+            source_actions, text="Datenträger oder Laufwerk auswählen", command=self._choose_sources)
+        self.source_picker_button.pack(side="left", padx=(10, 0))
         ttk.Button(source_actions, text="Image erstellen / fortsetzen",
                    command=self.open_imaging_dialog).pack(side="left", padx=(10, 0))
         session_actions = ttk.Menubutton(source_actions, text='Analysesitzung')
@@ -847,138 +847,191 @@ class RecoveryDeskApp(tk.Tk):
         return validate_source(p)
 
     def show_volumes(self):
-        """Choose a read-only Windows volume or mounted Linux block partition."""
-        try:
-            volumes = [v for v in list_volumes() if v.total_bytes >= 512]
-        except Exception as exc:
-            messagebox.showerror('Laufwerke', str(exc), parent=self)
-            return
-        if not volumes:
-            messagebox.showwarning('Laufwerke',
-                'Keine verwendbaren eingehängten Laufwerke gefunden. '
-                'Alternativ ein RAW-Image oder einen physischen Datenträger auswählen.',
-                parent=self)
-            return
-        self._show_volume_dialog(volumes)
+        return self._choose_sources()
 
     def _show_volume_dialog(self, volumes):
-        """Choose one logical volume, confirm, then browse it at byte offset zero."""
-        linux_mode = any(v.path.startswith('/dev/') for v in volumes)
+        # Compatibility entry point; the toolbar uses the combined picker.
+        choices = volume_choices(volumes)
+        return self._show_source_dialog(choices, preselect=not any(
+            c.source.startswith('/dev/') for c in choices))
+
+    def _choose_sources(self):
+        existing = getattr(self, '_source_picker', None)
+        if existing is not None and existing.winfo_exists():
+            existing.lift()
+            return existing
+        win = self._show_source_dialog([], loading=True)
+        self._source_picker = win
+
+        def discover():
+            try:
+                choices, warnings = collect_choices()
+            except Exception as exc:
+                log_issue('source_discovery', exc)
+                choices, warnings = [], ['Quellen konnten nicht ermittelt werden.']
+            if not self._closing:
+                self._post_scan_callback(lambda: win.populate_sources(choices, warnings)
+                    if win.winfo_exists() else None)
+
+        threading.Thread(target=discover, daemon=True, name='Tenshi source discovery').start()
+        return win
+
+    def _show_source_dialog(self, choices, *, loading=False, preselect=False):
         win = tk.Toplevel(self)
-        win.title('Laufwerk auswählen – nur lesen')
-        win.geometry('820x465')
-        win.minsize(650, 370)
+        win.title('Datenträger oder Laufwerk auswählen – nur lesen')
+        win.geometry('960x560')
+        win.minsize(760, 450)
         win.transient(self)
         win.columnconfigure(0, weight=1)
         win.rowconfigure(1, weight=1)
-        ttk.Label(win, text=('Eingehängte Linux-Partition markieren. Die Quelle wird '
-                             'ausschließlich lesend über ihr Blockgerät geöffnet.'
-                             if linux_mode else
-                             'Windows-Laufwerk markieren und „Auswahl übernehmen“ anklicken. '
-                             'Doppelklick und Eingabetaste funktionieren ebenfalls.'),
-                  wraplength=760).grid(row=0, column=0, sticky='ew', padx=16, pady=(16, 10))
-
+        intro = ttk.Label(win, wraplength=900, text=
+            'Ein gesamter Datenträger umfasst alle Partitionen. Ein Laufwerk umfasst nur '
+            'das ausgewählte Volume. Zugeordnete Laufwerke stehen unter ihrem Datenträger.')
+        intro.grid(row=0, column=0, sticky='ew', padx=16, pady=(14, 8))
         panel = ttk.Frame(win)
         panel.grid(row=1, column=0, sticky='nsew', padx=16)
         panel.columnconfigure(0, weight=1)
         panel.rowconfigure(0, weight=1)
-        cols = ('label', 'fs', 'size', 'free')
-        tree = ttk.Treeview(panel, columns=cols, show='tree headings', selectmode='browse')
-        for c, label, width in [('label', 'Name', 185 if linux_mode else 210),
-                                ('fs', 'Dateisystem', 100 if linux_mode else 110),
-                                ('size', 'Größe (GiB)', 100 if linux_mode else 110),
-                                ('free', 'Frei (GiB)', 100 if linux_mode else 110)]:
-            tree.heading(c, text=label)
-            tree.column(c, width=width, anchor='w', stretch=(c == 'label'))
-        tree.heading('#0', text='Laufwerk')
-        # Never visually conflate /dev/nvme0n1p1 and /dev/nvme0n1p5.
-        tree.column('#0', width=205 if linux_mode else 95,
-                    minwidth=185 if linux_mode else 95, anchor='w', stretch=False)
+        tree = ttk.Treeview(panel, columns=('kind', 'fs', 'size'), show='tree headings', selectmode='browse')
+        for column, caption, width in (('#0', 'Quelle', 300), ('kind', 'Umfang', 210),
+                                       ('fs', 'Dateisystem', 100), ('size', 'Größe (GiB)', 110)):
+            tree.heading(column, text=caption)
+            tree.column(column, width=width, minwidth=185 if column == '#0' else 75,
+                        stretch=column in ('#0', 'kind'))
         tree.grid(row=0, column=0, sticky='nsew')
-        bar = ttk.Scrollbar(panel, orient='vertical', command=tree.yview)
-        bar.grid(row=0, column=1, sticky='ns')
-        tree.configure(yscrollcommand=bar.set)
-
-        for v in volumes:
-            tree.insert('', 'end', iid=v.path, text=v.path,
-                        values=(v.label, v.filesystem, f'{v.total_bytes/1024**3:.2f}',
-                                f'{v.free_bytes/1024**3:.2f}'))
-        first = tree.get_children()[0]
-        if not linux_mode:
-            # Preserve Windows keyboard-first selection behavior.
-            tree.selection_set(first)
-        tree.focus(first)
-        tree.see(first)
-
-        # Linux raw block access requires an explicit device choice.
-        choice = tk.StringVar(value=('Bitte ein Laufwerk markieren.' if linux_mode
-                                      else f'Ausgewählt: {first}'))
-        ttk.Label(win, textvariable=choice).grid(row=2, column=0, sticky='w', padx=16, pady=8)
+        scrollbar = ttk.Scrollbar(panel, orient='vertical', command=tree.yview)
+        scrollbar.grid(row=0, column=1, sticky='ns')
+        tree.configure(yscrollcommand=scrollbar.set)
+        horizontal = ttk.Scrollbar(panel, orient='horizontal', command=tree.xview)
+        horizontal.grid(row=1, column=0, sticky='ew')
+        tree.configure(xscrollcommand=horizontal.set)
+        selection_text = tk.StringVar(value='')
+        selection_label = ttk.Label(win, textvariable=selection_text, wraplength=900)
+        selection_label.grid(row=2, column=0, sticky='ew', padx=16, pady=8)
         actions = ttk.Frame(win)
         actions.grid(row=3, column=0, sticky='ew', padx=16, pady=(0, 8))
         confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)',
-                                    style='Accent.TButton',
-                                    state='disabled' if linux_mode else 'normal')
+                                    style='Accent.TButton', state='disabled')
         confirm_button.pack(side='right')
         ttk.Button(actions, text='Abbrechen', command=win.destroy).pack(side='right', padx=(0, 10))
-        ttk.Label(win, text=('Nur eingehängte Linux-Blockpartitionen erscheinen hier. '
-                             'Das Betriebssystem kann diese weiterhin verändern; für '
-                             'zuverlässige Datenrettung besser ein Offline-Image nutzen. '
-                             'Bei fehlenden Leserechten keine Geräteberechtigungen ändern.'
-                             if linux_mode else
-                             'Nur gemountete Laufwerke mit Buchstaben sind hier sichtbar. '
-                             'Bei Fehler „Zugriff verweigert“ Tenshi als Administrator starten. '
-                             'Für defekte Laufwerke möglichst zuerst ein Image erstellen.'),
-                  foreground='#9a3412', wraplength=760).grid(row=4, column=0, sticky='ew',
-                                                                padx=16, pady=(0, 12))
+        hint = ('Die Auflistung bestätigt keine Leserechte. Für das tatsächliche Einlesen beider '
+                'Quelltypen können Windows-Administratorrechte erforderlich sein.' if os.name == 'nt' else
+                'Die Auflistung bestätigt keine Leserechte. Geräteberechtigungen gezielt prüfen lassen '
+                'oder ein Image öffnen. Tenshi ohne sudo starten.')
+        warning = ttk.Label(win, text=hint + '\n' +
+            'Eingehängte Dateisysteme können sich durch das Betriebssystem verändern. '
+            'Bei defekten Datenträgern weitere Lesezugriffe minimieren und zuerst ein Image erstellen.',
+            foreground='#9a3412', wraplength=900)
+        warning.grid(row=4, column=0, sticky='ew', padx=16, pady=(0, 12))
+        win.bind('<Configure>', lambda event: [w.configure(wraplength=max(200, event.width - 32))
+            for w in (intro, selection_label, warning)] if event.widget is win else None, add='+')
+        records = {}
 
         def update_selection(_event=None):
             selected = tree.selection()
-            choice.set('Ausgewählt: ' + selected[0] if selected else 'Bitte ein Laufwerk markieren.')
-            confirm_button.configure(state='normal' if selected else 'disabled')
+            record = records.get(selected[0]) if selected else None
+            confirm_button.configure(state='normal' if record else 'disabled')
+            if record:
+                kind = 'Gesamter Datenträger' if record.kind == 'disk' else 'Laufwerk / Partition'
+                selection_text.set(translate(kind, self.language) + ': ' + record.source)
+            elif records:
+                selection_text.set(translate('Bitte einen Datenträger oder ein Laufwerk markieren.', self.language))
+
+        def populate(rows, warnings=()):
+            records.clear()
+            tree.delete(*tree.get_children())
+            confirm_button.configure(state='disabled')
+            for row in rows:
+                if row.key in records:
+                    continue
+                records[row.key] = row
+            for row in records.values():
+                if row.kind == 'disk':
+                    caption = translate('Datenträger', self.language) + ' ' + row.label if row.label else row.key
+                    tree.insert('', 'end', iid=row.key, text=caption, open=True,
+                        values=(translate('Gesamter Datenträger', self.language), '', f'{row.size/1024**3:.2f}'))
+            ungrouped = '__unmapped_volumes__'
+            for row in records.values():
+                if row.kind != 'volume':
+                    continue
+                parent = row.parent if tree.exists(row.parent) else ''
+                if not parent:
+                    if not tree.exists(ungrouped):
+                        tree.insert('', 'end', iid=ungrouped, open=True,
+                            text=translate('Laufwerke ohne eindeutige Zuordnung', self.language))
+                    parent = ungrouped
+                kind = 'Laufwerk (mehrere Datenträger)' if row.mapping == 'multiple' else 'Laufwerk / Partition'
+                tree.insert(parent, 'end', iid=row.key,
+                    text=row.key + (' — ' + row.label if row.label else ''),
+                    values=(translate(kind, self.language), row.filesystem, f'{row.size/1024**3:.2f}'))
+            message = ('Bitte einen Datenträger oder ein Laufwerk markieren.' if records else
+                       'Keine Quellen erkannt. Ein vorhandenes Image kann weiterhin geöffnet werden.')
+            selection_text.set('\n'.join([translate(message, self.language)] +
+                [translate(item, self.language) for item in warnings]))
+            if preselect and records:
+                key = next(iter(records))
+                tree.selection_set(key)
+                tree.focus(key)
+                tree.see(key)
+                update_selection()
 
         def confirm(_event=None):
             selected = tree.selection()
-            if not selected:
-                messagebox.showinfo('Auswahl fehlt', 'Bitte zuerst ein Laufwerk markieren.', parent=win)
+            row = records.get(selected[0]) if selected else None
+            if row is None:
                 return
-            root = selected[0]
-            try:
-                device_path = root if root.startswith('/dev/') else raw_volume_path(root)
-            except ValueError as exc:
-                messagebox.showerror('Laufwerk auswählen', str(exc), parent=win)
-                return
-            if not messagebox.askyesno('Logisches Laufwerk direkt lesen',
-                f'Laufwerk {root} wird von Tenshi ausschließlich lesend geöffnet.\n\n'
-                'Hinweis: Eingehängte Dateisysteme können sich unabhängig von Tenshi '
-                'durch das Betriebssystem verändern. Ein Offline-Image ist sicherer.\n\n'
-                'Das Dateisystem eines logischen Laufwerks beginnt an Offset 0.\n\n'
-                f'{root} als Quelle übernehmen?', parent=win):
-                return
-            # Fail early with an actionable access message, without claiming success.
-            try:
-                with open_source(device_path) as f:
-                    f.seek(0)
-                    if len(f.read(512)) < 512:
-                        raise OSError('Es konnten keine 512 Bytes gelesen werden.')
-            except (OSError, ValueError) as exc:
-                messagebox.showerror('Laufwerk nicht lesbar',
-                    f'{root} konnte nicht schreibgeschützt geöffnet werden.\n\n{exc}\n\n' +
-                    ('Bitte Linux-Geräteberechtigungen prüfen oder ein RAW-Image verwenden.'
-                     if linux_mode else
-                     'Versuche Tenshi als Administrator zu starten oder untersuche ein Image.'),
-                    parent=win)
-                return
-            win.destroy()
-            self._activate_source_and_quick_scan(device_path)
+            self._confirm_picked_source(row, win)
 
+        def double_click(event):
+            if tree.identify_region(event.x, event.y) not in ('tree', 'cell'):
+                return
+            if 'indicator' in str(tree.identify_element(event.x, event.y)).lower():
+                return
+            key = tree.identify_row(event.y)
+            if key not in records:
+                return
+            tree.selection_set(key)
+            tree.focus(key)
+            update_selection()
+            confirm()
+
+        win.populate_sources = populate
+        win._source_double_click = double_click
+        win.source_tree = tree
+        win.confirm_button = confirm_button
         confirm_button.configure(command=confirm)
         tree.bind('<<TreeviewSelect>>', update_selection)
-        tree.bind('<Double-1>', confirm)
+        tree.bind('<Double-1>', double_click)
         tree.bind('<Return>', confirm)
         win.bind('<Escape>', lambda _event: win.destroy())
+        if loading:
+            selection_text.set(translate('Quellen werden ermittelt …', self.language))
+        else:
+            populate(choices)
         tree.focus_set()
         return win
+
+    def _confirm_picked_source(self, row, dialog):
+        kind = 'Gesamter Datenträger' if row.kind == 'disk' else 'Laufwerk / Partition'
+        prompt = translate(kind, self.language) + ': ' + row.source + '\n\n' + translate(
+            'Tenshi öffnet die Quelle ausschließlich lesend. Weitere Lesezugriffe können '
+            'defekte Datenträger belasten. Quelle übernehmen?', self.language)
+        if not messagebox.askyesno('Direkter Laufwerkszugriff', prompt, parent=dialog):
+            return
+        try:
+            with open_source(row.source) as stream:
+                stream.seek(0)
+                if len(stream.read(512)) < 512:
+                    raise OSError('Es konnten keine 512 Bytes gelesen werden.')
+        except (OSError, ValueError) as exc:
+            hint = ('Für direkte Lesezugriffe auf Datenträger und Laufwerke Windows-Administratorrechte '
+                    'prüfen oder ein Image öffnen.' if os.name == 'nt' else
+                    'Geräteberechtigungen gezielt prüfen lassen oder ein Image öffnen. Tenshi ohne sudo starten.')
+            messagebox.showerror('Quelle nicht lesbar', str(exc) + '\n\n' + translate(hint, self.language),
+                                 parent=dialog)
+            return
+        dialog.destroy()
+        self._activate_source_and_quick_scan(row.source)
 
     def open_imaging_dialog(self):
         """Create a read-only source -> new regular-file image with a resumable map."""
@@ -1764,119 +1817,12 @@ class RecoveryDeskApp(tk.Tk):
         self.browser_fs = 'NTFS'
 
     def _choose_device(self):
-        """Show a visible, keyboard-accessible physical disk selection dialog."""
-        try:
-            drives = list_physical_sources()
-        except Exception as exc:
-            messagebox.showerror('Physische Datenträger', str(exc), parent=self)
-            return
-        if not drives:
-            messagebox.showwarning(
-                'Physische Datenträger',
-                ('Keine Linux-Blockdatenträger in sysfs gefunden. '
-                 'Tenshi nicht mit zusätzlichen Rechten starten; alternativ ein RAW-Image öffnen.'
-                 if sys.platform.startswith('linux') else
-                 'Keine lesbaren physischen Datenträger gefunden.\n\n'
-                 'Starte Tenshi gegebenenfalls als Administrator. '
-                 'Alternativ kannst du ein Image über „Image auswählen“ öffnen.'),
-                parent=self)
-            return
-        self._show_device_dialog(drives)
+        return self._choose_sources()
 
     def _show_device_dialog(self, drives):
-        """Separated from discovery to allow GUI interaction tests without a disk."""
-        linux_mode = sys.platform.startswith('linux') and any(p.startswith('/dev/') for p, _ in drives)
-        win = tk.Toplevel(self)
-        win.title('Physischen Datenträger auswählen – nur lesen')
-        win.geometry('760x430')
-        win.minsize(620, 340)
-        win.transient(self)
-        win.columnconfigure(0, weight=1)
-        win.rowconfigure(1, weight=1)
-
-        intro = ttk.Label(win,
-            text='Datenträger markieren und „Auswahl übernehmen“ anklicken. '
-                 'Doppelklick oder Eingabetaste funktionieren ebenfalls.',
-            wraplength=700)
-        intro.grid(row=0, column=0, sticky='ew', padx=16, pady=(16, 10))
-
-        tree_frame = ttk.Frame(win)
-        tree_frame.grid(row=1, column=0, sticky='nsew', padx=16)
-        tree_frame.columnconfigure(0, weight=1)
-        tree_frame.rowconfigure(0, weight=1)
-        tree = ttk.Treeview(tree_frame, columns=('size',), show='tree headings', selectmode='browse')
-        tree.heading('#0', text='Physischer Datenträger')
-        tree.heading('size', text='Größe (GiB)')
-        tree.column('#0', width=430, stretch=True)
-        tree.column('size', width=150, anchor='e', stretch=False)
-        tree.grid(row=0, column=0, sticky='nsew')
-        scrollbar = ttk.Scrollbar(tree_frame, orient='vertical', command=tree.yview)
-        scrollbar.grid(row=0, column=1, sticky='ns')
-        tree.configure(yscrollcommand=scrollbar.set)
-
-        for path, size in drives:
-            tree.insert('', 'end', iid=path, text=path, values=(f'{size / 1024**3:,.2f}',))
-        first = tree.get_children()[0]
-        # Linux block devices are listed without accessing them. Require the
-        # user to explicitly mark one before confirming a direct source read.
-        if not linux_mode:
-            tree.selection_set(first)
-        tree.focus(first)
-        tree.see(first)
-
-        selected_text = tk.StringVar(value=('Bitte einen Datenträger markieren.' if linux_mode
-                                             else f'Ausgewählt: {first}'))
-        ttk.Label(win, textvariable=selected_text, wraplength=700).grid(
-            row=2, column=0, sticky='w', padx=16, pady=(8, 8))
-
-        actions = ttk.Frame(win)
-        actions.grid(row=3, column=0, sticky='ew', padx=16, pady=(0, 8))
-        # Bottom action area has a fixed grid row; it cannot disappear behind the list.
-        confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)',
-                                    style='Accent.TButton',
-                                    state='disabled' if linux_mode else 'normal')
-        confirm_button.pack(side='right')
-        ttk.Button(actions, text='Abbrechen', command=win.destroy).pack(side='right', padx=(0, 10))
-
-        ttk.Label(win,
-            text='Achtung: Schon das Lesen kann eine physisch defekte Festplatte zusätzlich belasten. '
-                 'Weitere Zugriffe möglichst vermeiden und zuerst ein schonendes Image mit geeigneten Werkzeugen erstellen.',
-            foreground='#9a3412', wraplength=700).grid(
-                row=4, column=0, sticky='ew', padx=16, pady=(0, 14))
-
-        def update_selection(_event=None):
-            selection = tree.selection()
-            if selection:
-                selected_text.set(f'Ausgewählt: {selection[0]}')
-                confirm_button.configure(state='normal')
-            else:
-                selected_text.set('Bitte einen Datenträger markieren.')
-                confirm_button.configure(state='disabled')
-
-        def confirm(_event=None):
-            selection = tree.selection()
-            if not selection:
-                messagebox.showinfo('Auswahl fehlt',
-                    'Bitte zuerst einen Datenträger markieren.', parent=win)
-                return
-            source = selection[0]
-            if not messagebox.askyesno('Direkter Laufwerkszugriff',
-                'Tenshi liest diesen Datenträger nur aus und nimmt '
-                'keine Änderungen an der Partitionstabelle vor.\n\n'
-                'Ein beschädigter Datenträger kann durch weitere Lesezugriffe '
-                'zusätzlich belastet werden.\n\n'
-                f'{source} als Quelle übernehmen?', parent=win):
-                return
-            win.destroy()
-            self._activate_source_and_quick_scan(source)
-
-        confirm_button.configure(command=confirm)
-        tree.bind('<<TreeviewSelect>>', update_selection)
-        tree.bind('<Double-1>', confirm)
-        tree.bind('<Return>', confirm)
-        win.bind('<Escape>', lambda _event: win.destroy())
-        tree.focus_set()
-        return win
+        # Compatibility entry point; the toolbar uses the combined picker.
+        return self._show_source_dialog(device_choices(drives), preselect=not any(
+            path.startswith('/dev/') for path, _ in drives))
 
     def _cancel_scan(self):
         self.browser_cancel.set()

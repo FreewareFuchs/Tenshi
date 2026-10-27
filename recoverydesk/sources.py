@@ -79,12 +79,19 @@ def _kernel():
     return k
 
 
-def _device_ioctl(path: str, code: int, length: int = 16, input_data: bytes | None = None) -> bytes:
+def _device_ioctl(path: str, code: int, length: int = 16, input_data: bytes | None = None,
+                  *, metadata_only: bool = False) -> bytes:
     if os.name != 'nt':
         raise OSError('Nur auf Windows verfügbar.')
+    if metadata_only and code not in (_IOCTL_DISK_GET_DRIVE_GEOMETRY_EX,
+                                      _IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS):
+        raise ValueError('Unsupported metadata query')
     kernel = _kernel()
     # GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, OPEN_EXISTING
-    h = kernel.CreateFileW(path, 0x80000000, 0x1 | 0x2, None, 3, 0, None)
+    # A zero-access handle can query these device attributes without requesting
+    # permission to read media contents. Actual source I/O still requires READ.
+    h = kernel.CreateFileW(path, 0 if metadata_only else 0x80000000,
+                          0x1 | 0x2, None, 3, 0, None)
     if h == wintypes.HANDLE(-1).value:
         raise ctypes.WinError(ctypes.get_last_error())
     try:
@@ -305,7 +312,7 @@ def open_source(path: str):
         raw.close()
 
 
-def list_physical_sources(max_index: int = 32) -> list[tuple[str, int]]:
+def list_physical_sources(max_index: int = 32, *, metadata_only: bool = False) -> list[tuple[str, int]]:
     if sys.platform.startswith('linux'):
         return list_block_sources()
     if os.name != 'nt':
@@ -314,20 +321,28 @@ def list_physical_sources(max_index: int = 32) -> list[tuple[str, int]]:
     for i in range(max_index):
         path = rf'\\.\PhysicalDrive{i}'
         try:
-            size = source_size(path)
-            if size >= 512:
+            if metadata_only:
+                data = _device_ioctl(path, _IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, 256,
+                                     metadata_only=True)
+                if len(data) < 32:
+                    continue
+                size = int.from_bytes(data[24:32], 'little')
+            else:
+                size = source_size(path)
+            if 512 <= size < 2 ** 63:
                 results.append((path, size))
         except OSError:
             continue
     return results
 
 
-def volume_disk_numbers(source: str) -> set[int] | None:
+def volume_disk_numbers(source: str, *, metadata_only: bool = False) -> set[int] | None:
     """Get every backing physical disk for a raw Windows volume. Fail closed."""
     if os.name != 'nt' or not is_volume(source):
         return None
     try:
-        blob = _device_ioctl(source, _IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS, 65536)
+        blob = _device_ioctl(source, _IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS, 65536,
+                             metadata_only=metadata_only)
         if len(blob) < 8:
             return None
         count = int.from_bytes(blob[:4], 'little')

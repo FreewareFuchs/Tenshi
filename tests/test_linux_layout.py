@@ -72,7 +72,7 @@ class LinuxLayoutTests(unittest.TestCase):
                                          'theme_button', '_language_button', 'session_menu_button'):
                                 self.assert_visible(app, getattr(app, name), name)
                             source_actions = app.session_menu_button.master.winfo_children()
-                            self.assertEqual(len(source_actions), 5)
+                            self.assertEqual(len(source_actions), 4)
                             for button in source_actions:
                                 self.assert_visible(app, button, str(button.cget('text')))
                                 self.assertGreaterEqual(button.winfo_width(), button.winfo_reqwidth(),
