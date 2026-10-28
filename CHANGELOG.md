@@ -1,4 +1,22 @@
-# Tenshi 3.0.5 – vorbereitet, noch nicht veröffentlicht
+# Tenshi 3.0.7 – vorbereitet, noch nicht veröffentlicht
+
+- Separate, wieder aufrufbare Export- und Imaging-Fenster mit Bereichsraster und Berichtaktionen. Schließen der Ansicht beendet den Auftrag nicht.
+- SHA256 als Textstatus beim Export und je Datei im Ergebnisbericht. Bericht speichern beginnt im zugehörigen Zielordner und überschreibt keine vorhandenen Dateien.
+- Verständlichere Exportfehler; Imagebereiche mit Nullersatz und noch nicht bestandene Vollvergleiche bleiben ausdrücklich erkennbar.
+- Die Dateisystemanalyse behält ihre bisherige Fortschrittsanzeige im Hauptfenster.
+- Die Funktionsstände wurden manuell abgenommen; die endgültigen 3.0.7-Pakete sind noch zu prüfen. Öffentliche Ausgabe bleibt [3.0.6](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.6).
+
+[Änderungen und Paketabnahme 3.0.7](RELEASE_NOTES_3.0.7.md).
+
+# Tenshi 3.0.6 – stabil veröffentlicht
+
+- Sun-Valley-Farben mit System/Hell/Dunkel, gemeinsame Quellenauswahl und schnellere Fensteranpassung.
+- Windows-Volumes einschließlich C: lassen sich bis zum ermittelten Partitionsende über den vorhandenen Read-only-Handle lesen.
+- Release-Prüfsummen verwenden `.sha256`; bestehende ältere Archive bleiben unverändert.
+
+[GitHub-Release v3.0.6](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.6).
+
+# Tenshi 3.0.5 – damaliger Vorbereitungsstand (inzwischen veröffentlicht)
 
 - Linux: Die vorgelagerte Quell-/Zielprüfung lehnt leere Gerätezuordnungen ab. Mitglieder zusammengesetzter Geräte werden einmal eingelesen; fehlende Informationen führen zum Abbruch. Die bestehende Prüfung am geöffneten Ausgabeordner bleibt erhalten.
 - Ein gemeinsames Werkzeug prüft öffentliche Website-, Download- und APT-Dateien gegen den lokalen geprüften Stand.

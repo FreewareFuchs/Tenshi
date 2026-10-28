@@ -60,8 +60,10 @@ werden nicht neu gezeichnet. Größenänderungen werden gebündelt verarbeitet.
 Fenstertimer enden mit dem Schließen der Ansicht. Alle sechs UI-Sprachen und
 beide Farbvarianten werden geprüft. Scanner und Export-I/O bleiben unverändert.
 
-Analyse-Bereichskarten folgen separat. Das Exportraster behauptet keine
-zusätzlichen Informationen über Lesefehler physischer Datenträger.
+Die Dateisystemanalyse behält ihre Fortschrittsanzeige im Hauptfenster.
+Ein separates Analysefenster ist auf Wunsch des Anwenders nicht vorgesehen.
+Das Exportraster behauptet keine zusätzlichen Informationen über Lesefehler
+physischer Datenträger.
 
 Exportfehler unterscheiden verweigerten Zugriff, schreibgeschützte Einbindung,
 fehlenden Speicherplatz und ungültige/nicht unterstützte Dateioperationen.

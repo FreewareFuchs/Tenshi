@@ -24,3 +24,18 @@ Die Layout-Prüfung umfasst beide Farbvarianten, alle sechs Sprachen, kleine
 Fenster und größere Schrift-Skalierung. Tatsächliche Desktop-/Portal-Erkennung
 unter Linux Mint und die visuelle Abnahme bleiben zusätzlich am Zielsystem zu
 prüfen. Die bereits abgenommenen 3.0.5-Archive werden nicht neu geschrieben.
+
+## Linux-Dateidialoge
+
+Die Standard-Tk-Dateidialoge unter Linux erzeugen ihre Dateiliste direkt in Tcl,
+mit ausdrücklich weißem Canvas-Hintergrund und teilweise schwarzen Textfarben.
+Diese Widgets werden vom normalen Tkinter-Widgetdurchlauf nicht erfasst.
+Tenshi färbt deshalb ausschließlich die Canvas-Dateiliste innerhalb der Klassen
+TkFDialog und TkChooseDir passend zur Palette, einschließlich markierter Texte.
+Windows- und macOS-native Dialoge erhalten keine zusätzlichen Hooks.
+
+Aktualisiert wird ereignisgesteuert beim Öffnen, bei Auswahl/Navigation, nach
+Tk-Ordner-/Filteraktualisierungen und beim Theme-Wechsel. Es gibt keine dauernde
+Abfrage und keinen Ersatz der Standarddialoge. Der beobachtete Tcl-Update-Befehl
+wird nicht verändert. Dateifilter, Rückgabepfade und Überschreibschutz bleiben
+die des Originaldialogs. Texte und Dateinamen werden nicht umgeschrieben.
