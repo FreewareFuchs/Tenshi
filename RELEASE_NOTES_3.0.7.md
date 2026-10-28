@@ -1,9 +1,9 @@
 # Tenshi 3.0.7 – Export- und Imaging-Fenster
 
-Vorbereitet, noch nicht veröffentlicht. Die öffentliche Ausgabe bleibt 3.0.6.
-Die Export- und Imaging-Funktionen wurden in den Entwicklungspaketen manuell
-abgenommen. Die endgültigen Installer-, Portable- und DEB-Pakete benötigen
-noch ihre Paketabnahme.
+[Stabil veröffentlicht am 28.10.2026](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.7).
+Die Export- und Imaging-Funktionen, Paketstarts und Versionsanzeigen sowie die
+korrigierten Linux-Dateidialogfarben sind manuell abgenommen. Website, Downloads
+und signierte APT-Quelle sind öffentlich gegen den freigegebenen Stand geprüft.
 
 ## Export
 
@@ -65,8 +65,13 @@ Das Release-Manifest enthält Dateinamen, Größen, SHA256 und Quellcommit.
 Prüfsummen werden wie bisher als `.sha256` mitgeliefert; keine zusätzlichen
 Prüfsummendateien für Bilder oder Dokumente.
 
-Vor Veröffentlichung Installer und Portable unter Windows sowie das DEB unter
-Mint starten, Version, Fenster, einen bekannten Export und einen Imaging-Ablauf
-prüfen. Das installierte DEB ist vor der späteren APT-Veröffentlichung zusätzlich
-über den bestehenden VM-Ablauf zu signieren und zu prüfen. Downloads, Website
-und APT werden in diesem Vorbereitungsschritt nicht geändert.
+Veröffentlichter Quellcommit: `d4d0dff7f75b737f08aaece0c068121d34c7c1c8`.
+[Gemeinsamer stabiler Paketbuild](https://github.com/FreewareFuchs/Tenshi/actions/runs/40771944393).
+Die abgenommenen Binärpakete wurden unverändert veröffentlicht. Alle sieben
+GitHub-Assets und die zwölf Dateien des signaturgeprüften APT-Exports stimmen.
+Die abschließende Prüfung von Website, Downloads und APT umfasst 25 erfolgreiche
+Vergleiche. Die vorherigen Release-Einträge und Pakete bleiben erhalten.
+
+Die APT-Signatur wurde in der Mint-VM geprüft; die öffentlichen Bytes wurden mit
+diesem Export abgeglichen. Ältere Hardwaretests bleiben ihrem jeweiligen
+Quellstand zugeordnet und werden durch diese Veröffentlichung nicht neu bestätigt.

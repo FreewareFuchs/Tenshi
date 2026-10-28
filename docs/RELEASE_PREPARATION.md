@@ -1,5 +1,12 @@
 # Release-Paket automatisch vorbereiten
 
+Aktueller veröffentlichter Stand: [Tenshi 3.0.7](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.7),
+seit 28.10.2026. Die abgenommenen Pakete stammen unverändert vom Commit
+`d4d0dff7f75b737f08aaece0c068121d34c7c1c8` aus dem
+[gemeinsamen stabilen Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40771944393).
+Alle sieben GitHub-Assets, zwölf APT-Dateien und 25 abschließenden öffentlichen
+Vergleiche sind erfolgreich. [Versionshinweise und Abnahme](../RELEASE_NOTES_3.0.7.md).
+
 Unter GitHub Actions **Prepare release bundle (no publishing)** manuell starten,
 den gewünschten Branch und `stable` für eine stabile Ausgabe oder `beta.N` für
 eine Vorabversion auswählen. Die Basisversion stammt aus `recoverydesk/__init__.py`. Es wird kein Tag oder Release angelegt.
@@ -199,7 +206,10 @@ und verschiebt weder Tag noch Release-Commit.
 GitHub, die signierte APT-Quelle und die Website sind öffentlich geprüft;
 alle 25 Vergleichsprüfungen sind erfolgreich. [Release-Hinweise](../RELEASE_NOTES_3.0.5.md).
 
-## Oberflächenupdate 3.0.6 vorbereiten
+## Historischer Vorbereitungsstand des Oberflächenupdates 3.0.6
+
+Dieser Abschnitt beschreibt die damalige Vorbereitung. 3.0.6 ist inzwischen
+veröffentlicht; der aktuelle Stand ist die oben verlinkte 3.0.7.
 
 Der Quellstand verwendet Version 3.0.6 und die abgeleiteten Windows-/CI-Felder.
 Die öffentliche Ausgabe bleibt bis zur Paketabnahme und Veröffentlichung 3.0.5.
