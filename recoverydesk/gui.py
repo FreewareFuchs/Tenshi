@@ -20,6 +20,7 @@ from .export_errors import export_error_message
 from .source_catalog import collect_choices, device_choices, volume_choices
 from .branding import asset_path
 from .appearance import apply_theme, detect_system_theme, palette
+from .file_dialog_colors import FileDialogColors
 from .version_info import display_version
 from .verification_labels import (METADATA_SCOPE, READ_SCOPE, EXPORT_SCOPE, RESUME_SCOPE,
                                   RESUME_LABEL, METADATA_LABEL)
@@ -367,6 +368,7 @@ class RecoveryDeskApp(tk.Tk):
         if getattr(self, '_closing', False):
             return
         self._closing = True
+        if hasattr(self,'_file_dialog_colors'):self._file_dialog_colors.close()
         if hasattr(self, '_appearance_stop'):
             self._appearance_stop.set()
         if hasattr(self, '_i18n'):
@@ -529,6 +531,8 @@ class RecoveryDeskApp(tk.Tk):
                               ('selectForeground', c['selection_text'])):
             self.option_add('*TCombobox*Listbox.' + option, value)
         self._style_native_widgets(self)
+        if not hasattr(self,'_file_dialog_colors'):self._file_dialog_colors=FileDialogColors(self)
+        self._file_dialog_colors.refresh()
         if hasattr(self, '_nav_buttons'):
             self._update_main_tab_styles()
         if hasattr(self, '_compact_layout'):

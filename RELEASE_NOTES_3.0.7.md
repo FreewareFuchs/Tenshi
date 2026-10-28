@@ -47,6 +47,8 @@ gemeinsame VM-Ordner können Dateioperationen einschränken. Die Originaldiagnos
 bleibt sichtbar. Tenshi erweitert keine Rechte oder Flatpak-Freigaben.
 
 Alle sechs Oberflächensprachen sowie Hell/Dunkel werden unterstützt.
+Unter Linux folgen auch Dateilisten in den Tk-Öffnen-/Speichern-/Ordnerdialogen
+der aktiven Farbgestaltung. Windows-native Dateidialoge bleiben unverändert.
 Die Dateisystemanalyse behält ihre bestehende Fortschrittsanzeige im Hauptfenster;
 dafür wird kein separates Fenster eingeführt. Quellmedien bleiben schreibgeschützt.
 Wiederaufnahme, Retry- und Nullersatz-Regeln bleiben erhalten. Ein Export oder
