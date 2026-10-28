@@ -33,6 +33,39 @@ def add(de, en, es, zh, ru, ja):
 
 add('System', 'System', 'Sistema', '系统', 'Система', 'システム')
 
+# Non-modal export window: format translated templates before adding filenames.
+add('Tenshi – Exportfortschritt', 'Tenshi – Export progress', 'Tenshi – Progreso de exportación', 'Tenshi – 导出进度', 'Tenshi – Ход экспорта', 'Tenshi – 出力の進捗')
+add('Fortschrittsfenster', 'Progress window', 'Ventana de progreso', '进度窗口', 'Окно прогресса', '進捗ウィンドウ')
+add('Fortschritt / Ergebnis', 'Progress / result', 'Progreso / resultado', '进度 / 结果', 'Прогресс / результат', '進捗 / 結果')
+add('SHA256 wird während des Kopierens berechnet.', 'SHA256 is calculated while copying.', 'SHA256 se calcula durante la copia.', '复制时计算 SHA256。', 'SHA256 вычисляется при копировании.', 'コピー中に SHA256 を計算します。')
+add('SHA256-Prüfung der Zieldatei läuft …', 'SHA256 verification of the destination file is running …', 'Verificando SHA256 del archivo de destino …', '正在对目标文件进行 SHA256 验证…', 'Выполняется проверка SHA256 целевого файла …', '出力先ファイルの SHA256 を検証中…')
+add('SHA256: Details im Ergebnisbericht.', 'SHA256: see the results report for details.', 'SHA256: detalles en el informe de resultados.', 'SHA256：详情见结果报告。', 'SHA256: подробности в отчёте о результатах.', 'SHA256：詳細は結果レポートを参照してください。')
+add('Zielordner öffnen', 'Open destination folder', 'Abrir carpeta de destino', '打开目标文件夹', 'Открыть папку назначения', '出力先フォルダーを開く')
+add('Offen', 'Pending', 'Pendiente', '待处理', 'Ожидает', '未処理')
+add('Kopiert, noch ungeprüft', 'Copied, not yet verified', 'Copiado, sin verificar', '已复制，尚未验证', 'Скопировано, не проверено', 'コピー済み、未検証')
+add('Export bestätigt', 'Export verified', 'Exportación verificada', '导出已验证', 'Экспорт подтверждён', '出力を検証済み')
+add('Fehler im Export', 'Export error', 'Error de exportación', '导出错误', 'Ошибка экспорта', '出力エラー')
+add('Nicht bestätigt', 'Not verified', 'Sin verificar', '未验证', 'Не подтверждено', '未検証')
+add('Gemischt / teilweise', 'Mixed / partial', 'Mixto / parcial', '混合 / 部分', 'Смешанное / частично', '混在 / 一部')
+add('Export wird abgeschlossen …', 'Finalizing export …', 'Finalizando exportación …', '正在完成导出…', 'Завершение экспорта …', '出力を完了処理中…')
+add('Export läuft …', 'Export in progress …', 'Exportación en curso …', '正在导出…', 'Экспорт выполняется …', '出力中…')
+add('Export-Abbruch angefordert …', 'Export cancellation requested …', 'Cancelación de exportación solicitada …', '已请求取消导出…', 'Запрошена отмена экспорта …', '出力の中止を要求しました…')
+add('Laufzeit: {duration}', 'Elapsed: {duration}', 'Tiempo transcurrido: {duration}', '已用时间：{duration}', 'Прошло: {duration}', '経過時間：{duration}')
+add('Neu übertragen: {size} · Kopiertempo: {rate}/s', 'Newly transferred: {size} · Copy rate: {rate}/s', 'Transferido nuevo: {size} · Velocidad: {rate}/s', '本次传输：{size} · 复制速度：{rate}/s', 'Передано заново: {size} · Скорость: {rate}/s', '今回の転送：{size} · コピー速度：{rate}/s')
+add('SHA256-Lesestand der aktuellen Datei: {percent:.1f} %', 'Current file SHA256 read progress: {percent:.1f} %', 'Lectura SHA256 del archivo actual: {percent:.1f} %', '当前文件 SHA256 读取进度：{percent:.1f} %', 'Чтение SHA256 текущего файла: {percent:.1f} %', '現在のファイルの SHA256 読み取り進捗：{percent:.1f} %')
+add('Export bestätigt: {percent:.1f} %', 'Export verified: {percent:.1f} %', 'Exportación verificada: {percent:.1f} %', '导出已验证：{percent:.1f} %', 'Экспорт подтверждён: {percent:.1f} %', '出力を検証済み：{percent:.1f} %')
+add('Kopier-Restzeit ca. {duration}', 'Estimated copy time left: {duration}', 'Tiempo de copia restante aprox.: {duration}', '预计剩余复制时间：{duration}', 'Осталось копировать примерно: {duration}', 'コピーの推定残り時間：{duration}')
+add('Einträge: {done} von {total} · Fehler: {errors} · Übersprungen: {skipped}', 'Items: {done} of {total} · Errors: {errors} · Skipped: {skipped}', 'Entradas: {done} de {total} · Errores: {errors} · Omitidas: {skipped}', '条目：{done} / {total} · 错误：{errors} · 已跳过：{skipped}', 'Записи: {done} из {total} · Ошибки: {errors} · Пропущено: {skipped}', '項目：{done} / {total} · エラー：{errors} · スキップ：{skipped}')
+add('Aktuelle Datei: {path}', 'Current file: {path}', 'Archivo actual: {path}', '当前文件：{path}', 'Текущий файл: {path}', '現在のファイル：{path}')
+add('100 Felder = 100 % der Einträge.', '100 cells = 100% of items.', '100 celdas = 100 % de las entradas.', '100 个格子 = 全部条目。', '100 ячеек = 100 % записей.', '100 マス = 全項目の 100%。')
+add('Noch kein Exportplan vorhanden.', 'No export plan yet.', 'Todavía no hay un plan de exportación.', '尚无导出计划。', 'План экспорта ещё не создан.', '出力計画はまだありません。')
+add('Exportplan enthält keine Einträge.', 'The export plan has no items.', 'El plan de exportación no contiene entradas.', '导出计划中没有条目。', 'В плане экспорта нет записей.', '出力計画に項目がありません。')
+add('100 Felder = 100 % der geplanten Dateigrößen.', '100 cells = 100% of planned file sizes.', '100 celdas = 100 % de los tamaños de archivo previstos.', '100 个格子 = 计划文件大小的 100%。', '100 ячеек = 100 % запланированного объёма файлов.', '100 マス = 予定されたファイルサイズの 100%。')
+add('Exportanteile, keine Datenträgersektoren.', 'Export portions, not disk sectors.', 'Partes de la exportación, no sectores del disco.', '表示导出份额，并非磁盘扇区。', 'Доли экспорта, а не секторы диска.', '出力の割合であり、ディスクセクターではありません。')
+add('Bestätigung betrifft den Export, nicht den Originalinhalt.', 'Verification covers the export, not the original content.', 'La verificación cubre la exportación, no el contenido original.', '验证针对导出结果，并非原始内容。', 'Подтверждение относится к экспорту, а не к исходному содержимому.', '検証の対象は出力結果であり、元の内容ではありません。')
+add('Prüfumfang', 'Verification scope', 'Alcance de verificación', '验证范围', 'Область проверки', '検証の範囲')
+add('Quellzuordnung des Exports fehlt.', 'Export source mapping is missing.', 'Falta la asignación de origen de la exportación.', '缺少导出源映射。', 'Отсутствует привязка источника экспорта.', '出力元の対応情報がありません。')
+
 # Unified source picker: display-only labels, never translate source paths.
 add('Datenträger oder Laufwerk auswählen', 'Select disk or volume', 'Seleccionar disco o volumen', '选择磁盘或卷', 'Выбрать диск или том', 'ディスクまたはボリュームを選択')
 add('Datenträger oder Laufwerk auswählen – nur lesen', 'Select disk or volume — read only', 'Seleccionar disco o volumen — solo lectura', '选择磁盘或卷 — 只读', 'Выбрать диск или том — только чтение', 'ディスクまたはボリュームを選択 — 読み取り専用')
@@ -927,6 +960,30 @@ add('Modell:', 'Model:', 'Modelo:', '型号：', 'Модель:', 'モデル:')
 add('Gerätegröße (Bytes):', 'Device size (bytes):', 'Tamaño del dispositivo (bytes):',
     '设备大小（字节）：', 'Размер устройства (байт):', 'デバイス容量（バイト）:')
 # Keep partial substitutions conservative: only anchored field labels and
+add('Zugriff verweigert. Prüfe Leserechte für die Quelle und Schreibrechte für den Zielordner. Bei Flatpak muss der Zielordner auch für Tenshi freigegeben sein.',
+    'Access denied. Check read access to the source and write access to the destination folder. In Flatpak, Tenshi must also have access to the destination folder.',
+    'Acceso denegado. Compruebe los permisos de lectura del origen y de escritura de la carpeta de destino. En Flatpak, Tenshi también necesita acceso a esa carpeta.',
+    '访问被拒绝。请检查来源的读取权限和目标文件夹的写入权限。使用 Flatpak 时，还必须允许 Tenshi 访问目标文件夹。',
+    'Доступ запрещён. Проверьте права чтения источника и записи в папку назначения. В Flatpak также разрешите Tenshi доступ к этой папке.',
+    'アクセスが拒否されました。ソースの読み取り権限と保存先の書き込み権限を確認してください。FlatpakではTenshiに保存先へのアクセスも許可する必要があります。')
+add('Das Laufwerk ist schreibgeschützt eingebunden. Wähle einen beschreibbaren Zielordner oder prüfe die Einbindung und Freigabe.',
+    'The drive is mounted read-only. Choose a writable destination folder or check the mount and sharing settings.',
+    'La unidad está montada en modo de solo lectura. Elija una carpeta de destino con escritura o revise el montaje y los permisos compartidos.',
+    '该驱动器以只读方式挂载。请选择可写入的目标文件夹，或检查挂载和共享设置。',
+    'Диск подключён только для чтения. Выберите доступную для записи папку или проверьте параметры подключения и общего доступа.',
+    'ドライブは読み取り専用でマウントされています。書き込み可能な保存先を選ぶか、マウントと共有設定を確認してください。')
+add('Eine benötigte Dateioperation wird nicht unterstützt oder wurde als ungültig abgelehnt. Prüfe die Einbindung des Zielordners; gemeinsam genutzte VM-Ordner können eingeschränkt sein. Versuche einen lokalen Linux-Zielordner. Dies ist kein eindeutiger Nachweis fehlender Schreibrechte.',
+    'A required file operation is unsupported or was rejected as invalid. Check the destination mount; shared VM folders may have limitations. Try a local Linux destination folder. This does not establish that write permission is missing.',
+    'Una operación de archivo necesaria no está admitida o fue rechazada como no válida. Revise el montaje del destino; las carpetas compartidas de la VM pueden tener limitaciones. Pruebe una carpeta local de Linux. Esto no demuestra que falten permisos de escritura.',
+    '所需的文件操作不受支持或被判定为无效。请检查目标的挂载设置；虚拟机共享文件夹可能存在限制。请尝试本地 Linux 目标文件夹。这并不能证明缺少写入权限。',
+    'Нужная файловая операция не поддерживается или отклонена как недопустимая. Проверьте подключение папки назначения: общие папки ВМ могут иметь ограничения. Попробуйте локальную папку Linux. Это не доказывает отсутствие прав записи.',
+    '必要なファイル操作が未対応、または無効として拒否されました。保存先のマウント設定を確認してください。仮想マシンの共有フォルダーには制限がある場合があります。Linuxのローカルフォルダーを試してください。書き込み権限の不足が確定したわけではありません。')
+add('Auf dem Laufwerk ist kein Speicherplatz mehr verfügbar. Prüfe den freien Platz im Zielordner.',
+    'The drive has no space left. Check free space at the destination folder.',
+    'No queda espacio en la unidad. Compruebe el espacio libre en la carpeta de destino.',
+    '驱动器空间不足。请检查目标文件夹所在驱动器的可用空间。',
+    'На диске нет свободного места. Проверьте свободное место в папке назначения.',
+    'ドライブの空き容量がありません。保存先の空き容量を確認してください。')
 # fixed status fragments are eligible; do not translate a raw filename.
 _PARTIAL = sorted(set(_PARTIAL + [s for s in TRANSLATIONS if s.endswith(':') and len(s)>=5]),
                   key=len, reverse=True)

@@ -67,6 +67,29 @@ def check_installed_gui() -> None:
                     app.change_language(language)
                     app.update()
                     assert app.language == language
+                    # Installed Tk 9: a view-only event projection, no source I/O.
+                    app.export_running = True
+                    app._handle_export_event(dict(type='plan',total=1,total_bytes=100,items=[]))
+                    app._handle_export_event(dict(type='start',path='fixture.bin',size=100))
+                    app._handle_export_event(dict(type='bytes',path='fixture.bin',delta=100))
+                    app._handle_export_event(dict(type='verify',path='fixture.bin',read=100,size=100))
+                    progress = app._show_export_progress()
+                    progress.geometry('620x550+0+0')
+                    app.update(); progress.refresh_display(); app.update_idletasks()
+                    assert len(progress.grid_view.find_all()) == 200
+                    assert progress.grid_view.winfo_height() > 60
+                    assert app.export_blocks.confirmed_fraction == 0
+                    from recoverydesk.i18n import translate
+                    assert progress.labels['verification'].cget('text') == translate('SHA256-Prüfung der Zieldatei läuft …',language)
+                    assert '%' not in progress.labels['verification'].cget('text')
+                    assert app.grab_current() is None
+                    progress.destroy()
+                    assert app.export_running and not app.export_cancel.is_set()
+                    progress = app._show_export_progress()
+                    app._handle_export_event(dict(type='done',path='fixture.bin',size=100,status='Erfolgreich'))
+                    assert app.export_blocks.confirmed_fraction == 1
+                    progress.destroy()
+                    app.export_running = False
                     from recoverydesk.source_catalog import SourceChoice
                     with patch.object(gui, 'open_source', side_effect=AssertionError('Unconfirmed device read')):
                         picker = app._show_source_dialog([
@@ -94,22 +117,21 @@ def check_installed_gui() -> None:
                     assert app.status_label.winfo_ismapped(), language
                     assert app.status_label.winfo_height() >= app.status_label.winfo_reqheight(), language
                     assert app.status_label.winfo_rooty()+app.status_label.winfo_height() <= app.winfo_rooty()+app.winfo_height(), language
-                    assert app.export_queue_collapsed, language
-                    app._toggle_export_queue()
+                    assert 'export_queue_tree' not in app.__dict__
+                    assert 'export_queue_bar' not in app.__dict__
+                    assert app.export_progress_button.winfo_ismapped(),language
+                    assert app.export_preflight_button.winfo_ismapped(),language
+                    app.export_progress_button.invoke()
                     app.update()
-                    assert app.export_queue_bar.winfo_ismapped(), language
-                    assert app.file_tree.winfo_height() >= 70, language
-                    assert app.status_label.winfo_ismapped(), language
-                    app._toggle_export_queue()
-                    app.update()
-                    assert app.export_queue_collapsed, language
-                    assert not app.export_queue_bar.winfo_ismapped(), language
+                    app._export_progress_window.destroy()
+                    assert app.status_label.winfo_ismapped(),language
+                    assert app.file_tree.winfo_height()>=70,language
                     app.geometry('1280x900+0+0')
                 assert app.callback_errors == [], app.callback_errors
                 assert app.source_path.get() == ''
             finally:
                 app.destroy()
-    print('Installed Flatpak GUI: six languages, main tabs and export queue passed.')
+    print('Installed Flatpak GUI: six languages, main tabs and separate export progress passed.')
 
 
 def main() -> None:

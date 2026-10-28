@@ -43,8 +43,11 @@ class VerificationLabelTests(unittest.TestCase):
             self.assertIn(WRITTEN_LABEL, report)
             state = json.loads(Path(first.manifest).read_text(encoding='utf-8'))
             self.assertEqual(state['results']['README.TXT']['status'], 'Erfolgreich')
+            checksum=state['results']['README.TXT']['sha256']
+            self.assertIn('SHA256 (Zieldatei bestätigt): '+checksum,report)
             second = export_batch(str(source), index, [item], str(destination))
             self.assertEqual((second.exported, second.verified_existing, second.failed), (0, 1, 0))
+            self.assertIn('SHA256 (Zieldatei bestätigt): '+checksum,Path(second.log).read_text(encoding='utf-8'))
             self.assertIn('Export-Prüfsumme bestätigt: 1', Path(second.log).read_text(encoding='utf-8'))
             self.assertEqual(source.read_bytes(), raw)
 
@@ -71,9 +74,11 @@ class VerificationLabelGuiTests(unittest.TestCase):
                 for language in (*LANGUAGES, 'de'):
                     app.change_language(language)
                     app.update()
-                    for path, text in (('new.txt', WRITTEN_LABEL), ('old.txt', RESUME_LABEL)):
-                        values = app.export_queue_tree.item(app._export_iids[path], 'values')
-                        self.assertEqual(values[0], translate(text, language))
+                    with patch('recoverydesk.gui.messagebox.showinfo') as show:
+                        app._show_export_scope()
+                    self.assertEqual(show.call_args.args[1],
+                                     translate(EXPORT_SCOPE,language)+'\n\n'+translate(RESUME_SCOPE,language))
+                    self.assertNotIn('export_queue_tree',app.__dict__)
                 self.assertEqual(app.export_progress.visible_items['new.txt']['status'], 'Erfolgreich')
                 self.assertEqual(app.export_progress.visible_items['old.txt']['status'], 'Bereits verifiziert')
             finally:

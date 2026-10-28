@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -17,6 +18,16 @@ class LinuxLayoutTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
+
+    @staticmethod
+    def settle_layout(app):
+        # Header wrapping is deliberately debounced by 40 ms. Measure only
+        # after its Configure events have settled, before and after the popup.
+        deadline=time.monotonic()+.15
+        while time.monotonic()<deadline:
+            app.update()
+            time.sleep(.01)
+        app.update()
 
     def assert_visible(self, app, widget, name):
         self.assertTrue(widget.winfo_ismapped(), name + ' is hidden')
@@ -62,7 +73,7 @@ class LinuxLayoutTests(unittest.TestCase):
                             self.assertGreaterEqual(app.winfo_screenwidth(), width)
                             self.assertGreaterEqual(app.winfo_screenheight(), height)
                             app.geometry(f'{width}x{height}+0+0')
-                            app.update()
+                            self.settle_layout(app)
                             self.assertEqual((app.winfo_width(), app.winfo_height()),
                                              (width, height))
                             self.assertEqual(app.language, language)
@@ -92,25 +103,17 @@ class LinuxLayoutTests(unittest.TestCase):
                                                     app.status_label.winfo_reqheight())
                             self.assertGreaterEqual(app.file_tree.winfo_height(), 70)
                             self.assert_visible(app, app.export_button, 'export action')
-                            self.assertTrue(app.export_queue_collapsed)
-                            self.assertFalse(app.export_queue_bar.winfo_ismapped())
-                            collapsed_height = app.file_tree.winfo_height()
-                            app._toggle_export_queue()
+                            self.assertNotIn('export_queue_tree',app.__dict__)
+                            self.assertNotIn('export_queue_bar',app.__dict__)
+                            self.assert_visible(app,app.export_progress_button,'progress/result action')
+                            self.assert_visible(app,app.export_preflight_button,'preflight action')
+                            browser_height=app.file_tree.winfo_height()
+                            app.export_progress_button.invoke()
                             app.update()
-                            self.assert_visible(app, app.export_queue_bar, 'expanded queue progress')
-                            self.assert_visible(app, app.status_label, 'scan progress with expanded queue')
-                            self.assert_visible(app, app.file_tree, 'file browser with queue')
-                            self.assertGreaterEqual(app.file_tree.winfo_height(), 70)
-                            expanded_height = app.file_tree.winfo_height()
-                            self.assertGreater(collapsed_height, expanded_height)
-                            app._toggle_export_queue()
-                            app.update()
-                            self.assertTrue(app.export_queue_collapsed)
-                            self.assertFalse(app.export_queue_bar.winfo_ismapped())
-                            self.assertGreater(app.file_tree.winfo_height(), expanded_height)
-                            app._toggle_export_queue()
-                            app.update()
-                            self.assert_visible(app, app.export_queue_bar, 'restored queue progress')
+                            app._export_progress_window.destroy()
+                            self.settle_layout(app)
+                            self.assertEqual(app.file_tree.winfo_height(),browser_height)
+                            self.assert_visible(app,app.status_label,'live status after closing export view')
                             self.assertEqual(app.callback_errors, [])
                         finally:
                             app.destroy()
