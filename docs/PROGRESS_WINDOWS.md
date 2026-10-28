@@ -106,3 +106,18 @@ Nach Abschluss oder Unterbrechung lassen sich Bericht und Zielordner öffnen.
 „Bericht speichern“ beginnt beim Image-Zielordner, schlägt einen neuen Namen vor
 und läuft außerhalb des GUI-Threads. Es verwendet Zielschutz und exklusives
 Dateianlegen; keine vorhandenen Dateien, Quellen oder Geräte werden überschrieben.
+
+## Hauptfenster schließen
+
+Ohne laufenden Auftrag schließt Tenshi sofort. Laufen noch Export, Imageerstellung
+oder Speichervorgänge, fragt das Hauptfenster vor dem Beenden nach. „Nein“ ist
+vorausgewählt und lässt die Aufträge weiterlaufen. „Ja“ fordert die kontrollierte
+Unterbrechung von Export und Imageerstellung an. Tenshi wartet auf die Rückmeldung
+der laufenden Vorgänge, bevor das Fenster geschlossen wird. Währenddessen werden
+keine neuen Export-, Image- oder Sitzungsvorgänge und Berichtsspeicherungen gestartet.
+
+Fehler beim Abschließen werden gesammelt und vor dem Schließen einmal angezeigt;
+Erfolgsmeldungen werden während des Beendens nicht zusätzlich geöffnet. Ein Fehler
+bestätigt keine vollständige Speicherung von Bericht oder Prüfpunkt. Die bestehenden
+Prüfungen beim Fortsetzen bleiben erforderlich. Das Schließen einer einzelnen
+Fortschrittsansicht blendet weiterhin nur diese Ansicht aus.

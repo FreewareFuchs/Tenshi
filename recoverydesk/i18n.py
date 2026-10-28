@@ -966,6 +966,25 @@ add('Modell:', 'Model:', 'Modelo:', '型号：', 'Модель:', 'モデル:')
 add('Gerätegröße (Bytes):', 'Device size (bytes):', 'Tamaño del dispositivo (bytes):',
     '设备大小（字节）：', 'Размер устройства (байт):', 'デバイス容量（バイト）:')
 # Keep partial substitutions conservative: only anchored field labels and
+add('Tenshi beenden','Quit Tenshi','Salir de Tenshi','退出 Tenshi','Закрыть Tenshi','Tenshiを終了')
+add('Beim Beenden wurden Fehler gemeldet. Bitte prüfe die folgenden Meldungen; betroffene Dateien oder Prüfpunkte sind möglicherweise nicht vollständig gespeichert.',
+    'Errors were reported while quitting. Please review the following messages; affected files or checkpoints may not have been fully saved.',
+    'Se notificaron errores al salir. Revise los siguientes mensajes; es posible que los archivos o puntos de control afectados no se hayan guardado por completo.',
+    '退出时报告了错误。请检查以下消息；相关文件或检查点可能未完整保存。',
+    'При завершении возникли ошибки. Проверьте следующие сообщения: затронутые файлы или контрольные точки могли сохраниться не полностью.',
+    '終了中にエラーが報告されました。以下のメッセージを確認してください。該当するファイルやチェックポイントが完全に保存されていない可能性があります。')
+add('Es laufen noch Export-, Image- oder Speichervorgänge. Beim Beenden werden Export und Imageerstellung kontrolliert unterbrochen. Tenshi wartet auf das Ende laufender Schreibvorgänge. Jetzt unterbrechen und Tenshi schließen?',
+    'Export, imaging or save operations are still running. Quitting will request a controlled pause of export and imaging. Tenshi will wait for active writes to finish. Interrupt now and quit Tenshi?',
+    'Todavía hay operaciones de exportación, imagen o guardado en curso. Al salir se solicitará una pausa controlada de la exportación y la creación de imágenes. Tenshi esperará a que terminen las escrituras activas. ¿Interrumpir ahora y salir de Tenshi?',
+    '导出、镜像创建或保存操作仍在运行。退出时将请求有序中断导出和镜像创建。Tenshi 会等待正在进行的写入结束。现在中断并退出 Tenshi 吗？',
+    'Ещё выполняются экспорт, создание образа или сохранение. При выходе будет запрошена контролируемая остановка экспорта и создания образа. Tenshi дождётся завершения текущих операций записи. Прервать и закрыть Tenshi?',
+    'エクスポート、イメージ作成、または保存が実行中です。終了するとエクスポートとイメージ作成に中断を要求し、進行中の書き込みが終わるまで待ちます。中断してTenshiを終了しますか？')
+add('Unterbrechung angefordert. Warte auf das Ende laufender Vorgänge …',
+    'Interruption requested. Waiting for running operations to finish …',
+    'Interrupción solicitada. Esperando a que terminen las operaciones en curso …',
+    '已请求中断。正在等待运行中的操作结束…',
+    'Запрошено прерывание. Ожидание завершения текущих операций …',
+    '中断を要求しました。実行中の処理が終わるのを待っています…')
 add('Lesbar gespeichert','Read and saved','Leído y guardado','已读取并保存','Прочитано и сохранено','読み取り・保存済み')
 add('Lesefehler / Nullersatz','Read error / zero fill','Error de lectura / ceros','读取错误 / 填零','Ошибка чтения / заполнено нулями','読み取りエラー／ゼロ埋め')
 add('Teilweise gespeichert','Partially saved','Guardado parcialmente','已部分保存','Частично сохранено','一部保存済み')
