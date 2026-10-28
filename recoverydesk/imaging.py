@@ -47,6 +47,9 @@ class ImagingProgress:
     unreadable_bytes: int
     bad_range_count: int
     state: str
+    # Committed defect ranges since the previous notification; the initial
+    # notification includes the resumed map. Immutable, never shared with Tk.
+    bad_ranges: tuple[tuple[int, int], ...] = ()
 
 
 def _real(path: str) -> str:
@@ -619,10 +622,6 @@ def create_image(source: str, destination: str, *,
     checkpoint_writer.last_saved = state['processed']
     position = state['processed']
     opened_output_inode = None
-    if progress:
-        progress(ImagingProgress(position, total, state['unreadable_bytes'],
-                                 len(state['bad_ranges']), state['state']))
-
     with open_source(source) as reader, open_regular_output(
             destination, 'r+b', source, expected_identity=expected_output_inode) as out:
         output_info = os.fstat(out.fileno())
@@ -641,6 +640,12 @@ def create_image(source: str, destination: str, *,
         # overwrite only after manifest and block digests are verified.
         out.truncate(position)
         out.seek(position)
+        # Publish a resumed map only after the existing output identity and
+        # checkpoint block checks have passed. No additional reads for the UI.
+        if progress:
+            progress(ImagingProgress(position, total, state['unreadable_bytes'],
+                                     len(state['bad_ranges']), state['state'],
+                                     tuple((off,length) for off,length in state['bad_ranges'])))
         # A previous 'complete' state may predate full verification.
         # An explicit resume must still run the requested verification.
         if state['state'] == 'complete' and position == total and not verify_full:
@@ -705,7 +710,8 @@ def create_image(source: str, destination: str, *,
             checkpoint_writer.save(state)
             if progress:
                 progress(ImagingProgress(position, total, state['unreadable_bytes'],
-                                         len(state['bad_ranges']), state['state']))
+                                         len(state['bad_ranges']), state['state'],
+                                         tuple((off,length) for off,length in new_bad)))
         out.flush()
         os.fsync(out.fileno())
     if state['unreadable_bytes']:
@@ -734,6 +740,9 @@ def describe_bad_ranges(state: dict) -> str:
              f"Fehlerbereiche: {len(state.get('bad_ranges', []))}",
              f"Wiederholte Sektor-Leseversuche: {state.get('read_retries_performed', 0)}",
              f"Strategie: {state.get('bad_sector_policy', 'zero')}", 
+             f"Vollvergleich: {state.get('verification', {}).get('status', 'nicht bestätigt')}",
+             f"Im Vollvergleich geprüfte Bytes: {state.get('verification', {}).get('checked', 0)}",
+             'Lesbar gespeichert bedeutet nicht automatisch bitgenau verifiziert.',
              '', 'Start-Byteoffset;Länge in Bytes']
     lines.extend(f'{off};{length}' for off, length in state.get('bad_ranges', []))
     return '\n'.join(lines) + '\n'

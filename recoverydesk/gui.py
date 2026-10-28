@@ -45,6 +45,8 @@ from .batch_export import export_batch
 from .export_queue import QueueProgress, readable_bytes
 from .export_blocks import ExportBlocks, copy_export_report
 from .progress_window import ExportProgressWindow
+from .imaging_window import ImagingProgressWindow
+from .imaging_blocks import ImagingBlocks
 from .zip_verification import verify_zip, ZIP_CHECK_SCOPE, ZipCheckResult
 from .preview import describe, PREVIEW_LIMIT, IMAGE_LIMIT
 from .file_verification import verify_file, MAX_VERIFY_BYTES, VerificationCancelled
@@ -1058,13 +1060,26 @@ class RecoveryDeskApp(tk.Tk):
 
     def open_imaging_dialog(self):
         """Create a read-only source -> new regular-file image with a resumable map."""
+        previous=self.__dict__.get('_imaging_dialog')
+        if previous is not None and previous.winfo_exists() and self._imaging_session['running']:
+            previous.show_progress()
+            return previous
         try:
             src = self.get_source()
             total = source_size(src)
         except Exception as exc:
             messagebox.showerror('Image erstellen', 'Bitte zuerst einen Datenträger oder ein vorhandenes Image auswählen.\n\n' + str(exc), parent=self)
             return
+        if previous is not None and previous.winfo_exists():
+            if previous.imaging_source==src:
+                previous.deiconify();previous.lift()
+                return previous
+            view=self._imaging_session.get('window')
+            if view is not None and view.winfo_exists():view.destroy()
+            previous.destroy()
         win = tk.Toplevel(self)
+        self._imaging_dialog=win
+        win.imaging_source=src
         win.title('Tenshi – Image erstellen / fortsetzen')
         win.geometry('875x475')
         win.minsize(750, 445)
@@ -1108,11 +1123,8 @@ class RecoveryDeskApp(tk.Tk):
                              'Nullersatz wegen Lesefehlern kann nicht bitgenau bestätigt werden.'),
                   wraplength=600, foreground='#9a3412').grid(
                       row=4, column=1, columnspan=2, sticky='ew', padx=8, pady=(7, 4))
-        percent = tk.StringVar(value='0,0 %')
-        progress_bar = ttk.Progressbar(win, orient='horizontal', maximum=100)
-        progress_bar.grid(row=5, column=0, columnspan=3, padx=16, pady=(12, 2), sticky='ew')
-        ttk.Label(win, textvariable=percent, font=('Segoe UI', 11, 'bold')).grid(row=6, column=0,
-                                                            columnspan=3, padx=16, sticky='w')
+        progress_button=ttk.Button(win,text='Fortschritt / Ergebnis')
+        progress_button.grid(row=5,column=0,columnspan=3,padx=16,pady=(12,2),sticky='ew')
         stats = tk.StringVar(value='Noch nicht gestartet.')
         ttk.Label(win, textvariable=stats, wraplength=725).grid(row=7, column=0, columnspan=3,
                                                                 sticky='ew', padx=16, pady=(4, 8))
@@ -1132,14 +1144,73 @@ class RecoveryDeskApp(tk.Tk):
                                                               sticky='ew', padx=16, pady=(8, 10))
         events = queue.SimpleQueue()
         stop = threading.Event()
-        active = {'running': False, 'close_after': False, 'started': 0.0, 'state': None, 'report': None, 'baseline': None}
+        active = {'running': False, 'started': 0.0, 'ended': None, 'state': None,
+                  'report': None, 'baseline': None, 'stop':stop,'blocks':ImagingBlocks(total=total),
+                  'destination':'','error':'','saving':False,'window':None}
+        self._imaging_session=active
+
+        def save_bad_report():
+            saved=active.get('report')
+            if active['running'] or not saved or active['saving']:return
+            folder=os.path.dirname(active['destination'])
+            name=filedialog.asksaveasfilename(parent=self,initialdir=folder,
+                initialfile='Tenshi_Imagebericht_'+time.strftime('%Y%m%d_%H%M%S')+'_'+uuid.uuid4().hex[:8]+'.txt',
+                defaultextension='.txt',filetypes=[('Textdatei','*.txt')],title='Fehlerstellen-Bericht speichern')
+            if not name:return
+            active['saving']=True
+            def finish(error):
+                active['saving']=False
+                if error:messagebox.showerror('Fehlerstellen-Bericht',error,parent=self)
+                else:messagebox.showinfo('Fehlerstellen-Bericht','Bericht gespeichert.',parent=self)
+            def write():
+                try:
+                    from .secure_target import open_regular_output
+                    ensure_safe_destination(src,name)
+                    data=describe_bad_ranges(saved).encode('utf-8')
+                    with open_regular_output(name,'xb',src) as output:
+                        view=memoryview(data)
+                        while view:
+                            written=output.write(view)
+                            if not written:raise OSError('Bericht konnte nicht vollständig geschrieben werden.')
+                            view=view[written:]
+                        output.flush();os.fsync(output.fileno())
+                    error=''
+                except Exception as exc:error=export_error_message(exc,self.language)
+                self._post_scan_callback(lambda error=error:finish(error))
+            threading.Thread(target=write,daemon=True).start()
+
+        def open_folder():
+            folder=os.path.dirname(active['destination'])
+            if not os.path.isdir(folder):return
+            try:
+                if os.name=='nt':os.startfile(folder)
+                else:
+                    import subprocess
+                    subprocess.Popen(['xdg-open',folder],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            except OSError as exc:messagebox.showerror('Image erstellen',export_error_message(exc,self.language),parent=self)
+
+        def request_pause():
+            if active['running']:
+                stop.set();stats.set('Unterbrechung angefordert …')
+
+        def show_progress():
+            view=active.get('window')
+            if view is not None and view.winfo_exists():
+                view.deiconify();view.lift();view.refresh_display()
+            else:
+                view=active['window']=ImagingProgressWindow(self,active,pause=request_pause,
+                    report=show_bad_report,save=save_bad_report,folder=open_folder,
+                    settings=lambda:(win.deiconify(),win.lift()))
+            return view
+        win.show_progress=show_progress
+        progress_button.configure(command=show_progress)
 
         def show_bad_report():
             saved = active.get('report')
             if not saved:
                 return
             report = describe_bad_ranges(saved)
-            dialog = tk.Toplevel(win)
+            dialog = tk.Toplevel(self)
             dialog.title('Tenshi – Fehlerstellen-Bericht')
             dialog.geometry('750x390')
             body = ttk.Frame(dialog, padding=12)
@@ -1150,37 +1221,20 @@ class RecoveryDeskApp(tk.Tk):
             output.insert('1.0', report[:128 * 1024] +
                           ('\n… (Anzeige gekürzt; vollständigen Bericht speichern)' if len(report) > 128 * 1024 else ''))
             output.configure(state='disabled')
-            def save_report():
-                name = filedialog.asksaveasfilename(parent=dialog, defaultextension='.txt',
-                              filetypes=[('Textdatei', '*.txt')], title='Fehlerstellen-Bericht speichern')
-                if not name:
-                    return
-                try:
-                    # Never clobber an existing recovery report.
-                    with open(name, 'x', encoding='utf-8') as target:
-                        target.write(report)
-                except OSError as exc:
-                    messagebox.showerror('Fehlerstellen-Bericht', str(exc), parent=dialog)
-                else:
-                    messagebox.showinfo('Fehlerstellen-Bericht', 'Bericht gespeichert.', parent=dialog)
-            ttk.Button(body, text='Bericht speichern', command=save_report).pack(anchor='e', pady=(8, 0))
+            ttk.Button(body, text='Bericht speichern', command=save_bad_report).pack(anchor='e', pady=(8, 0))
 
         def leave():
-            if active['running']:
-                active['close_after'] = True
-                stop.set()
-                stats.set('Unterbrechung wird angefordert. Prüfpunkte werden gesichert …')
-                return
-            win.destroy()
+            win.withdraw()
 
         def update_progress(item):
             active['state'] = item.state
-            pct = min(100.0, 100.0 * item.processed / item.total) if item.total else 0
-            progress_bar.configure(value=pct)
-            percent.set(f'{pct:.1f} %')
+            active['blocks'].handle(item)
             elapsed = max(time.monotonic() - active['started'], 0.001)
             if active['baseline'] is None:
                 active['baseline'] = item.processed
+            if item.state=='verifying':
+                stats.set('Vollvergleich läuft …')
+                return
             speed = max(0, item.processed - active['baseline']) / elapsed
             remaining = ((item.total - item.processed) / speed) if speed > 0 else 0
             stats.set(f'{readable_bytes(item.processed)} von {readable_bytes(item.total)} · '
@@ -1200,14 +1254,16 @@ class RecoveryDeskApp(tk.Tk):
                     update_progress(item)
                 elif kind in ('finished', 'error'):
                     active['running'] = False
+                    active['ended'] = time.monotonic()
                     begin.configure(state='normal')
                     pause.configure(state='disabled')
                     if kind == 'error':
+                        active['error']=str(item)
                         stats.set('Image-Erstellung fehlgeschlagen: ' + str(item))
-                        if not active['close_after']:
-                            messagebox.showerror('Image erstellen', str(item), parent=win)
+                        messagebox.showerror('Image erstellen', str(item), parent=self)
                     else:
                         state = item
+                        active['state']=state['state']
                         active['report'] = state
                         report_button.configure(state='normal')
                         status = state['state']
@@ -1220,17 +1276,16 @@ class RecoveryDeskApp(tk.Tk):
                                          'Image nicht als bitgenau verifiziert betrachten.')
                         stats.set(txt + (' · bitgenau geprüft' if verify_status == 'verified'
                                          else ' · NICHT bitgenau verifiziert'))
-                        if status == 'complete' and not active['close_after']:
+                        if status == 'complete':
                             dialog_text = 'Image-Erstellung beendet.\n\n' + txt + verified_text
                             if verify_status == 'verified':
-                                messagebox.showinfo('Image erstellt und geprüft', dialog_text, parent=win)
+                                messagebox.showinfo('Image erstellt und geprüft', dialog_text, parent=self)
                             else:
                                 messagebox.showwarning('Image erstellt – ungeprüft', dialog_text +
                                     ('\n\nNicht lesbare Bereiche wurden mit Nullen ersetzt.' if state['bad_ranges']
-                                     else '\n\nKein Vollvergleich vorgenommen.'), parent=win)
-                    if active['close_after']:
-                        win.destroy()
-                        return
+                                     else '\n\nKein Vollvergleich vorgenommen.'), parent=self)
+            view=active.get('window')
+            if view is not None and view.winfo_exists():view.refresh_display()
             if active['running']:
                 self._after_window(win, 100, poll)
 
@@ -1243,6 +1298,7 @@ class RecoveryDeskApp(tk.Tk):
             return 'stop' if failure_choice.get() in stop_labels else 'zero'
 
         def start():
+            if active['running'] or active['saving']:return
             dest = target_var.get().strip()
             if not dest:
                 messagebox.showwarning('Image erstellen', 'Bitte einen Zielpfad auswählen.', parent=win)
@@ -1269,9 +1325,13 @@ class RecoveryDeskApp(tk.Tk):
                         'zusätzlich belasten. Trotzdem durchführen?', parent=win):
                     return
             active['started'] = time.monotonic()
+            active['ended'] = None
+            active['error'] = ''
+            active['state'] = None
+            active['blocks'] = ImagingBlocks(total=total)
+            active['destination'] = os.path.abspath(dest)
             active['baseline'] = None
             active['running'] = True
-            active['close_after'] = False
             stop.clear()
             active['report'] = None
             report_button.configure(state='disabled')
@@ -1291,13 +1351,15 @@ class RecoveryDeskApp(tk.Tk):
                         progress=lambda item: events.put(('progress', item)))
                     events.put(('finished', state))
                 except Exception as exc:
-                    events.put(('error', str(exc)))
+                    events.put(('error', export_error_message(exc,self.language)))
+            show_progress()
+            gc.collect()
             threading.Thread(target=work, daemon=True).start()
             self._after_window(win, 100, poll)
 
         begin.configure(command=start)
         report_button.configure(command=show_bad_report)
-        pause.configure(command=lambda: (stop.set(), stats.set('Unterbrechung angefordert …')))
+        pause.configure(command=request_pause)
         close_button.configure(command=leave)
         win.protocol('WM_DELETE_WINDOW', leave)
         return win

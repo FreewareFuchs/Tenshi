@@ -960,6 +960,33 @@ add('Modell:', 'Model:', 'Modelo:', '型号：', 'Модель:', 'モデル:')
 add('Gerätegröße (Bytes):', 'Device size (bytes):', 'Tamaño del dispositivo (bytes):',
     '设备大小（字节）：', 'Размер устройства (байт):', 'デバイス容量（バイト）:')
 # Keep partial substitutions conservative: only anchored field labels and
+add('Lesbar gespeichert','Read and saved','Leído y guardado','已读取并保存','Прочитано и сохранено','読み取り・保存済み')
+add('Lesefehler / Nullersatz','Read error / zero fill','Error de lectura / ceros','读取错误 / 填零','Ошибка чтения / заполнено нулями','読み取りエラー／ゼロ埋め')
+add('Teilweise gespeichert','Partially saved','Guardado parcialmente','已部分保存','Частично сохранено','一部保存済み')
+add('Fehlerzuordnung unvollständig','Incomplete error map','Mapa de errores incompleto','错误位置映射不完整','Неполная карта ошибок','エラーマップ未完成')
+add('Einstellungen / fortsetzen','Settings / resume','Opciones / continuar','设置 / 继续','Настройки / продолжить','設定／再開')
+add('100 Felder = 100 % der Quellbytes.','100 cells = 100% of source bytes.','100 celdas = 100 % de los bytes de origen.','100 格 = 来源字节总量的 100%。','100 ячеек = 100 % байтов источника.','100マス＝ソース全体の100%。')
+add('Gespeichert: {percent:.1f} %','Saved: {percent:.1f}%','Guardado: {percent:.1f} %','已保存：{percent:.1f}%','Сохранено: {percent:.1f} %','保存済み：{percent:.1f}%')
+add('Nullersatz: {size} · Fehlerbereiche: {count}','Zero-filled: {size} · Error ranges: {count}','Relleno con ceros: {size} · Rangos con errores: {count}','填零：{size} · 错误区域：{count}','Заполнено нулями: {size} · Диапазоны ошибок: {count}','ゼロ埋め：{size} · エラー範囲：{count}')
+add('Quellbereiche, keine einzelnen Sektoren. Grün bedeutet lesbar gespeichert, keinen bestandenen Vollvergleich.',
+    'Source ranges, not individual sectors. Green means read and saved, not a passed full comparison.',
+    'Rangos del origen, no sectores individuales. Verde significa leído y guardado, no una comparación completa aprobada.',
+    '显示来源区域，而非单个扇区。绿色表示已读取并保存，不表示已通过完整比较。',
+    'Диапазоны источника, а не отдельные секторы. Зелёный означает чтение и сохранение, а не успешное полное сравнение.',
+    '個々のセクターではなくソース範囲を表示します。緑は読み取り・保存済みを意味し、完全比較の合格を意味しません。')
+add('Unterbrechung angefordert …','Pause requested …','Pausa solicitada …','已请求暂停…','Запрошена пауза …','中断を要求しました…')
+add('Image-Erstellung fehlgeschlagen','Image creation failed','Error al crear la imagen','镜像创建失败','Создание образа не удалось','イメージ作成に失敗しました')
+add('Image-Erstellung unterbrochen','Image creation paused','Creación de imagen pausada','镜像创建已暂停','Создание образа приостановлено','イメージ作成を中断しました')
+add('Image-Erstellung beendet.','Image creation finished.','Creación de imagen finalizada.','镜像创建已完成。','Создание образа завершено.','イメージ作成が終了しました。')
+add('Image wird erstellt …','Creating image …','Creando imagen …','正在创建镜像…','Создание образа …','イメージを作成中…')
+add('Vollvergleich läuft …','Full comparison in progress …','Comparación completa en curso …','正在完整比较…','Выполняется полное сравнение …','完全比較中…')
+add('NICHT bitgenau verifiziert','NOT verified bit-for-bit','NO verificado bit a bit','未通过逐位验证','НЕ проверено побитно','ビット単位の検証は未完了')
+add('BITGENAU VERIFIZIERT: Vollvergleich mit Quelle bestanden.',
+    'VERIFIED BIT-FOR-BIT: full comparison with source passed.',
+    'VERIFICADO BIT A BIT: comparación completa con el origen aprobada.',
+    '逐位验证成功：已通过与来源的完整比较。',
+    'ПРОВЕРЕНО ПОБИТНО: полное сравнение с источником пройдено.',
+    'ビット単位の検証済み：ソースとの完全比較に合格しました。')
 add('Zugriff verweigert. Prüfe Leserechte für die Quelle und Schreibrechte für den Zielordner. Bei Flatpak muss der Zielordner auch für Tenshi freigegeben sein.',
     'Access denied. Check read access to the source and write access to the destination folder. In Flatpak, Tenshi must also have access to the destination folder.',
     'Acceso denegado. Compruebe los permisos de lectura del origen y de escritura de la carpeta de destino. En Flatpak, Tenshi también necesita acceso a esa carpeta.',
