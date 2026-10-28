@@ -90,6 +90,26 @@ def check_installed_gui() -> None:
                     assert app.export_blocks.confirmed_fraction == 1
                     progress.destroy()
                     app.export_running = False
+                    from recoverydesk.imaging_window import ImagingProgressWindow
+                    from recoverydesk.imaging_blocks import ImagingBlocks
+                    from recoverydesk.imaging import ImagingProgress
+                    import threading,time
+                    blocks=ImagingBlocks()
+                    blocks.handle(ImagingProgress(50,100,1,1,'running',((23,1),)))
+                    session=dict(blocks=blocks,running=True,state='running',stop=threading.Event(),
+                        started=time.monotonic(),ended=None,baseline=0,report=None,saving=False,error='',destination='')
+                    image_view=ImagingProgressWindow(app,session,pause=session['stop'].set,
+                        report=lambda:None,save=lambda:None,folder=lambda:None,settings=lambda:None)
+                    image_view.geometry('660x590+0+0')
+                    app.update();image_view.refresh_display();app.update_idletasks()
+                    assert len(image_view.grid_view.find_all())==200
+                    assert blocks.cell_states().count('error')==1
+                    for button in image_view.buttons.values():
+                        assert button.winfo_ismapped(),language
+                        assert button.winfo_width()>=button.winfo_reqwidth(),language
+                        assert button.winfo_rooty()+button.winfo_height()<=image_view.winfo_rooty()+image_view.winfo_height(),language
+                    image_view.destroy()
+                    assert session['running'] and not session['stop'].is_set()
                     from recoverydesk.source_catalog import SourceChoice
                     with patch.object(gui, 'open_source', side_effect=AssertionError('Unconfirmed device read')):
                         picker = app._show_source_dialog([
@@ -131,7 +151,7 @@ def check_installed_gui() -> None:
                 assert app.source_path.get() == ''
             finally:
                 app.destroy()
-    print('Installed Flatpak GUI: six languages, main tabs and separate export progress passed.')
+    print('Installed Flatpak GUI: six languages, main tabs, export and imaging progress passed.')
 
 
 def main() -> None:

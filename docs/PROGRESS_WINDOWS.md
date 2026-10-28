@@ -60,11 +60,47 @@ werden nicht neu gezeichnet. Größenänderungen werden gebündelt verarbeitet.
 Fenstertimer enden mit dem Schließen der Ansicht. Alle sechs UI-Sprachen und
 beide Farbvarianten werden geprüft. Scanner und Export-I/O bleiben unverändert.
 
-Analyse- und Imaging-Bereichskarten folgen separat. Dieser Schritt behauptet
-keine zusätzlichen Informationen über Lesefehler physischer Datenträger.
+Analyse-Bereichskarten folgen separat. Das Exportraster behauptet keine
+zusätzlichen Informationen über Lesefehler physischer Datenträger.
 
 Exportfehler unterscheiden verweigerten Zugriff, schreibgeschützte Einbindung,
 fehlenden Speicherplatz und ungültige/nicht unterstützte Dateioperationen.
 Insbesondere EINVAL ist kein Nachweis fehlender Schreibrechte: gemeinsam genutzte
 VM-Ziele können Dateioperationen einschränken. Die Originaldiagnose bleibt sichtbar.
 Tenshi erweitert weder Flatpak-Freigaben noch umgeht es Zielschutz oder Synchronisierung.
+
+## Imageerstellung
+
+Die Imageerstellung öffnet eine eigene, nicht modale Fortschrittsansicht mit
+100 quadratischen Feldern. Sie fassen jeweils ein Prozent der Quellbytes zusammen,
+keine einzelnen Sektoren. Grün steht für lesbar gespeicherte Bereiche, Rot für
+Bereiche mit protokolliertem Nullersatz. Ein einzelner defekter Teil macht das
+ganze betroffene Feld rot; das bedeutet nicht, dass das ganze Prozent defekt ist.
+Noch offene und nur teilweise gespeicherte Felder sind getrennt sichtbar.
+
+Die Engine gibt ausschließlich bereits gespeicherte Fehlerbereiche weiter:
+Beim Fortsetzen einmalig die bestehende Karte, danach nur neue Bereiche des
+jeweils übernommenen Blocks. Die Ansicht hält 100 Zähler, keine zusätzliche
+Liste sämtlicher Sektoren. Zusammengeführte Fehlerbereiche im Prüfpunkt bleiben
+unverändert. Bei fehlender Zuordnung werden Anteile nicht fälschlich grün.
+Mit „Sicher anhalten“ nicht übernommene Blöcke bleiben offen; der Fehler wird
+gesondert gemeldet. Read-only-Zugriff, Wiederholungen, Nullersatz-Regeln,
+Schreibsynchronisierung und Checkpoint-Prüfungen bleiben unverändert.
+
+Das Schließen beider Imaging-Ansichten beendet den Auftrag nicht. Über „Image
+erstellen / fortsetzen“ im Hauptfenster wird der laufende Auftrag wieder geöffnet;
+ein zweiter Imaging-Auftrag startet dadurch nicht. Zum Unterbrechen dient die
+eigene Schaltfläche. Das Einstellungsfenster bleibt intern für Steuerung und
+Ereignisverarbeitung erhalten, wenn es ausgeblendet wird. Die Quelle des laufenden
+Auftrags bleibt fest zugeordnet, auch wenn sich die Auswahl im Hauptfenster ändert.
+
+Der Vollvergleich wird ausdrücklich als Textphase angezeigt. Das Raster bleibt
+beim gespeicherten Umfang; Grün allein bestätigt keinen Vollvergleich. Nur das
+abschließende Prüfergebnis darf „bitgenau verifiziert“ melden. Fehler oder eine
+unterbrochene Prüfung bleiben ungeprüft. Die Fehlerstellen-Berichte nennen den
+Status des Vollvergleichs und die tatsächlich verglichenen Bytes.
+
+Nach Abschluss oder Unterbrechung lassen sich Bericht und Zielordner öffnen.
+„Bericht speichern“ beginnt beim Image-Zielordner, schlägt einen neuen Namen vor
+und läuft außerhalb des GUI-Threads. Es verwendet Zielschutz und exklusives
+Dateianlegen; keine vorhandenen Dateien, Quellen oder Geräte werden überschrieben.
