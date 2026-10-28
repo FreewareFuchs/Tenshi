@@ -71,9 +71,11 @@ class VerificationLabelGuiTests(unittest.TestCase):
                 for language in (*LANGUAGES, 'de'):
                     app.change_language(language)
                     app.update()
-                    for path, text in (('new.txt', WRITTEN_LABEL), ('old.txt', RESUME_LABEL)):
-                        values = app.export_queue_tree.item(app._export_iids[path], 'values')
-                        self.assertEqual(values[0], translate(text, language))
+                    with patch('recoverydesk.gui.messagebox.showinfo') as show:
+                        app._show_export_scope()
+                    self.assertEqual(show.call_args.args[1],
+                                     translate(EXPORT_SCOPE,language)+'\n\n'+translate(RESUME_SCOPE,language))
+                    self.assertNotIn('export_queue_tree',app.__dict__)
                 self.assertEqual(app.export_progress.visible_items['new.txt']['status'], 'Erfolgreich')
                 self.assertEqual(app.export_progress.visible_items['old.txt']['status'], 'Bereits verifiziert')
             finally:

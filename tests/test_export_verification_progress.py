@@ -86,33 +86,38 @@ class VerificationProgressTests(unittest.TestCase):
         self.assertFalse(q.verifying)
         self.assertEqual(q.overall_fraction,0)
 
-    def test_ui_phase_label_is_translated_and_clears_on_cancel(self):
+    @unittest.skipUnless(__import__('os').name=='nt' or __import__('os').environ.get('DISPLAY'),'Display required')
+    def test_ui_sha_notice_is_text_only_and_clears_on_cancel(self):
         from recoverydesk.gui import RecoveryDeskApp
-        class Value:
-            def set(self, value): self.value=value
-            def configure(self, **kwargs): self.value=kwargs['value']
-        q=QueueProgress()
-        q.handle({'type':'plan','total':1,'total_bytes':100,'items':[]})
-        q.handle({'type':'start','path':'file','size':100})
-        q.handle({'type':'verify','path':'file','size':100,'read':50})
-        for language in LANGUAGES:
-            app=SimpleNamespace(export_progress=q,language=language,
-                                export_queue_bar=Value(),export_queue_percent=Value())
-            RecoveryDeskApp._paint_export_progress(app)
-            self.assertEqual(app.export_queue_bar.value,50)
-            self.assertEqual(app.export_queue_percent.value,
-                             translate('SHA256 prüfen',language)+': 50.0 %')
-            if language!='de':
-                self.assertNotEqual(translate('SHA256 prüfen',language),'SHA256 prüfen')
-                self.assertNotEqual(translate('Datei kopieren',language),'Datei kopieren')
-        q.failed=q.ended=True
-        RecoveryDeskApp._paint_export_progress(app)
-        self.assertEqual(app.export_queue_percent.value,translate('Fehler',app.language))
-        q.failed=q.ended=False
-        q.handle({'type':'complete','cancelled':True})
-        RecoveryDeskApp._paint_export_progress(app)
-        self.assertEqual(app.export_queue_bar.value,0)
-        self.assertEqual(app.export_queue_percent.value,'0.0 %')
+        app=RecoveryDeskApp()
+        try:
+            app.export_running=True
+            for event in [dict(type='plan',total=1,total_bytes=100,items=[]),
+                          dict(type='start',path='file',size=100),
+                          dict(type='bytes',path='file',delta=100)]:
+                app._handle_export_event(event)
+            win=app._show_export_progress()
+            for language in LANGUAGES:
+                app.change_language(language);win.refresh_display()
+                self.assertEqual(win.labels['verification'].cget('text'),
+                                 translate('SHA256 wird während des Kopierens berechnet.',language))
+            before=app.export_blocks.cell_states()
+            for done in (0,50,100):
+                app._handle_export_event(dict(type='verify',path='file',size=100,read=done))
+                for language in LANGUAGES:
+                    app.change_language(language);win.refresh_display()
+                    self.assertEqual(win.labels['verification'].cget('text'),
+                                     translate('SHA256-Prüfung der Zieldatei läuft …',language))
+                    self.assertNotIn('%',win.labels['verification'].cget('text'))
+                self.assertEqual(app.export_blocks.cell_states(),before)
+                self.assertEqual(app.export_blocks.confirmed_fraction,0)
+            app._handle_export_event(dict(type='complete',cancelled=True))
+            app.export_running=False
+            win.refresh_display()
+            self.assertEqual(win.labels['verification'].cget('text'),'')
+            self.assertNotIn('confirmed',app.export_blocks.cell_states())
+        finally:
+            app.destroy()
 
 
 if __name__=='__main__':

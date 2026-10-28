@@ -100,7 +100,7 @@ class ExportProgressWindow(tk.Toplevel):
         scope = ttk.Label(left,text='',justify='left')
         scope.pack(fill='x',pady=(0,3))
         self.labels['scope'] = scope
-        for name in ('elapsed','transfer','verification','counts','path'):
+        for name in ('elapsed','transfer','progress','verification','counts','path'):
             label = ttk.Label(right, text='', anchor='w', justify='left')
             label.pack(fill='x', pady=(0, 3))
             self.labels[name] = label
@@ -172,13 +172,23 @@ class ExportProgressWindow(tk.Toplevel):
         self._set('elapsed', t('Laufzeit: {duration}').format(duration=readable_duration(elapsed)))
         rate = 0 if q.verifying or not running else q.speed(now)
         eta = q.eta(now) if running else None
-        self._set('transfer', t('Neu übertragen: {size} · Kopiertempo: {rate}/s').format(
-            size=readable_bytes(q.written_bytes),rate=readable_bytes(rate)))
-        verification = (t('SHA256-Lesestand der aktuellen Datei: {percent:.1f} %').format(percent=100*q.verification_fraction)
-                        if q.verifying and running else t('Export bestätigt: {percent:.1f} %').format(percent=100*blocks.confirmed_fraction))
+        transfer = t('Neu übertragen: {size} · Kopiertempo: {rate}/s').format(
+            size=readable_bytes(q.written_bytes),rate=readable_bytes(rate))
         if eta is not None:
-            verification += ' · '+t('Kopier-Restzeit ca. {duration}').format(duration=readable_duration(eta))
-        self._set('verification', verification)
+            transfer += '\n'+t('Kopier-Restzeit ca. {duration}').format(duration=readable_duration(eta))
+        self._set('transfer', transfer)
+        self._set('progress',t('Export bestätigt: {percent:.1f} %').format(percent=100*blocks.confirmed_fraction))
+        # Hashing the copied stream and checking the destination are separate
+        # existing engine steps. Neither starts another graphical progress bar.
+        if q.verifying and running:
+            notice = 'SHA256-Prüfung der Zieldatei läuft …'
+        elif running and q.active_path and q.active_written>0:
+            notice = 'SHA256 wird während des Kopierens berechnet.'
+        elif not running and q.ended and app.export_result and getattr(app.export_result,'log',''):
+            notice = 'SHA256: Details im Ergebnisbericht.'
+        else:
+            notice = ''
+        self._set('verification', t(notice))
         self._set('counts', t('Einträge: {done} von {total} · Fehler: {errors} · Übersprungen: {skipped}').format(
             done=q.done_count,total=q.total,errors=blocks.errors,skipped=blocks.skipped))
         path = q.active_path

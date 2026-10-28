@@ -40,7 +40,7 @@ class ResponsiveProgressTests(unittest.TestCase):
         self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),
                              self.app.winfo_rooty()+self.app.winfo_height())
 
-    def test_live_scan_counter_survives_resize_and_expanded_export_queue(self):
+    def test_live_scan_counter_survives_resize_and_separate_export_view(self):
         source = self.root/'source.img'
         source.write_bytes(fat_img())
         index = scan_tree(str(source))
@@ -66,12 +66,12 @@ class ResponsiveProgressTests(unittest.TestCase):
             self.app.geometry(size)
             self.pump()
             self.assert_visible(self.app.status_label)
-            self.app._toggle_export_queue()
+            self.app.export_progress_button.invoke()
             self.pump()
             self.assert_visible(self.app.status_label)
             self.assertGreaterEqual(self.app.file_tree.winfo_height(),70,
                                      f'geometry={self.app.geometry()} scaling={self.app.tk.call("tk","scaling")}')
-            self.app._toggle_export_queue()
+            self.app._export_progress_window.destroy()
         for callback in callbacks:
             callback()
         self.assertFalse(self.app.ntfs_scanning)

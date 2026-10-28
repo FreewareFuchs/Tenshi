@@ -20,7 +20,7 @@ from .branding import asset_path
 from .appearance import apply_theme, detect_system_theme, palette
 from .version_info import display_version
 from .verification_labels import (METADATA_SCOPE, READ_SCOPE, EXPORT_SCOPE, RESUME_SCOPE,
-                                  RESUME_LABEL, METADATA_LABEL, export_status_label)
+                                  RESUME_LABEL, METADATA_LABEL)
 from .help_center import HelpWindow
 from .ui_preferences import load_ui_preferences, save_ui_preferences, valid_geometry
 from .diagnostics import log_issue, diagnostic_log_path
@@ -260,18 +260,6 @@ class RecoveryDeskApp(tk.Tk):
                     values[2] = translate(entry.status, self.language)
                     values[3] = translate(assess(entry).label, self.language)
                     self.file_tree.item(iid, values=values)
-        if hasattr(self, 'export_queue_tree'):
-            progress = getattr(self, 'export_progress', None)
-            if progress is not None:
-                for path, iid in getattr(self, '_export_iids', {}).items():
-                    if self.export_queue_tree.exists(iid):
-                        row = progress.visible_items.get(path)
-                        if row:
-                            values = list(self.export_queue_tree.item(iid, 'values'))
-                            if values:
-                                values[0] = translate(export_status_label(row['status']), self.language)
-                                self.export_queue_tree.item(iid, values=values)
-
     def _on_localized_status_selected(self, event=None):
         self.browser_status_filter.set(canonical_choice(
             self.browser_status_display.get(), STATUS_FILTERS, self.language))
@@ -1849,7 +1837,7 @@ class RecoveryDeskApp(tk.Tk):
                   text='Dateiansicht: NTFS, FAT32, exFAT, ext2/3/4 sowie eingeschränkt Btrfs und XFS. '
                        'Gelöschte Dateien: NTFS, FAT32, exFAT und ext2/3/4 teilweise rettbar; Btrfs/XFS nur nicht exportierbare Metadatenhinweise. Ein Export garantiert keine intakten Inhalte.',
                   foreground='#9a3412', wraplength=980).pack(anchor='w', pady=(7, 0))
-        self._build_export_queue()
+        self._build_export_actions()
         self.browser_index = None
         self.browser_source = None
         self.browser_cancel = threading.Event()
@@ -1858,7 +1846,6 @@ class RecoveryDeskApp(tk.Tk):
         self.export_progress = QueueProgress()
         self.export_result = None
         self._export_events = queue.SimpleQueue()
-        self._export_iids = {}
         self.browser_nodes = {}
         self.browser_ancestors = {}
         self.browser_expanded = set()
@@ -2702,124 +2689,29 @@ class RecoveryDeskApp(tk.Tk):
         return [self.browser_entries_visible[i] for i in self.file_tree.selection()
                 if i in self.browser_entries_visible]
 
-    def _build_export_queue(self):
-        """Persistent recovery queue, in the same Files & Folders tab."""
+    def _build_export_actions(self):
+        """Only entry points remain here; progress and results own their window."""
         self.export_blocks = ExportBlocks()
         self._export_started_at = self._export_ended_at = None
-        self.export_queue_toggle = ttk.Button(self.ntfs_tab,
-            text='Wiederherstellungswarteschlange  ▼ Einklappen',
-            command=self._toggle_export_queue)
-        self.export_queue_toggle.pack(fill='x', pady=(2, 0), before=self.browser_paned)
-        frame = ttk.Frame(self.ntfs_tab, padding=(6, 2, 6, 4))
-        # CRITICAL: pack the queue BEFORE the expanding file browser. Otherwise the
-        # already-packed paned window consumes the vertical space and the progress
-        # widgets remain unmapped (even though the export continues).
-        frame.pack(fill='x', pady=(4, 4), before=self.browser_paned)
-        self.export_queue_frame = frame
-        self.export_queue_collapsed = False
-        self.export_queue_contents = ttk.Frame(frame)
-        self.export_queue_contents.pack(fill='x')
-        self.export_queue_summary = tk.StringVar(value='Noch kein Stapel-Export gestartet.')
-        # Keep the summary separate: long progress text must not squeeze buttons.
-        ttk.Label(self.export_queue_contents, textvariable=self.export_queue_summary,
-                  style='Sub.TLabel', wraplength=900).pack(fill='x', pady=(0, 3))
-        head = ttk.Frame(self.export_queue_contents)
-        head.pack(fill='x')
-        self.export_progress_button = ttk.Button(head, text='Fortschrittsfenster',
+        self.export_actions = ttk.Frame(self.ntfs_tab)
+        self.export_actions.pack(fill='x', pady=(2, 0), before=self.browser_paned)
+        self.export_progress_button = ttk.Button(self.export_actions, text='Fortschritt / Ergebnis',
                                                 command=self._show_export_progress)
-        self.export_progress_button.pack(side='left', padx=(0, 4))
-        self.export_cancel_button = ttk.Button(head, text='Abbrechen', state='disabled',
-                                              command=self._cancel_export)
-        self.export_cancel_button.pack(side='right', padx=(5, 0))
-        self.export_result_button = ttk.Button(head, text='Ergebnisbericht', state='disabled',
-                                              command=self._show_export_results)
-        self.export_result_button.pack(side='right')
-        self.export_preflight_button = ttk.Button(head, text='Export prüfen',
-                                                  command=self.preflight_selection)
-        self.export_preflight_button.pack(side='right', padx=(4, 4))
-        self.export_details_button = ttk.Button(head, text='Dateistatus anzeigen',
-                                               command=self._toggle_export_details)
-        self.export_details_button.pack(side='right', padx=(4, 4))
-        progress_row = ttk.Frame(self.export_queue_contents)
-        progress_row.pack(fill='x', pady=(3, 3))
-        self.export_queue_bar = ttk.Progressbar(progress_row, mode='determinate', maximum=100, value=0)
-        self.export_queue_bar.pack(side='left', fill='x', expand=True)
-        self.export_queue_percent = tk.StringVar(value='0 %')
-        ttk.Label(progress_row, textvariable=self.export_queue_percent, width=9,
-                  anchor='e').pack(side='right', padx=(10, 0))
-        columns = ('state', 'size', 'detail')
-        # The detailed list is expandable, to keep the main file browser visible
-        # on smaller laptops and at 125–200% Windows display scaling.
-        self.export_queue_details = ttk.Frame(self.export_queue_contents)
-        ttk.Label(self.export_queue_details, text=EXPORT_SCOPE + '\n' + RESUME_SCOPE,
-                  wraplength=900, justify='left').pack(anchor='w', pady=(2, 4))
-        self.export_queue_details_open = False
-        self.export_queue_tree = ttk.Treeview(self.export_queue_details, columns=columns,
-                                               show='tree headings', height=3)
-        self.export_queue_tree.heading('#0', text='Datei / Ordner')
-        self.export_queue_tree.column('#0', width=440, minwidth=160)
-        for key, label, width in [('state', 'Status', 270), ('size', 'Größe', 105),
-                                  ('detail', 'Ergebnis / Fehler', 380)]:
-            self.export_queue_tree.heading(key, text=label)
-            self.export_queue_tree.column(key, width=width, minwidth=70)
-        queue_scroll = ttk.Scrollbar(self.export_queue_details, orient='vertical',
-                                     command=self.export_queue_tree.yview)
-        self.export_queue_tree.configure(yscrollcommand=queue_scroll.set)
-        queue_scroll.pack(side='right', fill='y')
-        self.export_queue_tree.pack(fill='x')
-        self.export_queue_tree.bind('<Double-1>', self._export_row_details)
-        # Start collapsed; all controls and progress remain available on demand.
-        self.export_queue_contents.pack_forget()
-        self.export_queue_frame.pack_forget()
-        self.export_queue_collapsed = True
-        self.export_queue_toggle.configure(text="Wiederherstellungswarteschlange  ▶ Ausklappen")
-        # Full details, including entries not visible in the compact list, stay in the report.
-
-    def _toggle_export_queue(self):
-        """Collapse only the queue contents; export work and state continue."""
-        if self.export_queue_collapsed:
-            self.export_queue_frame.pack(fill='x', before=self.browser_paned)
-            self.export_queue_contents.pack(fill='x')
-            self.export_queue_toggle.configure(text='Wiederherstellungswarteschlange  ▼ Einklappen')
-            self.export_queue_collapsed = False
-        else:
-            self.export_queue_contents.pack_forget()
-            self.export_queue_frame.pack_forget()
-            self.export_queue_toggle.configure(text='Wiederherstellungswarteschlange  ▶ Ausklappen')
-            self.export_queue_collapsed = True
-        # Tk's packer can leave the flexible browser at its previous allocation
-        # until another geometry event. Recalculate from the available pane space.
-        self.ntfs_tab.update_idletasks()
-        self.browser_paned.pack_configure(fill='both', expand=True)
-        self.ntfs_tab.update_idletasks()
-
-    def _toggle_export_details(self):
-        if self.export_queue_details_open:
-            self.export_queue_details.pack_forget()
-            self.export_queue_details_open = False
-            self.export_details_button.configure(text='Dateistatus anzeigen')
-        else:
-            self.export_queue_details.pack(fill='x', pady=(4, 0))
-            self.export_queue_details_open = True
-            self.export_details_button.configure(text='Dateistatus ausblenden')
+        self.export_progress_button.pack(side='left', fill='x', expand=True, padx=(0, 5))
+        self.export_preflight_button = ttk.Button(self.export_actions, text='Export prüfen',
+                                                 command=self.preflight_selection)
+        self.export_preflight_button.pack(side='right')
 
     def _cancel_export(self):
         if self.export_running:
             self.export_cancel.set()
-            self.export_queue_summary.set('Abbruch angefordert – laufender Schreibvorgang wird sicher beendet …')
-            self.export_cancel_button.configure(state='disabled')
+            self.status.set('Abbruch angefordert – laufender Schreibvorgang wird sicher beendet …')
+            self._refresh_export_view()
 
-    def _export_row_details(self, event=None):
-        chosen = self.export_queue_tree.selection()
-        if not chosen:
-            return
-        path = self.export_queue_tree.item(chosen[0], 'text')
-        item = self.export_progress.visible_items.get(path, {})
-        messagebox.showinfo('Einzelergebnis',
-            f'{path}\n\nStatus: {translate(export_status_label(item.get("status", "unbekannt")), self.language)}\n'
-            f'Größe: {readable_bytes(item.get("size", 0))}\n'
-            f'Info: {item.get("detail", "–") or "–"}\n\n'
-            f'{translate(EXPORT_SCOPE, self.language)}\n{translate(RESUME_SCOPE, self.language)}', parent=self)
+    def _refresh_export_view(self):
+        window = self.__dict__.get('_export_progress_window')
+        if window is not None and window.winfo_exists():
+            window.refresh_display()
 
     def _show_export_results(self):
         report = getattr(self.export_result, 'log', '') if self.export_result else self.export_progress.log
@@ -2997,8 +2889,6 @@ class RecoveryDeskApp(tk.Tk):
             self.export_running = False
             self.export_result = data['result']
             self.export_button.configure(state='normal')
-            self.export_cancel_button.configure(state='disabled')
-            self.export_result_button.configure(state='normal')
             rep = self.export_result
             self.export_progress.failed = bool(rep.failed)
             self.export_progress.cancelled = bool(rep.cancelled)
@@ -3007,11 +2897,7 @@ class RecoveryDeskApp(tk.Tk):
                 'Abgebrochen' if rep.cancelled else 'Beendet')
             self.status.set(f'Stapel-Export {label.lower()}: {rep.exported} neu, '
                             f'{rep.verified_existing} {translate(RESUME_LABEL, self.language)}, {rep.failed} Fehler.')
-            self.export_queue_summary.set(
-                f'{label}: {rep.exported} neu · {rep.verified_existing} {translate(RESUME_LABEL, self.language)} · '
-                f'{rep.failed} Fehler · {rep.skipped} übersprungen · '
-                f'{readable_bytes(rep.bytes_written)} geschrieben')
-            self._paint_export_progress()
+            self._refresh_export_view()
             if rep.failed:
                 messagebox.showwarning(translate('Beendet mit Fehlern', self.language),
                     translate('Beim Stapel-Export sind {count} Fehler aufgetreten. Nicht alle Dateien konnten exportiert oder bestätigt werden. Details stehen im Ergebnisbericht.',
@@ -3021,12 +2907,10 @@ class RecoveryDeskApp(tk.Tk):
             self._export_ended_at = time.monotonic()
             self.export_blocks.errors += 1
             self.export_progress.failed = self.export_progress.ended = True
-            self._paint_export_progress()
             self.export_running = False
             self.export_button.configure(state='normal')
-            self.export_cancel_button.configure(state='disabled')
             self.status.set('Stapel-Export mit Fehler abgebrochen.')
-            self.export_queue_summary.set('Exportfehler: ' + data['error'])
+            self._refresh_export_view()
             messagebox.showerror('Stapel-Export', data['error'], parent=self)
             return
         self.export_blocks.handle(data)
@@ -3034,39 +2918,10 @@ class RecoveryDeskApp(tk.Tk):
         if kind == 'plan':
             if self._export_started_at is None:
                 self._export_started_at = time.monotonic()
-            self.export_queue_tree.delete(*self.export_queue_tree.get_children())
-            self._export_iids = {}
-            for n, (path, item) in enumerate(self.export_progress.visible_items.items()):
-                iid = str(n + 1)
-                self.export_queue_tree.insert('', 'end', iid=iid, text=path,
-                    values=(translate(export_status_label(item['status']), self.language), readable_bytes(item['size']), ''))
-                self._export_iids[path] = iid
             if data.get('resumed'):
                 self.status.set('Vorhandenen Export prüfen und fortsetzen …')
-        elif kind in ('start', 'verify', 'done'):
-            path = data['path']
-            iid = self._export_iids.get(path)
-            if iid:
-                item = self.export_progress.visible_items[path]
-                self.export_queue_tree.item(iid, values=(
-                    translate(export_status_label(item['status']), self.language), readable_bytes(item['size']), item['detail']))
-            if kind == 'done' and data['status'] in ('Fehler', 'Abgebrochen'):
-                self.status.set(f'{data["status"]}: {path}: {data.get("detail", "")}')
-        # transfer speed, amount remaining and ETA are derived on the UI thread.
-
-    def _paint_export_progress(self):
-        """Update widgets only from Tk's main thread using byte-aware progress."""
-        q = self.export_progress
-        fraction = q.verification_fraction if q.verifying and not q.ended else q.overall_fraction
-        percent = round(100 * fraction, 1)
-        self.export_queue_bar.configure(value=percent)
-        if q.verifying and not q.ended:
-            label = translate('SHA256 prüfen', self.language)
-            self.export_queue_percent.set(f'{label}: {percent:.1f} %')
-        elif self.export_progress.ended and self.export_progress.failed:
-            self.export_queue_percent.set(translate('Fehler', self.language))
-        else:
-            self.export_queue_percent.set(f'{percent:.1f} %')
+        elif kind == 'done' and data['status'] in ('Fehler', 'Abgebrochen'):
+            self.status.set(f'{data["status"]}: {data["path"]}: {data.get("detail", "")}')
 
     def _drain_export_events(self):
         count = 0
@@ -3077,21 +2932,11 @@ class RecoveryDeskApp(tk.Tk):
                 break
             self._handle_export_event(item)
             count += 1
-        self._paint_export_progress()
         if self.export_running or not self._export_events.empty():
-            q = self.export_progress
-            if q.verifying:
-                label = translate('SHA256 prüfen', self.language)
-                self.export_queue_summary.set(
-                    f'{label}: {readable_bytes(q.verified_bytes)} / '
-                    f'{readable_bytes(q.verification_size)} · {q.active_path}')
-            else:
-                label = translate('Datei kopieren', self.language)
-                self.export_queue_summary.set(f'{label} · {q.summary()}')
             self.after(110, self._drain_export_events)
 
     def export_browser_selection(self):
-        """Start a resumable batch with a visible, per-item queue in the main window."""
+        """Start a resumable batch and its separate progress/result window."""
         if self.export_running:
             messagebox.showinfo('Export', 'Ein Export läuft bereits.')
             return
@@ -3128,15 +2973,9 @@ class RecoveryDeskApp(tk.Tk):
         self._export_ended_at = None
         self._export_source = src
         self.export_button.configure(state='disabled')
-        self.export_cancel_button.configure(state='normal')
-        self.export_result_button.configure(state='disabled')
-        self.export_queue_summary.set('Exportplan wird erstellt …')
-        self.export_queue_bar.configure(value=0)
-        self.export_queue_percent.set('0 %')
-        # Paint the queue before starting the worker, even for fast batches.
+        # Paint the main action state before starting the worker.
         self.tabs.select(self.ntfs_tab)
         self.update_idletasks()
-        self.export_queue_tree.delete(*self.export_queue_tree.get_children())
         self.status.set('Stapel-Export gestartet …')
         self._show_export_progress()
 

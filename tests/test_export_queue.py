@@ -106,6 +106,7 @@ class ExportQueueTests(unittest.TestCase):
             target = root / 'out'; target.mkdir()
             app = RecoveryDeskApp()
             app.withdraw()
+            app.change_language('de')
             try:
                 app.browser_source = str(image)
                 app.browser_index = index
@@ -123,8 +124,9 @@ class ExportQueueTests(unittest.TestCase):
                 self.assertIsNotNone(app.export_result)
                 self.assertEqual(app.export_result.exported, 3)
                 self.assertEqual(app.export_progress.done_count, 5)
-                self.assertEqual(len(app.export_queue_tree.get_children()), 5)
-                self.assertEqual(str(app.export_result_button.cget('state')), 'normal')
+                self.assertEqual(len(app.export_progress.visible_items), 5)
+                app._export_progress_window.refresh_display()
+                self.assertEqual(str(app._export_progress_window.report_button.cget('state')), 'normal')
                 with patch('recoverydesk.gui.filedialog.askdirectory', return_value=str(target)), \
                      patch('recoverydesk.gui.messagebox.askyesno', return_value=True):
                     app.export_browser_selection()
@@ -151,9 +153,10 @@ class ExportQueueTests(unittest.TestCase):
                     warning.assert_called_once()
                     self.assertIn('1 Fehler', warning.call_args.args[1])
                 self.assertEqual(app.export_result.failed, 1)
-                self.assertEqual(app.export_queue_percent.get(), 'Fehler')
-                self.assertEqual(float(app.export_queue_bar.cget('value')), 0)
-                self.assertTrue(app.export_queue_summary.get().startswith('Beendet mit Fehlern:'))
+                view=app._show_export_progress()
+                self.assertEqual(view.labels['phase'].cget('text'), 'Beendet mit Fehlern')
+                self.assertLess(app.export_blocks.confirmed_fraction,1)
+                self.assertIn('error',app.export_blocks.cell_states())
                 self.assertEqual(bad.read_bytes(), b'changed target')
                 # A later clean run must clear the failure state.
                 fresh = root / 'fresh'; fresh.mkdir()
@@ -167,30 +170,33 @@ class ExportQueueTests(unittest.TestCase):
                         time.sleep(.02)
                     self.assertFalse(app.export_running)
                     warning.assert_not_called()
-                self.assertEqual(app.export_queue_percent.get(), '100.0 %')
+                self.assertEqual(app.export_blocks.confirmed_fraction,1)
+                self.assertEqual(app._show_export_progress().labels['phase'].cget('text'),'Beendet')
             finally:
                 app.destroy()
 
-    def test_gui_queue_present_in_existing_two_tab_layout(self):
+    def test_main_window_has_reopen_and_preflight_actions_without_a_queue(self):
         from recoverydesk.gui import RecoveryDeskApp
-        app = RecoveryDeskApp()
+        app=RecoveryDeskApp()
         try:
-            self.assertEqual(len(app.tabs.tabs()), 2)
-            headings = [app.tabs.tab(i, 'text') for i in app.tabs.tabs()]
-            self.assertEqual(headings, ['Partitionen', 'Dateien & Ordner'])
-            self.assertEqual(str(app.export_cancel_button.cget('state')), 'disabled')
-            self.assertEqual(str(app.export_result_button.cget('state')), 'disabled')
-            app._handle_export_event({'type': 'plan', 'total': 1, 'total_bytes': 512,
-                'items': [{'path': 'eins.txt', 'size': 512, 'directory': False}]})
-            self.assertEqual(len(app.export_queue_tree.get_children()), 1)
-            app._handle_export_event({'type': 'start', 'path': 'eins.txt', 'number': 1})
-            app._handle_export_event({'type': 'done', 'path': 'eins.txt', 'size': 512,
-                'status': 'Erfolgreich', 'detail': '', 'number': 1})
-            row = app.export_queue_tree.get_children()[0]
-            from recoverydesk.verification_labels import WRITTEN_LABEL
-            self.assertEqual(app.export_queue_tree.item(row, 'values')[0], WRITTEN_LABEL)
+            app.change_language('de')
+            app.tabs.select(app.ntfs_tab);app.update()
+            self.assertEqual(len(app.tabs.tabs()),2)
+            self.assertEqual([app.tabs.tab(i,'text') for i in app.tabs.tabs()],['Partitionen','Dateien & Ordner'])
+            self.assertNotIn('export_queue_tree',app.__dict__)
+            self.assertNotIn('export_queue_bar',app.__dict__)
+            self.assertNotIn('export_queue_frame',app.__dict__)
+            self.assertTrue(app.export_progress_button.winfo_ismapped())
+            self.assertTrue(app.export_preflight_button.winfo_ismapped())
+            app.export_progress_button.invoke()
+            first=app._export_progress_window
+            first.destroy()
+            app.export_progress_button.invoke()
+            self.assertIsNot(first,app._export_progress_window)
+            self.assertFalse(app.export_cancel.is_set())
         finally:
             app.destroy()
+
 
 if __name__ == '__main__':
     unittest.main()

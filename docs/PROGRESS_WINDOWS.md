@@ -1,9 +1,12 @@
 # Separates Export-Fortschrittsfenster
 
 Das Fenster öffnet beim Start eines Stapel-Exports ohne modale Sperre. Schließen
-beendet nur die Ansicht; der Export läuft weiter. Über die ausgeklappte
-Wiederherstellungswarteschlange und „Fortschrittsfenster“ lässt sich der aktuelle
-Zustand wieder öffnen. Nur „Abbrechen“ setzt das vorhandene Export-Abbruchsignal.
+beendet nur die Ansicht; der Export läuft weiter. Über „Fortschritt / Ergebnis“
+im Hauptfenster lässt sich der aktuelle Zustand wieder öffnen. Dort bleiben nur
+dieser Einstieg und die bisherige Export-Vorprüfung; die sichtbare Warteschlange,
+ihre Dateiliste und ihre Fortschrittsbalken entfallen vollständig.
+Nur „Abbrechen“ setzt das vorhandene Export-Abbruchsignal. Die interne Planung,
+Abbruchbehandlung und Wiederaufnahme bleiben unverändert erhalten.
 
 ## Bedeutung des Rasters
 
@@ -23,7 +26,7 @@ Plänen wird ausdrücklich auf die Anzahl der Einträge umgeschaltet.
 
 Fehler und nicht bestätigte Anteile bleiben in gemischten Feldern sichtbar.
 Die Darstellung arbeitet mit ganzzahligen Intervallen und konstant 100 Zellen;
-auch Einträge außerhalb der auf 4.000 Zeilen begrenzten UI-Vorschau gehen ein.
+auch Einträge außerhalb der intern begrenzten Vorschau gehen ein.
 100 % Bestätigung setzt die Bestätigung sämtlicher geplanter Anteile voraus.
 Ein vollständiger SHA-Lesestand vor dem Digestvergleich wird nicht grün.
 Die Bestätigung betrifft den Export, nicht die ursprüngliche Dateiintegrität;
@@ -32,8 +35,12 @@ der vollständige Prüfumfang ist über eine eigene Schaltfläche erreichbar.
 ## Weitere Angaben und Aktionen
 
 Das Fenster zeigt Arbeitsschritt, Laufzeit, neu übertragene Bytes, Kopiertempo,
-Dateizähler und bekannte Fehler/Überspringungen. SHA-Lesefortschritt wird separat
-angezeigt. Die vorhandene Restzeitschätzung gilt ausschließlich für das Kopieren,
+Dateizähler und bekannte Fehler/Überspringungen. Die SHA-Anzeige ist rein textlich:
+Beim Kopieren wird SHA256 für den kopierten Datenstrom berechnet. Anschließend
+wird die Zieldatei gelesen und ihre Prüfsumme verglichen. Währenddessen erscheint
+„SHA256-Prüfung der Zieldatei läuft …“, ohne eigenen Balken oder Prüfprozentsatz.
+Das 100-Felder-Raster bleibt unverändert beim Gesamtumfang und startet nicht neu.
+Die vorhandene Restzeitschätzung gilt ausschließlich für das Kopieren,
 wird während der Prüfung unterdrückt und ist ohne belastbare Rate nicht sichtbar.
 
 Nach dem Abschluss lassen sich der bestehende Ergebnisbericht ansehen oder eine
