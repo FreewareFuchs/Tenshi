@@ -79,9 +79,13 @@ class FileDialogColors:
                 if str(tcl.call('winfo','class',widget))!='Canvas':continue
                 tags=tcl.splitlist(tcl.call('bindtags',widget))
                 if self.tag not in tags:tcl.call('bindtags',widget,(*tags,self.tag))
+                # Some Tk releases insert a cHull frame between the IconList
+                # command (which emits ListboxSelect) and its canvas.
                 icons=str(tcl.call('winfo','parent',widget))
-                tags=tcl.splitlist(tcl.call('bindtags',icons))
-                if self.tag not in tags:tcl.call('bindtags',icons,(*tags,self.tag))
+                while icons!=dialog:
+                    tags=tcl.splitlist(tcl.call('bindtags',icons))
+                    if self.tag not in tags:tcl.call('bindtags',icons,(*tags,self.tag))
+                    icons=str(tcl.call('winfo','parent',icons))
                 # Keep the traversal and canvas-item updates inside Tcl, rather
                 # than making Python/Tcl round trips for every directory entry.
                 tcl.call('apply',(('canvas','bg','fg','selectedBg','selectedFg'),'''
