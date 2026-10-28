@@ -161,6 +161,8 @@ class ExportProgressWindow(tk.Toplevel):
             phase = 'SHA256 prüfen'
         elif q.active_path:
             phase = 'Datei kopieren'
+        elif blocks.planned:
+            phase = 'Export wird abgeschlossen …' if q.done_count>=q.total else 'Export läuft …'
         else:
             phase = 'Exportplan wird erstellt …'
         self._set('phase', t(phase))

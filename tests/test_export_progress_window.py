@@ -129,3 +129,18 @@ class ExportWindowTests(unittest.TestCase):
             app._drain_scan_callbacks()
         save.assert_called_once_with('original.img',str(report),target)
 
+    def test_idle_and_between_file_phases_do_not_claim_to_build_a_new_plan(self):
+        app=self.app;app.change_language('de')
+        win=app._show_export_progress()
+        self.assertEqual(win.labels['phase'].cget('text'),'Noch kein Stapel-Export gestartet.')
+        app.export_running=True
+        app._handle_export_event(dict(type='plan',total=2,total_bytes=100,items=[]))
+        app._handle_export_event(dict(type='start',path='first',size=50))
+        app._handle_export_event(dict(type='done',path='first',size=50,status='Erfolgreich'))
+        win.refresh_display()
+        self.assertEqual(win.labels['phase'].cget('text'),'Export läuft …')
+        app._handle_export_event(dict(type='start',path='second',size=50))
+        app._handle_export_event(dict(type='done',path='second',size=50,status='Erfolgreich'))
+        win.refresh_display()
+        self.assertEqual(win.labels['phase'].cget('text'),'Export wird abgeschlossen …')
+

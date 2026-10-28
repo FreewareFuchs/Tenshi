@@ -44,6 +44,7 @@ add('Fehler im Export', 'Export error', 'Error de exportación', '导出错误',
 add('Nicht bestätigt', 'Not verified', 'Sin verificar', '未验证', 'Не подтверждено', '未検証')
 add('Gemischt / teilweise', 'Mixed / partial', 'Mixto / parcial', '混合 / 部分', 'Смешанное / частично', '混在 / 一部')
 add('Export wird abgeschlossen …', 'Finalizing export …', 'Finalizando exportación …', '正在完成导出…', 'Завершение экспорта …', '出力を完了処理中…')
+add('Export läuft …', 'Export in progress …', 'Exportación en curso …', '正在导出…', 'Экспорт выполняется …', '出力中…')
 add('Export-Abbruch angefordert …', 'Export cancellation requested …', 'Cancelación de exportación solicitada …', '已请求取消导出…', 'Запрошена отмена экспорта …', '出力の中止を要求しました…')
 add('Laufzeit: {duration}', 'Elapsed: {duration}', 'Tiempo transcurrido: {duration}', '已用时间：{duration}', 'Прошло: {duration}', '経過時間：{duration}')
 add('Neu übertragen: {size} · Kopiertempo: {rate}/s', 'Newly transferred: {size} · Copy rate: {rate}/s', 'Transferido nuevo: {size} · Velocidad: {rate}/s', '本次传输：{size} · 复制速度：{rate}/s', 'Передано заново: {size} · Скорость: {rate}/s', '今回の転送：{size} · コピー速度：{rate}/s')
