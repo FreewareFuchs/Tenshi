@@ -1,7 +1,9 @@
 """Checksum progress is a separate phase and never counts as copied bytes."""
 import hashlib
+import os
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -86,9 +88,15 @@ class VerificationProgressTests(unittest.TestCase):
         self.assertFalse(q.verifying)
         self.assertEqual(q.overall_fraction,0)
 
-    @unittest.skipUnless(__import__('os').name=='nt' or __import__('os').environ.get('DISPLAY'),'Display required')
+    @unittest.skipUnless(os.name=='nt' or os.environ.get('DISPLAY'),'Display required')
     def test_ui_sha_notice_is_text_only_and_clears_on_cancel(self):
         from recoverydesk.gui import RecoveryDeskApp
+        temp=tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        env=patch.dict(os.environ,{'TENSHI_SETTINGS_FILE':str(Path(temp.name)/'settings.json'),
+                                   'TENSHI_LOG_DIR':str(Path(temp.name)/'logs')})
+        env.start()
+        self.addCleanup(env.stop)
         app=RecoveryDeskApp()
         try:
             app.export_running=True
