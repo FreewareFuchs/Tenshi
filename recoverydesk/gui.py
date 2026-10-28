@@ -1160,6 +1160,8 @@ class RecoveryDeskApp(tk.Tk):
             active['saving']=True
             def finish(error):
                 active['saving']=False
+                view=active.get('window')
+                if view is not None and view.winfo_exists():view.refresh_display()
                 if error:messagebox.showerror('Fehlerstellen-Bericht',error,parent=self)
                 else:messagebox.showinfo('Fehlerstellen-Bericht','Bericht gespeichert.',parent=self)
             def write():

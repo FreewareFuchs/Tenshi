@@ -84,10 +84,10 @@ class ImagingWindowTests(unittest.TestCase):
                 saved=self.root/'saved-report.txt'
                 with patch('recoverydesk.gui.filedialog.asksaveasfilename',return_value=str(saved)) as dialog:
                     second.buttons['save'].invoke()
-                    self.pump(lambda:not s['saving'])
+                    self.pump(lambda:not s['saving'] and str(second.buttons['save'].cget('state'))=='normal')
                     self.assertEqual(dialog.call_args.kwargs['initialdir'],str(self.root))
                     before=saved.read_bytes()
-                    second.buttons['save'].invoke();self.pump(lambda:not s['saving'])
+                    second.buttons['save'].invoke();self.pump(lambda:not s['saving'] and error.call_count==1)
                     self.assertEqual(saved.read_bytes(),before)
                 error.assert_called_once()  # existing report cannot be replaced
         finally:
