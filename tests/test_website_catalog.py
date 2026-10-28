@@ -44,6 +44,28 @@ class WebsiteCatalogTests(unittest.TestCase):
     def save_manifest(self):
         (self.bundle / 'release_manifest.json').write_text(json.dumps(self.manifest), encoding='utf-8')
 
+    def test_sha256_list_supported_and_preferred_without_changing_history(self):
+        old = self.bundle / 'SHA256SUMS.txt'
+        new = self.bundle / 'SHA256SUMS.sha256'
+        new.write_bytes(old.read_bytes())
+        for keep_legacy in (True, False):
+            if not keep_legacy:
+                old.unlink()
+            result = self.generate()['programs'][1]
+            self.assertTrue(result['releases'][0]['downloads']['checksums']['url'].endswith('/SHA256SUMS.sha256'))
+            self.assertEqual(result['releases'][1:], [self.old])
+
+    def test_conflicting_checksum_formats_are_both_rejected(self):
+        old = self.bundle / 'SHA256SUMS.txt'
+        new = self.bundle / 'SHA256SUMS.sha256'
+        original = old.read_bytes()
+        new.write_bytes(original)
+        for path in (old, new):
+            path.write_bytes(b'wrong list\n')
+            with self.subTest(path=path.name), self.assertRaisesRegex(ValueError, 'differs from manifest'):
+                self.generate()
+            path.write_bytes(original)
+
     def generate(self):
         return update_catalog(self.bundle, self.catalog, self.notes, '2026-10-26')
 

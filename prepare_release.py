@@ -83,7 +83,10 @@ def prepare(artifacts: Path, output: Path, release: str, commit: str) -> Path:
         manifest = dict(schema=1, product='Tenshi', version=__version__, release=release,
                         tag=tag, commit=commit, published=False, artifacts=rows)
         (stage / 'release_manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
-        (stage / 'SHA256SUMS.txt').write_text(''.join(f'{r["sha256"]}  {r["file"]}\n' for r in rows), encoding='ascii')
+        (stage / 'SHA256SUMS.sha256').write_text(''.join(f'{r["sha256"]}  {r["file"]}\n' for r in rows), encoding='ascii')
+        for row in rows:
+            (stage / (row['file'] + '.sha256')).write_text(
+                f"{row['sha256']}  {row['file']}\n", encoding='ascii')
         (stage / 'RELEASE_NOTES.md').write_text(
             f'# Tenshi {__version__}{"" if release == "stable" else " " + release.replace("beta.", "Beta.")}\n\n'
             f'Quellstand: `{commit}`\n\n'

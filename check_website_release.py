@@ -96,7 +96,9 @@ def current_release(catalog):
         if (not isinstance(row.get('size'), str) or not row['size'].strip()
                 or not re.fullmatch(r'[a-f0-9]{64}', str(row.get('sha256', '')))):
             raise ValueError(f'Missing size or SHA256: {key}')
-    if downloads.get('checksums') != {'url': base + f'download/v{version}/SHA256SUMS.txt'}:
+    if downloads.get('checksums') not in [
+            {'url': base + f'download/v{version}/' + name}
+            for name in ('SHA256SUMS.sha256', 'SHA256SUMS.txt')]:
         raise ValueError('Unexpected checksums link')
     return release
 

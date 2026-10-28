@@ -17,6 +17,17 @@ _LANGUAGES = {'de', 'en', 'es', 'zh', 'ru', 'ja'}
 _GITHUB = 'https://github.com/FreewareFuchs/Tenshi/releases/'
 _APT = 'https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/'
 _VERSION = r'(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)'
+CHECKSUM_FILES = ('SHA256SUMS.sha256', 'SHA256SUMS.txt')
+
+
+def checksum_name(bundle: Path) -> str:
+    for name in CHECKSUM_FILES:
+        path = bundle / name
+        if path.exists() or path.is_symlink():
+            if path.is_symlink() or not path.is_file():
+                raise ValueError(f'Expected a regular checksum file: {name}')
+            return name
+    raise ValueError('Missing SHA256SUMS.sha256 (or legacy SHA256SUMS.txt)')
 
 
 def _json(path: Path):
@@ -59,10 +70,14 @@ def _verified_rows(bundle: Path, manifest: dict) -> dict:
             raise ValueError(f'Artifact differs from manifest: {name}')
         verified[name] = row
         sums.append(f'{digest}  {name}\n')
-    checksum_file = bundle / 'SHA256SUMS.txt'
-    if (checksum_file.is_symlink() or not checksum_file.is_file()
-            or checksum_file.read_text(encoding='ascii') != ''.join(sums)):
-        raise ValueError('SHA256SUMS.txt differs from manifest')
+    checksum_name(bundle)
+    # If both formats are present, neither may conceal a conflicting list.
+    for name in CHECKSUM_FILES:
+        checksum_file = bundle / name
+        if checksum_file.exists() or checksum_file.is_symlink():
+            if (checksum_file.is_symlink() or not checksum_file.is_file()
+                    or checksum_file.read_text(encoding='ascii') != ''.join(sums)):
+                raise ValueError(f'{name} differs from manifest')
     return verified
 
 
@@ -94,7 +109,7 @@ def update_catalog(bundle: Path, catalog: dict, notes: dict, release_date: str) 
         raise ValueError('Artifact names do not match the stable release')
     deb = debs[0]
     download = _GITHUB + 'download/' + tag + '/'
-    downloads = {'checksums': {'url': download + 'SHA256SUMS.txt'}}
+    downloads = {'checksums': {'url': download + checksum_name(bundle)}}
     for key, name in [('linux', deb), ('portable', portable), ('installer', installer)]:
         row = rows[name]
         downloads[key] = dict(url=(_APT if key == 'linux' else download) + name,

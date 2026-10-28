@@ -57,12 +57,14 @@ def main() -> int:
             raise ValueError(f"Kopierfehler: {name}")
         result["artifacts"].append({"file": name, "sha256": digest, "bytes": dst.stat().st_size})
         lines.append(f"{digest}  {name}")
-    (OUT / "SHA256SUMS.txt").write_text("\n".join(lines) + "\n", encoding="ascii")
+    (OUT / "SHA256SUMS.sha256").write_text("\n".join(lines) + "\n", encoding="ascii")
+    for line, row in zip(lines, result['artifacts']):
+        (OUT / (row['file'] + '.sha256')).write_text(line + '\n', encoding='ascii')
     (OUT / "release_manifest.json").write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     (OUT / "VOR_UPLOAD_LESEN.txt").write_text(
         f"Tenshi {VERSION} (MIT): Rechteinhaber und Drittkomponenten, Impressum, "
         "Datenschutz, Code-Signierung und finalen Windows-Test vor "
-        "Veroeffentlichung pruefen. SHA256SUMS.txt nur fuer diese zwei "
+        "Veroeffentlichung pruefen. SHA256SUMS.sha256 nur fuer diese zwei "
         "unveraenderten Pakete verwenden.\n", encoding="utf-8")
     print("Gepruefte Release-Artefakte in:", OUT)
     for row in result["artifacts"]:
