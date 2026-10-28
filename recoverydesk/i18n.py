@@ -634,6 +634,7 @@ class DialogProxy:
         def call(*args, **kwargs):
             if self.is_file_dialog:
                 parent=kwargs.get('parent') or getattr(tk,'_default_root',None)
+                if not isinstance(parent,tk.Misc):parent=getattr(tk,'_default_root',None)
                 if parent is not None:
                     colors=getattr(parent._root(),'_file_dialog_colors',None)
                     if colors is not None:colors.prepare()

@@ -6,10 +6,19 @@ import tkinter as tk
 import unittest
 from unittest.mock import MagicMock,patch
 from recoverydesk.file_dialog_colors import FileDialogColors
+from recoverydesk.i18n import DialogProxy
 from recoverydesk.gui import RecoveryDeskApp,filedialog
 
 
 class NativeDialogGuardTests(unittest.TestCase):
+    def test_dialog_options_and_unicode_result_are_not_changed(self):
+        wrapped=MagicMock();wrapped.askopenfilename.return_value='/tmp/Image ü 文件.raw'
+        proxy=DialogProxy(wrapped,lambda:'de',is_file_dialog=True)
+        options=dict(parent='.',initialdir='/tmp/Ä Bilder',initialfile='Image ü 文件.raw',
+                     filetypes=[('Images','*.raw')])
+        self.assertEqual(proxy.askopenfilename(**options),wrapped.askopenfilename.return_value)
+        wrapped.askopenfilename.assert_called_once_with(**options)
+
     def test_windows_and_macos_install_no_dialog_hooks(self):
         for platform in ('win32','darwin'):
             app=MagicMock()
