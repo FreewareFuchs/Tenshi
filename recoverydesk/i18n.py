@@ -632,6 +632,11 @@ class DialogProxy:
         if not callable(original):
             return original
         def call(*args, **kwargs):
+            if self.is_file_dialog:
+                parent=kwargs.get('parent') or getattr(tk,'_default_root',None)
+                if parent is not None:
+                    colors=getattr(parent._root(),'_file_dialog_colors',None)
+                    if colors is not None:colors.prepare()
             lang = self.get_language()
             mapped_args = list(args)
             if name in ('showerror', 'showinfo', 'showwarning', 'askyesno', 'askokcancel', 'askquestion', 'askretrycancel', 'askyesnocancel'):

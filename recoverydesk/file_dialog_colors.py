@@ -30,10 +30,23 @@ class FileDialogColors:
             if str(self.app.tk.call('winfo','class',dialog)) not in ('TkFDialog','TkChooseDir'):return
             self.dialogs.add(dialog)
             # Observe completion of Tk's standard refresh without modifying it.
-            if not self.traced and self.app.tk.call('info','commands','::tk::dialog::file::Update'):
-                self.app.tk.call('trace','add','execution','::tk::dialog::file::Update','leave',self.command)
-                self.traced=True
+            self._observe_updates()
             self._schedule(dialog)
+        except tk.TclError:
+            pass
+
+    def _observe_updates(self):
+        if not self.traced and self.app.tk.call('info','commands','::tk::dialog::file::Update'):
+            self.app.tk.call('trace','add','execution','::tk::dialog::file::Update','leave',self.command)
+            self.traced=True
+
+    def prepare(self):
+        if not self.enabled or self.traced:return
+        try:
+            # Install before the first modal invocation, including Tk versions
+            # whose initial Map event precedes the final dialog class/bindtags.
+            self.app.tk.call('auto_load','::tk::dialog::file::')
+            self._observe_updates()
         except tk.TclError:
             pass
 

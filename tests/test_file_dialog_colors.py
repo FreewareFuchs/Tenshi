@@ -15,7 +15,7 @@ class NativeDialogGuardTests(unittest.TestCase):
             app=MagicMock()
             with patch('recoverydesk.file_dialog_colors.sys.platform',platform):
                 colors=FileDialogColors(app)
-                colors.on_map('.__tk_filedialog');colors.refresh();colors.close()
+                colors.prepare();colors.on_map('.__tk_filedialog');colors.refresh();colors.close()
             app.tk.call.assert_not_called()
             app.register.assert_not_called()
             app.bind_class.assert_not_called()
