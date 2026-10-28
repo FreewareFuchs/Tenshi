@@ -12,7 +12,7 @@ import tkinter as tk
 class FileDialogColors:
     def __init__(self, app):
         self.app=app
-        self.enabled=sys.platform.startswith('linux') and app.tk.call('tk','windowingsystem')=='x11'
+        self.enabled=sys.platform.startswith('linux') and str(app.tk.call('tk','windowingsystem'))=='x11'
         self.dialogs=set();self.pending={};self.traced=False
         self.tag='TenshiFileListColors'+str(id(self))
         self.command=None
@@ -27,7 +27,7 @@ class FileDialogColors:
         if not self.enabled:return
         try:
             dialog=str(self.app.tk.call('winfo','toplevel',path))
-            if self.app.tk.call('winfo','class',dialog) not in ('TkFDialog','TkChooseDir'):return
+            if str(self.app.tk.call('winfo','class',dialog)) not in ('TkFDialog','TkChooseDir'):return
             self.dialogs.add(dialog)
             # Observe completion of Tk's standard refresh without modifying it.
             if not self.traced and self.app.tk.call('info','commands','::tk::dialog::file::Update'):
@@ -62,7 +62,7 @@ class FileDialogColors:
             while stack:
                 widget=stack.pop()
                 stack.extend(tcl.splitlist(tcl.call('winfo','children',widget)))
-                if tcl.call('winfo','class',widget)!='Canvas':continue
+                if str(tcl.call('winfo','class',widget))!='Canvas':continue
                 tags=tcl.splitlist(tcl.call('bindtags',widget))
                 if self.tag not in tags:tcl.call('bindtags',widget,(*tags,self.tag))
                 icons=str(tcl.call('winfo','parent',widget))

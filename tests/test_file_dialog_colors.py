@@ -52,6 +52,7 @@ class CanvasColorTests(unittest.TestCase):
     @unittest.skipUnless(sys.platform.startswith('linux') and os.environ.get('DISPLAY'),'Linux/X11 required')
     def test_real_open_save_and_directory_dialogs_follow_theme_and_keep_paths(self):
         app=self.app;tcl=app.tk;app.change_theme('dark')
+        self.assertTrue(app._file_dialog_colors.enabled)
         folder=self.root/'folder';folder.mkdir()
         image=folder/'Image ü 文件.raw';image.write_bytes(b'fixture')
         (self.root/'other.raw').write_bytes(b'other')
@@ -63,7 +64,7 @@ class CanvasColorTests(unittest.TestCase):
             stack=[dialog]
             while stack:
                 widget=stack.pop()
-                if tcl.call('winfo','class',widget)=='Canvas':return widget
+                if str(tcl.call('winfo','class',widget))=='Canvas':return widget
                 stack.extend(tcl.splitlist(tcl.call('winfo','children',widget)))
             self.fail('No canvas in the standard Tk file dialog')
         def cancel():
@@ -75,7 +76,9 @@ class CanvasColorTests(unittest.TestCase):
             app.after(100,guarded)
         def assert_colors():
             c=canvas();palette=app._palette()
-            self.assertEqual(tcl.call(c,'cget','-background'),palette['input'])
+            self.assertEqual(tcl.call(c,'cget','-background'),palette['input'],
+                (str(tcl.call('bindtags',dialog)),str(tcl.call('winfo','class',dialog)),
+                 tuple(app._file_dialog_colors.dialogs),app._file_dialog_colors.traced))
             selected=set(tcl.splitlist(tcl.call(c,'find','withtag','selectionText')))
             texts=[]
             for item in tcl.splitlist(tcl.call(c,'find','all')):
