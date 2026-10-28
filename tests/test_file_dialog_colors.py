@@ -59,7 +59,13 @@ class CanvasColorTests(unittest.TestCase):
         dialog='.__tk_filedialog'
         var='::tk::dialog::file::__tk_filedialog'
         def data(key):return str(tcl.call('set',var+'('+key+')'))
-        def canvas():return data('icons')+'.canvas'
+        def canvas():
+            stack=[dialog]
+            while stack:
+                widget=stack.pop()
+                if tcl.call('winfo','class',widget)=='Canvas':return widget
+                stack.extend(tcl.splitlist(tcl.call('winfo','children',widget)))
+            self.fail('No canvas in the standard Tk file dialog')
         def cancel():
             if tcl.call('winfo','exists',dialog):tcl.call('::tk::dialog::file::CancelCmd',dialog)
         def later(callback):
