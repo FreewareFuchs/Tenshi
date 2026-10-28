@@ -78,7 +78,8 @@ class CanvasColorTests(unittest.TestCase):
             c=canvas();palette=app._palette()
             self.assertEqual(tcl.call(c,'cget','-background'),palette['input'],
                 (str(tcl.call('bindtags',dialog)),str(tcl.call('winfo','class',dialog)),
-                 tuple(app._file_dialog_colors.dialogs),app._file_dialog_colors.traced))
+                 tuple(app._file_dialog_colors.dialogs),app._file_dialog_colors.traced,
+                 app._file_dialog_colors.last_error))
             selected=set(tcl.splitlist(tcl.call(c,'find','withtag','selectionText')))
             texts=[]
             for item in tcl.splitlist(tcl.call(c,'find','all')):

@@ -16,6 +16,7 @@ class FileDialogColors:
         self.dialogs=set();self.pending={};self.traced=False
         self.tag='TenshiFileListColors'+str(id(self))
         self.command=None
+        self.last_error=None
         if self.enabled:
             self.command=app.register(self._updated)
             for dialog_class in ('TkFDialog','TkChooseDir'):
@@ -98,9 +99,9 @@ class FileDialogColors:
                     }
                     $canvas itemconfigure selection -fill $selectedBg -outline $selectedBg
                 '''),widget,colors['input'],colors['text'],colors['select'],colors['selection_text'])
-        except tk.TclError:
+        except tk.TclError as exc:
             # A cancelled/destroyed dialog may disappear before this idle task.
-            pass
+            self.last_error=str(exc)
 
     def close(self):
         if self.traced:
