@@ -1,9 +1,9 @@
-# PyInstaller / Windows VERSIONINFO resource for Tenshi 3.0.5.
+# PyInstaller / Windows VERSIONINFO resource for Tenshi 3.0.6.
 # The numeric version and ProductVersion must agree with recoverydesk.__version__.
 VSVersionInfo(
     ffi=FixedFileInfo(
-        filevers=(3, 0, 5, 0),
-        prodvers=(3, 0, 5, 0),
+        filevers=(3, 0, 6, 0),
+        prodvers=(3, 0, 6, 0),
         mask=0x3f,
         flags=0x0,
         OS=0x40004,
@@ -15,11 +15,11 @@ VSVersionInfo(
             StringTable('040904B0', [
                 StringStruct('CompanyName', 'Tenshi'),
                 StringStruct('FileDescription', 'Tenshi - Datenrettung'),
-                StringStruct('FileVersion', '3.0.5.0'),
+                StringStruct('FileVersion', '3.0.6.0'),
                 StringStruct('InternalName', 'Tenshi'),
                 StringStruct('OriginalFilename', 'Tenshi.exe'),
                 StringStruct('ProductName', 'Tenshi'),
-                StringStruct('ProductVersion', '3.0.5.0')
+                StringStruct('ProductVersion', '3.0.6.0')
             ])
         ]),
         VarFileInfo([VarStruct('Translation', [1033, 1200])])

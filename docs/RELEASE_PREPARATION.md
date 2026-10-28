@@ -190,18 +190,27 @@ Vorbereitungsstatus beschreibt den Zeitpunkt des Builds, nicht den heutigen
 Veröffentlichungsstatus. Die Dokumentationsänderung erzeugt keine neuen Pakete
 und verschiebt weder Tag noch Release-Commit.
 
-## Wartungsupdate 3.0.5 vorbereiten
+## Stabile Version 3.0.5
 
-Der Quellstand verwendet Version 3.0.5 und die abgeleiteten Windows-/CI-Felder.
-Die veröffentlichten Downloads, Website und APT-Quelle bleiben bei 3.0.4.
-[Änderungen und ausstehende Abnahme](../RELEASE_NOTES_3.0.5.md).
+[v3.0.5](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.5) ist seit
+28.10.2026 veröffentlicht. Die abgenommenen Pakete stammen vom Commit
+`d8a215fa34ce9be4c9653c1f11f337c7a4377a1b` und dem
+[gemeinsamen Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40509422383).
+GitHub, die signierte APT-Quelle und die Website sind öffentlich geprüft;
+alle 25 Vergleichsprüfungen sind erfolgreich. [Release-Hinweise](../RELEASE_NOTES_3.0.5.md).
+
+## Oberflächenupdate 3.0.6 vorbereiten
+
+Der Quellstand verwendet Version 3.0.6 und die abgeleiteten Windows-/CI-Felder.
+Die öffentliche Ausgabe bleibt bis zur Paketabnahme und Veröffentlichung 3.0.5.
+[Änderungen und Paketabnahme](../RELEASE_NOTES_3.0.6.md).
 
 Nach erfolgreicher Prüfung den festgehaltenen sauberen Commit über
 **Prepare release bundle (no publishing)** mit `stable` bauen. Das Bundle enthält
-Installer, Portable-ZIP und DEB mit Version 3.0.5 beziehungsweise 3.0.5-1 sowie
+Installer, Portable-ZIP und DEB mit Version 3.0.6 beziehungsweise 3.0.6-1 sowie
 Manifest und Prüfsummenliste. Die Erstellung legt weder Tag noch Release an.
 Die finalen Pakete vor Veröffentlichung manuell abnehmen; bereits bestätigte
-3.0.4- oder Flatpak-Testpakete ersetzen diese Abnahme nicht.
+3.0.5- oder Flatpak-Testpakete ersetzen diese Abnahme nicht.
 
 ## Prüfsummenformat
 
