@@ -1,12 +1,13 @@
-# Tenshi 3.0.7 – vorbereitet, noch nicht veröffentlicht
+# Tenshi 3.0.7 – stabil veröffentlicht (28.10.2026)
 
 - Separate, wieder aufrufbare Export- und Imaging-Fenster mit Bereichsraster und Berichtaktionen. Schließen der Ansicht beendet den Auftrag nicht.
 - SHA256 als Textstatus beim Export und je Datei im Ergebnisbericht. Bericht speichern beginnt im zugehörigen Zielordner und überschreibt keine vorhandenen Dateien.
 - Verständlichere Exportfehler; Imagebereiche mit Nullersatz und noch nicht bestandene Vollvergleiche bleiben ausdrücklich erkennbar.
 - Die Dateisystemanalyse behält ihre bisherige Fortschrittsanzeige im Hauptfenster.
-- Die Funktionsstände wurden manuell abgenommen; die endgültigen 3.0.7-Pakete sind noch zu prüfen. Öffentliche Ausgabe bleibt [3.0.6](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.6).
+- Linux-Dateilisten in Öffnen-, Speichern- und Ordnerdialogen folgen der aktiven Hell-/Dunkel-Darstellung, auch nach Markierungs- und Ordnerwechseln.
+- Funktionen, Paketstarts und Versionsanzeigen sowie Linux-Dialogfarben sind manuell abgenommen. GitHub, Website und signierte APT-Quelle sind öffentlich geprüft; alle 25 Abschlussvergleiche sind erfolgreich.
 
-[Änderungen und Paketabnahme 3.0.7](RELEASE_NOTES_3.0.7.md).
+[Release v3.0.7](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.7) · [Änderungen und bestätigter Prüfstand](RELEASE_NOTES_3.0.7.md).
 
 # Tenshi 3.0.6 – stabil veröffentlicht
 

@@ -1,6 +1,22 @@
 # Linux-Portierung – Stand und Hardware-Abnahme
 
-## Veröffentlichter Stand vom 27.10.2026
+## Veröffentlichter Stand vom 28.10.2026
+
+[Tenshi 3.0.7](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.7) ist
+stabil veröffentlicht. Installer, Portable und Mint-DEB verwenden den geprüften
+Quellstand `d4d0dff7f75b737f08aaece0c068121d34c7c1c8` aus dem
+[gemeinsamen Paketbuild](https://github.com/FreewareFuchs/Tenshi/actions/runs/40771944393).
+Funktionen, Paketstarts und Versionsanzeigen sowie die Linux-Dateidialogfarben
+sind manuell abgenommen. Die VM-Signaturprüfung ist erfolgreich; alle zwölf
+öffentlichen APT-Dateien stimmen mit dem Export überein. Website und Downloads
+sind durch alle 25 Abschlussvergleiche bestätigt.
+
+Export und Imaging besitzen eigene Fortschrittsfenster. Die Dateisystemanalyse
+behält auf Anwenderwunsch ihre Fortschrittsanzeige im Hauptfenster.
+[Änderungen und Prüfgrenzen](../RELEASE_NOTES_3.0.7.md).
+Die nachfolgenden Hardwaretests gelten weiterhin für ihre damaligen Quellstände.
+
+## Historischer veröffentlichter Stand vom 27.10.2026
 
 Linux-DEB, Windows-Installer und Portable-ZIP sind als [stabile Version 3.0.4](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.4) veröffentlicht und manuell abgenommen.
 Der [gemeinsame Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40466932499)
