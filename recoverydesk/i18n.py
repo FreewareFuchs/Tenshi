@@ -960,6 +960,30 @@ add('Modell:', 'Model:', 'Modelo:', '型号：', 'Модель:', 'モデル:')
 add('Gerätegröße (Bytes):', 'Device size (bytes):', 'Tamaño del dispositivo (bytes):',
     '设备大小（字节）：', 'Размер устройства (байт):', 'デバイス容量（バイト）:')
 # Keep partial substitutions conservative: only anchored field labels and
+add('Zugriff verweigert. Prüfe Leserechte für die Quelle und Schreibrechte für den Zielordner. Bei Flatpak muss der Zielordner auch für Tenshi freigegeben sein.',
+    'Access denied. Check read access to the source and write access to the destination folder. In Flatpak, Tenshi must also have access to the destination folder.',
+    'Acceso denegado. Compruebe los permisos de lectura del origen y de escritura de la carpeta de destino. En Flatpak, Tenshi también necesita acceso a esa carpeta.',
+    '访问被拒绝。请检查来源的读取权限和目标文件夹的写入权限。使用 Flatpak 时，还必须允许 Tenshi 访问目标文件夹。',
+    'Доступ запрещён. Проверьте права чтения источника и записи в папку назначения. В Flatpak также разрешите Tenshi доступ к этой папке.',
+    'アクセスが拒否されました。ソースの読み取り権限と保存先の書き込み権限を確認してください。FlatpakではTenshiに保存先へのアクセスも許可する必要があります。')
+add('Das Laufwerk ist schreibgeschützt eingebunden. Wähle einen beschreibbaren Zielordner oder prüfe die Einbindung und Freigabe.',
+    'The drive is mounted read-only. Choose a writable destination folder or check the mount and sharing settings.',
+    'La unidad está montada en modo de solo lectura. Elija una carpeta de destino con escritura o revise el montaje y los permisos compartidos.',
+    '该驱动器以只读方式挂载。请选择可写入的目标文件夹，或检查挂载和共享设置。',
+    'Диск подключён только для чтения. Выберите доступную для записи папку или проверьте параметры подключения и общего доступа.',
+    'ドライブは読み取り専用でマウントされています。書き込み可能な保存先を選ぶか、マウントと共有設定を確認してください。')
+add('Eine benötigte Dateioperation wird nicht unterstützt oder wurde als ungültig abgelehnt. Prüfe die Einbindung des Zielordners; gemeinsam genutzte VM-Ordner können eingeschränkt sein. Versuche einen lokalen Linux-Zielordner. Dies ist kein eindeutiger Nachweis fehlender Schreibrechte.',
+    'A required file operation is unsupported or was rejected as invalid. Check the destination mount; shared VM folders may have limitations. Try a local Linux destination folder. This does not establish that write permission is missing.',
+    'Una operación de archivo necesaria no está admitida o fue rechazada como no válida. Revise el montaje del destino; las carpetas compartidas de la VM pueden tener limitaciones. Pruebe una carpeta local de Linux. Esto no demuestra que falten permisos de escritura.',
+    '所需的文件操作不受支持或被判定为无效。请检查目标的挂载设置；虚拟机共享文件夹可能存在限制。请尝试本地 Linux 目标文件夹。这并不能证明缺少写入权限。',
+    'Нужная файловая операция не поддерживается или отклонена как недопустимая. Проверьте подключение папки назначения: общие папки ВМ могут иметь ограничения. Попробуйте локальную папку Linux. Это не доказывает отсутствие прав записи.',
+    '必要なファイル操作が未対応、または無効として拒否されました。保存先のマウント設定を確認してください。仮想マシンの共有フォルダーには制限がある場合があります。Linuxのローカルフォルダーを試してください。書き込み権限の不足が確定したわけではありません。')
+add('Auf dem Laufwerk ist kein Speicherplatz mehr verfügbar. Prüfe den freien Platz im Zielordner.',
+    'The drive has no space left. Check free space at the destination folder.',
+    'No queda espacio en la unidad. Compruebe el espacio libre en la carpeta de destino.',
+    '驱动器空间不足。请检查目标文件夹所在驱动器的可用空间。',
+    'На диске нет свободного места. Проверьте свободное место в папке назначения.',
+    'ドライブの空き容量がありません。保存先の空き容量を確認してください。')
 # fixed status fragments are eligible; do not translate a raw filename.
 _PARTIAL = sorted(set(_PARTIAL + [s for s in TRANSLATIONS if s.endswith(':') and len(s)>=5]),
                   key=len, reverse=True)

@@ -46,6 +46,11 @@ wird während der Prüfung unterdrückt und ist ohne belastbare Rate nicht sicht
 Nach dem Abschluss lassen sich der bestehende Ergebnisbericht ansehen oder eine
 unveränderte Kopie speichern. Das Kopieren läuft außerhalb des GUI-Threads, lehnt
 bestehende Zieldateien ab und verwendet die bestehenden Ziel-/Handle-Prüfungen.
+Der Speicherdialog startet im zugehörigen Exportordner und schlägt einen Namen
+mit Zeitstempel und Zufallskennung vor. Der Ergebnisbericht enthält pro Datei
+die vorhandene SHA256: bestätigte Zieldatei oder ausdrücklich noch nicht bestätigter
+kopierter Datenstrom. Ordner und Ergebnisse ohne verfügbaren Hash werden entsprechend
+gekennzeichnet; für den Bericht werden keine Daten erneut gelesen.
 Die ursprüngliche Quellzuordnung wird für diesen Schutz festgehalten. Ein späterer
 Quellenwechsel im Hauptfenster ändert sie nicht. Die Schaltfläche für den Zielordner
 öffnet lediglich den bereits vorhandenen Exportordner, ohne Shell-Befehlsverkettung.
@@ -57,3 +62,9 @@ beide Farbvarianten werden geprüft. Scanner und Export-I/O bleiben unverändert
 
 Analyse- und Imaging-Bereichskarten folgen separat. Dieser Schritt behauptet
 keine zusätzlichen Informationen über Lesefehler physischer Datenträger.
+
+Exportfehler unterscheiden verweigerten Zugriff, schreibgeschützte Einbindung,
+fehlenden Speicherplatz und ungültige/nicht unterstützte Dateioperationen.
+Insbesondere EINVAL ist kein Nachweis fehlender Schreibrechte: gemeinsam genutzte
+VM-Ziele können Dateioperationen einschränken. Die Originaldiagnose bleibt sichtbar.
+Tenshi erweitert weder Flatpak-Freigaben noch umgeht es Zielschutz oder Synchronisierung.

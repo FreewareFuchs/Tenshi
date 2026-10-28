@@ -6,6 +6,7 @@ import time
 import queue
 import base64
 import gc
+import uuid
 import tkinter as tk
 from tkinter import ttk, filedialog as _filedialog, messagebox as _messagebox
 from .i18n import (LANGUAGES, UITranslator, DialogProxy, load_language,
@@ -15,6 +16,7 @@ _CURRENT_LOCALE = 'de'
 messagebox = DialogProxy(_messagebox, lambda: _CURRENT_LOCALE)
 filedialog = DialogProxy(_filedialog, lambda: _CURRENT_LOCALE, is_file_dialog=True)
 from pathlib import Path
+from .export_errors import export_error_message
 from .source_catalog import collect_choices, device_choices, volume_choices
 from .branding import asset_path
 from .appearance import apply_theme, detect_system_theme, palette
@@ -2766,7 +2768,8 @@ class RecoveryDeskApp(tk.Tk):
         if not report or not os.path.isfile(report):
             return
         destination = filedialog.asksaveasfilename(parent=self, title='Bericht speichern',
-            initialfile='Tenshi_Exportbericht.txt', defaultextension='.txt',
+            initialdir=getattr(self.export_result, 'root', '') or os.path.dirname(report),
+            initialfile='Tenshi_Exportbericht_'+time.strftime('%Y%m%d_%H%M%S')+'_'+uuid.uuid4().hex[:8]+'.txt', defaultextension='.txt',
             filetypes=[('Textdateien', '*.txt')])
         if not destination:
             return
@@ -2782,7 +2785,7 @@ class RecoveryDeskApp(tk.Tk):
                 copy_export_report(source, report, destination)
                 error = ''
             except Exception as exc:
-                error = str(exc)
+                error = export_error_message(exc, self.language)
             self._post_scan_callback(lambda error=error: finish(error))
         threading.Thread(target=worker, daemon=True).start()
 
@@ -2986,7 +2989,7 @@ class RecoveryDeskApp(tk.Tk):
                                    event=self._export_events.put)
                 self._export_events.put({'type': 'run_finish', 'result': rep})
             except Exception as exc:
-                self._export_events.put({'type': 'run_error', 'error': str(exc)})
+                self._export_events.put({'type': 'run_error', 'error': export_error_message(exc, self.language)})
         # Tkinter variables from previously closed windows must be finalized
         # on the UI thread, not later by Python's GC inside the export worker.
         # Otherwise Tcl cleanup can block an otherwise healthy background export.

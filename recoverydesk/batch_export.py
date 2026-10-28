@@ -23,6 +23,7 @@ from .diagnostics import traced, log_issue
 from .ntfs_browser import safe_name, export_file as export_ntfs_file
 from .filesystems import export_file as export_other_file
 from .export_io import ExportCancelled
+from .export_errors import export_error_message
 from .sources import ensure_safe_destination, is_device_source, source_size
 from .device_identity import capture_device_identity, check_device_identity, DeviceSourceChanged
 from .secure_target import (mkdir_checked, atomic_json_checkpoint,
@@ -197,6 +198,15 @@ def _write_log(path: Path, state: dict, result: BatchResult):
             '', EXPORT_SCOPE, RESUME_SCOPE, '', 'Einzelergebnisse:']
     for key, item in sorted(state['results'].items()):
         rows.append(f'{export_status_label(item["status"])}\t{key}\t{item.get("detail", "")}')
+        confirmed = item.get('sha256')
+        copied = item.get('copied_sha256')
+        if (item['status'] == 'Erfolgreich' and not item.get('verification_pending')
+                and isinstance(confirmed, str) and re.fullmatch(r'[0-9a-f]{64}', confirmed)):
+            rows.append(f'  SHA256 (Zieldatei bestätigt): {confirmed}')
+        elif isinstance(copied, str) and re.fullmatch(r'[0-9a-f]{64}', copied):
+            rows.append(f'  SHA256 (kopierter Datenstrom; Zielprüfung nicht bestätigt): {copied}')
+        else:
+            rows.append('  SHA256: nicht verfügbar (z. B. Ordner oder unvollständiger Export)')
     text = '\n'.join(rows) + '\n'
     source = state['identity']['source']
     if sys.platform.startswith('linux'):
@@ -465,7 +475,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                     state['results'][task.path] = {'status': 'Ordner erstellt'}
                 except OSError as exc:
                     result.failed += 1
-                    state['results'][task.path] = {'status': 'Fehler', 'detail': str(exc)}
+                    state['results'][task.path] = {'status': 'Fehler', 'detail': export_error_message(exc)}
         else:
             if not getattr(task.entry, 'recoverable', False):
                 result.skipped += 1
@@ -509,7 +519,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                 except (OSError, ValueError) as exc:
                     result.failed += 1
                     state['results'][task.path] = {**(prior if pending else {}), 'status': 'Fehler',
-                        'detail': f'Vorhandene Exportdatei konnte nicht geprüft werden: {exc}'}
+                        'detail': 'Vorhandene Exportdatei konnte nicht geprüft werden: '+export_error_message(exc)}
             else:
                 copy_complete = False
                 copied_digest = hashlib.sha256()
@@ -550,7 +560,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                         if copy_complete else 'Unvollständige Datei entfernt')}
                 except (OSError, ValueError) as exc:
                     result.failed += 1
-                    state['results'][task.path] = {**pending_record, 'status': 'Fehler', 'detail': str(exc)}
+                    state['results'][task.path] = {**pending_record, 'status': 'Fehler', 'detail': export_error_message(exc)}
             if progress:
                 progress(n, len(plan), task.path, state['results'].get(task.path, {}).get('status', ''))
         flush_bytes()

@@ -43,8 +43,11 @@ class VerificationLabelTests(unittest.TestCase):
             self.assertIn(WRITTEN_LABEL, report)
             state = json.loads(Path(first.manifest).read_text(encoding='utf-8'))
             self.assertEqual(state['results']['README.TXT']['status'], 'Erfolgreich')
+            checksum=state['results']['README.TXT']['sha256']
+            self.assertIn('SHA256 (Zieldatei bestätigt): '+checksum,report)
             second = export_batch(str(source), index, [item], str(destination))
             self.assertEqual((second.exported, second.verified_existing, second.failed), (0, 1, 0))
+            self.assertIn('SHA256 (Zieldatei bestätigt): '+checksum,Path(second.log).read_text(encoding='utf-8'))
             self.assertIn('Export-Prüfsumme bestätigt: 1', Path(second.log).read_text(encoding='utf-8'))
             self.assertEqual(source.read_bytes(), raw)
 

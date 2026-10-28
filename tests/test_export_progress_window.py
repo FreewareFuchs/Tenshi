@@ -117,17 +117,30 @@ class ExportWindowTests(unittest.TestCase):
         from types import SimpleNamespace
         report=self.root/'report.txt';report.write_text('complete report')
         app=self.app
-        app.export_result=SimpleNamespace(log=str(report))
+        export_folder=self.root/'export';export_folder.mkdir()
+        app.export_result=SimpleNamespace(log=str(report),root=str(export_folder))
         app._export_source='original.img'
         app.browser_source='another.img'
         target=str(self.root/'copy.txt')
-        with patch('recoverydesk.gui.filedialog.asksaveasfilename',return_value=target), \
+        with patch('recoverydesk.gui.filedialog.asksaveasfilename',return_value=target) as dialog, \
              patch('recoverydesk.gui.copy_export_report') as save, \
              patch('recoverydesk.gui.messagebox.showinfo'), \
              patch('recoverydesk.gui.threading.Thread',side_effect=lambda *,target,**_:SimpleNamespace(start=target)):
             app._save_export_report()
             app._drain_scan_callbacks()
         save.assert_called_once_with('original.img',str(report),target)
+        self.assertEqual(dialog.call_args.kwargs['initialdir'],str(export_folder))
+        self.assertTrue(dialog.call_args.kwargs['initialfile'].startswith('Tenshi_Exportbericht_'))
+
+    def test_report_dialog_suggests_a_new_filename_on_each_save(self):
+        from types import SimpleNamespace
+        report=self.root/'report.txt';report.write_text('original report')
+        self.app.export_result=SimpleNamespace(log=str(report),root=str(self.root))
+        with patch('recoverydesk.gui.filedialog.asksaveasfilename',return_value='') as dialog:
+            self.app._save_export_report();self.app._save_export_report()
+        names=[call.kwargs['initialfile'] for call in dialog.call_args_list]
+        self.assertEqual(len(set(names)),2)
+        self.assertEqual(report.read_text(),'original report')
 
     def test_idle_and_between_file_phases_do_not_claim_to_build_a_new_plan(self):
         app=self.app;app.change_language('de')
