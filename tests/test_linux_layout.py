@@ -98,6 +98,7 @@ class LinuxLayoutTests(unittest.TestCase):
                             app._toggle_export_queue()
                             app.update()
                             self.assert_visible(app, app.export_queue_bar, 'expanded queue progress')
+                            self.assert_visible(app, app.export_progress_button, 'open progress window')
                             self.assert_visible(app, app.status_label, 'scan progress with expanded queue')
                             self.assert_visible(app, app.file_tree, 'file browser with queue')
                             self.assertGreaterEqual(app.file_tree.winfo_height(), 70)

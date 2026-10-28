@@ -41,6 +41,8 @@ from .explorer import (SearchCriteria, search_entries, construct_paths, sorted_e
                        compile_search, is_temporary_file)
 from .batch_export import export_batch
 from .export_queue import QueueProgress, readable_bytes
+from .export_blocks import ExportBlocks, copy_export_report
+from .progress_window import ExportProgressWindow
 from .zip_verification import verify_zip, ZIP_CHECK_SCOPE, ZipCheckResult
 from .preview import describe, PREVIEW_LIMIT, IMAGE_LIMIT
 from .file_verification import verify_file, MAX_VERIFY_BYTES, VerificationCancelled
@@ -2702,6 +2704,8 @@ class RecoveryDeskApp(tk.Tk):
 
     def _build_export_queue(self):
         """Persistent recovery queue, in the same Files & Folders tab."""
+        self.export_blocks = ExportBlocks()
+        self._export_started_at = self._export_ended_at = None
         self.export_queue_toggle = ttk.Button(self.ntfs_tab,
             text='Wiederherstellungswarteschlange  ▼ Einklappen',
             command=self._toggle_export_queue)
@@ -2721,6 +2725,9 @@ class RecoveryDeskApp(tk.Tk):
                   style='Sub.TLabel', wraplength=900).pack(fill='x', pady=(0, 3))
         head = ttk.Frame(self.export_queue_contents)
         head.pack(fill='x')
+        self.export_progress_button = ttk.Button(head, text='Fortschrittsfenster',
+                                                command=self._show_export_progress)
+        self.export_progress_button.pack(side='left', padx=(0, 4))
         self.export_cancel_button = ttk.Button(head, text='Abbrechen', state='disabled',
                                               command=self._cancel_export)
         self.export_cancel_button.pack(side='right', padx=(5, 0))
@@ -2845,6 +2852,62 @@ class RecoveryDeskApp(tk.Tk):
             tb.insert('1.0', f'Bericht konnte nicht geöffnet werden: {exc}')
         tb.configure(state='disabled')
 
+    def _show_export_progress(self):
+        window = self.__dict__.get('_export_progress_window')
+        if window is not None and window.winfo_exists():
+            window.deiconify()
+            window.lift()
+            window.refresh_display()
+        else:
+            window = self._export_progress_window = ExportProgressWindow(self)
+        return window
+
+    def _show_export_scope(self):
+        messagebox.showinfo('Prüfumfang', translate(EXPORT_SCOPE,self.language)+'\n\n'+
+                            translate(RESUME_SCOPE,self.language), parent=self)
+
+    def _save_export_report(self):
+        if self.export_running or not self.export_result or self.__dict__.get('_export_report_saving'):
+            return
+        report = self.export_result.log
+        source = self.__dict__.get('_export_source', '')
+        if not report or not os.path.isfile(report):
+            return
+        destination = filedialog.asksaveasfilename(parent=self, title='Bericht speichern',
+            initialfile='Tenshi_Exportbericht.txt', defaultextension='.txt',
+            filetypes=[('Textdateien', '*.txt')])
+        if not destination:
+            return
+        self._export_report_saving = True
+        def finish(error):
+            self._export_report_saving = False
+            if error:
+                messagebox.showerror('Exportbericht', error, parent=self)
+            else:
+                messagebox.showinfo('Exportbericht', 'Bericht wurde gespeichert.', parent=self)
+        def worker():
+            try:
+                copy_export_report(source, report, destination)
+                error = ''
+            except Exception as exc:
+                error = str(exc)
+            self._post_scan_callback(lambda error=error: finish(error))
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _open_export_folder(self):
+        folder = self.export_progress.root
+        if not folder or not os.path.isdir(folder):
+            return
+        try:
+            if os.name == 'nt':
+                os.startfile(folder)
+            else:
+                import subprocess
+                subprocess.Popen(['xdg-open', folder], stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
+        except OSError as exc:
+            messagebox.showerror('Export', str(exc), parent=self)
+
     def _check_exported_zip(self, parent, folder):
         files_folder = os.path.join(folder, 'files')
         initial_folder = files_folder if os.path.isdir(files_folder) else folder
@@ -2930,6 +2993,7 @@ class RecoveryDeskApp(tk.Tk):
     def _handle_export_event(self, data):
         kind = data.get('type')
         if kind == 'run_finish':
+            self._export_ended_at = time.monotonic()
             self.export_running = False
             self.export_result = data['result']
             self.export_button.configure(state='normal')
@@ -2937,6 +3001,7 @@ class RecoveryDeskApp(tk.Tk):
             self.export_result_button.configure(state='normal')
             rep = self.export_result
             self.export_progress.failed = bool(rep.failed)
+            self.export_progress.cancelled = bool(rep.cancelled)
             self.export_progress.ended = True
             label = translate('Beendet mit Fehlern', self.language) if rep.failed else (
                 'Abgebrochen' if rep.cancelled else 'Beendet')
@@ -2953,6 +3018,8 @@ class RecoveryDeskApp(tk.Tk):
                               self.language).format(count=rep.failed), parent=self)
             return
         if kind == 'run_error':
+            self._export_ended_at = time.monotonic()
+            self.export_blocks.errors += 1
             self.export_progress.failed = self.export_progress.ended = True
             self._paint_export_progress()
             self.export_running = False
@@ -2962,8 +3029,11 @@ class RecoveryDeskApp(tk.Tk):
             self.export_queue_summary.set('Exportfehler: ' + data['error'])
             messagebox.showerror('Stapel-Export', data['error'], parent=self)
             return
+        self.export_blocks.handle(data)
         self.export_progress.handle(data)
         if kind == 'plan':
+            if self._export_started_at is None:
+                self._export_started_at = time.monotonic()
             self.export_queue_tree.delete(*self.export_queue_tree.get_children())
             self._export_iids = {}
             for n, (path, item) in enumerate(self.export_progress.visible_items.items()):
@@ -3053,6 +3123,10 @@ class RecoveryDeskApp(tk.Tk):
         self.export_result = None
         self._export_events = queue.SimpleQueue()
         self.export_progress = QueueProgress()
+        self.export_blocks = ExportBlocks()
+        self._export_started_at = time.monotonic()
+        self._export_ended_at = None
+        self._export_source = src
         self.export_button.configure(state='disabled')
         self.export_cancel_button.configure(state='normal')
         self.export_result_button.configure(state='disabled')
@@ -3064,6 +3138,7 @@ class RecoveryDeskApp(tk.Tk):
         self.update_idletasks()
         self.export_queue_tree.delete(*self.export_queue_tree.get_children())
         self.status.set('Stapel-Export gestartet …')
+        self._show_export_progress()
 
         def worker():
             try:

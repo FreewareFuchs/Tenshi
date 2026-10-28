@@ -67,6 +67,26 @@ def check_installed_gui() -> None:
                     app.change_language(language)
                     app.update()
                     assert app.language == language
+                    # Installed Tk 9: a view-only event projection, no source I/O.
+                    app.export_running = True
+                    app._handle_export_event(dict(type='plan',total=1,total_bytes=100,items=[]))
+                    app._handle_export_event(dict(type='start',path='fixture.bin',size=100))
+                    app._handle_export_event(dict(type='bytes',path='fixture.bin',delta=100))
+                    app._handle_export_event(dict(type='verify',path='fixture.bin',read=100,size=100))
+                    progress = app._show_export_progress()
+                    progress.geometry('620x550+0+0')
+                    app.update(); progress.refresh_display(); app.update_idletasks()
+                    assert len(progress.grid_view.find_all()) == 200
+                    assert progress.grid_view.winfo_height() > 60
+                    assert app.export_blocks.confirmed_fraction == 0
+                    assert app.grab_current() is None
+                    progress.destroy()
+                    assert app.export_running and not app.export_cancel.is_set()
+                    progress = app._show_export_progress()
+                    app._handle_export_event(dict(type='done',path='fixture.bin',size=100,status='Erfolgreich'))
+                    assert app.export_blocks.confirmed_fraction == 1
+                    progress.destroy()
+                    app.export_running = False
                     from recoverydesk.source_catalog import SourceChoice
                     with patch.object(gui, 'open_source', side_effect=AssertionError('Unconfirmed device read')):
                         picker = app._show_source_dialog([

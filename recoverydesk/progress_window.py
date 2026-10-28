@@ -1,0 +1,208 @@
+"""Non-modal export view. Closing it never changes the export worker or queue."""
+import os
+import time
+import tkinter as tk
+from tkinter import ttk
+
+from .export_queue import readable_bytes, readable_duration
+from .i18n import translate
+
+LABELS = {'pending': 'Offen', 'copied': 'Kopiert, noch ungeprüft',
+          'confirmed': 'Export bestätigt', 'error': 'Fehler im Export',
+          'unconfirmed': 'Nicht bestätigt', 'mixed': 'Gemischt / teilweise'}
+SYMBOLS = {'pending': '·', 'copied': '→', 'confirmed': '✓', 'error': '!',
+           'unconfirmed': '?', 'mixed': '~'}
+
+
+class BlockGrid(tk.Canvas):
+    """Reusable bounded grid: create 200 items once, change only dirty cells."""
+    def __init__(self, parent):
+        super().__init__(parent, height=230, highlightthickness=0, takefocus=True)
+        self.rectangles = [self.create_rectangle(0, 0, 0, 0) for _ in range(100)]
+        self.symbols = [self.create_text(0, 0, text='', font=('Segoe UI', 9, 'bold')) for _ in range(100)]
+        self._key = None
+        self._last_states = ()
+
+    def paint(self, states, dark, background):
+        if str(self.cget('bg')) != background:
+            self.configure(bg=background)
+        geometry = (self.winfo_width(), self.winfo_height())
+        key = (geometry, dark, background)
+        changed = key != self._key
+        if not changed and states == self._last_states:
+            return
+        colors = ({'pending': '#393939', 'copied': '#15558b', 'confirmed': '#145c3b',
+                   'error': '#962d35', 'unconfirmed': '#76511a', 'mixed': '#3b5477'} if dark else
+                  {'pending': '#e5e7eb', 'copied': '#c3d9f5', 'confirmed': '#b9e3cc',
+                   'error': '#f5c2c6', 'unconfirmed': '#f4d89e', 'mixed': '#d3d6ef'})
+        foreground = '#ffffff' if dark else '#18202c'
+        self.configure(bg=background)
+        width, height = geometry
+        side = min(width,height)
+        origin_x, origin_y = (width-side)/2, (height-side)/2
+        if changed:
+            scale = float(self.tk.call('tk','scaling'))
+            size = max(5,min(9,int((side/10-2)/(scale*1.4))))
+            for item in self.symbols:
+                self.itemconfigure(item,font=('Segoe UI',size,'bold'))
+        for i, state in enumerate(states):
+            if changed:
+                col, row = i % 10, i // 10
+                x1, x2 = origin_x+col*side/10+1, origin_x+(col+1)*side/10-1
+                y1, y2 = origin_y+row*side/10+1, origin_y+(row+1)*side/10-1
+                self.coords(self.rectangles[i], x1, y1, max(x1, x2), max(y1, y2))
+                self.coords(self.symbols[i], (x1+x2)/2, (y1+y2)/2)
+            if changed or i >= len(self._last_states) or state != self._last_states[i]:
+                self.itemconfigure(self.rectangles[i], fill=colors[state], outline=foreground if state=='error' else background)
+                self.itemconfigure(self.symbols[i], text=SYMBOLS[state], fill=foreground)
+        self._key, self._last_states = key, states
+
+
+class ExportProgressWindow(tk.Toplevel):
+    def __init__(self, app):
+        super().__init__(app)
+        self.app = app
+        self.title('Tenshi – Exportfortschritt')
+        factor = max(1., float(self.tk.call('tk','scaling'))/(4/3))
+        width = min(round(760*factor), max(620, self.winfo_screenwidth()-60))
+        height = min(round(650*factor), max(550, self.winfo_screenheight()-80))
+        self.geometry(f'{width}x{height}')
+        self.minsize(min(round(620*factor),width), min(round(550*factor),height))
+        # No grab, wait_window, transient lock or worker cancellation on close.
+        self.protocol('WM_DELETE_WINDOW', self.destroy)
+        self.labels = {}
+        footer = ttk.Frame(self, padding=(12, 6, 12, 12))
+        footer.pack(side='bottom', fill='x')
+        for col in range(2):
+            footer.columnconfigure(col, weight=1, uniform='actions')
+        self.report_button = ttk.Button(footer, text='Ergebnisbericht', command=app._show_export_results)
+        self.save_button = ttk.Button(footer, text='Bericht speichern', command=app._save_export_report)
+        self.folder_button = ttk.Button(footer, text='Zielordner öffnen', command=app._open_export_folder)
+        self.cancel_button = ttk.Button(footer, text='Abbrechen', command=app._cancel_export)
+        self.close_button = ttk.Button(footer, text='Schließen', command=self.destroy)
+        self.scope_button = ttk.Button(footer, text='Prüfumfang', command=app._show_export_scope)
+        for button, row, col in ((self.report_button,0,0),(self.save_button,0,1),
+                                 (self.folder_button,1,0),(self.cancel_button,1,1),
+                                 (self.scope_button,2,0),(self.close_button,2,1)):
+            button.grid(row=row, column=col, sticky='ew', padx=3, pady=3)
+        body = ttk.Frame(self, padding=(12, 10, 12, 0))
+        body.pack(fill='both', expand=True)
+        body.columnconfigure(0,weight=1,uniform='content')
+        body.columnconfigure(1,weight=1,uniform='content')
+        body.rowconfigure(1,weight=1)
+        phase = ttk.Label(body,text='',anchor='w',font=('Segoe UI',11,'bold'))
+        phase.grid(row=0,column=0,columnspan=2,sticky='ew',pady=(0,6))
+        self.labels['phase'] = phase
+        left = ttk.Frame(body)
+        right = ttk.Frame(body)
+        left.grid(row=1,column=0,sticky='nsew',padx=(0,10))
+        right.grid(row=1,column=1,sticky='nsew')
+        scope = ttk.Label(left,text='',justify='left')
+        scope.pack(fill='x',pady=(0,3))
+        self.labels['scope'] = scope
+        for name in ('elapsed','transfer','verification','counts','path'):
+            label = ttk.Label(right, text='', anchor='w', justify='left')
+            label.pack(fill='x', pady=(0, 3))
+            self.labels[name] = label
+        legend = ttk.Frame(left)
+        legend.pack(side='bottom', fill='x', pady=(3, 0))
+        self.legend_labels = {}
+        for i, state in enumerate(LABELS):
+            label = ttk.Label(legend, text='')
+            label.grid(row=i//2, column=i%2, sticky='w', padx=(0, 12))
+            self.legend_labels[state] = label
+        note = ttk.Label(right, text='', justify='left')
+        note.pack(side='bottom', fill='x', pady=(5, 0))
+        self.labels['note'] = note
+        self.grid_view = BlockGrid(left)
+        self.grid_view.pack(fill='both', expand=True)
+        self.refresh_display()
+        self._resize_job = None
+        self.grid_view.bind('<Configure>', self._resize_grid)
+        self.app._after_window(self, 250, self._poll)
+
+    def _resize_grid(self, event=None):
+        if self._resize_job is None:
+            self._resize_job = self.app._after_window(self, 40, self._redraw)
+
+    def _redraw(self):
+        self._resize_job = None
+        self.grid_view.paint(self.app.export_blocks.cell_states(), self.app.theme=='dark', self.app._palette()['bg'])
+
+    @staticmethod
+    def _state(button, enabled):
+        state = 'normal' if enabled else 'disabled'
+        if str(button.cget('state')) != state:
+            button.configure(state=state)
+
+    def _poll(self):
+        self.refresh_display()
+        self.app._after_window(self, 250, self._poll)
+
+    def _set(self, name, value):
+        widget = self.labels[name]
+        if str(widget.cget('text')) != value:
+            widget.configure(text=value)
+
+    def refresh_display(self):
+        app, now = self.app, time.monotonic()
+        q, blocks = app.export_progress, app.export_blocks
+        t = lambda text: translate(text, app.language)
+        running = app.export_running
+        if not running and q.ended:
+            phase = 'Abgebrochen' if q.cancelled else 'Beendet mit Fehlern' if q.failed else 'Beendet'
+        elif not running and app.__dict__.get('_export_started_at') is None:
+            phase = 'Noch kein Stapel-Export gestartet.'
+        elif app.export_cancel.is_set() and running:
+            phase = 'Export-Abbruch angefordert …'
+        elif q.ended:
+            phase = 'Export wird abgeschlossen …'
+        elif q.verifying:
+            phase = 'SHA256 prüfen'
+        elif q.active_path:
+            phase = 'Datei kopieren'
+        else:
+            phase = 'Exportplan wird erstellt …'
+        self._set('phase', t(phase))
+        started = app.__dict__.get('_export_started_at')
+        ended = app.__dict__.get('_export_ended_at')
+        elapsed = max(0, (ended if ended is not None else now)-started) if started is not None else 0
+        self._set('elapsed', t('Laufzeit: {duration}').format(duration=readable_duration(elapsed)))
+        rate = 0 if q.verifying or not running else q.speed(now)
+        eta = q.eta(now) if running else None
+        self._set('transfer', t('Neu übertragen: {size} · Kopiertempo: {rate}/s').format(
+            size=readable_bytes(q.written_bytes),rate=readable_bytes(rate)))
+        verification = (t('SHA256-Lesestand der aktuellen Datei: {percent:.1f} %').format(percent=100*q.verification_fraction)
+                        if q.verifying and running else t('Export bestätigt: {percent:.1f} %').format(percent=100*blocks.confirmed_fraction))
+        if eta is not None:
+            verification += ' · '+t('Kopier-Restzeit ca. {duration}').format(duration=readable_duration(eta))
+        self._set('verification', verification)
+        self._set('counts', t('Einträge: {done} von {total} · Fehler: {errors} · Übersprungen: {skipped}').format(
+            done=q.done_count,total=q.total,errors=blocks.errors,skipped=blocks.skipped))
+        path = q.active_path
+        self._set('path', t('Aktuelle Datei: {path}').format(path=path[:22]+'…'+path[-32:] if len(path)>60 else path) if path else '')
+        self._set('scope', t('Noch kein Exportplan vorhanden.' if not blocks.planned else
+                            'Exportplan enthält keine Einträge.' if not blocks.total else
+                            '100 Felder = 100 % der Einträge.' if blocks.entries else
+                            '100 Felder = 100 % der geplanten Dateigrößen.'))
+        self._set('note', t('Exportanteile, keine Datenträgersektoren.')+'\n'+t('Bestätigung betrifft den Export, nicht den Originalinhalt.'))
+        width = max(200, (self.winfo_width() if self.winfo_width()>1 else 760)-30)
+        for name,label in self.labels.items():
+            wrap = width if name=='phase' else max(150,width//2-12)
+            if int(float(label.cget('wraplength') or 0)) != wrap:
+                label.configure(wraplength=wrap)
+        for state,label in self.legend_labels.items():
+            text = SYMBOLS[state]+'  '+t(LABELS[state])
+            if str(label.cget('text')) != text:
+                label.configure(text=text)
+            wrap = max(90,width//4-16)
+            if int(float(label.cget('wraplength') or 0)) != wrap:
+                label.configure(wraplength=wrap)
+        report = getattr(app.export_result,'log','') if app.export_result else ''
+        available = not running and bool(report) and os.path.isfile(report)
+        self._state(self.report_button, available)
+        self._state(self.save_button, available and not app.__dict__.get('_export_report_saving'))
+        self._state(self.folder_button, bool(q.root) and os.path.isdir(q.root))
+        self._state(self.cancel_button, running and not app.export_cancel.is_set())
+        colors = app._palette()
+        self.grid_view.paint(blocks.cell_states(), app.theme=='dark', colors['bg'])
