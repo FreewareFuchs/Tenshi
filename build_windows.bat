@@ -6,9 +6,9 @@ if errorlevel 1 (
   exit /b 1
 )
 set "BUILD_LOG=%CD%\tenshi-build.log"
-> "%BUILD_LOG%" echo Tenshi 3.0.5 - Windows EXE build
+> "%BUILD_LOG%" echo Tenshi 3.0.6 - Windows EXE build
 
-echo [Tenshi 3.0.5] Windows-EXE erstellen
+echo [Tenshi 3.0.6] Windows-EXE erstellen
 echo [1/5] Python 3.11+ in 64 Bit pruefen...
 where py >nul 2>&1
 if not errorlevel 1 (

@@ -1,8 +1,11 @@
-# Tenshi 3.0.5 – Vorbereitung eines Wartungsupdates
+# Tenshi 3.0.5 – veröffentlichtes Wartungsupdate
 
-Noch nicht veröffentlicht. Die öffentlichen Windows-/Linux-Downloads und die
-signierte APT-Quelle bleiben bei 3.0.4. Die folgenden Änderungen sind im Quellcode
-vorbereitet; eine Abnahme der endgültigen 3.0.5-Pakete steht noch aus.
+Am 28.10.2026 als [v3.0.5](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.5)
+veröffentlicht. Die endgültigen Windows-/Linux-Pakete wurden vom Anwender
+abgenommen. Website, Downloads und APT-Dateien bestehen alle 25 öffentlichen
+Vergleichsprüfungen. Release-Commit: `d8a215fa34ce9be4c9653c1f11f337c7a4377a1b`;
+[gemeinsamer Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40509422383).
+Die neueren Oberflächenänderungen werden separat für 3.0.6 vorbereitet.
 
 ## Linux-Gerätezuordnung
 
@@ -40,26 +43,26 @@ Prüfung unmittelbar am geöffneten Ausgabeordner bleibt erhalten.
 Diese Testverbesserungen erweitern weder die unterstützten Dateisystemvarianten
 noch die nachgewiesene Rettungsfähigkeit auf beschädigten Medien.
 
-## Vorgesehene Pakete und Abnahme
+## Veröffentlichte Pakete und Ablauf
 
 - `Tenshi_Setup_3.0.5_Win64.exe`
 - `Tenshi_Portable_3.0.5_Win64.zip`
 - `tenshi-recovery_3.0.5-1_all.deb`
 
-Nach erfolgreicher CI ein gemeinsames Bundle eines festgehaltenen sauberen
-Commits mit Kennung `stable` bauen. Das Manifest und `SHA256SUMS.txt` liefern
+Ein gemeinsames Bundle eines festgehaltenen sauberen Commits wurde mit Kennung
+`stable` gebaut. Das Manifest und `SHA256SUMS.sha256` liefern
 die endgültigen Dateigrößen, Prüfsummen und die Build-Kennung.
 
-Vor Veröffentlichung stehen die manuellen Tests der endgültigen Pakete aus:
+Zur Paketabnahme gehören:
 Windows-Installer und Portable getrennt starten, Version und Image-/Exportablauf
 prüfen; unter Mint das DEB installieren beziehungsweise von der installierten
 Vorversion aktualisieren und dieselben Grundfunktionen prüfen. Die gezielte
 Linux-Prüfkorrektur ist automatisiert getestet, nicht durch eine neue vollständige
 Hardwareabnahme bestätigt.
 
-Erst nach Paketfreigabe GitHub-Release, signierte APT-Quelle und Website getrennt
-aktualisieren, bestehende Daten sichern und die öffentlichen Dateien prüfen.
-Die vorherigen 3.0.4-Dateien werden nicht ersetzt.
+Nach Paketfreigabe wurden GitHub-Release, signierte APT-Quelle und Website
+getrennt aktualisiert, bestehende Daten gesichert und öffentliche Dateien geprüft.
+Die vorherigen 3.0.4-Dateien wurden nicht ersetzt.
 
 Quelldatenträger werden weiterhin ausschließlich lesend geöffnet. Images und
 Exporte auf einem anderen physischen Medium speichern. Windows-Installer und
