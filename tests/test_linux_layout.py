@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -17,6 +18,16 @@ class LinuxLayoutTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
+
+    @staticmethod
+    def settle_layout(app):
+        # Header wrapping is deliberately debounced by 40 ms. Measure only
+        # after its Configure events have settled, before and after the popup.
+        deadline=time.monotonic()+.15
+        while time.monotonic()<deadline:
+            app.update()
+            time.sleep(.01)
+        app.update()
 
     def assert_visible(self, app, widget, name):
         self.assertTrue(widget.winfo_ismapped(), name + ' is hidden')
@@ -62,7 +73,7 @@ class LinuxLayoutTests(unittest.TestCase):
                             self.assertGreaterEqual(app.winfo_screenwidth(), width)
                             self.assertGreaterEqual(app.winfo_screenheight(), height)
                             app.geometry(f'{width}x{height}+0+0')
-                            app.update()
+                            self.settle_layout(app)
                             self.assertEqual((app.winfo_width(), app.winfo_height()),
                                              (width, height))
                             self.assertEqual(app.language, language)
@@ -100,7 +111,7 @@ class LinuxLayoutTests(unittest.TestCase):
                             app.export_progress_button.invoke()
                             app.update()
                             app._export_progress_window.destroy()
-                            app.update()
+                            self.settle_layout(app)
                             self.assertEqual(app.file_tree.winfo_height(),browser_height)
                             self.assert_visible(app,app.status_label,'live status after closing export view')
                             self.assertEqual(app.callback_errors, [])
