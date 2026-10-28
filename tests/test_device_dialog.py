@@ -1,5 +1,7 @@
 """Regression tests for GUI device confirmation (no physical disks needed)."""
 import os
+import io
+from contextlib import contextmanager
 import unittest
 from unittest.mock import patch
 
@@ -55,7 +57,11 @@ class DeviceDialogTests(unittest.TestCase):
         self.assertEqual(str(ok.cget('state')), 'normal')
         tree.selection_set(r'\\.\PhysicalDrive1')
         self.app.update()
+        @contextmanager
+        def reader(_source):
+            yield io.BytesIO(bytes(512))
         with patch('recoverydesk.gui.messagebox.askyesno', return_value=True) as prompt, \
+             patch('recoverydesk.gui.open_source', side_effect=reader), \
              patch.object(self.app, 'scan_partitions') as scan:
             ok.invoke()
         prompt.assert_called_once()

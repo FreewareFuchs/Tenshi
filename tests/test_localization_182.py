@@ -62,7 +62,7 @@ class LanguageGuiTests(TestCase):
             self.assertEqual(app.source_path.get(), '/safe/readonly/important.raw')
             self.assertEqual(app.browser_extension.get(), 'jpg,.docx')
             self.assertEqual(app.tabs.select(), str(app.ntfs_tab))
-            self.assertEqual(app.export_button.cget('bg'), '#16803c')
+            self.assertEqual(app.export_button.cget('bg'), app._palette()['accent'])
             self.assertEqual(app.export_button.cget('text'), translate('Stapel-Export / fortsetzen', locale))
             self.assertEqual(app._nav_buttons['partition'].cget('text'), translate('▦  Partitionen',locale))
             self.assertEqual(app.file_tree.heading('#0')['text'], translate('Name', locale))

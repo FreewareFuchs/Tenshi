@@ -15,7 +15,9 @@ _CURRENT_LOCALE = 'de'
 messagebox = DialogProxy(_messagebox, lambda: _CURRENT_LOCALE)
 filedialog = DialogProxy(_filedialog, lambda: _CURRENT_LOCALE, is_file_dialog=True)
 from pathlib import Path
+from .source_catalog import collect_choices, device_choices, volume_choices
 from .branding import asset_path
+from .appearance import apply_theme, detect_system_theme, palette
 from .version_info import display_version
 from .verification_labels import (METADATA_SCOPE, READ_SCOPE, EXPORT_SCOPE, RESUME_SCOPE,
                                   RESUME_LABEL, METADATA_LABEL, export_status_label)
@@ -58,7 +60,9 @@ class RecoveryDeskApp(tk.Tk):
         super().__init__()
         self.title(f"Tenshi — Datenrettung | {display_version()}")
         self._view_settings = load_ui_preferences()
-        self.theme = self._view_settings['theme']
+        self.theme_mode = self._view_settings['theme']
+        self._system_theme = detect_system_theme() if os.name == 'nt' else None
+        self.theme = (self._system_theme or 'light') if self.theme_mode == 'system' else self.theme_mode
         geometry = self._view_settings['geometry']
         # A detached or resized monitor must not strand the saved window offscreen.
         if geometry:
@@ -97,6 +101,9 @@ class RecoveryDeskApp(tk.Tk):
         self.bind_class('Toplevel', '<Map>', self._on_popup_map, add='+')
         self._i18n.start()
         self.bind('<F1>', self._help_shortcut)
+        self._appearance_stop = threading.Event()
+        threading.Thread(target=self._watch_system_appearance, daemon=True,
+                         name='Tenshi appearance').start()
 
     def report_callback_exception(self, exc_type, exc, tb):
         """Avoid a silent Tcl callback failure; do not leak file contents to logs."""
@@ -366,6 +373,8 @@ class RecoveryDeskApp(tk.Tk):
         if getattr(self, '_closing', False):
             return
         self._closing = True
+        if hasattr(self, '_appearance_stop'):
+            self._appearance_stop.set()
         if hasattr(self, '_i18n'):
             self._i18n.stop()
         for job in tuple(getattr(self, '_pending_after', ())):
@@ -396,7 +405,7 @@ class RecoveryDeskApp(tk.Tk):
         payload = {
             'geometry': geometry,
             'maximized': self.state() == 'zoomed' if os.name == 'nt' else False,
-            'theme': self.theme,
+            'theme': self.theme_mode,
             'folder_ratio': ratio,
             'files_columns': {col: self.file_tree.column(col, 'width')
                               for col in ('#0',) + tuple(self.file_tree['columns'])},
@@ -406,14 +415,15 @@ class RecoveryDeskApp(tk.Tk):
         self._view_settings.update(payload)
         save_ui_preferences(payload)
 
-    def change_theme(self, theme):
-        if theme not in ('light', 'dark'):
+    def change_theme(self, theme, *, automatic=False):
+        if theme not in ('system', 'light', 'dark'):
             raise ValueError('Unbekannte Darstellung')
         self.update_idletasks()
         geometry = self.geometry() if self.state() == 'normal' else None
         sash = (self.browser_paned.sashpos(0)
                 if getattr(self, '_browser_sash_initialized', False) else None)
-        self.theme = theme
+        self.theme_mode = theme
+        self.theme = (self._system_theme or 'light') if theme == 'system' else theme
         self._theme_var.set(theme)
         self._apply_theme()
         self.update_idletasks()
@@ -426,20 +436,30 @@ class RecoveryDeskApp(tk.Tk):
             help_window.refresh_theme()
         # Save the theme immediately, even if the application is terminated later.
         try:
-            save_ui_preferences({'theme': theme})
+            if not automatic:
+                save_ui_preferences({'theme': theme})
         except OSError as exc:
             messagebox.showwarning('Darstellung', str(exc), parent=self)
 
+    def _watch_system_appearance(self):
+        # Only plain Python objects cross threads; Tk remains on the UI thread.
+        previous = object()
+        while not self._appearance_stop.is_set():
+            mode = detect_system_theme()
+            if self._appearance_stop.is_set():
+                break
+            if mode != previous:
+                previous = mode
+                self._post_scan_callback(lambda value=mode: self._system_appearance_changed(value))
+            self._appearance_stop.wait(5)
+
+    def _system_appearance_changed(self, mode):
+        self._system_theme = mode
+        if self.theme_mode == 'system' and self.theme != (mode or 'light'):
+            self.change_theme('system', automatic=True)
+
     def _palette(self):
-        if self.theme == 'dark':
-            return {'bg':'#151c27', 'panel':'#202b3a', 'text':'#eef3f8',
-                    'muted':'#b9c8d9', 'input':'#101722', 'select':'#31577d',
-                    'inactive':'#29394b', 'inactive_fg':'#e3edf8',
-                    'nav':'#2b66a5', 'warning':'#ffbb75', 'divider':'#42536a'}
-        return {'bg':'#f3f5f8', 'panel':'#ffffff', 'text':'#182230',
-                'muted':'#526174', 'input':'#ffffff', 'select':'#b6d5f5',
-                'inactive':'#e1e9f3', 'inactive_fg':'#173653',
-                'nav':'#103e70', 'warning':'#9a3412', 'divider':'#d4d9e1'}
+        return palette(self.theme)
 
     def _style_native_widgets(self, root):
         colors = self._palette()
@@ -453,9 +473,12 @@ class RecoveryDeskApp(tk.Tk):
                 elif isinstance(widget, tk.Text):
                     widget.configure(bg=colors['input'], fg=colors['text'],
                         insertbackground=colors['text'], selectbackground=colors['select'],
-                        selectforeground=colors['text'])
+                        selectforeground=colors['selection_text'])
                 elif isinstance(widget, tk.Canvas):
                     widget.configure(bg=colors['divider'])
+                elif isinstance(widget, ttk.Label):
+                    if str(widget.cget('foreground')) in ('#9a3412', '#ffbb75'):
+                        widget.configure(foreground=colors['warning'])
                 elif isinstance(widget, tk.Label):
                     fg = colors['warning'] if widget.cget('foreground') in ('#9a3412', '#ffbb75') else colors['text']
                     # Keep the original navy/cyan logo readable against dark mode.
@@ -464,15 +487,16 @@ class RecoveryDeskApp(tk.Tk):
                     widget.configure(bg=label_bg, fg=fg)
                 elif isinstance(widget, tk.Menu):
                     widget.configure(bg=colors['panel'], fg=colors['text'],
-                        activebackground=colors['select'], activeforeground=colors['text'])
+                        activebackground=colors['select'], activeforeground=colors['selection_text'])
                 elif isinstance(widget, tk.Button):
                     if widget is getattr(self, 'export_button', None):
-                        # Explicit user-requested green button in both appearances.
-                        widget.configure(bg='#16803c', fg='#ffffff', activebackground='#11632d',
-                                         activeforeground='#ffffff')
+                        widget.configure(bg=colors['accent'], fg=colors['accent_text'],
+                                         activebackground=colors['accent_active'],
+                                         activeforeground=colors['accent_text'],
+                                         disabledforeground=colors['muted'])
                     elif widget not in getattr(self, '_nav_buttons', {}).values():
                         widget.configure(bg=colors['panel'], fg=colors['text'],
-                            activebackground=colors['select'], activeforeground=colors['text'])
+                            activebackground=colors['select'], activeforeground=colors['selection_text'])
             except (tk.TclError, AttributeError):
                 continue
         if root is self:
@@ -483,50 +507,36 @@ class RecoveryDeskApp(tk.Tk):
                 for tree in (self.file_tree, self.folder_tree):
                     tree.tag_configure('deleted', foreground='#f1b85f' if self.theme == 'dark' else '#b45309')
                     tree.tag_configure('warning', foreground='#ff827d' if self.theme == 'dark' else '#b91c1c')
-            self._update_main_tab_styles()
+            if hasattr(self, '_nav_buttons'):
+                self._update_main_tab_styles()
 
     def _apply_theme(self):
         c = self._palette()
-        style = ttk.Style(self)
-        try:
-            # Appearance changes colors, not the underlying widget metrics.
-            style.theme_use('clam')
-        except tk.TclError:
-            style.theme_use('clam')
-        style.configure('TFrame', background=c['bg'])
+        style = apply_theme(self, self.theme)
+        # Keep existing Tenshi fonts and layout metrics; upstream supplies the
+        # widget artwork, interaction states and colors.
+        style.configure('.', background=c['bg'], foreground=c['text'],
+                        font='TkDefaultFont', selectbackground=c['select'],
+                        selectforeground=c['selection_text'], fieldbackground=c['input'])
         style.configure('Card.TFrame', background=c['panel'])
-        style.configure('TLabel', background=c['bg'], foreground=c['text'], font=('Segoe UI', 10))
-        style.configure('Title.TLabel', foreground=c['text'], background=c['bg'], font=('Segoe UI',20,'bold'))
-        style.configure('Sub.TLabel', foreground=c['muted'], background=c['bg'])
-        style.configure('TButton', background=c['panel'], foreground=c['text'], padding=(10,7))
-        style.configure('Accent.TButton', background=c['select'], foreground=c['text'], padding=(12,8))
-        style.map('TButton', background=[('active',c['select'])], foreground=[('disabled',c['muted'])])
-        style.configure('TEntry', fieldbackground=c['input'], foreground=c['text'])
-        style.configure('TCombobox', fieldbackground=c['input'], foreground=c['text'],
-                        background=c['panel'], arrowcolor=c['text'])
-        style.map('TCombobox', fieldbackground=[('readonly',c['input'])],
-                  foreground=[('readonly',c['text'])])
-        style.configure('TCheckbutton', background=c['bg'], foreground=c['text'])
-        style.map('TCheckbutton', background=[('active',c['bg'])])
-        style.configure('TRadiobutton', background=c['bg'], foreground=c['text'])
-        style.configure('TMenubutton', background=c['panel'], foreground=c['text'])
+        style.configure('TLabel', font=('Segoe UI', 10))
+        style.configure('Title.TLabel', font=('Segoe UI', 20, 'bold'))
+        style.configure('Sub.TLabel', foreground=c['muted'])
+        style.configure('TButton', font=('Segoe UI', 10), padding=(10, 7))
+        style.configure('Accent.TButton', font=('Segoe UI', 10, 'bold'), padding=(12, 8))
         for name in ('Header.TButton', 'Header.TMenubutton'):
             style.configure(name, font=('Segoe UI', 10), padding=(10, 7))
-        style.configure('Treeview', background=c['panel'], fieldbackground=c['panel'],
-                        foreground=c['text'], rowheight=27)
-        style.map('Treeview', background=[('selected',c['select'])],
-                  foreground=[('selected',c['text'])])
-        style.configure('Treeview.Heading', background=c['inactive'], foreground=c['text'],
-                        font=('Segoe UI',10,'bold'))
-        style.map('Treeview.Heading', background=[('active',c['select'])])
-        style.configure('TProgressbar', background='#16803c', troughcolor=c['divider'])
-        style.configure('TLabelframe', background=c['bg'], bordercolor=c['divider'])
-        style.configure('TLabelframe.Label', background=c['bg'], foreground=c['text'],
-                        font=('Segoe UI',10,'bold'))
-        style.configure('TNotebook', background=c['bg'])
+        style.configure('Treeview', font=('Segoe UI', 10), rowheight=27)
+        style.configure('Treeview.Heading', font=('Segoe UI', 10, 'bold'))
+        style.configure('TLabelframe.Label', font=('Segoe UI', 10, 'bold'))
         style.layout('TenshiHidden.TNotebook.Tab', [])
+        for option, value in (('background', c['input']), ('foreground', c['text']),
+                              ('selectBackground', c['select']),
+                              ('selectForeground', c['selection_text'])):
+            self.option_add('*TCombobox*Listbox.' + option, value)
         self._style_native_widgets(self)
-        self._update_main_tab_styles()
+        if hasattr(self, '_nav_buttons'):
+            self._update_main_tab_styles()
         if hasattr(self, '_compact_layout'):
             # Theme configuration resets padding/row heights; restore the active
             # compact metrics even when the window dimensions did not change.
@@ -539,20 +549,7 @@ class RecoveryDeskApp(tk.Tk):
             self.after_idle(lambda w=popup: self._style_native_widgets(w) if w.winfo_exists() else None)
 
     def _setup_style(self):
-        style = ttk.Style(self)
-        try:
-            style.theme_use("vista" if os.name == "nt" else "clam")
-        except tk.TclError:
-            pass
-        style.configure("TFrame", background="#f3f5f8")
-        style.configure("Card.TFrame", background="#ffffff", relief="flat")
-        style.configure("TLabel", background="#f3f5f8", foreground="#182230", font=("Segoe UI", 10))
-        style.configure("Title.TLabel", font=("Segoe UI", 20, "bold"), foreground="#14213d")
-        style.configure("Sub.TLabel", foreground="#526174")
-        style.configure("TButton", font=("Segoe UI", 10), padding=(10, 7))
-        style.configure("Accent.TButton", font=("Segoe UI", 10, "bold"), padding=(12, 8))
-        style.configure("Treeview", font=("Segoe UI", 10), rowheight=27)
-        style.configure("Treeview.Heading", font=("Segoe UI", 10, "bold"))
+        self._apply_theme()
 
     def _build(self):
         # User-provided Tenshi logo replaces the former text title.
@@ -573,11 +570,11 @@ class RecoveryDeskApp(tk.Tk):
                 command=lambda code=language_code: self.change_language(code))
         self._language_button.configure(menu=self._language_menu)
         self._language_button.grid(row=0, column=3, sticky='nsew', padx=3, pady=(9, 0))
-        self._theme_var = tk.StringVar(value=self.theme)
+        self._theme_var = tk.StringVar(value=self.theme_mode)
         self.theme_button = ttk.Menubutton(self._header_actions, text='◐  Darstellung', direction='below',
                                                style='Header.TMenubutton', width=18)
         self._theme_menu = tk.Menu(self.theme_button, tearoff=False)
-        for label, value in (('Hell', 'light'), ('Dunkel', 'dark')):
+        for label, value in (('System', 'system'), ('Hell', 'light'), ('Dunkel', 'dark')):
             self._theme_menu.add_radiobutton(label=label, value=value, variable=self._theme_var,
                 command=lambda theme=value: self.change_theme(theme))
         self.theme_button.configure(menu=self._theme_menu)
@@ -611,9 +608,9 @@ class RecoveryDeskApp(tk.Tk):
         self._header_subtitle = ttk.Label(description, text="NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner",
                   style="Sub.TLabel")
         self._header_subtitle.pack(anchor="w", fill="x")
-        description.bind("<Configure>", lambda event: (
-            self._header_title.configure(wraplength=max(100, event.width)),
-            self._header_subtitle.configure(wraplength=max(100, event.width))))
+        self._header_wrap_job = None
+        self._header_wrap_width = None
+        description.bind('<Configure>', self._schedule_header_wrap)
 
         # Two rows keep all source actions accessible even with Windows display scaling.
         source = ttk.Frame(self, padding=(12, 2, 12, 2))
@@ -626,10 +623,9 @@ class RecoveryDeskApp(tk.Tk):
         source_actions = ttk.Frame(source)
         source_actions.grid(row=1, column=0, columnspan=3, sticky="w", pady=(5, 0))
         ttk.Button(source_actions, text="Image auswählen", command=self.choose_source).pack(side="left")
-        ttk.Button(source_actions, text="Physischer Datenträger auswählen",
-                   command=self._choose_device).pack(side="left", padx=(10, 0))
-        ttk.Button(source_actions, text="Laufwerk auswählen",
-                   command=self.show_volumes).pack(side="left", padx=(10, 0))
+        self.source_picker_button = ttk.Button(
+            source_actions, text="Datenträger oder Laufwerk auswählen", command=self._choose_sources)
+        self.source_picker_button.pack(side="left", padx=(10, 0))
         ttk.Button(source_actions, text="Image erstellen / fortsetzen",
                    command=self.open_imaging_dialog).pack(side="left", padx=(10, 0))
         session_actions = ttk.Menubutton(source_actions, text='Analysesitzung')
@@ -684,17 +680,33 @@ class RecoveryDeskApp(tk.Tk):
         self._update_main_tab_styles()
         self._build_partitions()
         self._build_ntfs()
-        footer = ttk.Frame(self, padding=(12, 2, 12, 3))
-        footer.pack(fill="x")
-        ttk.Label(footer, textvariable=self.status, style="Sub.TLabel").pack(anchor="w")
-        ttk.Label(footer, text="Bei Hardwaredefekt weitere Lesezugriffe minimieren und möglichst ein schonendes Image erstellen. Gerettete Daten nur auf einem anderen physischen Datenträger speichern.",
-                  foreground="#9a3412").pack(anchor="w", pady=(1, 0))
+        self.status_bar = ttk.Frame(self, padding=(12, 2, 12, 3))
+        # Reserve progress BEFORE the expanding body takes its requested space.
+        self.status_bar.pack(side='bottom', fill='x', before=body)
+        self.status_label = ttk.Label(self.status_bar, textvariable=self.status, style='Sub.TLabel')
+        self.status_label.pack(anchor='w', fill='x')
+        self._footer_warning = ttk.Label(self.status_bar, text="Bei Hardwaredefekt weitere Lesezugriffe minimieren und möglichst ein schonendes Image erstellen. Gerettete Daten nur auf einem anderen physischen Datenträger speichern.",
+                                        foreground='#9a3412')
+        self._footer_warning.pack(anchor='w', pady=(1, 0))
+
+    def _schedule_header_wrap(self, event):
+        self._pending_header_width = max(100, event.width)
+        if self._header_wrap_job is None:
+            self._header_wrap_job = self.after(40, self._flush_header_wrap)
+
+    def _flush_header_wrap(self):
+        self._header_wrap_job = None
+        width = self._pending_header_width
+        if width != self._header_wrap_width:
+            self._header_wrap_width = width
+            self._header_title.configure(wraplength=width)
+            self._header_subtitle.configure(wraplength=width)
 
     def _update_compact_layout(self, event=None):
-        """Reclaim browser height at 1024x650 under X11 without hiding actions."""
+        """Reclaim browser height in short windows without hiding actions."""
         if event is not None and event.widget is not self:
             return
-        compact = self.winfo_width() <= 1100 and self.winfo_height() <= 720
+        compact = self.winfo_height() <= 800
         narrow = self.winfo_width() < 1400
         layout = (compact, narrow)
         if self._compact_layout == layout:
@@ -714,6 +726,20 @@ class RecoveryDeskApp(tk.Tk):
         style = ttk.Style(self)
         style.configure('TButton', padding=(7, 2) if compact else (10, 7))
         style.configure('Accent.TButton', padding=(8, 3) if compact else (12, 8))
+        for name in ('Header.TButton', 'Header.TMenubutton'):
+            style.configure(name, padding=(7, 2) if compact else (10, 7))
+        style.configure('TCheckbutton', padding=1 if compact else 4)
+        self.export_button.configure(pady=2 if compact else 7)
+        for tab in (self.partition_tab, self.ntfs_tab):
+            tab.configure(padding=(8, 2) if compact else 12)
+        # Keep the live status line visible at every supported window size.
+        # The long, repeated safety caption yields space in compact mode.
+        if compact:
+            self._footer_warning.pack_forget()
+        else:
+            self._footer_warning.pack(anchor='w', pady=(1, 0))
+        for row, regular in self._browser_spacing:
+            row.pack_configure(pady=(0, 2) if compact else (0, regular))
         style.configure('Treeview', rowheight=22 if compact else 27)
 
     def _select_main_tab(self, name: str):
@@ -731,7 +757,7 @@ class RecoveryDeskApp(tk.Tk):
                 bg=colors['nav'] if active else colors['inactive'],
                 fg='#ffffff' if active else colors['inactive_fg'],
                 activebackground=colors['nav'] if active else colors['select'],
-                activeforeground='#ffffff' if active else colors['inactive_fg'],
+                activeforeground='#ffffff',
                 relief='sunken' if active else 'flat',
                 borderwidth=2 if active else 0)
 
@@ -845,138 +871,198 @@ class RecoveryDeskApp(tk.Tk):
         return validate_source(p)
 
     def show_volumes(self):
-        """Choose a read-only Windows volume or mounted Linux block partition."""
-        try:
-            volumes = [v for v in list_volumes() if v.total_bytes >= 512]
-        except Exception as exc:
-            messagebox.showerror('Laufwerke', str(exc), parent=self)
-            return
-        if not volumes:
-            messagebox.showwarning('Laufwerke',
-                'Keine verwendbaren eingehängten Laufwerke gefunden. '
-                'Alternativ ein RAW-Image oder einen physischen Datenträger auswählen.',
-                parent=self)
-            return
-        self._show_volume_dialog(volumes)
+        return self._choose_sources()
 
     def _show_volume_dialog(self, volumes):
-        """Choose one logical volume, confirm, then browse it at byte offset zero."""
-        linux_mode = any(v.path.startswith('/dev/') for v in volumes)
+        # Compatibility entry point; the toolbar uses the combined picker.
+        choices = volume_choices(volumes)
+        return self._show_source_dialog(choices, preselect=not any(
+            c.source.startswith('/dev/') for c in choices))
+
+    def _choose_sources(self):
+        existing = getattr(self, '_source_picker', None)
+        if existing is not None and existing.winfo_exists():
+            existing.lift()
+            return existing
+        win = self._show_source_dialog([], loading=True)
+        self._source_picker = win
+
+        def discover():
+            try:
+                choices, warnings = collect_choices()
+            except Exception as exc:
+                log_issue('source_discovery', exc)
+                choices, warnings = [], ['Quellen konnten nicht ermittelt werden.']
+            if not self._closing:
+                self._post_scan_callback(lambda: win.populate_sources(choices, warnings)
+                    if win.winfo_exists() else None)
+
+        threading.Thread(target=discover, daemon=True, name='Tenshi source discovery').start()
+        return win
+
+    def _show_source_dialog(self, choices, *, loading=False, preselect=False):
         win = tk.Toplevel(self)
-        win.title('Laufwerk auswählen – nur lesen')
-        win.geometry('820x465')
-        win.minsize(650, 370)
+        win.title('Datenträger oder Laufwerk auswählen – nur lesen')
+        win.geometry('960x560')
+        win.minsize(760, 450)
         win.transient(self)
         win.columnconfigure(0, weight=1)
         win.rowconfigure(1, weight=1)
-        ttk.Label(win, text=('Eingehängte Linux-Partition markieren. Die Quelle wird '
-                             'ausschließlich lesend über ihr Blockgerät geöffnet.'
-                             if linux_mode else
-                             'Windows-Laufwerk markieren und „Auswahl übernehmen“ anklicken. '
-                             'Doppelklick und Eingabetaste funktionieren ebenfalls.'),
-                  wraplength=760).grid(row=0, column=0, sticky='ew', padx=16, pady=(16, 10))
-
+        intro = ttk.Label(win, wraplength=900, text=
+            'Ein gesamter Datenträger umfasst alle Partitionen. Ein Laufwerk umfasst nur '
+            'das ausgewählte Volume. Zugeordnete Laufwerke stehen unter ihrem Datenträger.')
+        intro.grid(row=0, column=0, sticky='ew', padx=16, pady=(14, 8))
         panel = ttk.Frame(win)
         panel.grid(row=1, column=0, sticky='nsew', padx=16)
         panel.columnconfigure(0, weight=1)
         panel.rowconfigure(0, weight=1)
-        cols = ('label', 'fs', 'size', 'free')
-        tree = ttk.Treeview(panel, columns=cols, show='tree headings', selectmode='browse')
-        for c, label, width in [('label', 'Name', 185 if linux_mode else 210),
-                                ('fs', 'Dateisystem', 100 if linux_mode else 110),
-                                ('size', 'Größe (GiB)', 100 if linux_mode else 110),
-                                ('free', 'Frei (GiB)', 100 if linux_mode else 110)]:
-            tree.heading(c, text=label)
-            tree.column(c, width=width, anchor='w', stretch=(c == 'label'))
-        tree.heading('#0', text='Laufwerk')
-        # Never visually conflate /dev/nvme0n1p1 and /dev/nvme0n1p5.
-        tree.column('#0', width=205 if linux_mode else 95,
-                    minwidth=185 if linux_mode else 95, anchor='w', stretch=False)
+        tree = ttk.Treeview(panel, columns=('kind', 'fs', 'size'), show='tree headings', selectmode='browse')
+        for column, caption, width in (('#0', 'Quelle', 300), ('kind', 'Umfang', 210),
+                                       ('fs', 'Dateisystem', 100), ('size', 'Größe (GiB)', 110)):
+            tree.heading(column, text=caption)
+            tree.column(column, width=width, minwidth=185 if column == '#0' else 75,
+                        stretch=column in ('#0', 'kind'))
         tree.grid(row=0, column=0, sticky='nsew')
-        bar = ttk.Scrollbar(panel, orient='vertical', command=tree.yview)
-        bar.grid(row=0, column=1, sticky='ns')
-        tree.configure(yscrollcommand=bar.set)
-
-        for v in volumes:
-            tree.insert('', 'end', iid=v.path, text=v.path,
-                        values=(v.label, v.filesystem, f'{v.total_bytes/1024**3:.2f}',
-                                f'{v.free_bytes/1024**3:.2f}'))
-        first = tree.get_children()[0]
-        if not linux_mode:
-            # Preserve Windows keyboard-first selection behavior.
-            tree.selection_set(first)
-        tree.focus(first)
-        tree.see(first)
-
-        # Linux raw block access requires an explicit device choice.
-        choice = tk.StringVar(value=('Bitte ein Laufwerk markieren.' if linux_mode
-                                      else f'Ausgewählt: {first}'))
-        ttk.Label(win, textvariable=choice).grid(row=2, column=0, sticky='w', padx=16, pady=8)
+        scrollbar = ttk.Scrollbar(panel, orient='vertical', command=tree.yview)
+        scrollbar.grid(row=0, column=1, sticky='ns')
+        tree.configure(yscrollcommand=scrollbar.set)
+        horizontal = ttk.Scrollbar(panel, orient='horizontal', command=tree.xview)
+        horizontal.grid(row=1, column=0, sticky='ew')
+        tree.configure(xscrollcommand=horizontal.set)
+        selection_text = tk.StringVar(value='')
+        selection_label = ttk.Label(win, textvariable=selection_text, wraplength=900)
+        selection_label.grid(row=2, column=0, sticky='ew', padx=16, pady=8)
         actions = ttk.Frame(win)
         actions.grid(row=3, column=0, sticky='ew', padx=16, pady=(0, 8))
         confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)',
-                                    style='Accent.TButton',
-                                    state='disabled' if linux_mode else 'normal')
+                                    style='Accent.TButton', state='disabled')
         confirm_button.pack(side='right')
         ttk.Button(actions, text='Abbrechen', command=win.destroy).pack(side='right', padx=(0, 10))
-        ttk.Label(win, text=('Nur eingehängte Linux-Blockpartitionen erscheinen hier. '
-                             'Das Betriebssystem kann diese weiterhin verändern; für '
-                             'zuverlässige Datenrettung besser ein Offline-Image nutzen. '
-                             'Bei fehlenden Leserechten keine Geräteberechtigungen ändern.'
-                             if linux_mode else
-                             'Nur gemountete Laufwerke mit Buchstaben sind hier sichtbar. '
-                             'Bei Fehler „Zugriff verweigert“ Tenshi als Administrator starten. '
-                             'Für defekte Laufwerke möglichst zuerst ein Image erstellen.'),
-                  foreground='#9a3412', wraplength=760).grid(row=4, column=0, sticky='ew',
-                                                                padx=16, pady=(0, 12))
+        hint = ('Die Auflistung bestätigt keine Leserechte. Für das tatsächliche Einlesen beider '
+                'Quelltypen können Windows-Administratorrechte erforderlich sein.' if os.name == 'nt' else
+                'Die Auflistung bestätigt keine Leserechte. Geräteberechtigungen gezielt prüfen lassen '
+                'oder ein Image öffnen. Tenshi ohne sudo starten.')
+        warning = ttk.Label(win, text=hint + '\n' +
+            'Eingehängte Dateisysteme können sich durch das Betriebssystem verändern. '
+            'Bei defekten Datenträgern weitere Lesezugriffe minimieren und zuerst ein Image erstellen.',
+            foreground='#9a3412', wraplength=900)
+        warning.grid(row=4, column=0, sticky='ew', padx=16, pady=(0, 12))
+        last_wrap = [None]
+        def resize_labels(event):
+            if event.widget is win:
+                width = max(200, event.width - 32)
+                if width != last_wrap[0]:
+                    last_wrap[0] = width
+                    for widget in (intro, selection_label, warning):
+                        widget.configure(wraplength=width)
+        win.bind('<Configure>', resize_labels, add='+')
+        records = {}
 
         def update_selection(_event=None):
             selected = tree.selection()
-            choice.set('Ausgewählt: ' + selected[0] if selected else 'Bitte ein Laufwerk markieren.')
-            confirm_button.configure(state='normal' if selected else 'disabled')
+            record = records.get(selected[0]) if selected else None
+            confirm_button.configure(state='normal' if record else 'disabled')
+            if record:
+                kind = 'Gesamter Datenträger' if record.kind == 'disk' else 'Laufwerk / Partition'
+                selection_text.set(translate(kind, self.language) + ': ' + record.source)
+            elif records:
+                selection_text.set(translate('Bitte einen Datenträger oder ein Laufwerk markieren.', self.language))
+
+        def populate(rows, warnings=()):
+            records.clear()
+            tree.delete(*tree.get_children())
+            confirm_button.configure(state='disabled')
+            for row in rows:
+                if row.key in records:
+                    continue
+                records[row.key] = row
+            for row in records.values():
+                if row.kind == 'disk':
+                    caption = translate('Datenträger', self.language) + ' ' + row.label if row.label else row.key
+                    tree.insert('', 'end', iid=row.key, text=caption, open=True,
+                        values=(translate('Gesamter Datenträger', self.language), '', f'{row.size/1024**3:.2f}'))
+            ungrouped = '__unmapped_volumes__'
+            for row in records.values():
+                if row.kind != 'volume':
+                    continue
+                parent = row.parent if tree.exists(row.parent) else ''
+                if not parent:
+                    if not tree.exists(ungrouped):
+                        tree.insert('', 'end', iid=ungrouped, open=True,
+                            text=translate('Laufwerke ohne eindeutige Zuordnung', self.language))
+                    parent = ungrouped
+                kind = 'Laufwerk (mehrere Datenträger)' if row.mapping == 'multiple' else 'Laufwerk / Partition'
+                tree.insert(parent, 'end', iid=row.key,
+                    text=row.key + (' — ' + row.label if row.label else ''),
+                    values=(translate(kind, self.language), row.filesystem, f'{row.size/1024**3:.2f}'))
+            message = ('Bitte einen Datenträger oder ein Laufwerk markieren.' if records else
+                       'Keine Quellen erkannt. Ein vorhandenes Image kann weiterhin geöffnet werden.')
+            selection_text.set('\n'.join([translate(message, self.language)] +
+                [translate(item, self.language) for item in warnings]))
+            if preselect and records:
+                key = next(iter(records))
+                tree.selection_set(key)
+                tree.focus(key)
+                tree.see(key)
+                update_selection()
 
         def confirm(_event=None):
             selected = tree.selection()
-            if not selected:
-                messagebox.showinfo('Auswahl fehlt', 'Bitte zuerst ein Laufwerk markieren.', parent=win)
+            row = records.get(selected[0]) if selected else None
+            if row is None:
                 return
-            root = selected[0]
-            try:
-                device_path = root if root.startswith('/dev/') else raw_volume_path(root)
-            except ValueError as exc:
-                messagebox.showerror('Laufwerk auswählen', str(exc), parent=win)
-                return
-            if not messagebox.askyesno('Logisches Laufwerk direkt lesen',
-                f'Laufwerk {root} wird von Tenshi ausschließlich lesend geöffnet.\n\n'
-                'Hinweis: Eingehängte Dateisysteme können sich unabhängig von Tenshi '
-                'durch das Betriebssystem verändern. Ein Offline-Image ist sicherer.\n\n'
-                'Das Dateisystem eines logischen Laufwerks beginnt an Offset 0.\n\n'
-                f'{root} als Quelle übernehmen?', parent=win):
-                return
-            # Fail early with an actionable access message, without claiming success.
-            try:
-                with open_source(device_path) as f:
-                    f.seek(0)
-                    if len(f.read(512)) < 512:
-                        raise OSError('Es konnten keine 512 Bytes gelesen werden.')
-            except (OSError, ValueError) as exc:
-                messagebox.showerror('Laufwerk nicht lesbar',
-                    f'{root} konnte nicht schreibgeschützt geöffnet werden.\n\n{exc}\n\n' +
-                    ('Bitte Linux-Geräteberechtigungen prüfen oder ein RAW-Image verwenden.'
-                     if linux_mode else
-                     'Versuche Tenshi als Administrator zu starten oder untersuche ein Image.'),
-                    parent=win)
-                return
-            win.destroy()
-            self._activate_source_and_quick_scan(device_path)
+            self._confirm_picked_source(row, win)
 
+        def double_click(event):
+            if tree.identify_region(event.x, event.y) not in ('tree', 'cell'):
+                return
+            if 'indicator' in str(tree.identify_element(event.x, event.y)).lower():
+                return
+            key = tree.identify_row(event.y)
+            if key not in records:
+                return
+            tree.selection_set(key)
+            tree.focus(key)
+            update_selection()
+            confirm()
+
+        win.populate_sources = populate
+        win._source_double_click = double_click
+        win.source_tree = tree
+        win.confirm_button = confirm_button
         confirm_button.configure(command=confirm)
         tree.bind('<<TreeviewSelect>>', update_selection)
-        tree.bind('<Double-1>', confirm)
+        tree.bind('<Double-1>', double_click)
         tree.bind('<Return>', confirm)
         win.bind('<Escape>', lambda _event: win.destroy())
+        if loading:
+            selection_text.set(translate('Quellen werden ermittelt …', self.language))
+        else:
+            populate(choices)
         tree.focus_set()
         return win
+
+    def _confirm_picked_source(self, row, dialog):
+        kind = 'Gesamter Datenträger' if row.kind == 'disk' else 'Laufwerk / Partition'
+        prompt = translate(kind, self.language) + ': ' + row.source + '\n\n' + translate(
+            'Tenshi öffnet die Quelle ausschließlich lesend. Weitere Lesezugriffe können '
+            'defekte Datenträger belasten. Quelle übernehmen?', self.language)
+        if not messagebox.askyesno('Direkter Laufwerkszugriff', prompt, parent=dialog):
+            return
+        try:
+            with open_source(row.source) as stream:
+                stream.seek(0)
+                if len(stream.read(512)) < 512:
+                    raise OSError('Es konnten keine 512 Bytes gelesen werden.')
+        except (OSError, ValueError) as exc:
+            hint = ('Für direkte Lesezugriffe auf Datenträger und Laufwerke Windows-Administratorrechte '
+                    'prüfen oder ein Image öffnen.' if os.name == 'nt' else
+                    'Geräteberechtigungen gezielt prüfen lassen oder ein Image öffnen. Tenshi ohne sudo starten.')
+            messagebox.showerror('Quelle nicht lesbar', str(exc) + '\n\n' + translate(hint, self.language),
+                                 parent=dialog)
+            return
+        dialog.destroy()
+        self._activate_source_and_quick_scan(row.source)
 
     def open_imaging_dialog(self):
         """Create a read-only source -> new regular-file image with a resumable map."""
@@ -1260,7 +1346,9 @@ class RecoveryDeskApp(tk.Tk):
         self.usage_canvas = tk.Canvas(graphic, height=18, highlightthickness=0,
                                       background='#e5e7eb', borderwidth=0)
         self.usage_canvas.pack(fill='x', pady=(4, 4))
-        self.usage_canvas.bind('<Configure>', lambda _event: self._draw_usage_bar())
+        self._usage_redraw_job = None
+        self._usage_draw_key = None
+        self.usage_canvas.bind('<Configure>', self._schedule_usage_redraw)
         self._usage_for_chart = None
         cols = ("idx", "scheme", "confidence", "offset", "size", "filesystem", "usage", "health", "sector", "type", "name")
         self.part_tree = ttk.Treeview(self.partition_tab, columns=cols, show="headings")
@@ -1322,8 +1410,14 @@ class RecoveryDeskApp(tk.Tk):
         self.quick_btn.configure(state="disabled")
         self.deep_btn.configure(state="disabled")
         self.status.set("Suche läuft – RAW-Abbild wird ausschließlich gelesen …")
+        last_progress_post = float('-inf')
         def progress(current, total):
+            nonlocal last_progress_post
+            now = time.monotonic()
+            if current != total and now - last_progress_post < .1:
+                return
             if current == total or current % (64 * 1024 * 1024) < 4 * 1024 * 1024:
+                last_progress_post = now
                 self._post_scan_callback(lambda c=current, t=total, g=generation: (
                     self.status.set(f"Dateisystemsuche: {c / 1024**2:,.0f} / {t / 1024**2:,.0f} MiB gelesen")
                     if g == self._source_generation else None))
@@ -1405,27 +1499,43 @@ class RecoveryDeskApp(tk.Tk):
         box.insert('1.0', text)
         box.configure(state='disabled')
 
+    def _schedule_usage_redraw(self, event=None):
+        if self._usage_redraw_job is None:
+            self._usage_redraw_job = self.after(40, self._flush_usage_redraw)
+
+    def _flush_usage_redraw(self):
+        self._usage_redraw_job = None
+        self._draw_usage_bar()
+
     def _draw_usage_bar(self, details=None):
         """Show *metadata-based* used/free ratios, or grey if not available."""
         if details is not None:
             self._usage_for_chart = details
         details = self._usage_for_chart
         canvas = self.usage_canvas
-        canvas.delete('all')
         width = max(1, canvas.winfo_width())
         height = max(1, canvas.winfo_height())
+        pct = None if details is None or details.used_percent is None else max(0., min(100., details.used_percent))
+        key = (width, height, self.theme, pct)
+        if key == self._usage_draw_key:
+            return
+        self._usage_draw_key = key
+        canvas.delete('all')
         if details is None or details.used_percent is None:
             canvas.create_rectangle(0, 0, width, height, fill=self._palette()['divider'], outline='')
-            self.usage_caption.set('Speicherbelegung: unbekannt (keine vollständigen Metadaten).')
+            text = 'Speicherbelegung: unbekannt (keine vollständigen Metadaten).'
+            if self.usage_caption.get() != translate(text, self.language):
+                self.usage_caption.set(text)
             return
         pct = max(0., min(100., details.used_percent))
         used_width = round(width * pct / 100)
         canvas.create_rectangle(0, 0, width, height, fill=('#294739' if self.theme == 'dark' else '#d6f0e3'), outline='')
         if used_width:
             canvas.create_rectangle(0, 0, used_width, height, fill=('#4b9ce5' if self.theme == 'dark' else '#3275c9'), outline='')
-        self.usage_caption.set(
-            f'Belegt: {pct:.1f} % · Frei: {100-pct:.1f} % '
-            '(nur Dateisystem-Metadaten; kein Integritätsnachweis)')
+        text = (f'Belegt: {pct:.1f} % · Frei: {100-pct:.1f} % '
+                '(nur Dateisystem-Metadaten; kein Integritätsnachweis)')
+        if self.usage_caption.get() != translate(text, self.language):
+            self.usage_caption.set(text)
 
     def _on_partition_selected(self, event=None):
         selected = self.part_tree.selection()
@@ -1563,8 +1673,10 @@ class RecoveryDeskApp(tk.Tk):
         messagebox.showinfo('Partitionsbericht', 'Bericht erfolgreich gespeichert.', parent=self)
 
     def _build_ntfs(self):
+        self._browser_spacing = []
         controls = ttk.Frame(self.ntfs_tab)
         controls.pack(fill='x', pady=(0, 8))
+        self._browser_spacing.append((controls, 8))
         ttk.Label(controls, text='Partitionsoffset (Byte):').pack(side='left')
         self.ntfs_byte_offset = tk.StringVar(value='0')
         ttk.Entry(controls, textvariable=self.ntfs_byte_offset, width=16).pack(side='left', padx=5)
@@ -1575,6 +1687,7 @@ class RecoveryDeskApp(tk.Tk):
 
         tools = ttk.Frame(self.ntfs_tab)
         tools.pack(fill='x', pady=(0, 8))
+        self._browser_spacing.append((tools, 8))
         self.ntfs_scan_btn = ttk.Button(tools, text='Dateisystem einlesen',
                                         style='Accent.TButton', command=self.start_ntfs_scan)
         self.ntfs_scan_btn.pack(side='left')
@@ -1597,11 +1710,11 @@ class RecoveryDeskApp(tk.Tk):
         self.deleted_toggle = ttk.Checkbutton(tools, text='Gelöschte Einträge anzeigen',
                                                variable=self.show_deleted, command=self._refresh_browser)
         self.deleted_toggle.pack(side='left', padx=4)
-        # Native Tk button is deliberately used here: ttk's Windows "vista" theme
-        # ignores custom button backgrounds, so ttk.Style cannot reliably turn it green.
+        # Match the Sun Valley accent while keeping the existing button metrics.
         self.export_button = tk.Button(
             tools, text='Stapel-Export / fortsetzen', command=self.export_browser_selection,
-            bg='#16803c', fg='#ffffff', activebackground='#11632d',
+            bg=self._palette()['accent'], fg=self._palette()['accent_text'],
+            activebackground=self._palette()['accent_active'],
             activeforeground='#ffffff', disabledforeground='#dcebdd',
             font=('Segoe UI', 10, 'bold'), relief='flat', borderwidth=0,
             cursor='hand2', padx=15, pady=7,
@@ -1612,6 +1725,7 @@ class RecoveryDeskApp(tk.Tk):
 
         searchrow = ttk.Frame(self.ntfs_tab)
         searchrow.pack(fill='x', pady=(0, 8))
+        self._browser_spacing.append((searchrow, 8))
         ttk.Label(searchrow, text='Suche (alle Dateinamen):').pack(side='left')
         self.browser_search = tk.StringVar()
         entry = ttk.Entry(searchrow, textvariable=self.browser_search)
@@ -1633,6 +1747,7 @@ class RecoveryDeskApp(tk.Tk):
 
         filterrow = ttk.Frame(self.ntfs_tab)
         filterrow.pack(fill='x', pady=(0, 6))
+        self._browser_spacing.append((filterrow, 6))
         ttk.Label(filterrow, text='Rettbarkeitsfilter:').pack(side='left')
         self.browser_status_filter = tk.StringVar(value=FILTER_ALL)
         self.browser_status_display = tk.StringVar(value=translate(FILTER_ALL, self.language))
@@ -1652,6 +1767,7 @@ class RecoveryDeskApp(tk.Tk):
         self.browser_path = tk.StringVar(value='Noch kein Dateisystem eingelesen.')
         pathrow = ttk.Frame(self.ntfs_tab)
         pathrow.pack(fill='x', pady=(0, 5))
+        self._browser_spacing.append((pathrow, 5))
         ttk.Label(pathrow, textvariable=self.browser_path,
                   style='Sub.TLabel').pack(side='left', fill='x', expand=True)
         # Presentation-only setting: never delete or alter image entries.
@@ -1762,119 +1878,12 @@ class RecoveryDeskApp(tk.Tk):
         self.browser_fs = 'NTFS'
 
     def _choose_device(self):
-        """Show a visible, keyboard-accessible physical disk selection dialog."""
-        try:
-            drives = list_physical_sources()
-        except Exception as exc:
-            messagebox.showerror('Physische Datenträger', str(exc), parent=self)
-            return
-        if not drives:
-            messagebox.showwarning(
-                'Physische Datenträger',
-                ('Keine Linux-Blockdatenträger in sysfs gefunden. '
-                 'Tenshi nicht mit zusätzlichen Rechten starten; alternativ ein RAW-Image öffnen.'
-                 if sys.platform.startswith('linux') else
-                 'Keine lesbaren physischen Datenträger gefunden.\n\n'
-                 'Starte Tenshi gegebenenfalls als Administrator. '
-                 'Alternativ kannst du ein Image über „Image auswählen“ öffnen.'),
-                parent=self)
-            return
-        self._show_device_dialog(drives)
+        return self._choose_sources()
 
     def _show_device_dialog(self, drives):
-        """Separated from discovery to allow GUI interaction tests without a disk."""
-        linux_mode = sys.platform.startswith('linux') and any(p.startswith('/dev/') for p, _ in drives)
-        win = tk.Toplevel(self)
-        win.title('Physischen Datenträger auswählen – nur lesen')
-        win.geometry('760x430')
-        win.minsize(620, 340)
-        win.transient(self)
-        win.columnconfigure(0, weight=1)
-        win.rowconfigure(1, weight=1)
-
-        intro = ttk.Label(win,
-            text='Datenträger markieren und „Auswahl übernehmen“ anklicken. '
-                 'Doppelklick oder Eingabetaste funktionieren ebenfalls.',
-            wraplength=700)
-        intro.grid(row=0, column=0, sticky='ew', padx=16, pady=(16, 10))
-
-        tree_frame = ttk.Frame(win)
-        tree_frame.grid(row=1, column=0, sticky='nsew', padx=16)
-        tree_frame.columnconfigure(0, weight=1)
-        tree_frame.rowconfigure(0, weight=1)
-        tree = ttk.Treeview(tree_frame, columns=('size',), show='tree headings', selectmode='browse')
-        tree.heading('#0', text='Physischer Datenträger')
-        tree.heading('size', text='Größe (GiB)')
-        tree.column('#0', width=430, stretch=True)
-        tree.column('size', width=150, anchor='e', stretch=False)
-        tree.grid(row=0, column=0, sticky='nsew')
-        scrollbar = ttk.Scrollbar(tree_frame, orient='vertical', command=tree.yview)
-        scrollbar.grid(row=0, column=1, sticky='ns')
-        tree.configure(yscrollcommand=scrollbar.set)
-
-        for path, size in drives:
-            tree.insert('', 'end', iid=path, text=path, values=(f'{size / 1024**3:,.2f}',))
-        first = tree.get_children()[0]
-        # Linux block devices are listed without accessing them. Require the
-        # user to explicitly mark one before confirming a direct source read.
-        if not linux_mode:
-            tree.selection_set(first)
-        tree.focus(first)
-        tree.see(first)
-
-        selected_text = tk.StringVar(value=('Bitte einen Datenträger markieren.' if linux_mode
-                                             else f'Ausgewählt: {first}'))
-        ttk.Label(win, textvariable=selected_text, wraplength=700).grid(
-            row=2, column=0, sticky='w', padx=16, pady=(8, 8))
-
-        actions = ttk.Frame(win)
-        actions.grid(row=3, column=0, sticky='ew', padx=16, pady=(0, 8))
-        # Bottom action area has a fixed grid row; it cannot disappear behind the list.
-        confirm_button = ttk.Button(actions, text='Auswahl übernehmen (nur lesen)',
-                                    style='Accent.TButton',
-                                    state='disabled' if linux_mode else 'normal')
-        confirm_button.pack(side='right')
-        ttk.Button(actions, text='Abbrechen', command=win.destroy).pack(side='right', padx=(0, 10))
-
-        ttk.Label(win,
-            text='Achtung: Schon das Lesen kann eine physisch defekte Festplatte zusätzlich belasten. '
-                 'Weitere Zugriffe möglichst vermeiden und zuerst ein schonendes Image mit geeigneten Werkzeugen erstellen.',
-            foreground='#9a3412', wraplength=700).grid(
-                row=4, column=0, sticky='ew', padx=16, pady=(0, 14))
-
-        def update_selection(_event=None):
-            selection = tree.selection()
-            if selection:
-                selected_text.set(f'Ausgewählt: {selection[0]}')
-                confirm_button.configure(state='normal')
-            else:
-                selected_text.set('Bitte einen Datenträger markieren.')
-                confirm_button.configure(state='disabled')
-
-        def confirm(_event=None):
-            selection = tree.selection()
-            if not selection:
-                messagebox.showinfo('Auswahl fehlt',
-                    'Bitte zuerst einen Datenträger markieren.', parent=win)
-                return
-            source = selection[0]
-            if not messagebox.askyesno('Direkter Laufwerkszugriff',
-                'Tenshi liest diesen Datenträger nur aus und nimmt '
-                'keine Änderungen an der Partitionstabelle vor.\n\n'
-                'Ein beschädigter Datenträger kann durch weitere Lesezugriffe '
-                'zusätzlich belastet werden.\n\n'
-                f'{source} als Quelle übernehmen?', parent=win):
-                return
-            win.destroy()
-            self._activate_source_and_quick_scan(source)
-
-        confirm_button.configure(command=confirm)
-        tree.bind('<<TreeviewSelect>>', update_selection)
-        tree.bind('<Double-1>', confirm)
-        tree.bind('<Return>', confirm)
-        win.bind('<Escape>', lambda _event: win.destroy())
-        tree.focus_set()
-        return win
+        # Compatibility entry point; the toolbar uses the combined picker.
+        return self._show_source_dialog(device_choices(drives), preselect=not any(
+            path.startswith('/dev/') for path, _ in drives))
 
     def _cancel_scan(self):
         self.browser_cancel.set()
@@ -1958,7 +1967,13 @@ class RecoveryDeskApp(tk.Tk):
         self.ntfs_scan_btn.configure(state='disabled')
         self.ntfs_cancel_btn.configure(state='normal')
         self.status.set('Dateisystem wird schreibgeschützt gelesen …')
+        last_progress_post = float('-inf')
         def progress(done, total):
+            nonlocal last_progress_post
+            now = time.monotonic()
+            if done != total and now - last_progress_post < .1:
+                return
+            last_progress_post = now
             self._post_scan_callback(lambda d=done, t=total, g=scan_source_generation: (
                 self.status.set(f'MFT: {d:,} / {t:,} Datensätze geprüft …')
                 if self._scan_source_matches(g, source) else None))

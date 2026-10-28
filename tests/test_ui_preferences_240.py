@@ -22,7 +22,7 @@ class AppearancePreferenceTests(unittest.TestCase):
         result = clean_ui_preferences({'theme':'nonsense', 'geometry':'1x1-10000-10000',
             'folder_ratio':100, 'files_columns':{'#0':-1, 'type':180, 'secret':'100'},
             'partitions_columns':{'name':5000}})
-        self.assertEqual(result['theme'], 'light')
+        self.assertEqual(result['theme'], 'system')
         self.assertIsNone(result['geometry'])
         self.assertIsNone(result['folder_ratio'])
         self.assertEqual(result['files_columns'], {'type':180})
@@ -59,6 +59,9 @@ class AppearanceGuiTests(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
         from recoverydesk.gui import RecoveryDeskApp
+        detector = patch('recoverydesk.gui.detect_system_theme', return_value='light')
+        detector.start()
+        self.addCleanup(detector.stop)
         self.app = RecoveryDeskApp()
         self.app.update()
 
@@ -66,18 +69,18 @@ class AppearanceGuiTests(unittest.TestCase):
         if self.app.winfo_exists():
             self.app.destroy()
 
-    def test_light_dark_toggle_keeps_green_export_and_tabs(self):
+    def test_light_dark_toggle_keeps_accent_export_and_tabs(self):
         self.assertEqual(self.app.theme, 'light')
         self.app.change_theme('dark')
         self.app.update()
         self.assertEqual(self.app.theme, 'dark')
-        self.assertEqual(self.app.cget('bg'), '#151c27')
-        self.assertEqual(self.app.export_button.cget('bg'), '#16803c')
+        self.assertEqual(self.app.cget('bg'), '#1c1c1c')
+        self.assertEqual(self.app.export_button.cget('bg'), '#57c8ff')
         self.assertEqual(len(self.app.tabs.tabs()), 2)
         self.assertEqual(load_ui_preferences()['theme'], 'dark')
         self.app.change_theme('light')
-        self.assertEqual(self.app.cget('bg'), '#f3f5f8')
-        self.assertEqual(self.app.export_button.cget('bg'), '#16803c')
+        self.assertEqual(self.app.cget('bg'), '#fafafa')
+        self.assertEqual(self.app.export_button.cget('bg'), '#005fb8')
 
     def test_sash_widths_geometry_and_language_persist(self):
         self.app._select_main_tab('files')

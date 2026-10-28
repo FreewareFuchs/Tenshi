@@ -15,7 +15,9 @@ def install(root: Path, prefix: Path) -> None:
 
     copy(root / 'main.py', 'share/tenshi/main.py')
     for source in sorted((root / 'recoverydesk').rglob('*')):
-        if source.is_file() and source.suffix in ('.py', '.png', '.ico', '.json'):
+        theme_asset = (source.is_relative_to(root / 'recoverydesk/assets/sun_valley')
+                       and (source.suffix == '.tcl' or source.name in ('LICENSE', 'UPSTREAM.md')))
+        if source.is_file() and (source.suffix in ('.py', '.png', '.ico', '.json') or theme_asset):
             copy(source, 'share/tenshi/' + source.relative_to(root).as_posix())
     files = root / 'packaging/flatpak'
     copy(files / 'tenshi-flatpak', 'bin/tenshi-flatpak', 0o755)

@@ -51,10 +51,36 @@ def check_installed_gui() -> None:
                 app.update()
                 assert app.brand_logo.width() > 0
                 assert app.source_path.get() == '', 'Probe must not select a source'
+                from tkinter import ttk
+                for theme in ('dark', 'light', 'system'):
+                    app.change_theme(theme)
+                    app.update()
+                    style = ttk.Style(app)
+                    assert style.theme_use() == 'sun-valley-' + app.theme
+                    from recoverydesk.appearance import palette
+                    colors = palette(app.theme)
+                    for name in ('TEntry', 'TCombobox'):
+                        assert style.lookup(name, 'fieldbackground', ('readonly',)) == colors['input']
+                        assert style.lookup(name, 'bordercolor', ('focus',)) == colors['accent']
+                    assert style.lookup('Treeview', 'background', ('selected',)) == colors['inactive']
                 for language in LANGUAGES:
                     app.change_language(language)
                     app.update()
                     assert app.language == language
+                    from recoverydesk.source_catalog import SourceChoice
+                    with patch.object(gui, 'open_source', side_effect=AssertionError('Unconfirmed device read')):
+                        picker = app._show_source_dialog([
+                            SourceChoice('/dev/testdisk', '/dev/testdisk', 'disk', 16384),
+                            SourceChoice('/dev/testdisk1', '/dev/testdisk1', 'volume', 8192,
+                                         filesystem='FAT32', parent='/dev/testdisk')])
+                        app.update()
+                        assert not picker.source_tree.selection()
+                        assert str(picker.confirm_button.cget('state')) == 'disabled'
+                        assert picker.source_tree.parent('/dev/testdisk1') == '/dev/testdisk'
+                        picker.source_tree.selection_set('/dev/testdisk1')
+                        app.update()
+                        assert str(picker.confirm_button.cget('state')) == 'normal'
+                        picker.destroy()
                     for tab in ('partition', 'files'):
                         app._select_main_tab(tab)
                         app.update()
@@ -62,14 +88,23 @@ def check_installed_gui() -> None:
                     assert app.file_tree.winfo_ismapped(), language
                     assert app.file_tree.winfo_height() >= 70, language
                     assert app.export_button.winfo_ismapped(), language
+                    app.geometry('1024x650+0+0')
+                    app.status.set('MFT: 123,456 / 987,654 Datensätze geprüft …')
+                    app.update()
+                    assert app.status_label.winfo_ismapped(), language
+                    assert app.status_label.winfo_height() >= app.status_label.winfo_reqheight(), language
+                    assert app.status_label.winfo_rooty()+app.status_label.winfo_height() <= app.winfo_rooty()+app.winfo_height(), language
                     assert app.export_queue_collapsed, language
                     app._toggle_export_queue()
                     app.update()
                     assert app.export_queue_bar.winfo_ismapped(), language
+                    assert app.file_tree.winfo_height() >= 70, language
+                    assert app.status_label.winfo_ismapped(), language
                     app._toggle_export_queue()
                     app.update()
                     assert app.export_queue_collapsed, language
                     assert not app.export_queue_bar.winfo_ismapped(), language
+                    app.geometry('1280x900+0+0')
                 assert app.callback_errors == [], app.callback_errors
                 assert app.source_path.get() == ''
             finally:

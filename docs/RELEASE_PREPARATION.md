@@ -11,7 +11,7 @@ sind, entsteht das Actions-Artefakt `Tenshi-prepared-release` mit:
 
 - Windows-Installer und Portable-ZIP; bei `stable` ohne Beta-Suffix, bei `beta.N` mit entsprechendem Suffix
 - Linux-DEB
-- SHA256SUMS.txt und release_manifest.json mit vollständigem Commit
+- SHA256SUMS.sha256, je Paket eine weitere .sha256-Datei und release_manifest.json mit vollständigem Commit
 - RELEASE_NOTES.md mit beschrifteten Download-Links als Entwurf
 
 Die Zusammenstellung prüft die Windows-Build-Metadaten, den Portable-Inhalt und
@@ -202,3 +202,7 @@ Installer, Portable-ZIP und DEB mit Version 3.0.5 beziehungsweise 3.0.5-1 sowie
 Manifest und Prüfsummenliste. Die Erstellung legt weder Tag noch Release an.
 Die finalen Pakete vor Veröffentlichung manuell abnehmen; bereits bestätigte
 3.0.4- oder Flatpak-Testpakete ersetzen diese Abnahme nicht.
+
+## Prüfsummenformat
+
+Neue Bundles und Portable-Archive verwenden SHA256SUMS.sha256; die drei Pakete erhalten zusätzlich jeweils eine eigene .sha256-Datei. Katalog- und Abschlussprüfer unterstützen unveränderte ältere SHA256SUMS.txt weiterhin. Sind beide Listen vorhanden, müssen beide zum Manifest passen. Bestehende Release-Einträge und bereits abgenommene Binärpakete werden nicht umgeschrieben.

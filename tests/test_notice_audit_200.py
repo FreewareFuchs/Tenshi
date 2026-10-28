@@ -102,7 +102,7 @@ class NoticeGuiTests(unittest.TestCase):
         self.assertIn(BROWSER_NOTICE, labels)
         self.assertIn(FOOTER_NOTICE, labels)
         self.assertEqual(len(self.app.tabs.tabs()),2)
-        self.assertEqual(self.app.export_button.cget('bg'),'#16803c')
+        self.assertEqual(self.app.export_button.cget('bg'),self.app._palette()['accent'])
         self.assertEqual(self.app.tmp_toggle.cget('text'),'TMP anzeigen (nur Ansicht)')
 
     def test_corrected_notices_translate_and_preserve_source(self):

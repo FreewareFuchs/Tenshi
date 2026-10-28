@@ -79,6 +79,18 @@ class PublicReleaseChecks(unittest.TestCase):
         self.assertEqual(json.loads(self.report.read_text()), result)
         self.assertEqual(before, {p: p.read_bytes() for p in before})
 
+    def test_new_checksum_format_is_checked_publicly(self):
+        (self.bundle / 'SHA256SUMS.txt').rename(self.bundle / 'SHA256SUMS.sha256')
+        entry = self.fixture.release['downloads']['checksums']
+        entry['url'] = entry['url'].replace('SHA256SUMS.txt', 'SHA256SUMS.sha256')
+        self.save_catalog()
+        for path in self.site.rglob('index.html'):
+            path.write_text(self.fixture.page(product=path.parent.name == 'tenshi'), encoding='utf-8')
+        result = self.run_check()
+        self.assertTrue(result['all_passed'])
+        row = next(r for r in result['files'] if r['name'] == 'download:checksums')
+        self.assertTrue(row['url'].endswith('/SHA256SUMS.sha256'))
+
     def test_wrong_public_content_and_missing_download_are_recorded_and_checks_continue(self):
         calls = []
         expectations = {r['url']: (r['bytes'], r['sha256']) for r in self.plan()[2]}

@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from recoverydesk.gui import RecoveryDeskApp
 from recoverydesk.i18n import LANGUAGES, save_language
+from recoverydesk.ui_preferences import save_ui_preferences
 
 
 @unittest.skipUnless(sys.platform.startswith('linux') and os.environ.get('DISPLAY'),
@@ -34,7 +35,7 @@ class LinuxLayoutTests(unittest.TestCase):
                                  name + ': bottom clipping')
             parent = parent.master
 
-    def check_layout(self, width, height, scaling):
+    def check_layout(self, width, height, scaling, theme='light'):
         # Apply scaling before application styles and widgets are created.
         class App(RecoveryDeskApp):
             def _setup_style(self):
@@ -50,6 +51,7 @@ class LinuxLayoutTests(unittest.TestCase):
                 with patch.dict(os.environ, {'TENSHI_SETTINGS_FILE': str(settings),
                                               'TENSHI_LOG_DIR': str(Path(self.temp.name) / 'logs')}):
                     save_language(language)
+                    save_ui_preferences({'theme': theme})
                     # Actions are inspected, never invoked; discovering devices is
                     # also forbidden if startup behavior changes in the future.
                     with patch('recoverydesk.gui.list_physical_sources',
@@ -70,7 +72,7 @@ class LinuxLayoutTests(unittest.TestCase):
                                          'theme_button', '_language_button', 'session_menu_button'):
                                 self.assert_visible(app, getattr(app, name), name)
                             source_actions = app.session_menu_button.master.winfo_children()
-                            self.assertEqual(len(source_actions), 5)
+                            self.assertEqual(len(source_actions), 4)
                             for button in source_actions:
                                 self.assert_visible(app, button, str(button.cget('text')))
                                 self.assertGreaterEqual(button.winfo_width(), button.winfo_reqwidth(),
@@ -82,6 +84,12 @@ class LinuxLayoutTests(unittest.TestCase):
                                 app.update()
                                 self.assertGreaterEqual(app.tabs.winfo_height(), 100)
                             self.assert_visible(app, app.file_tree, 'file browser')
+                            app.ntfs_scanning = True
+                            app.status.set('MFT: 123,456 / 987,654 Datensätze geprüft …')
+                            app.update()
+                            self.assert_visible(app, app.status_label, 'live scan progress')
+                            self.assertGreaterEqual(app.status_label.winfo_height(),
+                                                    app.status_label.winfo_reqheight())
                             self.assertGreaterEqual(app.file_tree.winfo_height(), 70)
                             self.assert_visible(app, app.export_button, 'export action')
                             self.assertTrue(app.export_queue_collapsed)
@@ -90,6 +98,7 @@ class LinuxLayoutTests(unittest.TestCase):
                             app._toggle_export_queue()
                             app.update()
                             self.assert_visible(app, app.export_queue_bar, 'expanded queue progress')
+                            self.assert_visible(app, app.status_label, 'scan progress with expanded queue')
                             self.assert_visible(app, app.file_tree, 'file browser with queue')
                             self.assertGreaterEqual(app.file_tree.winfo_height(), 70)
                             expanded_height = app.file_tree.winfo_height()
@@ -107,16 +116,24 @@ class LinuxLayoutTests(unittest.TestCase):
                             app.destroy()
 
     def test_compact_1024x650(self):
-        self.check_layout(1024, 650, 4 / 3)
+        for theme in ('light', 'dark'):
+            self.check_layout(1024, 650, 4 / 3, theme)
 
     def test_laptop_1280x720(self):
-        self.check_layout(1280, 720, 4 / 3)
+        for theme in ('light', 'dark'):
+            self.check_layout(1280, 720, 4 / 3, theme)
+
+    def test_medium_height_1024x750(self):
+        for theme in ('light', 'dark'):
+            self.check_layout(1024, 750, 4 / 3, theme)
 
     def test_full_hd_1920x1080(self):
-        self.check_layout(1920, 1080, 4 / 3)
+        for theme in ('light', 'dark'):
+            self.check_layout(1920, 1080, 4 / 3, theme)
 
     def test_full_hd_with_larger_text(self):
-        self.check_layout(1920, 1080, 2.0)
+        for theme in ('light', 'dark'):
+            self.check_layout(1920, 1080, 2.0, theme)
 
 
 if __name__ == '__main__':

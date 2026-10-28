@@ -58,6 +58,11 @@ class ReleasePreparationTests(unittest.TestCase):
         self.assertEqual(len(manifest['artifacts']), 3)
         for row in manifest['artifacts']:
             self.assertEqual(hashlib.sha256((self.output / row['file']).read_bytes()).hexdigest(), row['sha256'])
+            self.assertEqual((self.output / (row['file'] + '.sha256')).read_text(),
+                             f"{row['sha256']}  {row['file']}\n")
+        self.assertFalse((self.output / 'SHA256SUMS.txt').exists())
+        self.assertEqual((self.output / 'SHA256SUMS.sha256').read_text(), ''.join(
+            f"{row['sha256']}  {row['file']}\n" for row in manifest['artifacts']))
         self.assertFalse((self.output / 'Tenshi.exe').exists())
         self.assertIn('[Windows Installer]', (self.output / 'RELEASE_NOTES.md').read_text(encoding='utf-8'))
         with self.assertRaises(FileExistsError):

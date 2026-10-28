@@ -1,2 +1,3 @@
-# Runtime: Python standard library only.
+# Runtime: Python standard library, with vendored Sun Valley Tcl/PNG theme assets.
+# Sun Valley 2.6.1 MIT license: recoverydesk/assets/sun_valley/LICENSE
 # Windows packaging tools: requirements-build-windows.txt

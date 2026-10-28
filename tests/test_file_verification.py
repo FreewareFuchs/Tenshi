@@ -143,14 +143,14 @@ class VerificationTests(unittest.TestCase):
 
 
 class VerificationGuiTests(unittest.TestCase):
-    def test_green_button_and_inspection_controls(self):
+    def test_accent_button_and_inspection_controls(self):
         from recoverydesk.gui import RecoveryDeskApp
         app = RecoveryDeskApp()
         app.withdraw()
         try:
             self.assertEqual(len(app.tabs.tabs()), 2)
-            self.assertEqual(app.export_button.cget('background'), '#16803c')
-            self.assertEqual(app.export_button.cget('foreground'), '#ffffff')
+            self.assertEqual(app.export_button.cget('background'), app._palette()['accent'])
+            self.assertEqual(app.export_button.cget('foreground'), app._palette()['accent_text'])
             self.assertEqual(app.export_button.cget('text'), 'Stapel-Export / fortsetzen')
             self.assertTrue(callable(app.inspect_file))
         finally:

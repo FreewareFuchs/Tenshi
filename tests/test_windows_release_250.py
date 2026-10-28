@@ -42,6 +42,18 @@ class PortableArchiveTests(unittest.TestCase):
                     release_tools.create_portable(exe, d / 'out.zip')
             self.assertFalse((d / 'out.zip').exists())
 
+    def test_legacy_txt_portable_remains_verifiable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            exe = test_exe(root / 'Tenshi.exe')
+            current = release_tools.create_portable(exe, root / 'new.zip')
+            legacy = root / 'legacy.zip'
+            with zipfile.ZipFile(current) as source, zipfile.ZipFile(legacy, 'w') as target:
+                for name in source.namelist():
+                    target.writestr('SHA256SUMS.txt' if name == 'SHA256SUMS.sha256' else name,
+                                    source.read(name))
+            self.assertEqual(release_tools.verify_portable(legacy), release_tools.file_sha256(exe))
+
     def test_no_overwrite_without_permission(self):
         with tempfile.TemporaryDirectory() as tmp:
             d = Path(tmp)

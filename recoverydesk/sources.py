@@ -19,6 +19,7 @@ _IOCTL_DISK_GET_LENGTH_INFO = 0x0007405C
 _IOCTL_DISK_GET_DRIVE_GEOMETRY = 0x00070000
 _IOCTL_DISK_GET_DRIVE_GEOMETRY_EX = 0x000700A0
 _IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS = 0x00560000
+_FSCTL_ALLOW_EXTENDED_DASD_IO = 0x00090083
 
 
 def physical_number(path: str) -> int | None:
@@ -79,12 +80,19 @@ def _kernel():
     return k
 
 
-def _device_ioctl(path: str, code: int, length: int = 16, input_data: bytes | None = None) -> bytes:
+def _device_ioctl(path: str, code: int, length: int = 16, input_data: bytes | None = None,
+                  *, metadata_only: bool = False) -> bytes:
     if os.name != 'nt':
         raise OSError('Nur auf Windows verfügbar.')
+    if metadata_only and code not in (_IOCTL_DISK_GET_DRIVE_GEOMETRY_EX,
+                                      _IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS):
+        raise ValueError('Unsupported metadata query')
     kernel = _kernel()
     # GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, OPEN_EXISTING
-    h = kernel.CreateFileW(path, 0x80000000, 0x1 | 0x2, None, 3, 0, None)
+    # A zero-access handle can query these device attributes without requesting
+    # permission to read media contents. Actual source I/O still requires READ.
+    h = kernel.CreateFileW(path, 0 if metadata_only else 0x80000000,
+                          0x1 | 0x2, None, 3, 0, None)
     if h == wintypes.HANDLE(-1).value:
         raise ctypes.WinError(ctypes.get_last_error())
     try:
@@ -280,6 +288,28 @@ class AlignedDeviceReader:
         return b''.join(chunks)
 
 
+def _enable_volume_tail_reads(raw) -> None:
+    """Allow reads within the partition beyond the filesystem's usable end.
+
+    Windows otherwise shortens raw-volume reads near the last filesystem
+    cluster. This setting belongs to this existing read-only handle only:
+    no write access, locking, dismount or persistent device change. The
+    AlignedDeviceReader still bounds every request to source_size().
+    """
+    import msvcrt
+    kernel = _kernel()
+    handle = msvcrt.get_osfhandle(raw.fileno())
+    returned = wintypes.DWORD()
+    if not kernel.DeviceIoControl(handle, _FSCTL_ALLOW_EXTENDED_DASD_IO,
+                                   None, 0, None, 0, ctypes.byref(returned), None):
+        error = ctypes.WinError(ctypes.get_last_error())
+        log_issue('raw_volume_boundary_setup', error)
+        raise OSError(errno.EIO,
+                      'Windows hat den ausschließlich lesenden Zugriff auf die letzten '
+                      'Volume-Sektoren nicht freigegeben. Ein vollständiger Volume-Scan '
+                      'ist daher nicht möglich; alternativ ein RAW-Image verwenden.') from error
+
+
 @contextmanager
 def open_source(path: str):
     validate_source(path)
@@ -297,6 +327,8 @@ def open_source(path: str):
                               'Bitte Windows-Administratorrechte, Freigabe und '
                               'Gerätezugriff prüfen.') from exc
     try:
+        if os.name == 'nt' and is_volume(path):
+            _enable_volume_tail_reads(raw)
         if is_device_source(path):
             yield AlignedDeviceReader(raw, source_size(path), physical_sector_size(path))
         else:
@@ -305,7 +337,7 @@ def open_source(path: str):
         raw.close()
 
 
-def list_physical_sources(max_index: int = 32) -> list[tuple[str, int]]:
+def list_physical_sources(max_index: int = 32, *, metadata_only: bool = False) -> list[tuple[str, int]]:
     if sys.platform.startswith('linux'):
         return list_block_sources()
     if os.name != 'nt':
@@ -314,20 +346,28 @@ def list_physical_sources(max_index: int = 32) -> list[tuple[str, int]]:
     for i in range(max_index):
         path = rf'\\.\PhysicalDrive{i}'
         try:
-            size = source_size(path)
-            if size >= 512:
+            if metadata_only:
+                data = _device_ioctl(path, _IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, 256,
+                                     metadata_only=True)
+                if len(data) < 32:
+                    continue
+                size = int.from_bytes(data[24:32], 'little')
+            else:
+                size = source_size(path)
+            if 512 <= size < 2 ** 63:
                 results.append((path, size))
         except OSError:
             continue
     return results
 
 
-def volume_disk_numbers(source: str) -> set[int] | None:
+def volume_disk_numbers(source: str, *, metadata_only: bool = False) -> set[int] | None:
     """Get every backing physical disk for a raw Windows volume. Fail closed."""
     if os.name != 'nt' or not is_volume(source):
         return None
     try:
-        blob = _device_ioctl(source, _IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS, 65536)
+        blob = _device_ioctl(source, _IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS, 65536,
+                             metadata_only=metadata_only)
         if len(blob) < 8:
             return None
         count = int.from_bytes(blob[:4], 'little')

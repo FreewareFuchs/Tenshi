@@ -17,7 +17,7 @@ import zipfile
 from recoverydesk import __version__
 
 EXECUTABLE = 'Tenshi.exe'
-PACKAGE_ITEMS = (EXECUTABLE, 'PORTABLE_START.txt', 'SHA256SUMS.txt', 'LICENSE')
+PACKAGE_ITEMS = (EXECUTABLE, 'PORTABLE_START.txt', 'SHA256SUMS.sha256', 'LICENSE')
 
 PORTABLE_TEXT = '''Tenshi {version} - Windows 10/11 (64-Bit), portable Ausgabe
 
@@ -37,7 +37,7 @@ Der Quell-Datentraeger wird nur lesend verwendet. Auch eine scheinbar erfolgreic
 wiederhergestellte Datei kann beschaedigt sein.
 Dieses ZIP enthaelt keinerlei Original-Dateien, Datentraegerabbilder oder Logs.
 
-Die Datei LICENSE enthaelt die MIT-Lizenz des Tenshi-Projekts.\nSHA256SUMS.txt nennt den SHA-256-Pruefwert der beigelegten Tenshi.exe.
+Die Datei LICENSE enthaelt die MIT-Lizenz des Tenshi-Projekts.\nSHA256SUMS.sha256 nennt den SHA-256-Pruefwert der beigelegten Tenshi.exe.
 Mit 'python release_tools.py verify <Pfad-zur-ZIP>' kann der Inhalt verifiziert werden.
 '''
 
@@ -93,7 +93,7 @@ def create_portable(exe_path: str | Path, output_path: str | Path, *, overwrite:
                 for chunk in iter(lambda: src.read(1024 * 1024), b''):
                     dst.write(chunk)
             put_bytes('PORTABLE_START.txt', PORTABLE_TEXT.format(version=__version__).encode('utf-8'), zipfile.ZIP_DEFLATED)
-            put_bytes('SHA256SUMS.txt', (checksum_before + '  ' + EXECUTABLE + '\n').encode('ascii'), zipfile.ZIP_DEFLATED)
+            put_bytes('SHA256SUMS.sha256', (checksum_before + '  ' + EXECUTABLE + '\n').encode('ascii'), zipfile.ZIP_DEFLATED)
             put_bytes('LICENSE', (Path(__file__).resolve().parent / 'LICENSE').read_bytes(), zipfile.ZIP_DEFLATED)
         if file_sha256(exe) != checksum_before:
             raise ValueError('Die EXE hat sich waehrend des Packens geaendert.')
@@ -108,12 +108,14 @@ def verify_portable(path: str | Path) -> str:
     """Check archive names, checksums, PE header, and reject path injection."""
     with zipfile.ZipFile(path, 'r') as archive:
         names = archive.namelist()
-        if len(names) != len(set(names)) or set(names) != set(PACKAGE_ITEMS):
+        legacy = (set(PACKAGE_ITEMS) - {'SHA256SUMS.sha256'}) | {'SHA256SUMS.txt'}
+        if len(names) != len(set(names)) or set(names) not in (set(PACKAGE_ITEMS), legacy):
             raise ValueError(f'ZIP muss ausschliesslich {PACKAGE_ITEMS} enthalten.')
-        manifest = archive.read('SHA256SUMS.txt').decode('ascii')
+        checksum = 'SHA256SUMS.sha256' if 'SHA256SUMS.sha256' in names else 'SHA256SUMS.txt'
+        manifest = archive.read(checksum).decode('ascii')
         match = re.fullmatch(r'([a-f0-9]{64})  Tenshi\.exe\n', manifest)
         if not match:
-            raise ValueError('Ungueltiges SHA256SUMS.txt.')
+            raise ValueError('Ungueltige SHA256-Pruefsummenliste.')
         exe_size = archive.getinfo(EXECUTABLE).file_size
         if exe_size < 1024:
             raise ValueError('Die EXE ist unvollstaendig.')
