@@ -98,9 +98,21 @@ class ExportWindowTests(unittest.TestCase):
             self.assertIs(same,win)
             expected_x=app.winfo_rootx()+(app.winfo_width()-win.winfo_width())//2
             expected_y=app.winfo_rooty()+(app.winfo_height()-win.winfo_height())//2
-            # Compare frame positions; decorations vary between window managers.
-            self.assertLess(abs(win.winfo_x()-expected_x),35)
-            self.assertLess(abs(win.winfo_y()-expected_y),35)
+            left,top=win.winfo_vrootx(),win.winfo_vrooty()
+            right,bottom=left+win.winfo_vrootwidth(),top+win.winfo_vrootheight()
+            # Center where it fits; near a small-screen edge visibility takes
+            # priority. Allow window-manager decoration differences, not an
+            # offscreen window merely to satisfy an exact-center assertion.
+            if left<=expected_x and expected_x+win.winfo_width()<=right:
+                self.assertLess(abs(win.winfo_x()-expected_x),35)
+            else:
+                self.assertGreaterEqual(win.winfo_x(),left-35)
+                self.assertLessEqual(win.winfo_x()+win.winfo_width(),right+35)
+            if top<=expected_y and expected_y+win.winfo_height()<=bottom:
+                self.assertLess(abs(win.winfo_y()-expected_y),35)
+            else:
+                self.assertGreaterEqual(win.winfo_y(),top-35)
+                self.assertLessEqual(win.winfo_y()+win.winfo_height(),bottom+35)
         self.assertIsNone(app.grab_current())
 
     def test_raster_and_actions_survive_language_theme_and_small_window(self):
