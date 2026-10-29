@@ -1,4 +1,4 @@
-"""Offline, six-language help for Tenshi 3.0.0.
+"""Offline, six-language help for Tenshi.
 
 The help text is deliberately about supported behavior, not a guarantee of
 successful recovery. No filesystem or source device is opened by this module.
@@ -22,12 +22,48 @@ DATA = {
  'start': (
   ('Erste Schritte', 'Getting started', 'Primeros pasos', '入门指南', 'Начало работы', 'はじめに'),
   (
-   '1. Öffne nach Möglichkeit ein zuvor erstelltes Image mit „Image auswählen“.\n\n2. Nach der Quellenauswahl öffnet Tenshi automatisch „Partitionen“ und beginnt die Schnellanalyse. Nutze die Tiefensuche nur bei Bedarf.\n\n3. Doppelklicke auf eine gefundene Partition, um „Dateien & Ordner“ zu öffnen und das Dateisystem einzulesen.\n\n4. Wähle Dateien oder Ordner aus und nutze „Export prüfen“, bevor du den grünen Stapel-Export startest.\n\n5. Speichere gerettete Dateien auf einem anderen physischen Datenträger.\n\nBei ungewöhnlichen Geräuschen, Aussetzern oder einem mechanischen Defekt weitere Zugriffe vermeiden und professionelle Hilfe erwägen.',
-   '1. Prefer an existing disk image using “Select image”.\n\n2. After selecting a source, Tenshi opens “Partitions” and starts a quick scan automatically. Use deep scan only if necessary.\n\n3. Double-click a detected partition to open “Files & Folders” and scan the file system.\n\n4. Select files or folders and run “Check export” before the green batch export.\n\n5. Save recovered files to a different physical disk.\n\nIf a drive makes unusual noises, disconnects or has physical damage, avoid further reads and consider professional assistance.',
-   '1. Abra preferentemente una imagen existente con «Seleccionar imagen».\n\n2. Al seleccionar un origen, Tenshi abre «Particiones» e inicia automáticamente el análisis rápido. Use el análisis profundo solo si es necesario.\n\n3. Haga doble clic en una partición para abrir «Archivos y carpetas» y leer el sistema de archivos.\n\n4. Seleccione archivos y use «Comprobar exportación» antes de la exportación por lotes.\n\n5. Guarde los datos en otro disco físico.\n\nSi hay ruidos extraños o daños físicos, evite nuevas lecturas y consulte a profesionales.',
-   '1. 建议先通过“选择镜像”打开已有磁盘镜像。\n\n2. 选择数据源后，Tenshi 会自动打开“分区”并开始快速扫描；仅在必要时使用深度扫描。\n\n3. 双击找到的分区，切换到“文件与文件夹”并读取文件系统。\n\n4. 选中文件或文件夹，在批量导出前先运行“检查导出”。\n\n5. 将恢复的数据保存到另一块物理磁盘。\n\n如设备有异响、断连或物理损坏，请尽量避免继续读取并考虑专业协助。',
-   '1. По возможности откройте готовый образ через «Выбрать образ».\n\n2. После выбора источника Tenshi автоматически открывает вкладку «Разделы» и запускает быстрый анализ. Глубокий поиск используйте при необходимости.\n\n3. Дважды щёлкните раздел для перехода к файлам и чтения файловой системы.\n\n4. Выберите файлы и выполните предварительную проверку перед пакетным экспортом.\n\n5. Сохраняйте данные на другом физическом диске.\n\nПри необычных звуках и аппаратных сбоях избегайте чтения и обратитесь к специалистам.',
-   '1. 可能なら「イメージを選択」で既存のディスクイメージを開きます。\n\n2. ソースを選択すると Tenshi は「パーティション」を開き、クイックスキャンを自動で開始します。詳細スキャンは必要な場合のみ実行します。\n\n3. 検出したパーティションをダブルクリックして「ファイルとフォルダー」を開きます。\n\n4. ファイルを選択し、一括エクスポートの前に事前検査を実行します。\n\n5. 復旧先には別の物理ディスクを使用してください。\n\n異音、切断、物理的損傷がある場合は読み取りを控え、専門家への相談を検討してください。'
+   ("1. Öffne nach Möglichkeit ein zuvor erstelltes Image mit „Image auswählen“.\n\n"
+    "2. Nach der Quellenauswahl öffnet Tenshi automatisch „Partitionen“ und beginnt die Schnellanalyse. Nutze die Tiefensuche nur bei Bedarf.\n\n"
+    "3. Doppelklicke auf eine gefundene Partition, um „Dateien & Ordner“ zu öffnen und das Dateisystem einzulesen.\n\n"
+    "4. Wähle Dateien oder Ordner aus und nutze „Export prüfen“, bevor du den Stapel-Export startest.\n\n"
+    "5. Speichere gerettete Dateien auf einem anderen physischen Datenträger.\n\n"
+    "Bei ungewöhnlichen Geräuschen, Aussetzern oder einem mechanischen Defekt weitere Zugriffe vermeiden und professionelle Hilfe erwägen.\n\n"
+    "Beim Schließen des Hauptfensters fragt Tenshi nach, wenn noch Export-, Image- oder Speichervorgänge laufen. Bei „Nein“ bleibt der bisherige Ausführungs- oder Pausenzustand erhalten. „Ja“ fordert die kontrollierte Unterbrechung an und wartet auf laufende Schreibvorgänge. Abschlussfehler werden vor dem Schließen angezeigt; im Leerlauf ist keine Rückfrage nötig."),
+   ("1. Prefer an existing disk image using “Select image”.\n\n"
+    "2. After selecting a source, Tenshi opens “Partitions” and starts a quick scan automatically. Use deep scan only if necessary.\n\n"
+    "3. Double-click a detected partition to open “Files & Folders” and scan the file system.\n\n"
+    "4. Select files or folders and run “Check export” before starting batch export.\n\n"
+    "5. Save recovered files to a different physical disk.\n\n"
+    "If a drive makes unusual noises, disconnects or has physical damage, avoid further reads and consider professional assistance.\n\n"
+    "Closing the main window asks for confirmation while export, imaging or saves are active. “No” leaves jobs running or paused. “Yes” requests controlled interruption and waits for active writes. Completion errors are shown before closing; an idle application closes without asking."),
+   ("1. Abra preferentemente una imagen existente con «Seleccionar imagen».\n\n"
+    "2. Al seleccionar un origen, Tenshi abre «Particiones» e inicia automáticamente el análisis rápido. Use el análisis profundo solo si es necesario.\n\n"
+    "3. Haga doble clic en una partición para abrir «Archivos y carpetas» y leer el sistema de archivos.\n\n"
+    "4. Seleccione archivos y use «Comprobar exportación» antes de la exportación por lotes.\n\n"
+    "5. Guarde los datos en otro disco físico.\n\n"
+    "Si hay ruidos extraños o daños físicos, evite nuevas lecturas y consulte a profesionales.\n\n"
+    "Al cerrar la ventana principal se pide confirmación si hay exportaciones, imágenes o guardados activos. «No» los deja en ejecución o en pausa. «Sí» solicita una interrupción controlada y espera las escrituras. Los errores se muestran antes de cerrar; en reposo no se pregunta."),
+   ("1. 建议先通过“选择镜像”打开已有磁盘镜像。\n\n"
+    "2. 选择数据源后，Tenshi 会自动打开“分区”并开始快速扫描；仅在必要时使用深度扫描。\n\n"
+    "3. 双击找到的分区，切换到“文件与文件夹”并读取文件系统。\n\n"
+    "4. 选中文件或文件夹，在批量导出前先运行“检查导出”。\n\n"
+    "5. 将恢复的数据保存到另一块物理磁盘。\n\n"
+    "如设备有异响、断连或物理损坏，请尽量避免继续读取并考虑专业协助。\n\n"
+    "关闭主窗口时，如果仍有导出、镜像或保存任务，Tenshi 会请求确认。“否”保持任务运行或暂停；“是”请求有序中断并等待写入结束。结束时的错误会在关闭前显示；空闲时直接关闭。"),
+   ("1. По возможности откройте готовый образ через «Выбрать образ».\n\n"
+    "2. После выбора источника Tenshi автоматически открывает вкладку «Разделы» и запускает быстрый анализ. Глубокий поиск используйте при необходимости.\n\n"
+    "3. Дважды щёлкните раздел для перехода к файлам и чтения файловой системы.\n\n"
+    "4. Выберите файлы и выполните предварительную проверку перед пакетным экспортом.\n\n"
+    "5. Сохраняйте данные на другом физическом диске.\n\n"
+    "При необычных звуках и аппаратных сбоях избегайте чтения и обратитесь к специалистам.\n\n"
+    "При закрытии главного окна с активным экспортом, созданием образа или сохранением требуется подтверждение. «Нет» оставляет задания работающими или на паузе. «Да» запрашивает контролируемую остановку и ждёт завершения записи. Ошибки показываются до закрытия; в покое подтверждение не требуется."),
+   ("1. 可能なら「イメージを選択」で既存のディスクイメージを開きます。\n\n"
+    "2. ソースを選択すると Tenshi は「パーティション」を開き、クイックスキャンを自動で開始します。詳細スキャンは必要な場合のみ実行します。\n\n"
+    "3. 検出したパーティションをダブルクリックして「ファイルとフォルダー」を開きます。\n\n"
+    "4. ファイルを選択し、一括エクスポートの前に事前検査を実行します。\n\n"
+    "5. 復旧先には別の物理ディスクを使用してください。\n\n"
+    "異音、切断、物理的損傷がある場合は読み取りを控え、専門家への相談を検討してください。\n\n"
+    "エクスポート、イメージ作成、保存が動作中にメインウィンドウを閉じると確認します。「いいえ」は実行中・一時停止の状態を維持し、「はい」は制御された中断を要求して書き込み完了を待ちます。終了時のエラーは閉じる前に表示し、待機中は確認なしで終了します。"),
   )),
  'partitions': (
   ('Partitionen', 'Partitions', 'Particiones', '分区', 'Разделы', 'パーティション'),
@@ -52,22 +88,88 @@ DATA = {
  'imaging': (
   ('Image erstellen', 'Create an image', 'Crear imagen', '创建镜像', 'Создание образа', 'イメージの作成'),
   (
-   '„Image erstellen / fortsetzen“ kopiert lesend von der Quelle in eine separate Image-Zieldatei. Beim Fortsetzen wird die bestehende Zieldatei weitergeschrieben. Statusdateien (.recovery.json/.journal) dienen zur sicheren Wiederaufnahme.\n\nBei bestätigten Medienfehlern sind 0–3 zusätzliche Leseversuche möglich. Jeder Versuch kann ein defektes Laufwerk belasten. „Nullen + protokollieren“ erstellt Datenlücken; „Sicher anhalten“ stoppt am letzten gültigen Prüfpunkt.\n\nZugriffsverweigerungen, Geräteabbrüche und unerwartet kurze Leseantworten sind keine bestätigten defekten Sektoren und führen zum Abbruch. Für mechanisch defekte Laufwerke professionelle schonende Verfahren bevorzugen.',
-   '“Create / resume image” reads the source into a separate image file. Resume extends the existing destination; .recovery.json/.journal files hold checkpoints.\n\nFor confirmed media errors, 0–3 retries are available. Each read can stress failing hardware. Zero fill records missing data; safe stop preserves the last valid checkpoint.\n\nPermission failures, disconnected devices and unexpected short reads stop the operation rather than being counted as bad sectors. Prefer specialist low-impact imaging for failing hardware.',
-   '«Crear / reanudar imagen» copia la fuente a otra imagen. Al reanudar continúa escribiendo en el archivo de destino; .recovery.json/.journal guardan el estado.\n\nAnte errores del medio confirmados hay 0–3 reintentos, que pueden dañarlo más. Rellenar con ceros deja datos ausentes; la parada segura conserva el último punto válido.\n\nPermisos denegados, desconexiones y lecturas cortas inesperadas detienen el proceso. Para discos dañados, prefiera herramientas especializadas.',
-   '“创建／继续镜像”只读访问源并写入单独的目标镜像。续传时继续写入现有文件；.recovery.json/.journal 用于恢复。\n\n确认的介质错误可重试 0–3 次，但每次读取都可能加重损坏。填零会留下数据缺口；安全停止会保留最后有效检查点。\n\n拒绝访问、设备断开和异常短读会终止操作，不会当作坏扇区。故障硬盘建议使用专业低负载工具。',
-   '«Создать / продолжить образ» читает источник и записывает отдельный файл образа. При возобновлении файл дописывается; .recovery.json/.journal хранят контрольные точки.\n\nДля подтверждённых ошибок носителя предусмотрено 0–3 повтора. Они могут ухудшить состояние диска. Нулевое заполнение означает потерю данных; безопасная остановка сохраняет контрольную точку.\n\nОтказ в доступе, отключение и короткие ответы вызывают остановку. При аппаратных повреждениях применяйте специализированные средства.',
-   '「イメージ作成／再開」は元ディスクを読み、別のイメージファイルへ書き込みます。再開時は既存ファイルへ追記し、.recovery.json/.journal に状態を保存します。\n\n確定した媒体エラーのみ0～3回の再試行が可能ですが、故障を悪化させる恐れがあります。ゼロ埋めは欠損を残し、安全停止は有効なチェックポイントを保持します。\n\nアクセス拒否、切断、短い読み取りは停止します。故障媒体には専門的な手法を推奨します。'
+   ("„Image erstellen / fortsetzen“ kopiert lesend von der Quelle in eine separate Image-Zieldatei. Beim Fortsetzen wird die bestehende Zieldatei weitergeschrieben. Statusdateien (.recovery.json/.journal) dienen zur sicheren Wiederaufnahme.\n\n"
+    "Bei bestätigten Medienfehlern sind 0–3 zusätzliche Leseversuche möglich. Jeder Versuch kann ein defektes Laufwerk belasten. „Nullen + protokollieren“ erstellt Datenlücken; „Sicher anhalten“ stoppt am letzten gültigen Prüfpunkt.\n\n"
+    "Zugriffsverweigerungen, Geräteabbrüche und unerwartet kurze Leseantworten sind keine bestätigten defekten Sektoren und führen zum Abbruch. Für mechanisch defekte Laufwerke professionelle schonende Verfahren bevorzugen.\n\n"
+    "Das eigene Imaging-Fenster zeigt 100 Felder über die Quellbytes. Grün bedeutet lesbar gespeichert, Rot kennzeichnet protokollierten Nullersatz; schon ein kleiner Fehleranteil kann ein ganzes Feld rot markieren. Grün allein bestätigt keinen Vollvergleich. Nur das abschließende erfolgreiche Prüfergebnis meldet „bitgenau verifiziert“; eine unterbrochene Prüfung bleibt unbestätigt.\n\n"
+    "„Schließen“ blendet die Ansicht aus, ohne den Auftrag anzuhalten. Über „Image erstellen / fortsetzen“ lässt sie sich wieder öffnen. „Unterbrechen“ hält kontrolliert an; „Einstellungen / fortsetzen“ führt zum bisherigen Auftrag. Image und Statusdateien zusammen behalten. Fehlerstellen-Bericht, Bericht speichern und Zielordner öffnen sind nach Abschluss oder Unterbrechung erreichbar. Die Dateisystemanalyse bleibt dagegen mit ihrem Zähler im Hauptfenster."),
+   ("“Create / resume image” reads the source into a separate image file. Resume extends the existing destination; .recovery.json/.journal files hold checkpoints.\n\n"
+    "For confirmed media errors, 0–3 retries are available. Each read can stress failing hardware. Zero fill records missing data; safe stop preserves the last valid checkpoint.\n\n"
+    "Permission failures, disconnected devices and unexpected short reads stop the operation rather than being counted as bad sectors. Prefer specialist low-impact imaging for failing hardware.\n\n"
+    "The imaging window has 100 cells across the source bytes. Green means read and saved; red marks recorded zero fill, even if only a small part of the cell had an error. Green alone does not confirm full comparison. Only a successful final check reports verification bit-for-bit; interrupted verification remains unconfirmed.\n\n"
+    "Closing the view does not stop the job. Reopen it through “Create / resume image”. “Pause” interrupts safely; “Settings / resume” returns to the existing job. Keep the image and checkpoint files together. The bad-range report, save report and destination folder actions are available after completion or interruption. File-system scanning continues to show its counter in the main window."),
+   ("«Crear / reanudar imagen» copia la fuente a otra imagen. Al reanudar continúa escribiendo en el archivo de destino; .recovery.json/.journal guardan el estado.\n\n"
+    "Ante errores del medio confirmados hay 0–3 reintentos, que pueden dañarlo más. Rellenar con ceros deja datos ausentes; la parada segura conserva el último punto válido.\n\n"
+    "Permisos denegados, desconexiones y lecturas cortas inesperadas detienen el proceso. Para discos dañados, prefiera herramientas especializadas.\n\n"
+    "La ventana de imagen muestra 100 casillas sobre los bytes del origen. Verde significa leído y guardado; rojo señala ceros registrados, aunque el error afecte solo a una parte pequeña. Verde no confirma una comparación completa. Solo el resultado final correcto indica verificación bit a bit; una comprobación interrumpida queda sin confirmar.\n\n"
+    "Cerrar la vista no detiene el trabajo. Ábrala desde «Crear / reanudar imagen». «Pausar» interrumpe de forma controlada y «Opciones / continuar» vuelve al trabajo existente. Conserve juntos imagen y archivos de estado. Tras terminar o interrumpir están disponibles el informe de errores, guardar informe y abrir destino. El análisis del sistema de archivos mantiene su contador en la ventana principal."),
+   ("“创建／继续镜像”只读访问源并写入单独的目标镜像。续传时继续写入现有文件；.recovery.json/.journal 用于恢复。\n\n"
+    "确认的介质错误可重试 0–3 次，但每次读取都可能加重损坏。填零会留下数据缺口；安全停止会保留最后有效检查点。\n\n"
+    "拒绝访问、设备断开和异常短读会终止操作，不会当作坏扇区。故障硬盘建议使用专业低负载工具。\n\n"
+    "镜像窗口用 100 个格子表示来源字节范围。绿色表示已读取并保存；红色表示已记录的零填充，即使错误只影响该格的一小部分。绿色本身不代表完整比较通过。只有最终成功的校验结果才能确认逐位一致；中断的校验仍未确认。\n\n"
+    "关闭视图不会停止任务，可通过“创建 / 继续镜像”重新打开。“暂停”有序中断，“设置 / 继续”返回原任务。请将镜像和检查点文件一起保留。完成或中断后可查看错误位置报告、保存报告及打开目标文件夹。文件系统扫描仍在主窗口显示计数器。"),
+   ("«Создать / продолжить образ» читает источник и записывает отдельный файл образа. При возобновлении файл дописывается; .recovery.json/.journal хранят контрольные точки.\n\n"
+    "Для подтверждённых ошибок носителя предусмотрено 0–3 повтора. Они могут ухудшить состояние диска. Нулевое заполнение означает потерю данных; безопасная остановка сохраняет контрольную точку.\n\n"
+    "Отказ в доступе, отключение и короткие ответы вызывают остановку. При аппаратных повреждениях применяйте специализированные средства.\n\n"
+    "Окно создания образа показывает 100 ячеек по байтам источника. Зелёный означает прочитанное и сохранённое, красный — записанное заполнение нулями, даже при малой доле ошибки. Зелёный сам по себе не подтверждает полного сравнения. Только успешная итоговая проверка означает побитовое совпадение; прерванная проверка остаётся неподтверждённой.\n\n"
+    "Закрытие окна не останавливает работу; откройте её через создание/продолжение образа. «Приостановить» останавливает контролируемо, «Настройки / продолжить» возвращает к заданию. Храните образ вместе с файлами контрольных точек. После завершения или остановки доступны отчёт о сбойных участках, сохранение отчёта и папка назначения. Счётчик анализа файловой системы остаётся в главном окне."),
+   ("「イメージ作成／再開」は元ディスクを読み、別のイメージファイルへ書き込みます。再開時は既存ファイルへ追記し、.recovery.json/.journal に状態を保存します。\n\n"
+    "確定した媒体エラーのみ0～3回の再試行が可能ですが、故障を悪化させる恐れがあります。ゼロ埋めは欠損を残し、安全停止は有効なチェックポイントを保持します。\n\n"
+    "アクセス拒否、切断、短い読み取りは停止します。故障媒体には専門的な手法を推奨します。\n\n"
+    "イメージ作成ウィンドウはソースのバイト範囲を100マスで表示します。緑は読み取り・保存済み、赤は記録されたゼロ埋めで、影響がごく一部でもマス全体が赤くなることがあります。緑だけでは完全比較の合格を示しません。最終検証の成功だけがビット単位の一致を確認し、中断した検証は未確認です。\n\n"
+    "表示を閉じても処理は止まらず、イメージ作成・再開から再表示できます。「一時停止」は制御された中断を行い、「設定／再開」で元の処理に戻ります。イメージとチェックポイントファイルを一緒に保持してください。完了・中断後にエラー位置レポート、レポート保存、保存先フォルダーを利用できます。ファイルシステム解析のカウンターは引き続きメインウィンドウに表示します。"),
   )),
  'export': (
   ('Stapel-Export', 'Batch export', 'Exportación por lotes', '批量导出', 'Пакетный экспорт', '一括エクスポート'),
   (
-   'Wähle rechts Dateien oder Ordner. „Export prüfen“ bewertet Dateisystem-Metadaten, ohne den gesamten Inhalt zu lesen. „Bereit“ bedeutet nicht, dass die Datei intakt ist. Nachgewiesene NTFS-Zuordnungskonflikte werden gesperrt.\n\nDer grüne Button „Stapel-Export / fortsetzen“ exportiert in ein separates Ziel auf einem anderen physischen Datenträger. Bestehende fremde Dateien werden nicht überschrieben.\n\nBei Wiederaufnahme prüft Tenshi vollständige bereits exportierte Dateien per SHA-256. Eine unterbrochene Einzeldatei wird neu begonnen. Verborgene TMP-Dateien können bei einem rekursiven Ordnerexport enthalten sein.',
-   'Select files or folders. “Check export” inspects metadata but not full file contents; “Ready” never guarantees integrity. Proven NTFS mapping conflicts are blocked.\n\nUse the green batch export button to write to another physical disk. Untracked existing files are never overwritten.\n\nResume verifies completed outputs with SHA-256; a partially exported file restarts. Hidden TMP files may still be included in recursive folder exports.',
-   'Seleccione archivos o carpetas. «Comprobar exportación» examina metadatos, no el contenido completo; «Listo» no garantiza integridad. Los conflictos NTFS confirmados se bloquean.\n\nLa exportación por lotes guarda en otro disco físico y no sobrescribe archivos ajenos.\n\nAl reanudar se verifican con SHA-256 las salidas completas; el archivo incompleto se reinicia. Los TMP ocultos pueden incluirse al exportar carpetas.',
-   '选中文件或文件夹。“检查导出”仅检查元数据，不验证完整内容；“就绪”不保证文件完好。已证实的 NTFS 映射冲突会被阻止。\n\n绿色批量导出按钮将文件写入另一块物理磁盘，不覆盖现有的外部文件。\n\n恢复任务时用 SHA-256 验证已完成文件，未完成的单个文件需重新导出。递归导出文件夹可能包含隐藏的 TMP 文件。',
-   'Выберите файлы или папки. Предварительная проверка оценивает метаданные, но не содержимое; «Готово» не означает целостность. Подтверждённые конфликты NTFS блокируются.\n\nЗелёная кнопка экспорта сохраняет файлы на другой физический диск без перезаписи чужих файлов.\n\nВозобновление проверяет завершённые файлы по SHA-256, незавершённый файл начинается заново. Скрытые TMP могут попасть в экспорт папок.',
-   'ファイルまたはフォルダーを選択します。事前検査はメタデータのみ確認し、内容の完全性は保証しません。確認された NTFS の割り当て競合はブロックされます。\n\n緑の一括エクスポートで別の物理ディスクに保存します。既存の無関係なファイルは上書きしません。\n\n再開時は完了ファイルを SHA-256 で検証し、未完了のファイルは再実行します。フォルダーの再帰的な書き出しには非表示の TMP が含まれる場合があります。'
+   ("Wähle Dateien oder Ordner und nutze „Export prüfen“. Die Vorprüfung bewertet Metadaten, nicht den vollständigen Inhalt. „Bereit“ garantiert keine intakte Datei; bestätigte Zuordnungskonflikte werden gesperrt. „Stapel-Export / fortsetzen“ speichert in einem eigenen Exportordner auf dem gewählten Ziel. Verwende einen anderen physischen Datenträger. Fremde vorhandene Dateien werden nicht überschrieben; verborgene TMP-Dateien können bei Ordnerexporten enthalten sein.\n\n"
+    "Das separate Fortschrittsfenster öffnet automatisch. „Schließen“ blendet nur diese Ansicht aus. Über „Fortschritt / Ergebnis“ lässt sie sich wieder öffnen; der Auftrag läuft weiter oder bleibt pausiert.\n\n"
+    "„Pause“ hält den laufenden Auftrag an der nächsten Lese-/Schreibgrenze an. Bis dahin erscheint eine Pause-Anforderung. Nach Bestätigung bleiben angefangene Datei, Zähler und SHA256-Berechnung erhalten. „Fortsetzen“ arbeitet im selben Auftrag weiter, solange Tenshi geöffnet bleibt.\n\n"
+    "„Abbrechen“ beendet kontrolliert und entfernt eine unvollständige Datei. Erst nach abgeschlossenem Abbruch wird „Fortsetzen“ wieder aktiv. Es übernimmt die ursprüngliche Quelle, Auswahl und den Zielordner, auch wenn die Dateiansicht inzwischen etwas anderes zeigt. Fertige Dateien werden erneut geprüft; unvollständige Dateien beginnen von vorn. Bereits vollständig kopierte Dateien mit gespeichertem Prüfwert können eine unterbrochene Zielprüfung fortsetzen. Eine geänderte Quelle oder ein fehlender bisheriger Exportordner wird beim direkten Fortsetzen gemeldet.\n\n"
+    "Nach einem Programmneustart dieselbe Quelle und Auswahl sowie denselben ursprünglichen Zielordner wählen, nicht den darin erzeugten Tenshi_Export_…-Unterordner. Die innerhalb des Fensters gespeicherte Auftragsauswahl gilt nur für die laufende Programmsitzung.\n\n"
+    "Jedes der 100 Rasterfelder steht für ein Prozent aller geplanten Dateigrößen; bei reinen Ordner-/Null-Byte-Plänen gilt die Eintragszahl. Blau bedeutet kopiert, noch ungeprüft; Grün bedeutet Export bestätigt. Rot kennzeichnet Exportfehler, unbestätigte Anteile bleiben erkennbar. Dateigrenzen können mitten in einem Feld liegen: Bereits bestätigte Bytes der vorherigen und ungeprüfte Bytes der laufenden Datei bleiben bis zu deren Bestätigung gemischt. Die Felder sind keine Datenträgersektoren.\n\n"
+    "SHA256-Berechnung und Zielprüfung erscheinen als Textphase. Nach jeder vollständig kopierten und bestätigten Datei entsteht eine .sha256 unter Pruefsummen_Einzeln. Erst nach vollständig erfolgreichem Export wird SHA256SUMS.sha256 sicher gespeichert und rückgelesen; danach werden die unveränderten eigenen Einzeldateien und der leere Zwischenordner entfernt. Bei Abbruch oder Fehlern bleiben bisherige Einzeldateien erhalten. Weitere fremde Dateien erhalten den Ordner; geänderte Prüfsummendateien werden nicht überschrieben oder entfernt. Relative Prüfsummenpfade gelten ab dem Exportordner.\n\n"
+    "„Ergebnisbericht“ zeigt Einzelstatus, bestätigte bzw. noch unbestätigte SHA256-Werte und den Prüfumfang. „Bericht speichern“ beginnt im zugehörigen Exportordner und schlägt einen neuen Namen vor. „Zielordner öffnen“ führt zum Exportordner. Ein bestätigter Export beweist nicht, dass die ursprünglichen Dateiinhalte vollständig oder unbeschädigt waren."),
+   ("Select files or folders and run “Check export”. Preflight checks metadata, not full contents. “Ready” does not guarantee intact files; confirmed mapping conflicts are blocked. Batch export writes into its own folder at the selected destination. Use a different physical disk. Unrelated existing files are not overwritten; recursive folder exports may include hidden TMP files.\n\n"
+    "The separate progress window opens automatically. Closing it hides the view only. Reopen it through “Progress / result”; the job continues running or remains paused.\n\n"
+    "“Pause” requests a stop at the next read/write boundary. Until acknowledged, the window shows a pause request. Once paused, the partial file, counters and SHA256 calculation are retained. “Resume” continues the same worker while Tenshi stays open.\n\n"
+    "“Cancel” stops the job cleanly and removes an incomplete file. Once cancellation finishes, “Resume” becomes available again. It uses the original source, selection and destination even if the file browser now shows something else. Completed files are verified again; incomplete files restart from the beginning. A fully copied file with a saved digest can finish an interrupted destination check. Direct resume reports a changed source or missing original export folder.\n\n"
+    "After restarting Tenshi, select the same source, entries and original destination folder, not the generated Tenshi_Export_… subfolder. The window retains its job selection only for the current application session.\n\n"
+    "Each of the 100 cells represents one percent of the total planned file sizes; folder-only/zero-byte plans use entry count. Blue means copied but not yet verified; green means export verified. Red marks export errors; unverified portions remain distinct. A file boundary may split a cell: verified bytes of the previous file and unverified bytes of the current file remain mixed until that file is verified. These are not disk sectors.\n\n"
+    "SHA256 calculation and destination checking appear as text phases. Each fully copied and verified file gets a .sha256 under Pruefsummen_Einzeln. Only a fully successful export saves and reads back SHA256SUMS.sha256; afterwards unchanged individual checksum files owned by the job and their empty folder are removed. Cancellation or errors retain existing individual files. Unrelated files keep the folder in place; modified checksum files are not overwritten or deleted. Checksum paths are relative to the export folder.\n\n"
+    "“Results report” shows individual status, verified or still unverified SHA256 values and the verification scope. “Save report” starts in the export folder and suggests a new name. “Open destination folder” opens the export folder. A verified export does not prove that the original file contents were complete or undamaged."),
+   ("Seleccione archivos o carpetas y use «Comprobar exportación». La comprobación previa evalúa metadatos, no todo el contenido. «Listo» no garantiza archivos íntegros; los conflictos de asignación confirmados se bloquean. La exportación por lotes crea su propia carpeta en el destino elegido. Use otro disco físico. No se sobrescriben archivos ajenos; la exportación de carpetas puede incluir TMP ocultos.\n\n"
+    "La ventana de progreso se abre automáticamente. Cerrarla solo oculta la vista. Puede volver a abrirla mediante «Progreso / resultado»; el trabajo continúa o permanece en pausa.\n\n"
+    "«Pausar» solicita una pausa en el siguiente límite de lectura o escritura. Mientras se espera, se indica la solicitud. Al confirmarse, se conservan el archivo parcial, los contadores y el cálculo SHA256. «Continuar» sigue con el mismo proceso mientras Tenshi esté abierto.\n\n"
+    "«Cancelar» detiene el trabajo de forma controlada y elimina el archivo incompleto. Al terminar la cancelación se activa «Continuar». Se reutilizan origen, selección y destino originales, aunque el explorador muestre otra cosa. Los archivos completos se verifican de nuevo; los incompletos se copian desde el principio. Una copia completa con suma guardada puede terminar una verificación de destino interrumpida. La continuación directa avisa si cambió el origen o falta la carpeta de exportación original.\n\n"
+    "Después de reiniciar Tenshi, seleccione el mismo origen, los mismos elementos y la carpeta de destino original, no la subcarpeta Tenshi_Export_… creada dentro. La selección del trabajo se conserva en la ventana solo durante la sesión actual.\n\n"
+    "Cada una de las 100 casillas representa el uno por ciento del tamaño total previsto; los planes solo de carpetas o de cero bytes usan el número de entradas. Azul: copiado sin verificar; verde: exportación confirmada; rojo: error. Los datos sin confirmar se distinguen. Un límite entre archivos puede dividir una casilla: combina datos confirmados del archivo anterior y pendientes del actual hasta su verificación. No representa sectores físicos.\n\n"
+    "El cálculo SHA256 y la verificación del destino se muestran como fases de texto. Cada archivo completo y confirmado recibe un .sha256 en Pruefsummen_Einzeln. Solo una exportación totalmente correcta guarda y vuelve a leer SHA256SUMS.sha256; después elimina sus archivos individuales sin cambios y la carpeta vacía. Al cancelar o fallar se conservan las sumas existentes. Los archivos ajenos mantienen la carpeta; las sumas modificadas no se sobrescriben ni eliminan. Las rutas de las sumas son relativas a la carpeta de exportación.\n\n"
+    "«Informe de resultados» muestra estados, valores SHA256 confirmados o pendientes y el alcance de la comprobación. «Guardar informe» propone un nombre nuevo en la carpeta de exportación. «Abrir carpeta de destino» abre esa carpeta. Confirmar la exportación no demuestra que el contenido original estuviera completo o intacto."),
+   ("选中文件或文件夹并运行“检查导出”。预检查评估元数据，不验证全部内容；“就绪”不保证文件完好，已确认的分配冲突会被阻止。批量导出会在所选目标中建立独立文件夹。请使用另一块物理磁盘。不覆盖无关的现有文件；递归导出文件夹可能包含隐藏的 TMP 文件。\n\n"
+    "独立的进度窗口会自动打开。关闭它仅隐藏视图；通过“进度 / 结果”可以重新打开，任务会继续运行或保持暂停。\n\n"
+    "“暂停”会请求在下一个读写边界暂停；等待期间会显示暂停请求。确认暂停后，未完成文件、计数器和 SHA256 计算状态都会保留。在 Tenshi 保持打开时，“继续”会让同一任务接着运行。\n\n"
+    "“取消”会有序停止任务并删除未完成的文件。取消结束后，“继续”按钮重新可用。即使文件浏览器已经显示其他内容，也会使用原来的来源、选择和目标文件夹。已完成文件会重新校验；未完成文件将从头复制。完整复制且已保存校验值的文件可以完成先前中断的目标校验。直接继续时，如果原来源改变或原导出文件夹缺失，会报告错误。\n\n"
+    "重启 Tenshi 后，请重新选择相同来源、相同条目和原目标文件夹，不要选择其中生成的 Tenshi_Export_… 子文件夹。窗口中的任务选择仅在当前程序会话中保留。\n\n"
+    "100 个格子各表示计划文件总大小的百分之一；仅含文件夹或零字节的计划按条目数显示。蓝色表示已复制但未校验，绿色表示导出已确认，红色表示导出错误；未确认部分单独标识。文件边界可能位于格子内部：前一文件已确认的字节与当前文件未校验的字节会保持混合状态，直到当前文件校验完成。格子不代表磁盘扇区。\n\n"
+    "SHA256 计算与目标校验以文字阶段显示。每个完整复制且确认的文件都会在 Pruefsummen_Einzeln 中生成 .sha256。只有全部导出成功后，才安全保存并回读 SHA256SUMS.sha256；随后删除任务自身未被修改的单独校验文件和空的中间文件夹。取消或出错时保留已有的单独文件。含其他文件的文件夹会保留；已修改的校验文件不会被覆盖或删除。校验列表中的路径以导出文件夹为基准。\n\n"
+    "“结果报告”包含每个条目的状态、已确认或未确认的 SHA256 值及校验范围。“保存报告”从对应导出文件夹开始并建议新名称。“打开目标文件夹”打开该文件夹。导出已确认并不证明原始文件内容完整无损。"),
+   ("Выберите файлы или папки и выполните предварительную проверку экспорта. Она оценивает метаданные, а не всё содержимое. «Готово» не гарантирует целостность; подтверждённые конфликты размещения блокируются. Пакетный экспорт создаёт отдельную папку в выбранном назначении. Используйте другой физический диск. Посторонние существующие файлы не перезаписываются; экспорт папок может включать скрытые TMP.\n\n"
+    "Окно прогресса открывается автоматически. Закрытие скрывает только представление. Откройте его снова через «Прогресс / результат»: работа продолжается или остаётся на паузе.\n\n"
+    "«Пауза» запрашивает остановку на ближайшей границе чтения или записи; до подтверждения показывается запрос. Затем сохраняются частичный файл, счётчики и состояние SHA256. «Продолжить» возобновляет тот же процесс, пока Tenshi открыт.\n\n"
+    "«Отмена» контролируемо завершает работу и удаляет неполный файл. После завершения отмены снова доступно «Продолжить». Используются прежние источник, выбор и папка назначения, даже если файловый список уже показывает другое. Готовые файлы проверяются повторно, неполные копируются с начала. Полная копия с сохранённой суммой может завершить прерванную проверку назначения. При прямом продолжении сообщается об изменении источника или отсутствии прежней папки экспорта.\n\n"
+    "После перезапуска Tenshi выберите прежний источник, элементы и исходную папку назначения, а не созданную внутри неё Tenshi_Export_…. Выбор задания хранится в окне только в текущем сеансе программы.\n\n"
+    "Каждая из 100 ячеек означает один процент общего запланированного размера; для папок и нулевых файлов используется число элементов. Синий означает скопированные, ещё не проверенные данные, зелёный — подтверждённый экспорт, красный — ошибку. Неподтверждённые части различаются отдельно. Граница файла может проходить внутри ячейки: подтверждённые байты предыдущего файла и непроверенные текущего остаются смешанными до проверки текущего файла. Это не секторы диска.\n\n"
+    "Расчёт SHA256 и проверка назначения показываются текстовыми этапами. Каждый полностью скопированный и подтверждённый файл получает .sha256 в Pruefsummen_Einzeln. Только полностью успешный экспорт сохраняет и перечитывает SHA256SUMS.sha256, после чего удаляет неизменённые собственные отдельные суммы и пустую промежуточную папку. При отмене и ошибках прежние суммы сохраняются. Посторонние файлы сохраняют папку; изменённые суммы не перезаписываются и не удаляются. Пути считаются относительно папки экспорта.\n\n"
+    "«Отчёт о результатах» показывает статусы, подтверждённые или ещё не подтверждённые SHA256 и объём проверки. Сохранение отчёта начинается в папке экспорта и предлагает новое имя. Кнопка папки открывает её. Подтверждённый экспорт не доказывает целостность исходного содержимого."),
+   ("ファイルやフォルダーを選び、エクスポートの事前検査を実行します。検査対象はメタデータで、全内容ではありません。「準備完了」は完全性を保証せず、確認された割り当て競合はブロックします。一括エクスポートは選択先に専用フォルダーを作成します。別の物理ディスクを使用してください。無関係な既存ファイルは上書きしません。フォルダーの再帰的な出力には非表示の TMP が含まれる場合があります。\n\n"
+    "独立した進捗ウィンドウが自動で開きます。閉じても表示を隠すだけです。「進捗 / 結果」から再表示でき、処理は継続するか、一時停止のままになります。\n\n"
+    "「一時停止」は次の読み書きの区切りで停止を要求します。確認までは要求中と表示します。停止後は途中のファイル、カウンター、SHA256 の計算状態を保持します。Tenshiを開いている間、「再開」は同じ処理を続けます。\n\n"
+    "「中止」は制御された終了を行い、未完了のファイルを削除します。中止完了後は「再開」が再び有効になります。ファイル画面が別の内容を表示していても、元のソース、選択、保存先を使います。完了済みのファイルは再検証し、未完了のファイルは最初からコピーします。完全にコピーされチェック値が保存されたファイルは、中断された出力先検証を完了できます。直接再開する際、元のソースが変わった場合や元の出力フォルダーがない場合はエラーを表示します。\n\n"
+    "Tenshiを再起動した後は、同じソース、項目、元の保存先フォルダーを選びます。内部に作成された Tenshi_Export_… は選びません。ウィンドウ内の処理選択は現在のプログラムセッションだけで保持します。\n\n"
+    "100マスは計画されたファイルサイズの合計を1%ずつ表します。フォルダーのみ・ゼロバイトの計画では項目数を使います。青はコピー済み・未検証、緑は出力確認済み、赤は出力エラーです。未確認部分も区別します。ファイル境界がマスの途中にあると、前のファイルの確認済み部分と現在のファイルの未検証部分が混在し、現在の検証完了までその表示が続きます。物理セクターの表示ではありません。\n\n"
+    "SHA256 の計算と出力先検証は文字で表示します。完全にコピーされ確認済みの各ファイルについて、Pruefsummen_Einzeln に .sha256 を保存します。全出力の成功後に SHA256SUMS.sha256 を安全に保存して読み戻し、変更されていない自身の個別チェックサムと空の中間フォルダーを削除します。中止やエラー時は既存の個別ファイルを保持します。別のファイルがあればフォルダーは残し、変更されたチェックサムは上書きも削除もしません。パスの基準は出力フォルダーです。\n\n"
+    "結果レポートには項目ごとの状態、確認済み・未確認の SHA256 値、検証範囲を表示します。レポート保存は出力フォルダーから始まり、新しい名前を提案します。保存先ボタンでそのフォルダーを開けます。出力の確認は、元のファイル内容が完全・無傷だったことを保証しません。"),
   )),
  'sessions': (
   ('Analysesitzungen', 'Analysis sessions', 'Sesiones de análisis', '分析会话', 'Сеансы анализа', '解析セッション'),
@@ -92,22 +194,64 @@ DATA = {
  'diagnostics': (
   ('Fehlerdiagnose', 'Troubleshooting', 'Solución de problemas', '故障排查', 'Устранение неполадок', 'トラブルシューティング'),
   (
-   'Mit „Fehlerprotokoll“ (oben rechts) öffnest du die technischen Meldungen. Die Datei liegt unter Windows normalerweise in %LOCALAPPDATA%\\Tenshi\\Logs. Veröffentliche Protokolle erst nach Prüfung auf private Pfade.\n\nBei Build-Problemen prüfe tenshi-build.log und führe check_windows.bat aus. run_tests.bat startet die Tests separat; dabei absichtlich erzeugte Fehler können protokolliert werden.\n\nFür die EXE wird 64-Bit-Python ab 3.11 und PyInstaller benötigt. Der Quellcode enthält kein fertig gebautes Windows-Programm. Treten echte Laufwerksfehler auf, greife nicht wiederholt auf ein verdächtig beschädigtes Medium zu.',
-   'Open “Error log” (top right) to inspect technical records, normally stored under %LOCALAPPDATA%\\Tenshi\\Logs on Windows. Review logs for private paths before sharing.\n\nFor build failures check tenshi-build.log and run check_windows.bat. run_tests.bat runs tests separately; intentionally simulated failures may be logged.\n\nA Windows EXE requires 64-bit Python 3.11+ and PyInstaller. Source packages do not contain prebuilt binaries. Do not keep retrying reads on suspected failing media.',
-   'Abra «Registro de errores» para ver los mensajes técnicos en %LOCALAPPDATA%\\Tenshi\\Logs. Revise si hay rutas privadas antes de compartir.\n\nPara errores de compilación consulte tenshi-build.log y check_windows.bat. run_tests.bat ejecuta los tests por separado; algunos simulan errores.\n\nLa EXE requiere Python de 64 bits 3.11+ y PyInstaller. El código fuente no incluye una EXE compilada. Evite nuevas lecturas en discos defectuosos.',
-   '点击右上角“错误日志”查看技术记录，Windows 中通常位于 %LOCALAPPDATA%\\Tenshi\\Logs。分享前请检查私人路径。\n\n构建失败请查看 tenshi-build.log 并运行 check_windows.bat。run_tests.bat 单独执行测试；部分测试会模拟错误。\n\n构建 EXE 需要 64 位 Python 3.11+ 和 PyInstaller。源码包不包含预编译程序。疑似硬件故障时避免反复读取。',
-   '«Журнал ошибок» показывает технические записи в %LOCALAPPDATA%\\Tenshi\\Logs. Перед отправкой проверьте наличие личных путей.\n\nПри проблемах сборки откройте tenshi-build.log и запустите check_windows.bat. run_tests.bat выполняет тесты отдельно; часть ошибок моделируется намеренно.\n\nEXE требует 64-битный Python 3.11+ и PyInstaller. Исходный архив не содержит готового EXE. Не повторяйте чтение неисправных дисков.',
-   '右上の「エラーログ」で技術記録を確認できます。Windows では通常 %LOCALAPPDATA%\\Tenshi\\Logs に保存されます。共有前に個人情報が含まれていないか確認してください。\n\nビルドの問題は tenshi-build.log と check_windows.bat を確認します。run_tests.bat は別途テストを実行し、意図的なエラーが記録されることもあります。\n\nEXE の作成には64ビット Python 3.11+ と PyInstaller が必要です。ソース配布には EXE は含まれません。故障媒体の再読み取りは控えてください。'
+   ("Mit „Fehlerprotokoll“ (oben rechts) öffnest du die technischen Meldungen. Die Datei liegt unter Windows normalerweise in %LOCALAPPDATA%\\Tenshi\\Logs. Veröffentliche Protokolle erst nach Prüfung auf private Pfade.\n\n"
+    "Bei Build-Problemen prüfe tenshi-build.log und führe check_windows.bat aus. run_tests.bat startet die Tests separat; dabei absichtlich erzeugte Fehler können protokolliert werden.\n\n"
+    "Für die EXE wird 64-Bit-Python ab 3.11 und PyInstaller benötigt. Der Quellcode enthält kein fertig gebautes Windows-Programm. Treten echte Laufwerksfehler auf, greife nicht wiederholt auf ein verdächtig beschädigtes Medium zu.\n\n"
+    "Exportfehler unterscheiden verweigerten Zugriff, schreibgeschützte Ziele, fehlenden Speicherplatz und nicht unterstützte Dateioperationen. „Invalid argument“ beweist keine fehlenden Schreibrechte; gemeinsam genutzte VM-Ordner können eingeschränkt sein. Die Originaldiagnose bleibt sichtbar. Bei Flatpak muss der gewählte Zielordner zugänglich sein. Tenshi erweitert keine Geräte- oder Ordnerrechte. Fehler zusätzlicher Prüfsummendateien stehen gesondert im Bericht; eine gespeicherte Sammeldatei bleibt bei blockierter Bereinigung erhalten."),
+   ("Open “Error log” (top right) to inspect technical records, normally stored under %LOCALAPPDATA%\\Tenshi\\Logs on Windows. Review logs for private paths before sharing.\n\n"
+    "For build failures check tenshi-build.log and run check_windows.bat. run_tests.bat runs tests separately; intentionally simulated failures may be logged.\n\n"
+    "A Windows EXE requires 64-bit Python 3.11+ and PyInstaller. Source packages do not contain prebuilt binaries. Do not keep retrying reads on suspected failing media.\n\n"
+    "Export errors distinguish denied access, read-only destinations, lack of free space and unsupported file operations. “Invalid argument” does not prove missing write permission; VM shared folders may restrict operations. Original diagnostics remain visible. Flatpak needs access to the selected destination. Tenshi does not grant device or folder permissions. Additional checksum-file errors are reported separately; a saved summary is retained if cleanup is blocked."),
+   ("Abra «Registro de errores» para ver los mensajes técnicos en %LOCALAPPDATA%\\Tenshi\\Logs. Revise si hay rutas privadas antes de compartir.\n\n"
+    "Para errores de compilación consulte tenshi-build.log y check_windows.bat. run_tests.bat ejecuta los tests por separado; algunos simulan errores.\n\n"
+    "La EXE requiere Python de 64 bits 3.11+ y PyInstaller. El código fuente no incluye una EXE compilada. Evite nuevas lecturas en discos defectuosos.\n\n"
+    "Los errores distinguen acceso denegado, destinos de solo lectura, falta de espacio y operaciones no compatibles. «Invalid argument» no demuestra falta de permisos; las carpetas compartidas de una VM pueden limitar operaciones. Se conserva el diagnóstico original. Flatpak necesita acceso al destino; Tenshi no concede permisos. Los errores de archivos de sumas se muestran aparte; un resumen guardado se conserva si la limpieza está bloqueada."),
+   ("点击右上角“错误日志”查看技术记录，Windows 中通常位于 %LOCALAPPDATA%\\Tenshi\\Logs。分享前请检查私人路径。\n\n"
+    "构建失败请查看 tenshi-build.log 并运行 check_windows.bat。run_tests.bat 单独执行测试；部分测试会模拟错误。\n\n"
+    "构建 EXE 需要 64 位 Python 3.11+ 和 PyInstaller。源码包不包含预编译程序。疑似硬件故障时避免反复读取。\n\n"
+    "导出错误区分访问被拒绝、只读目标、空间不足与不支持的操作。“Invalid argument”不能证明缺少写入权限；虚拟机共享文件夹可能限制操作。原始诊断会保留。Flatpak 必须能访问所选目标；Tenshi 不会授予设备或文件夹权限。额外校验文件的错误单独记入报告；清理受阻时保留已保存的汇总文件。"),
+   ("«Журнал ошибок» показывает технические записи в %LOCALAPPDATA%\\Tenshi\\Logs. Перед отправкой проверьте наличие личных путей.\n\n"
+    "При проблемах сборки откройте tenshi-build.log и запустите check_windows.bat. run_tests.bat выполняет тесты отдельно; часть ошибок моделируется намеренно.\n\n"
+    "EXE требует 64-битный Python 3.11+ и PyInstaller. Исходный архив не содержит готового EXE. Не повторяйте чтение неисправных дисков.\n\n"
+    "Ошибки экспорта различают запрет доступа, назначение только для чтения, нехватку места и неподдерживаемые операции. «Invalid argument» не доказывает отсутствия прав; общие папки ВМ могут ограничивать операции. Исходное сообщение сохраняется. Flatpak нужен доступ к назначению; Tenshi не выдаёт права. Ошибки дополнительных сумм указываются отдельно; сохранённый сводный файл остаётся при блокировке очистки."),
+   ("右上の「エラーログ」で技術記録を確認できます。Windows では通常 %LOCALAPPDATA%\\Tenshi\\Logs に保存されます。共有前に個人情報が含まれていないか確認してください。\n\n"
+    "ビルドの問題は tenshi-build.log と check_windows.bat を確認します。run_tests.bat は別途テストを実行し、意図的なエラーが記録されることもあります。\n\n"
+    "EXE の作成には64ビット Python 3.11+ と PyInstaller が必要です。ソース配布には EXE は含まれません。故障媒体の再読み取りは控えてください。\n\n"
+    "出力エラーはアクセス拒否、読み取り専用の保存先、空き容量不足、未対応のファイル操作を区別します。「Invalid argument」だけでは書き込み権限不足と断定できず、VMの共有フォルダーで操作が制限される場合もあります。元の診断は保持します。Flatpakには保存先へのアクセスが必要で、Tenshiは権限を追加しません。チェックサムファイルのエラーは別に記録し、削除がブロックされた場合も保存済みの集約ファイルは保持します。"),
   )),
  'about': (
   ('Über Tenshi', 'About Tenshi', 'Acerca de Tenshi', '关于 Tenshi', 'О программе Tenshi', 'Tenshi について'),
   (
-   'Tenshi {version} – Datenrettung und schreibgeschützte Analyse für Windows 10/11 (64 Bit).\n\nDieses Programm ist experimentelle Freeware. Unterstützte Funktionen und Grenzen sind in der Hilfe und README beschrieben. Getestete synthetische Images ersetzen keine Prüfung mit echter Hardware.\n\nWindows-Build, Installer, Laufwerkszugriffe und Datenrettung auf echten Medien müssen vor einer öffentlichen Freigabe separat validiert werden. Eine bestandene Testsuite ist keine Zertifizierung.\n\nDas Programm führt keine Dateisystemreparatur am Quelldatenträger durch.',
-   'Tenshi {version} – read-only data recovery and analysis for Windows 10/11 (64-bit).\n\nThis is experimental freeware. Capabilities and limitations are documented in the help and README. Synthetic image tests do not replace real-hardware validation.\n\nWindows builds, installer, physical-drive access and real recovery must be validated before a public release. Passing automated tests is not certification.\n\nTenshi does not repair the source filesystem.',
-   'Tenshi {version}: recuperación y análisis de solo lectura para Windows 10/11 de 64 bits.\n\nSoftware gratuito experimental. Las pruebas con imágenes sintéticas no sustituyen las pruebas con hardware real.\n\nAntes de publicar deben verificarse en Windows la EXE, el instalador, el acceso a discos y la recuperación real. Superar los tests no es una certificación.\n\nTenshi no repara el sistema de archivos de origen.',
-   'Tenshi {version}：适用于 Windows 10/11（64 位）的只读数据恢复与分析工具。\n\n本程序为实验性免费软件。模拟镜像测试不能取代真实硬件验证。\n\n公开发布前仍需在 Windows 上验证 EXE、安装程序、物理设备访问和实际数据恢复。通过自动测试并非认证。\n\nTenshi 不会修复源文件系统。',
-   'Tenshi {version} — экспериментальная бесплатная программа для анализа и восстановления данных в Windows 10/11 (64 бит).\n\nТесты синтетических образов не заменяют реальную проверку оборудования.\n\nПеред публичным выпуском необходимы испытания EXE, установщика, дискового доступа и восстановления данных в Windows. Успешные тесты не являются сертификацией.\n\nTenshi не исправляет исходную файловую систему.',
-   'Tenshi {version} — Windows 10/11（64ビット）向けの読み取り専用データ復旧・解析ツールです。\n\n実験的なフリーウェアであり、合成イメージのテストだけでは実機検証になりません。\n\n一般公開前に Windows で EXE、インストーラ、物理ディスク読み取り、実際の復旧を検証する必要があります。自動テストの成功は認証ではありません。\n\n元のファイルシステムを修復する機能はありません。'
+   ("Tenshi {version} – kostenlose, quelloffene Datenrettung und Analyse für Windows 10/11 (64 Bit) und Linux. Entwickelt von FreewareFuchs.\n\n"
+    "Für Fragen und Verbesserungsvorschläge: kontakt@freewarefuchs.de\n\n"
+    "Tenshi öffnet Quellmedien nur lesend. Gerettete Dateien und Images gehören auf einen anderen physischen Datenträger. Das Programm repariert kein Dateisystem am Quelldatenträger; ein bestätigter Export garantiert keine intakten ursprünglichen Dateiinhalte.\n\n"
+    "Unterstützte Funktionen und Grenzen stehen in dieser Hilfe und der README. Quellcode und Lizenz (MIT): https://github.com/FreewareFuchs/Tenshi\n\n"
+    "Website und Anleitungen: https://freewarefuchs.de/tenshi/"),
+   ("Tenshi {version} – free, open-source data recovery and analysis for Windows 10/11 (64-bit) and Linux. Developed by FreewareFuchs.\n\n"
+    "For questions and suggestions for improvement: kontakt@freewarefuchs.de\n\n"
+    "Tenshi opens source media read-only. Save recovered files and images to a different physical disk. It does not repair the source filesystem, and a verified export does not guarantee intact original file contents.\n\n"
+    "Supported features and limitations are described in this help and the README. Source code and MIT license: https://github.com/FreewareFuchs/Tenshi\n\n"
+    "Website and guides: https://freewarefuchs.de/tenshi/"),
+   ("Tenshi {version}: recuperación y análisis gratuitos y de código abierto para Windows 10/11 de 64 bits y Linux. Desarrollado por FreewareFuchs.\n\n"
+    "Para preguntas y sugerencias de mejora: kontakt@freewarefuchs.de\n\n"
+    "Tenshi abre los medios de origen en solo lectura. Guarde archivos e imágenes en otro disco físico. No repara el sistema de archivos de origen; confirmar una exportación no garantiza la integridad del contenido original.\n\n"
+    "Las funciones y limitaciones se describen en esta ayuda y en README. Código fuente y licencia MIT: https://github.com/FreewareFuchs/Tenshi\n\n"
+    "Sitio web y guías: https://freewarefuchs.de/tenshi/"),
+   ("Tenshi {version}：适用于 Windows 10/11（64 位）与 Linux 的免费开源数据恢复和分析工具，由 FreewareFuchs 开发。\n\n"
+    "如有问题或改进建议，请联系：kontakt@freewarefuchs.de\n\n"
+    "Tenshi 以只读方式打开源介质。请将恢复的文件和镜像保存到另一块物理磁盘。它不会修复源文件系统；导出已确认不保证原始文件内容完整无损。\n\n"
+    "支持的功能和限制见本帮助及 README。源代码与 MIT 许可证：https://github.com/FreewareFuchs/Tenshi\n\n"
+    "网站与指南：https://freewarefuchs.de/tenshi/"),
+   ("Tenshi {version} — бесплатная программа с открытым исходным кодом для восстановления и анализа данных в Windows 10/11 (64 бит) и Linux. Разработчик: FreewareFuchs.\n\n"
+    "Вопросы и предложения по улучшению: kontakt@freewarefuchs.de\n\n"
+    "Tenshi открывает источники только для чтения. Сохраняйте файлы и образы на другом физическом диске. Программа не исправляет исходную файловую систему; подтверждение экспорта не гарантирует целостность исходного содержимого.\n\n"
+    "Возможности и ограничения описаны в справке и README. Исходный код и лицензия MIT: https://github.com/FreewareFuchs/Tenshi\n\n"
+    "Сайт и руководства: https://freewarefuchs.de/tenshi/"),
+   ("Tenshi {version} — Windows 10/11（64ビット）とLinux向けの無料・オープンソースのデータ復旧・解析ツールです。開発: FreewareFuchs。\n\n"
+    "ご質問・改善のご提案: kontakt@freewarefuchs.de\n\n"
+    "ソースメディアは読み取り専用で開きます。復旧ファイルやイメージは別の物理ディスクに保存してください。元のファイルシステムは修復せず、出力の確認も元の内容の完全性を保証しません。\n\n"
+    "機能と制限はこのヘルプとREADMEで説明しています。ソースコードとMITライセンス: https://github.com/FreewareFuchs/Tenshi\n\n"
+    "ウェブサイトとガイド: https://freewarefuchs.de/tenshi/"),
   )),
 }
 

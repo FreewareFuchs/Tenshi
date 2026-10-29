@@ -1,5 +1,11 @@
 # Release-Paket automatisch vorbereiten
 
+In Vorbereitung: **3.0.8** mit dem abgenommenen Exportablauf aus PR #101 und
+kontrolliertem Beenden aus PR #99. Versionsfelder werden zentral abgeglichen;
+Installer, Portable und DEB werden mit expliziter Kennung `stable` gemeinsam
+gebaut. Die endgültige Paketabnahme und Veröffentlichung stehen aus.
+[Änderungen und Grenzen](../RELEASE_NOTES_3.0.8.md).
+
 Aktueller veröffentlichter Stand: [Tenshi 3.0.7](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.7),
 seit 28.10.2026. Die abgenommenen Pakete stammen unverändert vom Commit
 `d4d0dff7f75b737f08aaece0c068121d34c7c1c8` aus dem

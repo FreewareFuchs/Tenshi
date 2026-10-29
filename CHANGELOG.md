@@ -1,3 +1,15 @@
+# Tenshi 3.0.8 – stabile Pakete in Vorbereitung
+
+- Export mit Pause/Fortsetzen im selben Auftrag; Teil-Datei und laufende SHA256-Berechnung bleiben während der Pause erhalten.
+- Nach kontrolliertem Abbrechen direkt fortsetzen: bisherige Quelle, Auswahl und Zielordner werden übernommen, fertige Dateien geprüft und unvollständige Dateien neu kopiert. Geänderte Quellen oder fehlende Exportordner erzeugen keinen neuen Auftrag stillschweigend.
+- Nach jeder bestätigten Datei eine `.sha256`; nach vollständig erfolgreichem Export eine Sammeldatei. Eigene Einzeldateien und der leere Zwischenordner werden erst danach entfernt, fremde Dateien bleiben erhalten.
+- Klar angeordnete Aktionen für Bericht, Speichern, Pause/Fortsetzen, Zielordner, Abbrechen und Schließen. Gemischte Rasterfelder an Dateigrenzen sind erläutert.
+- Hauptfenster wartet beim bestätigten Beenden auf die kontrollierte Unterbrechung laufender Schreibvorgänge und meldet Abschlussfehler.
+- Offline-Hilfe für den aktuellen Export-/Imaging-Ablauf in sechs Sprachen überarbeitet; Kontakt für Fragen und Verbesserungsvorschläge unter „Über Tenshi“ ergänzt.
+- Funktionen sind im Testpaket manuell bestätigt. Endgültige Installer-/Portable-/DEB-Pakete werden gemeinsam neu gebaut; Paketabnahme und Veröffentlichung stehen aus.
+
+[Versionshinweise und Paketabnahme](RELEASE_NOTES_3.0.8.md).
+
 # Tenshi 3.0.7 – stabil veröffentlicht (28.10.2026)
 
 - Separate, wieder aufrufbare Export- und Imaging-Fenster mit Bereichsraster und Berichtaktionen. Schließen der Ansicht beendet den Auftrag nicht.
