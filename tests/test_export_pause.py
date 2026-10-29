@@ -224,7 +224,7 @@ class ExportPauseGuiTests(unittest.TestCase):
             app.update();view.refresh_display();app.update_idletasks()
             self.assertEqual(str(view.pause_button.cget('state')),'normal')
             self.assertEqual(view.pause_button.cget('text'),translate('Fortsetzen',language))
-            self.assertIn(translate('Fortsetzen prüft fertige Dateien; die abgebrochene Datei beginnt von vorn.',language),view.labels['note'].cget('text'))
+            self.assertIn(translate('Fortsetzen prüft fertige Dateien; unvollständige Dateien beginnen von vorn.',language),view.labels['note'].cget('text'))
         # The browser may now display a different source; resume must use the
         # captured source/index/selection/target, never current UI selections.
         app.browser_source=str(self.root/'another-source.img');app.browser_index=None

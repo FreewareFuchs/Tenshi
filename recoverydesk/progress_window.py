@@ -209,7 +209,7 @@ class ExportProgressWindow(tk.Toplevel):
                             '100 Felder = 100 % der geplanten Dateigrößen.')
         if q.resumed:scope += '\n'+t('Bestehender Export erkannt.')
         self._set('scope', scope)
-        self._set('note', t('Fortsetzen prüft fertige Dateien; die abgebrochene Datei beginnt von vorn.' if can_resume else
+        self._set('note', t('Fortsetzen prüft fertige Dateien; unvollständige Dateien beginnen von vorn.' if can_resume else
                             'Pause erhält den aktuellen Stand, solange Tenshi geöffnet bleibt.')+'\n'+t('Bestätigung betrifft den Export, nicht den Originalinhalt.'))
         width = max(200, (self.winfo_width() if self.winfo_width()>1 else 760)-30)
         for name,label in self.labels.items():

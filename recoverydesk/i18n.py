@@ -32,12 +32,12 @@ def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
 add('System', 'System', 'Sistema', '系统', 'Система', 'システム')
-add('Fortsetzen prüft fertige Dateien; die abgebrochene Datei beginnt von vorn.',
-    'Resume verifies completed files; the interrupted file starts from the beginning.',
-    'Continuar verifica los archivos completos; el archivo interrumpido empieza desde el principio.',
-    '继续时会检查已完成的文件；中断的文件将从头复制。',
-    'При продолжении готовые файлы проверяются, а прерванный файл копируется с начала.',
-    '再開時は完了済みのファイルを検証し、中断したファイルは最初からコピーします。')
+add('Fortsetzen prüft fertige Dateien; unvollständige Dateien beginnen von vorn.',
+    'Resume verifies completed files; incomplete files start from the beginning.',
+    'Continuar verifica los archivos completos; los incompletos se copian desde el principio.',
+    '继续时会检查已完成的文件；未完成的文件将从头复制。',
+    'При продолжении готовые файлы проверяются, а неполные файлы копируются с начала.',
+    '再開時は完了済みのファイルを検証し、未完了のファイルは最初からコピーします。')
 add('Der bisherige Export kann nicht fortgesetzt werden: Quelle, Auswahl oder Exportordner wurde geändert. Bitte Quelle und Exportordner prüfen.',
     'The previous export cannot be resumed: the source, selection or export folder has changed. Please check the source and export folder.',
     'No se puede continuar la exportación anterior: cambió el origen, la selección o la carpeta de exportación. Compruebe el origen y la carpeta.',
