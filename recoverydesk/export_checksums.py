@@ -51,6 +51,16 @@ class ExportChecksums:
                 # metadata can be retried without touching an unrelated file.
                 self.persist()
             if not record.get('complete'):
+                if not new:
+                    # An interrupted own write may contain a valid prefix.
+                    # A user edit is not permission to overwrite the metadata.
+                    for chunk in chunks():
+                        prior=stream.read(len(chunk))
+                        if prior!=chunk[:len(prior)]:
+                            raise ValueError('Unvollständige Prüfsummendatei wurde verändert und bleibt erhalten.')
+                        if len(prior)<len(chunk):break
+                    if stream.read(1):
+                        raise ValueError('Unvollständige Prüfsummendatei wurde verändert und bleibt erhalten.')
                 stream.seek(0)
                 for chunk in chunks():
                     remaining=memoryview(chunk)

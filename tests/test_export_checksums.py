@@ -159,6 +159,15 @@ class ExportChecksumTests(unittest.TestCase):
         self.assertTrue(retry.checksum_errors);self.assertFalse(retry.checksums)
         self.assertEqual(summary.read_bytes(),b'changed');self.assertEqual(len(self.singles(retry)),3)
 
+    def test_changed_incomplete_metadata_is_not_repaired_over_user_edits(self):
+        state={};store=ExportChecksums(self.root,str(self.source),state,lambda:None)
+        payload=checksum_line('file.txt','a'*64)
+        with patch('recoverydesk.export_checksums.os.fsync',side_effect=OSError('flush failed')):
+            with self.assertRaises(OSError):store._write('individual.sha256',payload)
+        path=self.root/'individual.sha256';path.write_bytes(b'user edit')
+        with self.assertRaises(ValueError):store._write('individual.sha256',payload)
+        self.assertEqual(path.read_bytes(),b'user edit')
+
     def test_source_named_like_checksum_file_remains_export_data(self):
         chosen=next(e for e in self.index.list_dir(self.parent.record_number) if not e.is_directory)
         chosen.name=SUMMARY
