@@ -1,6 +1,6 @@
 # Exportziel vor dem Kopieren prüfen
 
-Für 3.0.9 vorgesehen; Funktionen manuell abgenommen, endgültige Pakete noch in Vorbereitung. Der bestehende
+Seit 29.10.2026 mit 3.0.9 veröffentlicht; Funktionen und endgültige Pakete sind manuell abgenommen. Der bestehende
 Exportplan einschließlich Unterordnern liefert die Dateigrößen. Die Zielprüfung
 läuft im Export-Hintergrundauftrag und wird vor dem ersten Anlegen eines
 Exportordners, einer Statusdatei oder einer Ausgabedatei bestätigt.
