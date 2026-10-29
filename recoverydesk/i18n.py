@@ -33,6 +33,27 @@ def add(de, en, es, zh, ru, ja):
 
 add('System', 'System', 'Sistema', '系统', 'Система', 'システム')
 
+add('Vorhandene Datei prüfen','Verify existing file','Verificar archivo existente','检查现有文件','Проверка существующего файла','既存ファイルを検証')
+add('Vorhandene Datei wird geprüft, nicht erneut kopiert.',
+    'The existing file is being verified, not copied again.',
+    'Se está verificando el archivo existente, sin volver a copiarlo.',
+    '正在检查现有文件，不会重新复制。',
+    'Существующий файл проверяется, а не копируется повторно.',
+    '既存ファイルを検証中です。再コピーはしていません。')
+add('Bestehender Export erkannt.','Existing export detected.','Exportación existente detectada.','已检测到现有导出。','Обнаружен существующий экспорт.','既存の出力を検出しました。')
+add('Unvollständige Dateien beginnen beim Fortsetzen von vorn.',
+    'Incomplete files are copied from the beginning when resuming.',
+    'Los archivos incompletos se copian desde el principio al continuar.',
+    '继续导出时，未完成的文件将从头复制。',
+    'При продолжении неполные файлы копируются с начала.',
+    '再開時、未完了のファイルは最初からコピーします。')
+add('{count} ausgewählte Einträge samt Unterordnern exportieren?\n\nZielordner: {target}\n\nZum Fortsetzen dieselbe Quelle und Auswahl sowie denselben ursprünglichen Zielordner wählen. Fertige Dateien werden geprüft. Unvollständige Dateien beginnen von vorn. Vorhandene fremde Dateien bleiben unangetastet.',
+    'Export {count} selected entries including subfolders?\n\nDestination folder: {target}\n\nTo resume, use the same source, selection and original destination folder. Completed files are verified. Incomplete files are copied from the beginning. Unrelated existing files are left untouched.',
+    '¿Exportar {count} entradas seleccionadas y sus subcarpetas?\n\nCarpeta de destino: {target}\n\nPara continuar, use el mismo origen, selección y carpeta de destino original. Los archivos completos se verifican. Los incompletos se copian desde el principio. Los archivos existentes ajenos no se modifican.',
+    '导出所选的 {count} 个条目及其子文件夹？\n\n目标文件夹：{target}\n\n继续时请使用相同的来源、选择和原始目标文件夹。已完成的文件会进行检查。未完成的文件将从头复制。其他现有文件保持不变。',
+    'Экспортировать выбранные элементы ({count}) с вложенными папками?\n\nПапка назначения: {target}\n\nДля продолжения выберите тот же источник, набор элементов и исходную папку назначения. Готовые файлы проверяются. Неполные файлы копируются с начала. Посторонние существующие файлы не изменяются.',
+    '選択した {count} 件とサブフォルダーを出力しますか？\n\n保存先フォルダー: {target}\n\n再開時は同じソース、選択内容、元の保存先フォルダーを指定してください。完了済みのファイルは検証し、未完了のファイルは最初からコピーします。無関係な既存ファイルは変更しません。')
+
 # Non-modal export window: format translated templates before adding filenames.
 add('Tenshi – Exportfortschritt', 'Tenshi – Export progress', 'Tenshi – Progreso de exportación', 'Tenshi – 导出进度', 'Tenshi – Ход экспорта', 'Tenshi – 出力の進捗')
 add('Fortschrittsfenster', 'Progress window', 'Ventana de progreso', '进度窗口', 'Окно прогресса', '進捗ウィンドウ')

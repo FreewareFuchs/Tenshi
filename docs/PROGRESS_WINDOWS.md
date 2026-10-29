@@ -43,6 +43,20 @@ Das 100-Felder-Raster bleibt unverändert beim Gesamtumfang und startet nicht ne
 Die vorhandene Restzeitschätzung gilt ausschließlich für das Kopieren,
 wird während der Prüfung unterdrückt und ist ohne belastbare Rate nicht sichtbar.
 
+Bei einer Wiederaufnahme meldet das Fenster „Bestehender Export erkannt“.
+„Vorhandene Datei prüfen“ unterscheidet das Lesen einer bereits exportierten
+Datei von der Zielprüfung unmittelbar nach neuem Kopieren. Dafür kennzeichnet
+das vorhandene Prüfereignis nur seine Herkunft; es werden keine zusätzlichen
+Quell- oder Zielzugriffe ausgeführt. Geprüfte Bytes zählen nicht als neu kopiert.
+Die Anzeige startet pro Lauf bei null und bestätigt vorhandene Dateien erst
+nach dem erneuten Prüfsummenvergleich.
+
+Vor dem Start und im Fortschrittsfenster steht ausdrücklich: Unvollständige
+Dateien beginnen beim Fortsetzen von vorn. Für das Fortsetzen sind dieselbe
+Quelle und Auswahl sowie der ursprüngliche übergeordnete Zielordner nötig,
+nicht der darin erzeugte Export-Unterordner. Eine Wiederaufnahme innerhalb
+einzelner Exportdateien wird dadurch nicht eingeführt.
+
 Nach dem Abschluss lassen sich der bestehende Ergebnisbericht ansehen oder eine
 unveränderte Kopie speichern. Das Kopieren läuft außerhalb des GUI-Threads, lehnt
 bestehende Zieldateien ab und verwendet die bestehenden Ziel-/Handle-Prüfungen.

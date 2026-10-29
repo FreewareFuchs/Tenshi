@@ -158,7 +158,7 @@ class ExportProgressWindow(tk.Toplevel):
         elif q.ended:
             phase = 'Export wird abgeschlossen …'
         elif q.verifying:
-            phase = 'SHA256 prüfen'
+            phase = 'Vorhandene Datei prüfen' if q.verifying_existing else 'SHA256 prüfen'
         elif q.active_path:
             phase = 'Datei kopieren'
         elif blocks.planned:
@@ -181,7 +181,8 @@ class ExportProgressWindow(tk.Toplevel):
         # Hashing the copied stream and checking the destination are separate
         # existing engine steps. Neither starts another graphical progress bar.
         if q.verifying and running:
-            notice = 'SHA256-Prüfung der Zieldatei läuft …'
+            notice = ('Vorhandene Datei wird geprüft, nicht erneut kopiert.' if q.verifying_existing else
+                      'SHA256-Prüfung der Zieldatei läuft …')
         elif running and q.active_path and q.active_written>0:
             notice = 'SHA256 wird während des Kopierens berechnet.'
         elif not running and q.ended and app.export_result and getattr(app.export_result,'log',''):
@@ -193,11 +194,13 @@ class ExportProgressWindow(tk.Toplevel):
             done=q.done_count,total=q.total,errors=blocks.errors,skipped=blocks.skipped))
         path = q.active_path
         self._set('path', t('Aktuelle Datei: {path}').format(path=path[:22]+'…'+path[-32:] if len(path)>60 else path) if path else '')
-        self._set('scope', t('Noch kein Exportplan vorhanden.' if not blocks.planned else
+        scope = t('Noch kein Exportplan vorhanden.' if not blocks.planned else
                             'Exportplan enthält keine Einträge.' if not blocks.total else
                             '100 Felder = 100 % der Einträge.' if blocks.entries else
-                            '100 Felder = 100 % der geplanten Dateigrößen.'))
-        self._set('note', t('Exportanteile, keine Datenträgersektoren.')+'\n'+t('Bestätigung betrifft den Export, nicht den Originalinhalt.'))
+                            '100 Felder = 100 % der geplanten Dateigrößen.')
+        if q.resumed:scope += '\n'+t('Bestehender Export erkannt.')
+        self._set('scope', scope)
+        self._set('note', t('Unvollständige Dateien beginnen beim Fortsetzen von vorn.')+'\n'+t('Bestätigung betrifft den Export, nicht den Originalinhalt.'))
         width = max(200, (self.winfo_width() if self.winfo_width()>1 else 760)-30)
         for name,label in self.labels.items():
             wrap = width if name=='phase' else max(150,width//2-12)

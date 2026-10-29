@@ -445,13 +445,13 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                 event({'type': 'bytes', 'path': task.path, 'delta': buffered_bytes})
                 buffered_bytes = 0
         last_hash_event = 0.0
-        def on_hash(read_bytes):
+        def on_hash(read_bytes, *, existing=False):
             nonlocal last_hash_event
             now = time.monotonic()
             if event and (read_bytes == 0 or read_bytes >= task.entry.size or
                           now - last_hash_event >= .15):
                 event({'type': 'verify', 'path': task.path, 'read': read_bytes,
-                       'size': max(0, int(task.entry.size))})
+                       'size': max(0, int(task.entry.size)), 'existing': existing})
                 last_hash_event = now
         if progress:
             progress(n, len(plan), task.path, 'Prüfung')
@@ -493,7 +493,8 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                     if ((pending or prior.get('status') == 'Erfolgreich') and
                             not _is_unsafe_link(path) and path.is_file() and
                             path.stat().st_size == task.entry.size and
-                            _hash_file(path, source=source, cancel=cancel, progress=on_hash) == expected):
+                            _hash_file(path, source=source, cancel=cancel,
+                                       progress=lambda read: on_hash(read, existing=True)) == expected):
                         check_device(force=True)
                         result.verified_existing += 1
                         completed_status = 'Bereits verifiziert'

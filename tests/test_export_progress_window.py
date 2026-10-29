@@ -132,6 +132,50 @@ class ExportWindowTests(unittest.TestCase):
         self.assertEqual(dialog.call_args.kwargs['initialdir'],str(export_folder))
         self.assertTrue(dialog.call_args.kwargs['initialfile'].startswith('Tenshi_Exportbericht_'))
 
+    def test_resume_verification_is_distinct_from_new_copy_in_all_languages(self):
+        app=self.app;app.export_running=True
+        app._handle_export_event(dict(type='plan',total=1,total_bytes=100,items=[],resumed=True))
+        app._handle_export_event(dict(type='start',path='saved.bin',size=100))
+        app._handle_export_event(dict(type='verify',path='saved.bin',size=100,read=100,existing=True))
+        win=app._show_export_progress()
+        for language in LANGUAGES:
+            app.change_language(language)
+            for theme in ('light','dark'):
+                app.change_theme(theme);win.geometry('620x550+0+0')
+                app.update();win.refresh_display();app.update_idletasks()
+                self.assertEqual(win.labels['phase'].cget('text'),translate('Vorhandene Datei prüfen',language))
+                self.assertEqual(win.labels['verification'].cget('text'),translate('Vorhandene Datei wird geprüft, nicht erneut kopiert.',language))
+                self.assertIn(translate('Bestehender Export erkannt.',language),win.labels['scope'].cget('text'))
+                self.assertIn(translate('Unvollständige Dateien beginnen beim Fortsetzen von vorn.',language),win.labels['note'].cget('text'))
+                for label in win.labels.values():
+                    self.assertLessEqual(label.winfo_rooty()+label.winfo_height(),win.winfo_rooty()+win.winfo_height())
+                self.assertGreater(win.grid_view.winfo_height(),60)
+                self.assertEqual(app.export_progress.written_bytes,0)
+                self.assertEqual(app.export_blocks.confirmed_fraction,0)
+        app._handle_export_event(dict(type='done',path='saved.bin',size=100,status='Bereits verifiziert'))
+        self.assertFalse(app.export_progress.verifying_existing)
+        self.assertEqual(app.export_blocks.confirmed_fraction,1)
+        app._handle_export_event(dict(type='start',path='new.bin',size=100))
+        app._handle_export_event(dict(type='verify',path='new.bin',size=100,read=20))
+        win.refresh_display()
+        self.assertEqual(win.labels['phase'].cget('text'),translate('SHA256 prüfen',app.language))
+        self.assertFalse(app.export_progress.verifying_existing)
+
+    def test_export_confirmation_explains_resume_without_changing_the_target(self):
+        app=self.app;app.browser_index=object();app.browser_source='source.img'
+        target='X:/Datei kopieren/{count}/日本語'
+        with patch.object(app,'_selected_browser_entries',return_value=[object()]), \
+             patch('recoverydesk.gui.ensure_safe_destination'), \
+             patch('recoverydesk.gui.filedialog.askdirectory',return_value=target), \
+             patch('recoverydesk.gui._messagebox.askyesno',return_value=False) as ask:
+            for language in LANGUAGES:
+                app.change_language(language);app.export_browser_selection()
+                text=ask.call_args.args[1]
+                self.assertIn(target,text)
+                if language=='de':self.assertIn('Unvollständige Dateien beginnen von vorn.',text)
+                else:self.assertNotIn('Unvollständige Dateien',text)
+        self.assertFalse(app.export_running)
+
     def test_report_dialog_suggests_a_new_filename_on_each_save(self):
         from types import SimpleNamespace
         report=self.root/'report.txt';report.write_text('original report')

@@ -3085,11 +3085,11 @@ class RecoveryDeskApp(tk.Tk):
             messagebox.showerror('Sicherer Export', str(exc))
             return
         if not messagebox.askyesno('Stapel-Export',
-                f'{len(chosen)} ausgewählte Einträge samt Unterordnern exportieren?\n\n'
-                f'Zielordner: {target}\n\n'
-                'Ein eigener Exportordner mit Statusdatei wird angelegt. '
-                'Bei gleicher Auswahl ist Fortsetzen möglich. '\
-                'Vorhandene fremde Dateien bleiben unangetastet.'):
+                translate('{count} ausgewählte Einträge samt Unterordnern exportieren?\n\n'
+                          'Zielordner: {target}\n\n'
+                          'Zum Fortsetzen dieselbe Quelle und Auswahl sowie denselben ursprünglichen Zielordner wählen. '
+                          'Fertige Dateien werden geprüft. Unvollständige Dateien beginnen von vorn. '
+                          'Vorhandene fremde Dateien bleiben unangetastet.',self.language).format(count=len(chosen),target=target)):
             return
         src, index = self.browser_source, self.browser_index
         self.export_cancel.clear()
