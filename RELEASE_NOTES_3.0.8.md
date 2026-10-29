@@ -1,9 +1,9 @@
 # Tenshi 3.0.8 – Export steuern und Prüfsummen sichern
 
-Stabile Pakete in Vorbereitung. Die Funktionen sind im Entwicklungspaket aus
-PR #101 manuell abgenommen. Installer, Portable und DEB werden gemeinsam neu
-gebaut; ihre endgültigen Starts und Versionsanzeigen stehen zur Abnahme aus.
-Die veröffentlichten Downloads, Website und APT-Quelle bieten weiterhin 3.0.7.
+Seit 29.10.2026 stabil [auf GitHub veröffentlicht](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.8).
+Funktionen, endgültige Installer-/Portable-/Mint-DEB-Paketstarts, Versionsanzeigen
+und die aktualisierte Hilfe sind manuell bestätigt. Die Website und die signierte
+APT-Quelle bieten 3.0.8; alle 25 öffentlichen Abschlussvergleiche sind erfolgreich.
 
 ## Pause, Abbrechen und Fortsetzen
 
@@ -57,16 +57,32 @@ nicht die ursprüngliche Integrität wiederhergestellter Inhalte.
 - `Tenshi_Portable_3.0.8_Win64.zip`
 - `tenshi-recovery_3.0.8-1_all.deb`
 
-Die Pakete werden mit Kennung `stable` aus demselben sauberen Commit gebaut.
-Release-Manifest und `.sha256`-Dateien nennen Paketgrößen, Prüfsummen und Quellstand.
-Dokumente und Bilder erhalten keine zusätzlichen Prüfsummen-Sidecars.
-Die [Änderungsnotizen in sechs Sprachen](RELEASE_NOTES_3.0.8.json) stehen als
-Eingabe für die anschließende Website-Vorbereitung bereit.
+Die abgenommenen Pakete wurden mit Kennung `stable` unverändert aus dem sauberen
+Commit `461fce51792c37903c2ce6b45c6810ba02f693c7` gebaut
+([gemeinsamer Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40878364119)).
+Der Tag `v3.0.8` zeigt auf diesen Build-Commit. Der Integrationscommit
+`10fc1e33d0ff5c287b5a37d97149fe74388d87ba` enthält denselben Dateistand.
 
-Der abgenommene Funktionsstand liegt in Hauptcommit
-`427b5c726ff5fb8b54e24ef3b233d105b4b94562`. Windows- und Linux-Gesamtprüfungen
-umfassen jeweils 856 Tests mit den jeweiligen Plattform-Skips; das installierte
-experimentelle Flatpak ist ebenfalls geprüft. Die Release-Vorbereitung ändert
-Versionsfelder und Dokumentation. Die endgültige Paketabnahme wird gesondert
-protokolliert; diese Datei bestätigt noch keine Veröffentlichung oder neue
-Hardwareprüfung. Frühere Releases und ihre Prüfsummen bleiben erhalten.
+Windows und Linux bestehen jeweils 856 Tests (82 beziehungsweise 6 plattformbedingte
+Skips). Manifest, Paketgrößen, Prüfsummen, Windows-Ressourcen, Programmstarttest
+und die im DEB enthaltene Hilfe sind geprüft. Der Anwender hat die endgültigen
+Pakete mit „ok, funktioniert alles“ bestätigt. Diese Abnahme ersetzt keine
+allgemeine Garantie für andere Geräte oder beschädigte Medien.
+
+Das DEB `3.0.8-1` hat 817954 Bytes und SHA256:
+`3678ead73af9d0797cc21541db8f43e7f5cd3b67af8ba8911f7400b8ee7d1926`.
+Die APT-Signatur wurde in Mint mit Archivschlüssel
+`15D67DDA4D0D3BD1DD10A8C3B714CC0415B04529` geprüft. Alle 13 öffentlichen
+APT-Dateien entsprechen dem VM-Export; der öffentliche Schlüssel und fünf ältere
+DEBs sind unverändert erhalten. Die öffentliche Prüfung vergleicht Bytes und
+Prüfsummen mit diesem separat signaturgeprüften Export.
+
+Alle sieben GitHub-Assets und die Download-/Website-Verweise sind geprüft.
+Der Website-Katalog enthält die [Änderungsnotizen in sechs Sprachen](RELEASE_NOTES_3.0.8.json);
+die sechs Online-Anleitungen erläutern den aktuellen Exportablauf. Der vorherige
+Serverstand ist gesichert. Die unveränderten vorbereiteten Manifestdateien mit
+`published: false` bleiben Buildnachweise; die tatsächliche Veröffentlichung wird
+in separaten Abschlussberichten dokumentiert. Dokumente und Bilder erhalten
+keine zusätzlichen Prüfsummen-Sidecars. Frühere Releases und ihre Prüfsummen
+bleiben erhalten. Flatpak bleibt experimentell und gehört nicht zu den drei
+regulären Release-Paketen.
