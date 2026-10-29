@@ -179,6 +179,8 @@ class ExportProgressWindow(tk.Toplevel):
             phase = 'Noch kein Stapel-Export gestartet.'
         elif app.export_cancel.is_set() and running:
             phase = 'Export-Abbruch angefordert …'
+        elif app.__dict__.get('_export_restoring') and running:
+            phase = 'Exportauftrag wird geprüft …'
         elif app.__dict__.get('_export_target_reviewing') and running:
             phase = 'Exportziel wird geprüft …'
         elif q.paused:
@@ -212,7 +214,9 @@ class ExportProgressWindow(tk.Toplevel):
         self._set('progress',t('Export bestätigt: {percent:.1f} %').format(percent=100*blocks.confirmed_fraction))
         # Hashing the copied stream and checking the destination are separate
         # existing engine steps. Neither starts another graphical progress bar.
-        if q.paused or app.export_pause.requested or (q.checksum_phase and running):
+        if app.__dict__.get('_export_restoring') and running:
+            notice=app.__dict__.get('_export_restore_status') or 'Quelle und Auswahl werden nach Bestätigung erneut geprüft.'
+        elif q.paused or app.export_pause.requested or (q.checksum_phase and running):
             notice = ''
         elif q.verifying and running:
             notice = ('Vorhandene Datei wird geprüft, nicht erneut kopiert.' if q.verifying_existing else

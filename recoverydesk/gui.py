@@ -46,6 +46,7 @@ from .batch_export import export_batch
 from .export_queue import QueueProgress, readable_bytes
 from .export_pause import ExportPause
 from .export_target import TargetReviewDeclined
+from .export_resume import read_saved_export, prepare_saved_export
 from .export_blocks import ExportBlocks, copy_export_report
 from .progress_window import ExportProgressWindow
 from .imaging_window import ImagingProgressWindow
@@ -2829,6 +2830,9 @@ class RecoveryDeskApp(tk.Tk):
         self.export_preflight_button = ttk.Button(self.export_actions, text='Export prüfen',
                                                  command=self.preflight_selection)
         self.export_preflight_button.pack(side='right')
+        self.export_open_job_button = ttk.Button(self.export_actions, text='Exportauftrag öffnen',
+                                                 command=self.open_saved_export)
+        self.export_open_job_button.pack(side='right', padx=(0, 5))
 
     def _cancel_export(self):
         if self.export_running:
@@ -3031,6 +3035,27 @@ class RecoveryDeskApp(tk.Tk):
 
     def _handle_export_event(self, data):
         kind = data.get('type')
+        if kind == 'job_review':
+            decision=data['decision']
+            try:
+                if self._exit_requested or self._closing or self.export_cancel.is_set():return
+                saved=data['saved']
+                text=translate('Gespeicherten Export fortsetzen?\n\nQuelle: {source}\nExportordner: {root}\nAusgewählte Einträge: {count}\n\nDie Quelle wird schreibgeschützt neu eingelesen und mit dem gespeicherten Auftrag verglichen. Fertige Dateien werden geprüft; unvollständige beginnen von vorn.',self.language).format(
+                    source=saved.source,root=saved.root,count=len(saved.keys))
+                decision['accepted']=messagebox.askyesno('Exportauftrag öffnen',text,parent=self,default='no')
+            finally:decision['ready'].set()
+            return
+        if kind == 'job_ready':
+            self._export_job=data['job']
+            self._export_source=data['job']['source']
+            self._export_restoring=False
+            return
+        if kind == 'restore_progress':
+            text=translate('Dateisystem für Wiederaufnahme: {done} / {total} Einträge geprüft …',self.language).format(
+                done=data['done'],total=data['total'])
+            self._export_restore_status=text
+            if not self._exit_requested:self.status.set(text)
+            return
         if kind == 'target_review':
             decision = data['decision']
             try:
@@ -3065,6 +3090,7 @@ class RecoveryDeskApp(tk.Tk):
             if not self._exit_requested:
                 self.status.set('Export pausiert.' if kind=='paused' else 'Export wird fortgesetzt …')
         if kind == 'run_finish':
+            self._export_restoring = False
             self._export_target_reviewing = False
             self.export_pause.request(False)
             self._export_ended_at = time.monotonic()
@@ -3093,6 +3119,7 @@ class RecoveryDeskApp(tk.Tk):
                     messagebox.showwarning(translate('Beendet mit Fehlern',self.language),warning,parent=self)
             return
         if kind == 'run_error':
+            self._export_restoring = False
             self._export_target_reviewing = False
             self.export_pause.request(False)
             self._export_ended_at = time.monotonic()
@@ -3153,6 +3180,19 @@ class RecoveryDeskApp(tk.Tk):
             return
         self._start_export_job(dict(source=src,index=index,selection=tuple(chosen),target=target,root=None))
 
+    def open_saved_export(self):
+        if self._exit_requested:return
+        if self.export_running:
+            self._show_export_progress();return
+        if self._session_busy() or self.__dict__.get('_export_report_saving'):
+            messagebox.showwarning('Exportauftrag öffnen','Bitte laufende Vorgänge zuerst abschließen.',parent=self)
+            return
+        folder=filedialog.askdirectory(parent=self,title='Bisherigen Exportordner auswählen')
+        if not folder:return
+        from .batch_export import MANIFEST
+        filename=str(Path(folder)/MANIFEST)
+        self._start_export_job(dict(source='',index=None,selection=(),target='',root=None,request_file=filename))
+
     def _start_export_job(self,job,*,resume_root=None):
         """Use the captured job, including when the browser now shows another source."""
         if (self.export_running or self._exit_requested or self._closing or
@@ -3160,8 +3200,11 @@ class RecoveryDeskApp(tk.Tk):
         src,index,chosen,target=job['source'],job['index'],job['selection'],job['target']
         previous = {name:self.__dict__.get(name) for name in (
             '_export_job','export_result','export_progress','export_blocks',
-            '_export_started_at','_export_ended_at','_export_source')}
+            '_export_started_at','_export_ended_at','_export_source',
+            '_export_restoring','_export_restore_status')}
         self._export_target_reviewing = True
+        self._export_restoring = bool(job.get('request_file'))
+        self._export_restore_status = ''
         self._export_job=job
         self.export_cancel.clear()
         self.export_running = True
@@ -3179,23 +3222,38 @@ class RecoveryDeskApp(tk.Tk):
         # Paint the main action state before starting the worker.
         self.tabs.select(self.ntfs_tab)
         self.update_idletasks()
-        self.status.set('Exportziel wird geprüft …')
+        self.status.set('Exportauftrag wird geprüft …' if self._export_restoring else 'Exportziel wird geprüft …')
         self._show_export_progress()
 
         control,events=self.export_pause,self._export_events
         cancelled = self.export_cancel
-        def target_review(assessment):
-            decision = dict(ready=threading.Event(), accepted=False)
-            events.put(dict(type='target_review',assessment=assessment,
-                            decision=decision,resume=resume_root is not None))
+        resume_mode=resume_root is not None or bool(job.get('request_file'))
+        def decide(kind,**payload):
+            decision=dict(ready=threading.Event(),accepted=False)
+            events.put(dict(type=kind,decision=decision,**payload))
             while not decision['ready'].wait(.1):
                 if cancelled.is_set():return False
             return decision['accepted'] and not cancelled.is_set()
+        def target_review(assessment):
+            return decide('target_review',assessment=assessment,resume=resume_mode)
         def worker():
             try:
+                active,root=job,resume_root
+                if job.get('request_file'):
+                    saved=read_saved_export(job['request_file'])
+                    if not decide('job_review',saved=saved):raise TargetReviewDeclined()
+                    last_post=float('-inf')
+                    def progress(done,total):
+                        nonlocal last_post
+                        now=time.monotonic()
+                        if done==total or now-last_post>=.15:
+                            events.put(dict(type='restore_progress',done=done,total=total));last_post=now
+                    active=prepare_saved_export(saved,cancel=control.check_cancel,progress=progress)
+                    root=active['root']
+                    events.put(dict(type='job_ready',job=active))
                 options=dict(cancel=control.check_cancel,event=events.put,target_review=target_review)
-                if resume_root is not None:options['expected_root']=resume_root
-                rep = export_batch(src,index,chosen,target,**options)
+                if root is not None:options['expected_root']=root
+                rep = export_batch(active['source'],active['index'],active['selection'],active['target'],**options)
                 events.put({'type': 'run_finish', 'result': rep})
             except TargetReviewDeclined:
                 events.put(dict(type='run_declined',previous=previous))

@@ -1093,6 +1093,60 @@ _PARTIAL = sorted(set(_PARTIAL + [s for s in TRANSLATIONS if s.endswith(':') and
                   key=len, reverse=True)
 
 # Destination assessment, before any export writes.
+add('Exportauftrag öffnen','Open export job','Abrir trabajo de exportación','打开导出任务','Открыть задание экспорта','出力処理を開く')
+add('Bisherigen Exportordner auswählen','Select previous export folder','Seleccionar carpeta de exportación anterior','选择原导出文件夹','Выбрать прежнюю папку экспорта','以前の出力フォルダーを選択')
+add('Exportauftrag wird geprüft …','Checking export job …','Comprobando trabajo de exportación …','正在检查导出任务…','Проверка задания экспорта …','出力処理を確認中…')
+add('Quelle und Auswahl werden nach Bestätigung erneut geprüft.','The source and selection are rechecked after confirmation.','La fuente y la selección se vuelven a comprobar tras confirmar.','确认后将重新检查来源和选择。','Источник и выбор повторно проверяются после подтверждения.','確認後にソースと選択を再検査します。')
+add('Dateisystem für Wiederaufnahme: {done} / {total} Einträge geprüft …','Resume filesystem scan: {done} / {total} entries checked …','Análisis para reanudar: {done} / {total} entradas comprobadas …','继续任务的文件系统扫描：已检查 {done} / {total} 项…','Сканирование для продолжения: проверено {done} / {total} записей …','再開用の解析：{done} / {total} 件を確認…')
+add('Gespeicherten Export fortsetzen?\n\nQuelle: {source}\nExportordner: {root}\nAusgewählte Einträge: {count}\n\nDie Quelle wird schreibgeschützt neu eingelesen und mit dem gespeicherten Auftrag verglichen. Fertige Dateien werden geprüft; unvollständige beginnen von vorn.',
+    'Resume the saved export?\n\nSource: {source}\nExport folder: {root}\nSelected entries: {count}\n\nThe source is read again in read-only mode and compared with the saved job. Complete files are checked; incomplete files restart from the beginning.',
+    '¿Reanudar la exportación guardada?\n\nFuente: {source}\nCarpeta de exportación: {root}\nEntradas seleccionadas: {count}\n\nLa fuente se vuelve a leer en modo de solo lectura y se compara con el trabajo guardado. Se comprueban los archivos completos; los incompletos empiezan de nuevo.',
+    '继续已保存的导出任务？\n\n来源：{source}\n导出文件夹：{root}\n已选择项数：{count}\n\n将以只读方式重新读取来源，并与保存的任务比较。已完成的文件会重新检查；不完整的文件从头开始。',
+    'Продолжить сохранённый экспорт?\n\nИсточник: {source}\nПапка экспорта: {root}\nВыбрано записей: {count}\n\nИсточник снова читается только для чтения и сравнивается с сохранённым заданием. Полные файлы проверяются; неполные копируются заново.',
+    '保存済みの出力処理を再開しますか？\n\nソース：{source}\n出力フォルダー：{root}\n選択件数：{count}\n\nソースを読み取り専用で再解析し、保存済みの処理と比較します。完了済みファイルは検査し、不完全なファイルは最初から処理します。')
+add('Ungültiger Exportauftrag.','Invalid export job.','Trabajo de exportación no válido.','导出任务无效。','Недопустимое задание экспорта.','出力処理が無効です。')
+add('Ungültige gespeicherte Exportauswahl.','Invalid saved export selection.','Selección de exportación guardada no válida.','保存的导出选择无效。','Недопустимый сохранённый выбор экспорта.','保存された出力の選択が無効です。')
+add('Im gewählten Ordner ist kein gespeicherter Exportauftrag vorhanden. Bitte den erzeugten Export-Unterordner wählen.',
+    'The selected folder contains no saved export job. Please select the generated export subfolder.',
+    'La carpeta seleccionada no contiene un trabajo guardado. Selecciona la subcarpeta de exportación generada.',
+    '所选文件夹中没有保存的导出任务。请选择已生成的导出子文件夹。',
+    'В выбранной папке нет сохранённого задания. Выберите созданную подпапку экспорта.',
+    '選択したフォルダーに保存済みの処理がありません。生成された出力サブフォルダーを選んでください。')
+add('Dieser Export enthält noch keine gespeicherte Auswahl. Bitte dieselbe Quelle, Auswahl und den ursprünglichen Zielordner manuell wählen.',
+    'This export has no saved selection yet. Please manually select the same source, selection and original destination folder.',
+    'Esta exportación aún no tiene una selección guardada. Selecciona manualmente la misma fuente, selección y carpeta de destino original.',
+    '此导出尚未保存文件选择。请手动选择相同的来源、文件选择和原始目标文件夹。',
+    'Этот экспорт ещё не содержит сохранённого выбора. Вручную выберите тот же источник, выбор и исходную папку назначения.',
+    'この出力には選択情報がまだ保存されていません。同じソース、選択、元の保存先を手動で指定してください。')
+add('Export-Statusdatei ist zu groß. Bitte den bisherigen manuellen Wiederaufnahmeweg verwenden.',
+    'The export status file is too large. Please use the existing manual resume procedure.',
+    'El archivo de estado es demasiado grande. Utiliza el procedimiento manual de reanudación.',
+    '导出状态文件过大。请使用原有的手动继续方式。',
+    'Файл состояния экспорта слишком велик. Используйте прежний ручной способ продолжения.',
+    '出力状態ファイルが大きすぎます。従来の手動の再開手順を使用してください。')
+add('Export-Statusdatei wurde während des Öffnens geändert.','The export status file changed while being opened.','El archivo de estado cambió durante su apertura.','导出状态文件在打开时发生变化。','Файл состояния изменился при открытии.','出力状態ファイルが開く途中で変更されました。')
+add('Exportauftrag darf nicht über einen symbolischen Link geöffnet werden.','An export job cannot be opened through a symbolic link.','No se puede abrir un trabajo mediante un enlace simbólico.','不能通过符号链接打开导出任务。','Нельзя открывать задание через символическую ссылку.','シンボリックリンク経由では出力処理を開けません。')
+add('Exportauftrag muss eine reguläre Statusdatei sein.','The export job must be a regular status file.','El trabajo debe ser un archivo de estado normal.','导出任务必须是常规状态文件。','Задание должно быть обычным файлом состояния.','出力処理は通常の状態ファイルである必要があります。')
+add('Bitte recoverydesk_status.json aus dem bisherigen Exportordner auswählen.','Please select recoverydesk_status.json from the previous export folder.','Selecciona recoverydesk_status.json de la carpeta de exportación anterior.','请选择原导出文件夹中的 recoverydesk_status.json。','Выберите recoverydesk_status.json из прежней папки экспорта.','以前の出力フォルダーにある recoverydesk_status.json を選んでください。')
+add('Die gespeicherte Quelle ist keine reguläre Image-Datei.','The saved source is not a regular image file.','La fuente guardada no es un archivo de imagen normal.','保存的来源不是常规镜像文件。','Сохранённый источник не является обычным файлом образа.','保存されたソースは通常のイメージファイルではありません。')
+add('Die gespeicherte Quelle wurde geändert oder ausgetauscht. Bitte Quelle und Exportauftrag prüfen.',
+    'The saved source was changed or replaced. Please check the source and export job.',
+    'La fuente guardada se ha modificado o sustituido. Comprueba la fuente y el trabajo de exportación.',
+    '保存的来源已被修改或替换。请检查来源和导出任务。',
+    'Сохранённый источник изменён или заменён. Проверьте источник и задание экспорта.',
+    '保存されたソースが変更または交換されています。ソースと出力処理を確認してください。')
+add('Die gespeicherte Auswahl ist nicht mehr vollständig vorhanden. Der Export wurde nicht fortgesetzt.',
+    'The saved selection is no longer fully available. The export was not resumed.',
+    'La selección guardada ya no está completa. La exportación no se ha reanudado.',
+    '保存的选择已不完整。未继续导出。',
+    'Сохранённый выбор больше не доступен полностью. Экспорт не продолжен.',
+    '保存された選択が一部見つかりません。出力は再開していません。')
+add('Der gespeicherte Exportplan passt nicht mehr zur Quelle. Der Export wurde nicht fortgesetzt.',
+    'The saved export plan no longer matches the source. The export was not resumed.',
+    'El plan guardado ya no coincide con la fuente. La exportación no se ha reanudado.',
+    '保存的导出计划已与来源不符。未继续导出。',
+    'Сохранённый план больше не соответствует источнику. Экспорт не продолжен.',
+    '保存された出力計画がソースと一致しません。出力は再開していません。')
 add('Nach einem Programmneustart dieselbe Quelle, Auswahl und den ursprünglichen Zielordner wählen, nicht den erzeugten Export-Unterordner.',
     'After restarting Tenshi, use the same source, selection and original destination folder, rather than the generated export subfolder.',
     'Tras reiniciar Tenshi, usa la misma fuente, selección y carpeta de destino original, no la subcarpeta de exportación generada.',
