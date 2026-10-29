@@ -1,3 +1,9 @@
+# Noch nicht veröffentlicht – Exportziel vorab prüfen
+
+- Vor dem ersten Schreibzugriff geplante Inhalte, zusätzlich benötigte Dateibytes und verfügbaren Platz anzeigen; vollständige Dateien eines gespeicherten Auftrags zur erneuten Prüfung berücksichtigen.
+- Vor knappem Speicherplatz warnen. Erkannte FAT/FAT32-Dateigrößenüberschreitungen vor dem Anlegen des Exportordners melden; unbekannte VM-/Netzwerkgrenzen ausdrücklich offenlassen.
+- Zielprüfung läuft im Hintergrund. Ablehnen und Abbrechen während dieser Prüfung verändern den Zielordner nicht; eine abgelehnte Wiederaufnahme bleibt fortsetzbar. Sechs Oberflächensprachen und Offline-Hilfe sind berücksichtigt.
+
 # Tenshi 3.0.8 – stabil veröffentlicht (29.10.2026)
 
 - Export mit Pause/Fortsetzen im selben Auftrag; Teil-Datei und laufende SHA256-Berechnung bleiben während der Pause erhalten.

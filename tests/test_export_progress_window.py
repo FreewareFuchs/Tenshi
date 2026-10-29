@@ -169,17 +169,19 @@ class ExportWindowTests(unittest.TestCase):
         self.assertFalse(app.export_progress.verifying_existing)
 
     def test_export_confirmation_explains_resume_without_changing_the_target(self):
-        app=self.app;app.browser_index=object();app.browser_source='source.img'
+        from recoverydesk.export_target import TargetAssessment
+        app=self.app
         target='X:/Datei kopieren/{count}/日本語'
-        with patch.object(app,'_selected_browser_entries',return_value=[object()]), \
-             patch('recoverydesk.gui.ensure_safe_destination'), \
-             patch('recoverydesk.gui.filedialog.askdirectory',return_value=target), \
-             patch('recoverydesk.gui._messagebox.askyesno',return_value=False) as ask:
+        assessment=TargetAssessment(target,100,100,0,200,'NTFS',0,())
+        with patch('recoverydesk.gui._messagebox.askyesno',return_value=False) as ask:
             for language in LANGUAGES:
-                app.change_language(language);app.export_browser_selection()
+                app.change_language(language)
+                decision=dict(ready=threading.Event(),accepted=False)
+                app._handle_export_event(dict(type='target_review',assessment=assessment,decision=decision,resume=False))
+                self.assertTrue(decision['ready'].is_set());self.assertFalse(decision['accepted'])
                 text=ask.call_args.args[1]
                 self.assertIn(target,text)
-                if language=='de':self.assertIn('Unvollständige Dateien beginnen von vorn.',text)
+                if language=='de':self.assertIn('unvollständige beginnen von vorn.',text)
                 else:self.assertNotIn('Unvollständige Dateien',text)
         self.assertFalse(app.export_running)
 

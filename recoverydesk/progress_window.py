@@ -156,6 +156,8 @@ class ExportProgressWindow(tk.Toplevel):
             phase = 'Noch kein Stapel-Export gestartet.'
         elif app.export_cancel.is_set() and running:
             phase = 'Export-Abbruch angefordert …'
+        elif app.__dict__.get('_export_target_reviewing') and running:
+            phase = 'Exportziel wird geprüft …'
         elif q.paused:
             phase = 'Export pausiert.' if app.export_pause.requested else 'Export wird fortgesetzt …'
         elif app.export_pause.requested and running:
@@ -230,7 +232,8 @@ class ExportProgressWindow(tk.Toplevel):
         self._state(self.folder_button, bool(q.root) and os.path.isdir(q.root))
         pause_text=t('Fortsetzen' if app.export_pause.requested or can_resume else 'Pause')
         if self.pause_button.cget('text')!=pause_text:self.pause_button.configure(text=pause_text)
-        self._state(self.pause_button, can_resume or (running and not app.export_cancel.is_set() and not app._exit_requested))
+        self._state(self.pause_button, can_resume or (running and not app.export_cancel.is_set()
+                    and not app._exit_requested and not app.__dict__.get('_export_target_reviewing')))
         self._state(self.cancel_button, running and not app.export_cancel.is_set() and not app._exit_requested)
         colors = app._palette()
         self.grid_view.paint(blocks.cell_states(), app.theme=='dark', colors['bg'])

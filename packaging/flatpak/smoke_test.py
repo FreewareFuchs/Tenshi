@@ -67,6 +67,17 @@ def check_installed_gui() -> None:
                     app.change_language(language)
                     app.update()
                     assert app.language == language
+                    # Installed destination review uses the UI thread, keeps
+                    # paths intact and never needs physical-device enumeration.
+                    from recoverydesk.export_target import TargetAssessment
+                    import threading
+                    assessment = TargetAssessment(str(root/'日本語'),100,100,0,200,'ext4',0,())
+                    decision = dict(ready=threading.Event(),accepted=False)
+                    with patch.object(gui._messagebox,'askyesno',return_value=False) as ask:
+                        app._handle_export_event(dict(type='target_review',assessment=assessment,
+                                                      decision=decision,resume=False))
+                    assert decision['ready'].is_set() and not decision['accepted']
+                    assert str(root/'日本語') in ask.call_args.args[1]
                     # Installed Tk 9: a view-only event projection, no source I/O.
                     app.export_running = True
                     app._handle_export_event(dict(type='plan',total=1,total_bytes=100,items=[]))
@@ -184,6 +195,19 @@ def main() -> None:
         for name, checksum in expected.items():
             assert digest(output / name) == checksum
         from recoverydesk.batch_export import export_batch
+        from recoverydesk.export_target import TargetReviewDeclined
+        declined=Path(temporary)/'declined';declined.mkdir()
+        def decline_target(assessment):
+            assert assessment.required_bytes==sum(e.size for e in entries if not e.is_directory and e.recoverable)
+            assert not list(declined.iterdir())
+            return False
+        try:
+            export_batch(str(image),index,entries,str(declined),target_review=decline_target)
+        except TargetReviewDeclined:
+            pass
+        else:
+            raise AssertionError('Declined destination review started an export')
+        assert not list(declined.iterdir())
         batch_output=Path(temporary)/'batch';batch_output.mkdir()
         stop=False
         def interrupt_after_file(event):

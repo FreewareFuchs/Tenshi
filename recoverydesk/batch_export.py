@@ -24,6 +24,7 @@ from .ntfs_browser import safe_name, export_file as export_ntfs_file
 from .filesystems import export_file as export_other_file
 from .export_io import ExportCancelled
 from .export_errors import export_error_message
+from .export_target import assess_target, TargetReviewDeclined
 from .sources import ensure_safe_destination, is_device_source, source_size
 from .device_identity import capture_device_identity, check_device_identity, DeviceSourceChanged
 from .secure_target import (mkdir_checked, atomic_json_checkpoint,
@@ -341,7 +342,8 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                  byte_progress: Callable[[int], None] | None = None,
                  cancel: Callable[[], bool] | None = None,
                  event: Callable[[dict], None] | None = None,
-                 expected_root: str | None = None) -> BatchResult:
+                 expected_root: str | None = None,
+                 target_review: Callable | None = None) -> BatchResult:
     """Run or resume a batch using the same selected entries and destination.
 
     Fully completed files are trusted only when both size and SHA-256 match the
@@ -395,13 +397,42 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
             raise ValueError('Ungültige Export-Statusdatei.')
         result.resumed = True
     else:
-        mkdir_checked(str(root), source)
-        mkdir_checked(str(content), source)
         state = {'schema': 1, 'signature': signature, 'identity': identity,
                  'started': datetime.now(timezone.utc).isoformat(), 'results': {}}
-        _atomic_json(manifest_path, state, source=source)
-    if not content.is_dir() or _is_unsafe_link(content) or _is_unsafe_link(log_path):
+    if (result.resumed and not content.is_dir()) or _is_unsafe_link(content) or _is_unsafe_link(log_path):
         raise ValueError('Exportordner ist nicht sicher zugänglich.')
+    # Capacity estimation happens after validating the resume checkpoint, but
+    # before creating folders, checkpoints, checksums or copied files.
+    existing = set()
+    for task in plan:
+        prior = state['results'].get(task.path, {})
+        if task.is_directory or not (prior.get('status') == 'Erfolgreich' or
+                                     _pending_copy(prior, task.entry.size)):
+            continue
+        path = content.joinpath(*task.path.split('/'))
+        _safe_dir(path, content)
+        try:
+            meta = path.lstat()
+            if not _is_unsafe_link(path) and stat.S_ISREG(meta.st_mode) and meta.st_size == task.entry.size:
+                existing.add(task.path)
+        except OSError:
+            pass
+    assessment = assess_target(target_dir, plan, existing)
+    if target_review is not None:
+        if not target_review(assessment) or (cancel and cancel()):
+            raise TargetReviewDeclined()
+        if _identity(source, index) != identity:
+            raise DeviceSourceChanged('Datenträger wurde ausgetauscht oder geändert. Quelle erneut einlesen.')
+    elif assessment.insufficient:
+        raise ValueError(assessment.text())
+    # A UI callback may explicitly accept a space estimate, but it cannot make
+    # a too-large FAT file representable. Reject before changing the target.
+    if assessment.oversized_count:
+        raise ValueError(assessment.text())
+    if not result.resumed:
+        mkdir_checked(str(root), source)
+        mkdir_checked(str(content), source)
+        _atomic_json(manifest_path, state, source=source)
     from .export_checksums import ExportChecksums,ChecksumCheckpointError
     def persist_checksums():
         try:_atomic_json(manifest_path,state,source=source)
