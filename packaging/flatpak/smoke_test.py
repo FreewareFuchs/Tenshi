@@ -198,6 +198,7 @@ def main() -> None:
         assert not resumed.failed and not resumed.checksum_errors,resumed
         assert resumed.verified_existing==1 and resumed.exported==len(expected)-1
         assert not list(singles.glob('*.sha256'))
+        assert not singles.exists()
         summary=Path(resumed.checksums)
         lines=summary.read_text(encoding='utf-8').splitlines()
         assert len(lines)==len(expected)
@@ -237,6 +238,7 @@ def main() -> None:
         resumed_pause=results[0]
         assert not resumed_pause.cancelled and not resumed_pause.checksum_errors,resumed_pause
         assert resumed_pause.exported==1 and digest(partial)==expected['binary.bin']
+        assert not (Path(resumed_pause.root)/'Pruefsummen_Einzeln').exists()
         assert partial.stat().st_ino==meta.st_ino
         copy = Path(temporary) / 'copy.img'
         create_image(str(image), str(copy))

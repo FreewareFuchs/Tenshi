@@ -134,6 +134,32 @@ def mkdir_checked(path: str, source: str) -> None:
         os.mkdir(os.path.basename(os.path.abspath(path)), dir_fd=parent_fd)
 
 
+def remove_empty_directory(path: str, source: str) -> bool:
+    """Remove only this empty directory; never follow links or remove children."""
+    import errno
+    try:
+        if sys.platform=='win32':
+            from .windows_target import remove_empty_directory as remove
+            remove(path,source)
+        elif _linux():
+            with secure_parent(path,source) as parent_fd:
+                name=os.path.basename(os.path.abspath(path))
+                info=os.stat(name,dir_fd=parent_fd,follow_symlinks=False)
+                if not stat.S_ISDIR(info.st_mode):
+                    raise ValueError('Prüfsummenordner wurde auf einen Link oder eine Datei umgeleitet.')
+                os.rmdir(name,dir_fd=parent_fd)
+                os.fsync(parent_fd)
+        else:
+            raise ValueError('Sichere Ordnerbereinigung ist auf diesem System nicht verfügbar.')
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        if exc.errno in (errno.ENOTEMPTY,errno.EEXIST) or getattr(exc,'winerror',None)==145:
+            return False
+        raise
+    return True
+
+
 def remove_owned_output(path, source, expected_identity, expected_payload):
     """Remove only an unchanged, identity-checked regular metadata file."""
     if sys.platform=='win32':

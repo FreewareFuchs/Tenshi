@@ -47,6 +47,7 @@ class ExportChecksumTests(unittest.TestCase):
         self.assertTrue(second.resumed);self.assertEqual(second.verified_existing,1)
         self.assertEqual(second.exported,2);self.assertFalse(second.checksum_errors)
         self.assertEqual(self.singles(second),[])
+        self.assertFalse((Path(second.root)/INDIVIDUAL).exists())
         summary=Path(second.checksums)
         lines=summary.read_text(encoding='utf-8').splitlines();self.assertEqual(len(lines),3)
         for line in lines:
@@ -125,6 +126,23 @@ class ExportChecksumTests(unittest.TestCase):
         self.assertEqual(untracked.read_bytes(),b'foreign checksum')
         self.assertTrue(retry.checksum_errors);self.assertFalse(retry.checksums)
         self.assertEqual(len(self.singles(retry)),4)
+
+    def test_nonempty_checksum_directory_is_retained_without_deleting_foreign_files(self):
+        first=self.interrupt();folder=Path(first.root)/INDIVIDUAL
+        foreign=folder/'notes.keep';foreign.write_bytes(b'keep this file')
+        result=self.export()
+        self.assertFalse(result.checksum_errors);self.assertTrue(Path(result.checksums).is_file())
+        self.assertTrue(folder.is_dir());self.assertEqual(foreign.read_bytes(),b'keep this file')
+        self.assertEqual(self.singles(result),[])
+
+    def test_blocked_directory_cleanup_keeps_summary_and_can_retry(self):
+        with patch('recoverydesk.export_checksums.remove_empty_directory',side_effect=PermissionError('folder locked')):
+            result=self.export()
+        self.assertTrue(result.checksum_errors);self.assertTrue(Path(result.checksums).is_file())
+        self.assertTrue((Path(result.root)/INDIVIDUAL).is_dir())
+        retry=self.export()
+        self.assertFalse(retry.checksum_errors)
+        self.assertFalse((Path(retry.root)/INDIVIDUAL).exists())
 
     def test_cancelled_hash_has_no_unconfirmed_checksum_file(self):
         from recoverydesk.export_io import ExportCancelled

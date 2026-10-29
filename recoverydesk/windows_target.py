@@ -46,7 +46,8 @@ class _API:
     def open(self, path, *, directory=False, mode='r+b'):
         # Parents need attributes only. Denying WRITE also prevents an already
         # pinned ordinary directory being changed into a reparse point in place.
-        access = 0x80 if directory else (0x80010000 if mode == 'delete' else 0xC0000000)
+        access = ((0x10080 if mode=='delete' else 0x80) if directory else
+                  (0x80010000 if mode == 'delete' else 0xC0000000))
         sharing = 1  # FILE_SHARE_READ; no write or delete sharing
         disposition = 3 if directory or mode in ('r+b','delete') else 1
         handle = self.create(str(path), access, sharing, None, disposition,
@@ -125,9 +126,30 @@ def remove_owned_output(path, source, expected_identity, expected_payload):
             _validate_output(stream.fileno(),source,expected_identity)
             if stream.read(len(expected_payload)+1)!=expected_payload:
                 raise ValueError('Prüfsummendatei wurde verändert und bleibt erhalten.')
-            disposition=ctypes.c_ubyte(1)  # FILE_DISPOSITION_INFO.DeleteFile
-            mark=api.kernel.SetFileInformationByHandle
-            mark.argtypes=(wintypes.HANDLE,ctypes.c_int,ctypes.c_void_p,wintypes.DWORD)
-            mark.restype=wintypes.BOOL
-            if not mark(msvcrt.get_osfhandle(stream.fileno()),4,ctypes.byref(disposition),ctypes.sizeof(disposition)):
-                raise ctypes.WinError(ctypes.get_last_error())
+            _mark_delete(api,msvcrt.get_osfhandle(stream.fileno()))
+
+
+def _mark_delete(api,handle):
+    disposition=ctypes.c_ubyte(1)  # FILE_DISPOSITION_INFO.DeleteFile
+    mark=api.kernel.SetFileInformationByHandle
+    mark.argtypes=(wintypes.HANDLE,ctypes.c_int,ctypes.c_void_p,wintypes.DWORD)
+    mark.restype=wintypes.BOOL
+    if not mark(handle,4,ctypes.byref(disposition),ctypes.sizeof(disposition)):
+        raise ctypes.WinError(ctypes.get_last_error())
+
+
+def remove_empty_directory(path,source):
+    """Pinned-parent, no-reparse empty-directory deletion by opened handle."""
+    absolute=Path(os.path.abspath(os.fspath(path)))
+    if (not absolute.name or any(':' in p for p in absolute.parts[1:]) or
+            str(absolute).startswith(('\\\\.\\','\\\\?\\'))):
+        raise ValueError('Ungültiger Windows-Ausgabepfad.')
+    api=_API()
+    with ExitStack() as parents:
+        for parent in reversed(absolute.parents):
+            handle=api.open(parent,directory=True);parents.callback(api.close,handle)
+        from .sources import ensure_safe_destination
+        ensure_safe_destination(source,str(absolute.parent))
+        handle=api.open(absolute,directory=True,mode='delete')
+        try:_mark_delete(api,handle)
+        finally:api.close(handle)

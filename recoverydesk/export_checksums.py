@@ -4,7 +4,7 @@ import os
 import re
 from pathlib import Path
 
-from .secure_target import open_regular_output, mkdir_checked, remove_owned_output
+from .secure_target import open_regular_output, mkdir_checked, remove_owned_output, remove_empty_directory
 
 INDIVIDUAL='Pruefsummen_Einzeln'
 SUMMARY='SHA256SUMS.sha256'
@@ -119,6 +119,8 @@ class ExportChecksums:
                 except FileNotFoundError:
                     pass
                 self.outputs.pop(name)
+            if not (cancel and cancel()):
+                remove_empty_directory(str(self.root/INDIVIDUAL),self.source)
         finally:
             # Missing owned files are safe to recreate exclusively on resume;
             # do not rewrite a potentially large manifest after every unlink.

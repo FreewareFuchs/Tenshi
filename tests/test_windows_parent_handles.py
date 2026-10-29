@@ -60,6 +60,13 @@ class WindowsOpenFlagsTests(unittest.TestCase):
         self.assertEqual(args[2],1)
         self.assertEqual(args[4],3)
 
+    def test_empty_directory_cleanup_opens_directory_with_attributes_delete_access(self):
+        api=self.api(0x10);api.open('checksums',directory=True,mode='delete')
+        args=api.create.call_args.args
+        self.assertEqual(args[1],0x10080)
+        self.assertEqual(args[2],1);self.assertEqual(args[4],3)
+        self.assertEqual(args[5],0x02200000)
+
 
 @unittest.skipUnless(sys.platform == 'win32', 'Native Windows handle sharing')
 class WindowsParentHandleTests(unittest.TestCase):

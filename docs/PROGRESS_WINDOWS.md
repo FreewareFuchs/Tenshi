@@ -78,7 +78,8 @@ werden die unveränderten, als eigene Ausgaben erfassten Einzeldateien entfernt.
 Die Prüfung der Einzeldateien erfolgt über Dateiidentität und erwarteten Inhalt;
 die Bereinigung sucht nicht pauschal nach der Dateiendung. Windows löscht über
 den geprüften geöffneten Handle, Linux relativ zum geprüften Elternverzeichnis.
-Der leere Unterordner kann bestehen bleiben.
+Anschließend wird auch der leere Unterordner entfernt. Enthält er noch andere
+Dateien, bleibt er mitsamt diesen Dateien erhalten; es gibt kein rekursives Löschen.
 
 Bei Abbruch, Exportfehlern oder ausgelassenen Einträgen bleiben die bisherigen
 Einzeldateien erhalten. Vollständig kopierte, aber noch ungeprüfte Dateien
