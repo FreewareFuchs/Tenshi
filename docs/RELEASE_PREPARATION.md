@@ -1,20 +1,14 @@
 # Release-Paket automatisch vorbereiten
 
-In Vorbereitung: **3.0.9** mit der Zielprüfung vor dem Export und der
-sichtbaren, zentrierten Fortschrittsansicht aus PR #109. Der Funktionsstand ist
-manuell abgenommen. Installer, Portable und DEB werden gemeinsam mit expliziter
-Kennung `stable` gebaut; die endgültige Paketabnahme steht noch aus.
-[Änderungen und Grenzen](../RELEASE_NOTES_3.0.9.md).
-
-Aktueller veröffentlichter Stand: [Tenshi 3.0.8](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.8),
-seit 29.10.2026. Der abgenommene Exportablauf stammt aus PR #101, das kontrollierte
-Beenden aus PR #99. Die Hilfe ist in allen sechs Sprachen aktualisiert.
-Die endgültigen Pakete stammen unverändert vom sauberen Commit
-`461fce51792c37903c2ce6b45c6810ba02f693c7` aus dem
-[gemeinsamen stabilen Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40878364119).
-Funktionen, Paketstarts, Versionsanzeigen und Hilfe sind manuell bestätigt.
-Alle sieben GitHub-Assets, 13 APT-Dateien und 25 abschließenden öffentlichen
-Vergleiche sind erfolgreich. [Versionshinweise und Abnahme](../RELEASE_NOTES_3.0.8.md).
+Aktueller veröffentlichter Stand: [Tenshi 3.0.9](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.9),
+seit 29.10.2026. Zielprüfung und sichtbare, wieder aufrufbare Fortschrittsansicht
+stammen aus dem manuell bestätigten PR #109. Die Hilfe ist in allen sechs Sprachen
+ergänzt. Die endgültigen Pakete stammen unverändert vom sauberen Commit
+`b433b2bb7f53c259c546c16e475b89c773e3cf4b` aus dem
+[gemeinsamen stabilen Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/40914147249).
+Funktionen, Paketstarts und Versionsanzeigen sind manuell bestätigt.
+Alle sieben GitHub-Assets, 14 APT-Dateien und 25 abschließenden öffentlichen
+Vergleiche sind erfolgreich. [Versionshinweise und Abnahme](../RELEASE_NOTES_3.0.9.md).
 Frühere Releases und ihre Prüfsummen bleiben unverändert erhalten.
 
 Unter GitHub Actions **Prepare release bundle (no publishing)** manuell starten,
