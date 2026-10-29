@@ -1,0 +1,38 @@
+{
+  "de": [
+    "Export mit Pause/Fortsetzen: Teil-Datei und laufende SHA256-Berechnung bleiben während der Pause erhalten. Nach Abbrechen lässt sich derselbe Auftrag mit wiederholter unvollständiger Datei fortsetzen.",
+    "Nach jeder bestätigten Datei eine .sha256; nach vollständig erfolgreichem Export eine Sammeldatei. Eigene Einzeldateien und der leere Zwischenordner werden erst danach entfernt; fremde Dateien bleiben erhalten.",
+    "Klar angeordnete Exportaktionen und verständliche Hinweise zu vorhandenen Dateien und gemischten Rasterfeldern an Dateigrenzen. Das Hauptfenster wartet beim bestätigten Beenden auf laufende Schreibvorgänge.",
+    "Offline-Hilfe zum aktuellen Export- und Imaging-Ablauf in allen sechs Sprachen überarbeitet; Kontakt für Fragen und Verbesserungsvorschläge unter Über Tenshi ergänzt."
+  ],
+  "en": [
+    "Pause/resume export retains the partial file and ongoing SHA256 calculation. After cancellation, the same job can be resumed with incomplete files copied again.",
+    "Each verified file gets a .sha256; a fully successful export creates a consolidated checksum file. Only then are unchanged individual checksums and their empty folder removed; unrelated files are retained.",
+    "Clear export actions and explanations of existing-file verification and mixed cells at file boundaries. Confirmed application exit waits for active writes to finish.",
+    "Offline help for current export and imaging workflows updated in all six languages, with a contact for questions and improvement suggestions under About Tenshi."
+  ],
+  "es": [
+    "Pausar y continuar conserva el archivo parcial y el cálculo SHA256. Después de cancelar se puede continuar el mismo trabajo copiando de nuevo los archivos incompletos.",
+    "Cada archivo confirmado recibe un .sha256; una exportación totalmente correcta crea un archivo conjunto. Solo entonces se eliminan las sumas individuales propias sin cambios y su carpeta vacía; los archivos ajenos se conservan.",
+    "Acciones de exportación claras y explicaciones de la verificación de archivos existentes y las casillas mixtas en límites de archivos. Al confirmar la salida, el programa espera las escrituras activas.",
+    "Ayuda sin conexión actualizada en los seis idiomas para exportación e imágenes; contacto para preguntas y sugerencias de mejora en Acerca de Tenshi."
+  ],
+  "zh": [
+    "暂停和继续导出会保留未完成文件及 SHA256 计算状态。取消后可继续同一任务，未完成文件会重新复制。",
+    "每个已确认文件生成 .sha256；全部导出成功后生成汇总文件，之后才删除任务自身未修改的单独校验文件及空文件夹；其他文件保留。",
+    "导出操作布局更清晰，并解释现有文件校验及文件边界处的混合格子。确认退出时，程序等待正在进行的写入结束。",
+    "六种语言的离线帮助已更新，涵盖当前导出和镜像流程，并在关于 Tenshi 中提供问题与改进建议的联系信息。"
+  ],
+  "ru": [
+    "Пауза и продолжение экспорта сохраняют частичный файл и расчёт SHA256. После отмены можно продолжить то же задание, копируя неполные файлы заново.",
+    "Каждый подтверждённый файл получает .sha256; полностью успешный экспорт создаёт сводный файл. Только после этого удаляются собственные неизменённые отдельные суммы и пустая папка; посторонние файлы сохраняются.",
+    "Упорядоченные действия экспорта и пояснения проверки существующих файлов и смешанных ячеек на границах файлов. Подтверждённый выход ждёт завершения активной записи.",
+    "Автономная справка по экспорту и образам обновлена на всех шести языках; в разделе О программе Tenshi указан контакт для вопросов и предложений по улучшению."
+  ],
+  "ja": [
+    "出力の一時停止・再開で途中のファイルと SHA256 計算状態を保持します。中止後も同じ処理を再開でき、未完了ファイルは再コピーします。",
+    "確認済みの各ファイルに .sha256 を保存し、全出力成功後に集約ファイルを作成します。その後で自身の未変更の個別チェックサムと空フォルダーを削除し、別のファイルは保持します。",
+    "出力操作を整理し、既存ファイルの検証やファイル境界の混在マスを説明します。終了確認後は進行中の書き込み完了を待ちます。",
+    "現在の出力・イメージ作成に合わせて6言語のオフラインヘルプを更新し、Tenshi についてに質問や改善提案の連絡先を追加しました。"
+  ]
+}
