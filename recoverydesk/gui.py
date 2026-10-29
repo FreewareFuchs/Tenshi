@@ -92,10 +92,13 @@ class RecoveryDeskApp(tk.Tk):
         # All application-owned Tcl timers are canceled before Tk is destroyed.
         self._pending_after = set()
         self._closing = False
+        self._exit_requested = False
+        self._exit_errors = []
         self._scan_callbacks = queue.Queue()
         self.after(20, self._drain_scan_callbacks)
         self._setup_style()
         self._build()
+        self.protocol('WM_DELETE_WINDOW', self._request_close)
         self._apply_theme()
         self._compact_layout = None
         self.bind("<Configure>", self._update_compact_layout, add="+")
@@ -363,6 +366,49 @@ class RecoveryDeskApp(tk.Tk):
         holder.append(job)
         jobs.add(job)
         return job
+
+    def _has_pending_exit_work(self):
+        imaging=self.__dict__.get('_imaging_session',{})
+        return bool(self.__dict__.get('export_running') or
+                    self.__dict__.get('_export_report_saving') or
+                    self.__dict__.get('_session_running') or
+                    imaging.get('running') or imaging.get('saving'))
+
+    def _request_close(self):
+        """Keep the GUI alive until existing writers acknowledge interruption."""
+        if self._closing or self._exit_requested:return
+        if not self._has_pending_exit_work():
+            self.destroy();return
+        if not messagebox.askyesno('Tenshi beenden',
+                'Es laufen noch Export-, Image- oder Speichervorgänge. '
+                'Beim Beenden werden Export und Imageerstellung kontrolliert unterbrochen. '
+                'Tenshi wartet auf das Ende laufender Schreibvorgänge. '
+                'Jetzt unterbrechen und Tenshi schließen?',
+                parent=self,default='no',icon='warning'):
+            return
+        self._exit_requested=True
+        if self.export_running:self.export_cancel.set()
+        imaging=self.__dict__.get('_imaging_session',{})
+        if imaging.get('running'):imaging['stop'].set()
+        self._wait_for_exit_work()
+
+    def _wait_for_exit_work(self):
+        if self._closing:return
+        if not self._has_pending_exit_work():
+            if self._exit_errors:
+                errors=self._exit_errors;self._exit_errors=[]
+                messagebox.showerror('Tenshi beenden',
+                    translate('Beim Beenden wurden Fehler gemeldet. Bitte prüfe die folgenden Meldungen; betroffene Dateien oder Prüfpunkte sind möglicherweise nicht vollständig gespeichert.',self.language)+
+                    '\n\n'+'\n\n'.join(errors),parent=self)
+            self.destroy();return
+        self.status.set('Unterbrechung angefordert. Warte auf das Ende laufender Vorgänge …')
+        self.after(100,self._wait_for_exit_work)
+
+    def _defer_exit_error(self,error):
+        """Collect failures until writers stop; no nested exit-time dialogs."""
+        if not self._exit_requested:return False
+        if error:self._exit_errors.append(str(error))
+        return True
 
     def destroy(self):
         if getattr(self, '_closing', False):
@@ -1064,6 +1110,7 @@ class RecoveryDeskApp(tk.Tk):
 
     def open_imaging_dialog(self):
         """Create a read-only source -> new regular-file image with a resumable map."""
+        if self._exit_requested:return
         previous=self.__dict__.get('_imaging_dialog')
         if previous is not None and previous.winfo_exists() and self._imaging_session['running']:
             previous.show_progress()
@@ -1154,6 +1201,7 @@ class RecoveryDeskApp(tk.Tk):
         self._imaging_session=active
 
         def save_bad_report():
+            if self._exit_requested:return
             saved=active.get('report')
             if active['running'] or not saved or active['saving']:return
             folder=os.path.dirname(active['destination'])
@@ -1166,6 +1214,7 @@ class RecoveryDeskApp(tk.Tk):
                 active['saving']=False
                 view=active.get('window')
                 if view is not None and view.winfo_exists():view.refresh_display()
+                if self._defer_exit_error(error):return
                 if error:messagebox.showerror('Fehlerstellen-Bericht',error,parent=self)
                 else:messagebox.showinfo('Fehlerstellen-Bericht','Bericht gespeichert.',parent=self)
             def write():
@@ -1266,7 +1315,7 @@ class RecoveryDeskApp(tk.Tk):
                     if kind == 'error':
                         active['error']=str(item)
                         stats.set('Image-Erstellung fehlgeschlagen: ' + str(item))
-                        messagebox.showerror('Image erstellen', str(item), parent=self)
+                        if not self._defer_exit_error(item):messagebox.showerror('Image erstellen', str(item), parent=self)
                     else:
                         state = item
                         active['state']=state['state']
@@ -1282,7 +1331,7 @@ class RecoveryDeskApp(tk.Tk):
                                          'Image nicht als bitgenau verifiziert betrachten.')
                         stats.set(txt + (' · bitgenau geprüft' if verify_status == 'verified'
                                          else ' · NICHT bitgenau verifiziert'))
-                        if status == 'complete':
+                        if status == 'complete' and not self._exit_requested:
                             dialog_text = 'Image-Erstellung beendet.\n\n' + txt + verified_text
                             if verify_status == 'verified':
                                 messagebox.showinfo('Image erstellt und geprüft', dialog_text, parent=self)
@@ -1304,6 +1353,7 @@ class RecoveryDeskApp(tk.Tk):
             return 'stop' if failure_choice.get() in stop_labels else 'zero'
 
         def start():
+            if self._exit_requested:return
             if active['running'] or active['saving']:return
             dest = target_var.get().strip()
             if not dest:
@@ -2110,6 +2160,7 @@ class RecoveryDeskApp(tk.Tk):
 
     def save_analysis_session(self):
         """Persist metadata-only cached analyses; never write to source devices."""
+        if self._exit_requested:return
         if self._session_busy():
             messagebox.showwarning('Analysesitzung', 'Bitte laufende Vorgänge zuerst abschließen.', parent=self)
             return
@@ -2152,12 +2203,14 @@ class RecoveryDeskApp(tk.Tk):
     def _session_save_result(self, error, generation):
         self._session_running = False
         self.session_menu_button.configure(state='normal')
+        if self._defer_exit_error(error):return
         if error:
             messagebox.showerror('Analysesitzung', error, parent=self)
         else:
             self.status.set('Analysesitzung gespeichert. Beim Laden wird das Image erneut geprüft.')
 
     def load_analysis_session(self):
+        if self._exit_requested:return
         if self._session_busy():
             messagebox.showwarning('Analysesitzung', 'Bitte laufende Vorgänge zuerst abschließen.', parent=self)
             return
@@ -2197,11 +2250,12 @@ class RecoveryDeskApp(tk.Tk):
     def _finish_session_load_error(self, error):
         self._session_running = False
         self.session_menu_button.configure(state='normal')
-        messagebox.showerror('Analysesitzung', error, parent=self)
+        if not self._defer_exit_error(error):messagebox.showerror('Analysesitzung', error, parent=self)
 
     def _finish_session_load(self, result, generation, previous_source=None):
         self._session_running = False
         self.session_menu_button.configure(state='normal')
+        if self._exit_requested:return
         if (generation != self._source_generation or
             (previous_source is not None and self.source_path.get() != previous_source)):
             self.status.set('Sitzung verworfen: Datenquelle wurde inzwischen geändert.')
@@ -2829,6 +2883,7 @@ class RecoveryDeskApp(tk.Tk):
                             translate(RESUME_SCOPE,self.language), parent=self)
 
     def _save_export_report(self):
+        if self._exit_requested:return
         if self.export_running or not self.export_result or self.__dict__.get('_export_report_saving'):
             return
         report = self.export_result.log
@@ -2844,6 +2899,7 @@ class RecoveryDeskApp(tk.Tk):
         self._export_report_saving = True
         def finish(error):
             self._export_report_saving = False
+            if self._defer_exit_error(error):return
             if error:
                 messagebox.showerror('Exportbericht', error, parent=self)
             else:
@@ -2970,9 +3026,10 @@ class RecoveryDeskApp(tk.Tk):
                             f'{rep.verified_existing} {translate(RESUME_LABEL, self.language)}, {rep.failed} Fehler.')
             self._refresh_export_view()
             if rep.failed:
-                messagebox.showwarning(translate('Beendet mit Fehlern', self.language),
-                    translate('Beim Stapel-Export sind {count} Fehler aufgetreten. Nicht alle Dateien konnten exportiert oder bestätigt werden. Details stehen im Ergebnisbericht.',
-                              self.language).format(count=rep.failed), parent=self)
+                warning=translate('Beim Stapel-Export sind {count} Fehler aufgetreten. Nicht alle Dateien konnten exportiert oder bestätigt werden. Details stehen im Ergebnisbericht.',
+                                  self.language).format(count=rep.failed)
+                if not self._defer_exit_error(warning):
+                    messagebox.showwarning(translate('Beendet mit Fehlern',self.language),warning,parent=self)
             return
         if kind == 'run_error':
             self._export_ended_at = time.monotonic()
@@ -2982,7 +3039,7 @@ class RecoveryDeskApp(tk.Tk):
             self.export_button.configure(state='normal')
             self.status.set('Stapel-Export mit Fehler abgebrochen.')
             self._refresh_export_view()
-            messagebox.showerror('Stapel-Export', data['error'], parent=self)
+            if not self._defer_exit_error(data['error']):messagebox.showerror('Stapel-Export', data['error'], parent=self)
             return
         self.export_blocks.handle(data)
         self.export_progress.handle(data)
@@ -3008,6 +3065,7 @@ class RecoveryDeskApp(tk.Tk):
 
     def export_browser_selection(self):
         """Start a resumable batch and its separate progress/result window."""
+        if self._exit_requested:return
         if self.export_running:
             messagebox.showinfo('Export', 'Ein Export läuft bereits.')
             return
