@@ -45,6 +45,7 @@ from .explorer import (SearchCriteria, search_entries, construct_paths, sorted_e
 from .batch_export import export_batch
 from .export_queue import QueueProgress, readable_bytes
 from .export_pause import ExportPause
+from .export_target import TargetReviewDeclined
 from .export_blocks import ExportBlocks, copy_export_report
 from .progress_window import ExportProgressWindow
 from .imaging_window import ImagingProgressWindow
@@ -2837,6 +2838,7 @@ class RecoveryDeskApp(tk.Tk):
 
     def _toggle_export_pause(self):
         if self._exit_requested or self._closing:return
+        if self.__dict__.get('_export_target_reviewing'):return
         if not self.export_running:
             if self._can_resume_export():
                 self._start_export_job(self._export_job,resume_root=self._export_job['root'])
@@ -2891,12 +2893,9 @@ class RecoveryDeskApp(tk.Tk):
 
     def _show_export_progress(self):
         window = self.__dict__.get('_export_progress_window')
-        if window is not None and window.winfo_exists():
-            window.deiconify()
-            window.lift()
-            window.refresh_display()
-        else:
+        if window is None or not window.winfo_exists():
             window = self._export_progress_window = ExportProgressWindow(self)
+        window.present()
         return window
 
     def _show_export_scope(self):
@@ -3032,10 +3031,41 @@ class RecoveryDeskApp(tk.Tk):
 
     def _handle_export_event(self, data):
         kind = data.get('type')
+        if kind == 'target_review':
+            decision = data['decision']
+            try:
+                if self._exit_requested or self._closing or self.export_cancel.is_set():return
+                assessment = data['assessment']
+                if assessment.oversized_count:
+                    messagebox.showerror('Exportziel prüfen', assessment.text(self.language), parent=self)
+                elif data['resume'] and not assessment.insufficient:
+                    decision['accepted'] = True
+                else:
+                    text = assessment.text(self.language)+'\n\n'+translate(
+                        'Nach einem Programmneustart dieselbe Quelle, Auswahl und den ursprünglichen Zielordner wählen, nicht den erzeugten Export-Unterordner.',self.language)+'\n\n'+translate(
+                        'Export jetzt starten? Fertige Dateien werden geprüft; unvollständige beginnen von vorn. Fremde Dateien bleiben erhalten.',self.language)
+                    decision['accepted'] = messagebox.askyesno('Exportziel prüfen',text,parent=self,
+                        default='no' if assessment.insufficient else 'yes',
+                        icon='warning' if assessment.insufficient else 'question')
+            finally:
+                if decision['accepted']:
+                    self._export_target_reviewing = False
+                decision['ready'].set()
+                if decision['accepted']:self._refresh_export_view()
+            return
+        if kind == 'run_declined':
+            self.export_pause.request(False)
+            self.export_running = self._export_target_reviewing = False
+            for name, value in data['previous'].items():setattr(self,name,value)
+            self.export_button.configure(state='normal')
+            self.status.set('Export nicht gestartet.')
+            self._refresh_export_view()
+            return
         if kind in ('paused','resumed'):
             if not self._exit_requested:
                 self.status.set('Export pausiert.' if kind=='paused' else 'Export wird fortgesetzt …')
         if kind == 'run_finish':
+            self._export_target_reviewing = False
             self.export_pause.request(False)
             self._export_ended_at = time.monotonic()
             self.export_running = False
@@ -3063,6 +3093,7 @@ class RecoveryDeskApp(tk.Tk):
                     messagebox.showwarning(translate('Beendet mit Fehlern',self.language),warning,parent=self)
             return
         if kind == 'run_error':
+            self._export_target_reviewing = False
             self.export_pause.request(False)
             self._export_ended_at = time.monotonic()
             self.export_blocks.errors += 1
@@ -3077,6 +3108,7 @@ class RecoveryDeskApp(tk.Tk):
         self.export_blocks.handle(data)
         self.export_progress.handle(data)
         if kind == 'plan':
+            self._export_target_reviewing = False
             if self._export_job is not None:self._export_job['root']=data['root']
             if self._export_started_at is None:
                 self._export_started_at = time.monotonic()
@@ -3101,7 +3133,7 @@ class RecoveryDeskApp(tk.Tk):
         """Start a resumable batch and its separate progress/result window."""
         if self._exit_requested:return
         if self.export_running:
-            messagebox.showinfo('Export', 'Ein Export läuft bereits.')
+            self._show_export_progress()
             return
         if not self.browser_index or not self.browser_source:
             messagebox.showinfo('Export', 'Zuerst ein Dateisystem einlesen.')
@@ -3119,13 +3151,6 @@ class RecoveryDeskApp(tk.Tk):
         except Exception as exc:
             messagebox.showerror('Sicherer Export', str(exc))
             return
-        if not messagebox.askyesno('Stapel-Export',
-                translate('{count} ausgewählte Einträge samt Unterordnern exportieren?\n\n'
-                          'Zielordner: {target}\n\n'
-                          'Zum Fortsetzen nach einem Programmneustart dieselbe Quelle und Auswahl sowie denselben ursprünglichen Zielordner wählen. '
-                          'Fertige Dateien werden geprüft. Unvollständige Dateien beginnen von vorn. '
-                          'Vorhandene fremde Dateien bleiben unangetastet.',self.language).format(count=len(chosen),target=target)):
-            return
         self._start_export_job(dict(source=src,index=index,selection=tuple(chosen),target=target,root=None))
 
     def _start_export_job(self,job,*,resume_root=None):
@@ -3133,6 +3158,10 @@ class RecoveryDeskApp(tk.Tk):
         if (self.export_running or self._exit_requested or self._closing or
                 self.__dict__.get('_export_report_saving') or self.__dict__.get('_session_running')):return
         src,index,chosen,target=job['source'],job['index'],job['selection'],job['target']
+        previous = {name:self.__dict__.get(name) for name in (
+            '_export_job','export_result','export_progress','export_blocks',
+            '_export_started_at','_export_ended_at','_export_source')}
+        self._export_target_reviewing = True
         self._export_job=job
         self.export_cancel.clear()
         self.export_running = True
@@ -3144,20 +3173,32 @@ class RecoveryDeskApp(tk.Tk):
         self._export_started_at = time.monotonic()
         self._export_ended_at = None
         self._export_source = src
-        self.export_button.configure(state='disabled')
+        # A repeated click reopens the current job's view; it never starts a
+        # second worker or asks for a new selection/destination.
+        self.export_button.configure(state='normal')
         # Paint the main action state before starting the worker.
         self.tabs.select(self.ntfs_tab)
         self.update_idletasks()
-        self.status.set('Export wird fortgesetzt …' if resume_root is not None else 'Stapel-Export gestartet …')
+        self.status.set('Exportziel wird geprüft …')
         self._show_export_progress()
 
         control,events=self.export_pause,self._export_events
+        cancelled = self.export_cancel
+        def target_review(assessment):
+            decision = dict(ready=threading.Event(), accepted=False)
+            events.put(dict(type='target_review',assessment=assessment,
+                            decision=decision,resume=resume_root is not None))
+            while not decision['ready'].wait(.1):
+                if cancelled.is_set():return False
+            return decision['accepted'] and not cancelled.is_set()
         def worker():
             try:
-                options=dict(cancel=control.check_cancel,event=events.put)
+                options=dict(cancel=control.check_cancel,event=events.put,target_review=target_review)
                 if resume_root is not None:options['expected_root']=resume_root
                 rep = export_batch(src,index,chosen,target,**options)
                 events.put({'type': 'run_finish', 'result': rep})
+            except TargetReviewDeclined:
+                events.put(dict(type='run_declined',previous=previous))
             except Exception as exc:
                 events.put({'type': 'run_error', 'error': export_error_message(exc, self.language)})
         # Tkinter variables from previously closed windows must be finalized

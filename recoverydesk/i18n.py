@@ -1091,3 +1091,51 @@ add('Auf dem Laufwerk ist kein Speicherplatz mehr verfügbar. Prüfe den freien 
 # fixed status fragments are eligible; do not translate a raw filename.
 _PARTIAL = sorted(set(_PARTIAL + [s for s in TRANSLATIONS if s.endswith(':') and len(s)>=5]),
                   key=len, reverse=True)
+
+# Destination assessment, before any export writes.
+add('Nach einem Programmneustart dieselbe Quelle, Auswahl und den ursprünglichen Zielordner wählen, nicht den erzeugten Export-Unterordner.',
+    'After restarting Tenshi, use the same source, selection and original destination folder, rather than the generated export subfolder.',
+    'Tras reiniciar Tenshi, usa la misma fuente, selección y carpeta de destino original, no la subcarpeta de exportación generada.',
+    '重启 Tenshi 后，请选择相同的来源、文件选择和原始目标文件夹，而不是生成的导出子文件夹。',
+    'После перезапуска Tenshi выберите тот же источник, выбор и исходную папку назначения, а не созданную подпапку экспорта.',
+    'Tenshi の再起動後は同じソースと選択、および元の保存先フォルダーを選んでください。生成された出力サブフォルダーは選びません。')
+add('Exportziel prüfen', 'Check export destination', 'Comprobar destino de exportación', '检查导出目标', 'Проверить папку экспорта', '出力先を確認')
+add('Exportziel wird geprüft …', 'Checking export destination …', 'Comprobando destino de exportación …', '正在检查导出目标…', 'Проверка папки экспорта …', '出力先を確認中…')
+add('Export nicht gestartet.', 'Export not started.', 'Exportación no iniciada.', '未开始导出。', 'Экспорт не запущен.', '出力を開始していません。')
+add('Nicht ermittelbar', 'Unavailable', 'No disponible', '无法确定', 'Не определено', '取得できません')
+add('Exportziel: {target}', 'Export destination: {target}', 'Destino de exportación: {target}', '导出目标：{target}', 'Папка экспорта: {target}', '出力先：{target}')
+add('Dateisystem des Ziels: {filesystem}', 'Destination filesystem: {filesystem}', 'Sistema de archivos del destino: {filesystem}', '目标文件系统：{filesystem}', 'Файловая система назначения: {filesystem}', '保存先のファイルシステム：{filesystem}')
+add('Geplante Dateiinhalte: {size}', 'Planned file contents: {size}', 'Contenido de archivos previsto: {size}', '计划文件内容大小：{size}', 'Планируемый объём файлов: {size}', '予定ファイル内容量：{size}')
+add('Zusätzlich benötigte Dateibytes (Obergrenze): {size}', 'Additional file bytes needed (upper estimate): {size}', 'Bytes adicionales necesarios (estimación superior): {size}', '额外所需文件字节数（估算上限）：{size}', 'Дополнительный объём файлов (верхняя оценка): {size}', '追加で必要なファイル容量（上限見積もり）：{size}')
+add('Vollständig vorhandene Dateien zur erneuten Prüfung: {count}', 'Complete existing files to recheck: {count}', 'Archivos completos existentes por comprobar: {count}', '待重新检查的已有完整文件：{count}', 'Имеющиеся полные файлы для повторной проверки: {count}', '再検査する既存の完全なファイル：{count}')
+add('Aktuell verfügbar: {size}', 'Currently available: {size}', 'Disponible actualmente: {size}', '当前可用空间：{size}', 'Сейчас доступно: {size}', '現在の空き容量：{size}')
+add('Der verfügbare Platz reicht voraussichtlich nicht aus. Wähle möglichst ein anderes Ziel oder gib dort Speicherplatz frei.',
+    'The available space is likely insufficient. Choose another destination or free up space there if possible.',
+    'El espacio disponible probablemente no sea suficiente. Elige otro destino o libera espacio si es posible.',
+    '可用空间可能不足。请尽量选择其他目标或释放目标空间。',
+    'Доступного места, вероятно, недостаточно. По возможности выберите другую папку назначения или освободите место.',
+    '空き容量が不足する見込みです。可能であれば別の保存先を選ぶか、空き容量を増やしてください。')
+add('{count} Dateien überschreiten die FAT/FAT32-Grenze von 4 GiB minus 1 Byte. Bitte ein anderes Exportziel wählen.',
+    '{count} files exceed the FAT/FAT32 limit of 4 GiB minus 1 byte. Please choose another export destination.',
+    '{count} archivos superan el límite FAT/FAT32 de 4 GiB menos 1 byte. Elige otro destino de exportación.',
+    '{count} 个文件超过 FAT/FAT32 的 4 GiB 减 1 字节限制。请选择其他导出目标。',
+    '{count} файлов превышают предел FAT/FAT32 в 4 ГиБ минус 1 байт. Выберите другую папку экспорта.',
+    '{count} 個のファイルが FAT/FAT32 の上限（4 GiB − 1 バイト）を超えています。別の出力先を選んでください。')
+add('Die Dateigrößengrenze des Ziels ist unbekannt, etwa bei manchen VM- oder Netzwerkfreigaben.',
+    'The destination file size limit is unknown, as with some VM or network shares.',
+    'Se desconoce el límite de tamaño de archivo del destino, como en algunas carpetas compartidas de máquinas virtuales o de red.',
+    '目标文件大小限制未知，例如某些虚拟机或网络共享。',
+    'Ограничение размера файла неизвестно, например для некоторых общих папок виртуальных машин или сети.',
+    '一部の仮想マシンやネットワーク共有など、保存先のファイルサイズ上限は不明です。')
+add('Schätzung anhand der Metadaten, ohne zusätzliche Lesezugriffe auf Dateiinhalte. Dateisystem-, Berichts- und Prüfsummendateien benötigen zusätzlichen Platz. Verfügbarer Speicher kann sich ändern.',
+    'Estimate based on metadata, without additional reads of file contents. Filesystem metadata, reports and checksum files need additional space. Available space may change.',
+    'Estimación basada en metadatos, sin lecturas adicionales del contenido. Los metadatos del sistema de archivos, informes y sumas requieren espacio adicional. El espacio disponible puede cambiar.',
+    '估算基于元数据，不额外读取文件内容。文件系统元数据、报告和校验文件还需额外空间。可用空间可能变化。',
+    'Оценка по метаданным без дополнительного чтения содержимого. Метаданные файловой системы, отчёты и контрольные суммы требуют дополнительного места. Свободное место может измениться.',
+    'メタデータによる見積もりで、ファイル内容の追加読み取りは行いません。ファイルシステムのメタデータ、レポート、チェックサムには別途容量が必要です。空き容量は変動します。')
+add('Export jetzt starten? Fertige Dateien werden geprüft; unvollständige beginnen von vorn. Fremde Dateien bleiben erhalten.',
+    'Start export now? Finished files are checked; incomplete files restart from the beginning. Unknown files are preserved.',
+    '¿Iniciar la exportación? Se comprueban los archivos terminados; los incompletos comienzan de nuevo. Se conservan los archivos ajenos.',
+    '现在开始导出？已完成的文件将被检查；不完整的文件从头开始。其他文件会保留。',
+    'Начать экспорт? Готовые файлы проверяются; неполные копируются заново. Посторонние файлы сохраняются.',
+    '出力を開始しますか？完了済みファイルは検査し、不完全なファイルは最初から処理します。既存の無関係なファイルは保持します。')
