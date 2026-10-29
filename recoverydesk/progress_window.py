@@ -63,12 +63,14 @@ class ExportProgressWindow(tk.Toplevel):
         super().__init__(app)
         self.app = app
         self.title('Tenshi – Exportfortschritt')
+        # Owned, non-modal window: stay above Tenshi without covering other apps.
+        self.transient(app)
         factor = max(1., float(self.tk.call('tk','scaling'))/(4/3))
         width = min(round(760*factor), max(620, self.winfo_screenwidth()-60))
         height = min(round(650*factor), max(550, self.winfo_screenheight()-80))
         self.geometry(f'{width}x{height}')
         self.minsize(min(round(620*factor),width), min(round(550*factor),height))
-        # No grab, wait_window, transient lock or worker cancellation on close.
+        # No grab, wait_window or worker cancellation on close.
         self.protocol('WM_DELETE_WINDOW', self.destroy)
         self.labels = {}
         footer = ttk.Frame(self, padding=(12, 6, 12, 12))
@@ -120,6 +122,27 @@ class ExportProgressWindow(tk.Toplevel):
         self._resize_job = None
         self.grid_view.bind('<Configure>', self._resize_grid)
         self.app._after_window(self, 250, self._poll)
+
+    def present(self):
+        """Center when opened/reopened, without following every owner resize."""
+        self.deiconify()
+        self.refresh_display()
+        self.update_idletasks()
+        if self.state() != 'zoomed':
+            width, height = self.winfo_width(), self.winfo_height()
+            cx = self.app.winfo_rootx() + self.app.winfo_width() // 2
+            cy = self.app.winfo_rooty() + self.app.winfo_height() // 2
+            x, y = cx-width//2, cy-height//2
+            left, top = self.winfo_vrootx(), self.winfo_vrooty()
+            right, bottom = left+self.winfo_vrootwidth(), top+self.winfo_vrootheight()
+            # Tk on Windows may expose only the primary screen. Do not pull an
+            # owner on another monitor back onto it; keep the owner's center.
+            if left <= cx < right and top <= cy < bottom:
+                x = max(left, min(x, right-width))
+                y = max(top, min(y, bottom-height))
+            self.geometry(f'+{x}+{y}')
+        self.lift()
+        self.focus_set()
 
     def _resize_grid(self, event=None):
         if self._resize_job is None:

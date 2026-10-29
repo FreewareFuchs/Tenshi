@@ -84,7 +84,9 @@ def check_installed_gui() -> None:
                     app._handle_export_event(dict(type='start',path='fixture.bin',size=100))
                     app._handle_export_event(dict(type='bytes',path='fixture.bin',delta=100))
                     app._handle_export_event(dict(type='verify',path='fixture.bin',read=100,size=100))
-                    progress = app._show_export_progress()
+                    app.export_button.invoke()
+                    progress = app._export_progress_window
+                    assert str(progress.transient()) == str(app)
                     progress.geometry('620x550+0+0')
                     app.update(); progress.refresh_display(); app.update_idletasks()
                     assert len(progress.grid_view.find_all()) == 200
@@ -103,7 +105,8 @@ def check_installed_gui() -> None:
                     assert not app.export_progress.paused and not app.export_cancel.is_set()
                     progress.destroy()
                     assert app.export_running and not app.export_cancel.is_set()
-                    progress = app._show_export_progress()
+                    app.export_button.invoke()
+                    progress = app._export_progress_window
                     app._handle_export_event(dict(type='done',path='fixture.bin',size=100,status='Erfolgreich'))
                     assert app.export_blocks.confirmed_fraction == 1
                     progress.destroy()

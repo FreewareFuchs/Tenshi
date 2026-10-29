@@ -62,6 +62,14 @@ Für freien Platz dient `shutil.disk_usage`, ohne zusätzliche Geräteabfragen.
 5. Die Freigabe einer VM und alle sechs Sprachen prüfen. Pfade und Dateinamen
    dürfen durch Übersetzungen nicht verändert werden.
 
+Das Exportfortschrittsfenster gehört zum Hauptfenster und bleibt darüber, ohne
+das Hauptfenster zu sperren. Beim Öffnen und Wiederöffnen wird es am Hauptfenster
+zentriert; es springt beim Verschieben oder Vergrößern nicht ständig zurück.
+Ein Klick auf Stapel-Export während eines laufenden oder pausierten Auftrags
+öffnet dieselbe Fortschrittsansicht erneut. Schließen der Ansicht verändert
+weder den Auftrag noch die Pause. Es wird kein zweiter Export gestartet und
+kein neuer Zielordner abgefragt.
+
 Die automatischen Tests verwenden normale temporäre Dateien und simulierte
 Zielmetadaten. Sie ersetzen keine praktische Prüfung unterschiedlicher realer
 Zieldatenträger oder Freigaben.

@@ -65,7 +65,10 @@ class ExportWindowTests(unittest.TestCase):
                 first.destroy()
                 self.assertTrue(self.app.export_running)
                 self.assertFalse(self.app.export_cancel.is_set())
-                second=self.app._show_export_progress()
+                self.assertEqual(str(self.app.export_button.cget('state')),'normal')
+                self.app.export_button.invoke()
+                second=self.app._export_progress_window
+                self.assertEqual(len(threads),1)
                 self.assertIsNot(first,second)
                 self.assertEqual(self.app.export_blocks.confirmed_fraction,0)
                 resume.set()
@@ -81,6 +84,24 @@ class ExportWindowTests(unittest.TestCase):
         finally:
             resume.set()
             for worker in threads:worker.join(timeout=3)
+
+    def test_progress_is_owned_nonmodal_and_centered_on_each_open(self):
+        app=self.app
+        app.geometry('1100x780+50+40');app.update()
+        win=app._show_export_progress();app.update()
+        self.assertEqual(str(win.transient()),str(app))
+        self.assertIsNone(app.grab_current())
+        for position in ('+50+40','+160+90'):
+            app.geometry('1100x780'+position);app.update()
+            win.geometry('+0+0');app.update()
+            same=app._show_export_progress();app.update()
+            self.assertIs(same,win)
+            expected_x=app.winfo_rootx()+(app.winfo_width()-win.winfo_width())//2
+            expected_y=app.winfo_rooty()+(app.winfo_height()-win.winfo_height())//2
+            # Compare frame positions; decorations vary between window managers.
+            self.assertLess(abs(win.winfo_x()-expected_x),35)
+            self.assertLess(abs(win.winfo_y()-expected_y),35)
+        self.assertIsNone(app.grab_current())
 
     def test_raster_and_actions_survive_language_theme_and_small_window(self):
         app=self.app

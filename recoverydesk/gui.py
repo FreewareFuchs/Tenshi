@@ -2893,12 +2893,9 @@ class RecoveryDeskApp(tk.Tk):
 
     def _show_export_progress(self):
         window = self.__dict__.get('_export_progress_window')
-        if window is not None and window.winfo_exists():
-            window.deiconify()
-            window.lift()
-            window.refresh_display()
-        else:
+        if window is None or not window.winfo_exists():
             window = self._export_progress_window = ExportProgressWindow(self)
+        window.present()
         return window
 
     def _show_export_scope(self):
@@ -3136,7 +3133,7 @@ class RecoveryDeskApp(tk.Tk):
         """Start a resumable batch and its separate progress/result window."""
         if self._exit_requested:return
         if self.export_running:
-            messagebox.showinfo('Export', 'Ein Export läuft bereits.')
+            self._show_export_progress()
             return
         if not self.browser_index or not self.browser_source:
             messagebox.showinfo('Export', 'Zuerst ein Dateisystem einlesen.')
@@ -3176,7 +3173,9 @@ class RecoveryDeskApp(tk.Tk):
         self._export_started_at = time.monotonic()
         self._export_ended_at = None
         self._export_source = src
-        self.export_button.configure(state='disabled')
+        # A repeated click reopens the current job's view; it never starts a
+        # second worker or asks for a new selection/destination.
+        self.export_button.configure(state='normal')
         # Paint the main action state before starting the worker.
         self.tabs.select(self.ntfs_tab)
         self.update_idletasks()

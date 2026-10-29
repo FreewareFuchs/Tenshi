@@ -174,7 +174,7 @@ class ExportPauseGuiTests(unittest.TestCase):
             app.tk.call(app.protocol('WM_DELETE_WINDOW'))
         self.assertFalse(app._exit_requested);self.assertFalse(app.export_cancel.is_set())
         self.assertTrue(app.export_progress.paused);self.assertEqual(output.read_bytes(),expected[:2])
-        app._export_progress_window.destroy();view=app._show_export_progress()
+        app._export_progress_window.destroy();app.export_button.invoke();view=app._export_progress_window
         for language in LANGUAGES:
             app.change_language(language)
             for theme in ('light','dark'):
