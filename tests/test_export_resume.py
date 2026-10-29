@@ -143,9 +143,14 @@ print(json.dumps(dict(verified=r.verified_existing,exported=r.exported,failed=r.
         device=r'\\.\PhysicalDrive0' if os.name=='nt' else '/dev/sdz'
         identity=dict(saved.identity,source=device,device_snapshot={'serial':'old'})
         request=SavedExport(saved.root,identity,saved.signature,saved.keys,0,False)
-        with patch('recoverydesk.export_resume._identity',return_value=dict(identity,device_snapshot={'serial':'new'})), \
+        # The device is simulated: Linux classifies block paths using their
+        # actual file type, so a nonexistent /dev/sdz must not reach real stat.
+        with patch('recoverydesk.export_resume.validate_source',return_value=device) as validate, \
+             patch('recoverydesk.export_resume.is_device_source',return_value=True), \
+             patch('recoverydesk.export_resume._identity',return_value=dict(identity,device_snapshot={'serial':'new'})) as identify, \
              patch('recoverydesk.export_resume.scan_ntfs_tree') as scan:
             with self.assertRaises(ExportResumeError):prepare_saved_export(request)
+        validate.assert_called_once_with(device);identify.assert_called_once()
         scan.assert_not_called()
 
     def test_legacy_job_retains_manual_resume_and_is_upgraded(self):
