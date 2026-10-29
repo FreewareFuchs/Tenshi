@@ -10,6 +10,13 @@ Planung, Abbruchbehandlung und Wiederaufnahme nach einem Neustart bleiben erhalt
 „Abbrechen“ beendet den Auftrag kontrolliert, auch während einer Pause. Eine
 unvollständige Datei wird dabei entfernt; fertige Dateien und Einzel-Prüfsummen
 bleiben erhalten. „Schließen“ blendet weiterhin nur die Fortschrittsansicht aus.
+Nach dem abgeschlossenen Abbruch wird „Fortsetzen“ wieder aktiv. Es verwendet
+Quelle, Index, Auswahl und ursprünglichen Zielordner des bisherigen Auftrags,
+auch wenn die Dateiansicht inzwischen eine andere Quelle zeigt. Fertige Dateien
+werden erneut per SHA256 geprüft; die unvollständige Datei wird von vorn kopiert.
+Vor Ende des Abbruchs oder während einer laufenden Berichtsspeicherung startet
+kein neuer Export. Bei geänderter Quelle/Auswahl oder fehlendem Exportordner
+wird die Wiederaufnahme abgelehnt, statt still einen neuen Exportordner anzulegen.
 Die Aktionen stehen in drei Reihen: Ergebnisbericht / Bericht speichern,
 Pause bzw. Fortsetzen / Zielordner öffnen, Abbrechen / Schließen.
 

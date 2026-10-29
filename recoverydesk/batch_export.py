@@ -340,7 +340,8 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                  progress: Callable[[int, int, str, str], None] | None = None,
                  byte_progress: Callable[[int], None] | None = None,
                  cancel: Callable[[], bool] | None = None,
-                 event: Callable[[dict], None] | None = None) -> BatchResult:
+                 event: Callable[[dict], None] | None = None,
+                 expected_root: str | None = None) -> BatchResult:
     """Run or resume a batch using the same selected entries and destination.
 
     Fully completed files are trusted only when both size and SHA-256 match the
@@ -369,6 +370,10 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
     new_root = Path(target_dir) / f'Tenshi_Export_{signature[:16]}'
     old_root = Path(target_dir) / f'RecoveryDesk_Export_{signature[:16]}'
     root = new_root if new_root.exists() or not old_root.exists() else old_root
+    if expected_root is not None:
+        normalize=lambda path:os.path.normcase(os.path.abspath(path))
+        if normalize(root)!=normalize(expected_root) or not root.is_dir():
+            raise ValueError('Der bisherige Export kann nicht fortgesetzt werden: Quelle, Auswahl oder Exportordner wurde geändert. Bitte Quelle und Exportordner prüfen.')
     content = root / 'files'
     manifest_path = root / MANIFEST
     log_path = root / LOG_NAME

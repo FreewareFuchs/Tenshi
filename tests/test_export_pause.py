@@ -206,6 +206,61 @@ class ExportPauseGuiTests(unittest.TestCase):
         self.assertFalse(output.exists());self.assertTrue(Path(app.export_result.log).is_file())
         view.refresh_display()
         self.assertEqual(str(view.cancel_button.cget('state')),'disabled')
-        self.assertEqual(str(view.pause_button.cget('state')),'disabled')
+        self.assertEqual(str(view.pause_button.cget('state')),'normal')
+        self.assertEqual(view.pause_button.cget('text'),'Fortsetzen')
         self.assertEqual(self.source.read_bytes(),self.original)
         self.warning.assert_not_called();self.error.assert_not_called()
+
+    def test_cancelled_export_resumes_captured_job_without_new_dialog_or_selection(self):
+        from recoverydesk.i18n import LANGUAGES,translate
+        output,expected=self.start_paused();app=self.app
+        view=app._export_progress_window;view.cancel_button.invoke()
+        self.pump(lambda:not app.export_running)
+        previous_root=app.export_result.root
+        self.assertFalse(output.exists());self.assertEqual(len(self.threads),1)
+        app._export_progress_window.destroy();view=app._show_export_progress()
+        for language in LANGUAGES:
+            app.change_language(language);view.geometry('620x550+0+0')
+            app.update();view.refresh_display();app.update_idletasks()
+            self.assertEqual(str(view.pause_button.cget('state')),'normal')
+            self.assertEqual(view.pause_button.cget('text'),translate('Fortsetzen',language))
+            self.assertIn(translate('Fortsetzen prüft fertige Dateien; die abgebrochene Datei beginnt von vorn.',language),view.labels['note'].cget('text'))
+        # The browser may now display a different source; resume must use the
+        # captured source/index/selection/target, never current UI selections.
+        app.browser_source=str(self.root/'another-source.img');app.browser_index=None
+        with patch.object(app,'_selected_browser_entries',side_effect=AssertionError('New selection requested')), \
+             patch('recoverydesk.gui.filedialog.askdirectory',side_effect=AssertionError('New target requested')), \
+             patch('recoverydesk.gui.messagebox.askyesno',side_effect=AssertionError('Unexpected restart dialog')):
+            view.pause_button.invoke()
+            # A second start request before completion must not create a third worker.
+            app._start_export_job(app._export_job,resume_root=previous_root)
+            self.pump(lambda:not app.export_running)
+        self.assertEqual(len(self.threads),2)
+        self.assertEqual(app.export_result.root,previous_root);self.assertTrue(app.export_result.resumed)
+        self.assertEqual(app.export_result.exported,1);self.assertEqual(app.export_result.bytes_written,len(expected))
+        self.assertEqual(output.read_bytes(),expected);self.assertFalse(app.export_result.cancelled)
+        self.assertFalse(app._can_resume_export());self.assertFalse(app.export_result.checksum_errors)
+        self.assertEqual(self.source.read_bytes(),self.original)
+        self.warning.assert_not_called();self.error.assert_not_called()
+
+    def test_resume_waits_for_running_report_save_and_exit_prevents_restart(self):
+        self.start_paused();app=self.app
+        app._export_progress_window.cancel_button.invoke();self.pump(lambda:not app.export_running)
+        self.assertTrue(app._can_resume_export())
+        app._export_report_saving=True
+        app._toggle_export_pause();self.assertEqual(len(self.threads),1)
+        self.assertFalse(app._can_resume_export());app._export_report_saving=False
+        app._exit_requested=True;app._toggle_export_pause()
+        self.assertEqual(len(self.threads),1);self.assertFalse(app._can_resume_export())
+
+    def test_resume_of_changed_original_source_fails_without_creating_another_export(self):
+        self.start_paused();app=self.app
+        app._export_progress_window.cancel_button.invoke();self.pump(lambda:not app.export_running)
+        previous=Path(app.export_result.root);before=set(previous.parent.iterdir())
+        stamp=self.source.stat()
+        os.utime(self.source,ns=(stamp.st_atime_ns,stamp.st_mtime_ns+1000000000))
+        app._export_progress_window.pause_button.invoke();self.pump(lambda:not app.export_running)
+        self.assertEqual(len(self.threads),2);self.assertTrue(app.export_progress.failed)
+        self.assertEqual(set(previous.parent.iterdir()),before)
+        self.assertEqual(self.source.read_bytes(),self.original)
+        self.error.assert_called_once();self.warning.assert_not_called()

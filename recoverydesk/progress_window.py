@@ -149,6 +149,7 @@ class ExportProgressWindow(tk.Toplevel):
         q, blocks = app.export_progress, app.export_blocks
         t = lambda text: translate(text, app.language)
         running = app.export_running
+        can_resume = app._can_resume_export()
         if not running and q.ended:
             phase = 'Abgebrochen' if q.cancelled else 'Beendet mit Fehlern' if q.failed else 'Beendet'
         elif not running and app.__dict__.get('_export_started_at') is None:
@@ -208,7 +209,8 @@ class ExportProgressWindow(tk.Toplevel):
                             '100 Felder = 100 % der geplanten Dateigrößen.')
         if q.resumed:scope += '\n'+t('Bestehender Export erkannt.')
         self._set('scope', scope)
-        self._set('note', t('Pause erhält den aktuellen Stand, solange Tenshi geöffnet bleibt.')+'\n'+t('Bestätigung betrifft den Export, nicht den Originalinhalt.'))
+        self._set('note', t('Fortsetzen prüft fertige Dateien; die abgebrochene Datei beginnt von vorn.' if can_resume else
+                            'Pause erhält den aktuellen Stand, solange Tenshi geöffnet bleibt.')+'\n'+t('Bestätigung betrifft den Export, nicht den Originalinhalt.'))
         width = max(200, (self.winfo_width() if self.winfo_width()>1 else 760)-30)
         for name,label in self.labels.items():
             wrap = width if name=='phase' else max(150,width//2-12)
@@ -226,9 +228,9 @@ class ExportProgressWindow(tk.Toplevel):
         self._state(self.report_button, available)
         self._state(self.save_button, available and not app.__dict__.get('_export_report_saving'))
         self._state(self.folder_button, bool(q.root) and os.path.isdir(q.root))
-        pause_text=t('Fortsetzen' if app.export_pause.requested else 'Pause')
+        pause_text=t('Fortsetzen' if app.export_pause.requested or can_resume else 'Pause')
         if self.pause_button.cget('text')!=pause_text:self.pause_button.configure(text=pause_text)
-        self._state(self.pause_button, running and not app.export_cancel.is_set() and not app._exit_requested)
+        self._state(self.pause_button, can_resume or (running and not app.export_cancel.is_set() and not app._exit_requested))
         self._state(self.cancel_button, running and not app.export_cancel.is_set() and not app._exit_requested)
         colors = app._palette()
         self.grid_view.paint(blocks.cell_states(), app.theme=='dark', colors['bg'])

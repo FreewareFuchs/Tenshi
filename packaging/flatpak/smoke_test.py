@@ -194,7 +194,7 @@ def main() -> None:
         assert interrupted.cancelled and not interrupted.checksum_errors,interrupted
         singles=Path(interrupted.root)/'Pruefsummen_Einzeln'
         assert len(list(singles.glob('*.sha256')))==1
-        resumed=export_batch(str(image),index,entries,str(batch_output))
+        resumed=export_batch(str(image),index,entries,str(batch_output),expected_root=interrupted.root)
         assert not resumed.failed and not resumed.checksum_errors,resumed
         assert resumed.verified_existing==1 and resumed.exported==len(expected)-1
         assert not list(singles.glob('*.sha256'))

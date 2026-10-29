@@ -32,6 +32,18 @@ def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
 add('System', 'System', 'Sistema', '系统', 'Система', 'システム')
+add('Fortsetzen prüft fertige Dateien; die abgebrochene Datei beginnt von vorn.',
+    'Resume verifies completed files; the interrupted file starts from the beginning.',
+    'Continuar verifica los archivos completos; el archivo interrumpido empieza desde el principio.',
+    '继续时会检查已完成的文件；中断的文件将从头复制。',
+    'При продолжении готовые файлы проверяются, а прерванный файл копируется с начала.',
+    '再開時は完了済みのファイルを検証し、中断したファイルは最初からコピーします。')
+add('Der bisherige Export kann nicht fortgesetzt werden: Quelle, Auswahl oder Exportordner wurde geändert. Bitte Quelle und Exportordner prüfen.',
+    'The previous export cannot be resumed: the source, selection or export folder has changed. Please check the source and export folder.',
+    'No se puede continuar la exportación anterior: cambió el origen, la selección o la carpeta de exportación. Compruebe el origen y la carpeta.',
+    '无法继续之前的导出：来源、选择或导出文件夹已更改。请检查来源和导出文件夹。',
+    'Невозможно продолжить предыдущий экспорт: изменён источник, выбор или папка экспорта. Проверьте источник и папку.',
+    'ソース、選択内容、または出力フォルダーが変更されたため、前の出力を再開できません。ソースと出力フォルダーを確認してください。')
 add('Pause','Pause','Pausar','暂停','Пауза','一時停止')
 add('Fortsetzen','Resume','Continuar','继续','Продолжить','再開')
 add('Export-Pause angefordert …','Export pause requested …','Pausa de exportación solicitada …','已请求暂停导出…','Запрошена пауза экспорта …','出力の一時停止を要求しました…')
