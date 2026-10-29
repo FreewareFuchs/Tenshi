@@ -397,8 +397,11 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
         _atomic_json(manifest_path, state, source=source)
     if not content.is_dir() or _is_unsafe_link(content) or _is_unsafe_link(log_path):
         raise ValueError('Exportordner ist nicht sicher zugänglich.')
-    from .export_checksums import ExportChecksums
-    checksums=ExportChecksums(root,source,state,lambda:_atomic_json(manifest_path,state,source=source))
+    from .export_checksums import ExportChecksums,ChecksumCheckpointError
+    def persist_checksums():
+        try:_atomic_json(manifest_path,state,source=source)
+        except (OSError,ValueError) as exc:raise ChecksumCheckpointError(str(exc)) from exc
+    checksums=ExportChecksums(root,source,state,persist_checksums)
     confirmed=[]
     exporter = export_ntfs_file if hasattr(index, 'info') else export_other_file
     from .recovery_preflight import inspect_metadata
@@ -579,6 +582,8 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
             try:
                 if event:event({'type':'checksums','phase':'individual'})
                 checksums.save_file(n,task.path,digest)
+            except ChecksumCheckpointError:
+                raise
             except (OSError,ValueError) as exc:
                 result.checksum_errors.append(f'{task.path}: '+export_error_message(exc))
         _atomic_json(manifest_path, state, source=source)
@@ -595,6 +600,8 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
         try:
             if event:event({'type':'checksums','phase':'summary'})
             result.checksums=checksums.finish(confirmed,cancel=cancel)
+        except ChecksumCheckpointError:
+            raise
         except (OSError,ValueError) as exc:
             # A fully saved summary may exist even if an individual file could
             # not be removed. Record its path only when its write completed.

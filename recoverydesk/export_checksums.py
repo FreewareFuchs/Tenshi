@@ -10,6 +10,10 @@ INDIVIDUAL='Pruefsummen_Einzeln'
 SUMMARY='SHA256SUMS.sha256'
 
 
+class ChecksumCheckpointError(OSError):
+    """A lost export checkpoint is fatal, unlike optional checksum metadata."""
+
+
 def checksum_line(relative, digest):
     # Export paths are sanitized, but reject unsafe checksum input independently.
     path=Path(relative)
