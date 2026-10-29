@@ -44,6 +44,7 @@ from .explorer import (SearchCriteria, search_entries, construct_paths, sorted_e
                        compile_search, is_temporary_file)
 from .batch_export import export_batch
 from .export_queue import QueueProgress, readable_bytes
+from .export_pause import ExportPause
 from .export_blocks import ExportBlocks, copy_export_report
 from .progress_window import ExportProgressWindow
 from .imaging_window import ImagingProgressWindow
@@ -1966,6 +1967,8 @@ class RecoveryDeskApp(tk.Tk):
         self.export_progress = QueueProgress()
         self.export_result = None
         self._export_events = queue.SimpleQueue()
+        self.export_pause = ExportPause(self.export_cancel,self._export_events.put)
+        self._export_job = None
         self.browser_nodes = {}
         self.browser_ancestors = {}
         self.browser_expanded = set()
@@ -2832,6 +2835,24 @@ class RecoveryDeskApp(tk.Tk):
             self.status.set('Abbruch angefordert – laufender Schreibvorgang wird sicher beendet …')
             self._refresh_export_view()
 
+    def _toggle_export_pause(self):
+        if self._exit_requested or self._closing:return
+        if not self.export_running:
+            if self._can_resume_export():
+                self._start_export_job(self._export_job,resume_root=self._export_job['root'])
+            return
+        if self.export_cancel.is_set():return
+        self.export_pause.request(not self.export_pause.requested)
+        self.status.set('Export-Pause angefordert …' if self.export_pause.requested else 'Export wird fortgesetzt …')
+        self._refresh_export_view()
+
+    def _can_resume_export(self):
+        job=self.__dict__.get('_export_job')
+        return bool(job and job.get('root') and getattr(self.export_result,'cancelled',False)
+                    and not self.export_running and not self._exit_requested and not self._closing
+                    and not self.__dict__.get('_export_report_saving')
+                    and not self.__dict__.get('_session_running'))
+
     def _refresh_export_view(self):
         window = self.__dict__.get('_export_progress_window')
         if window is not None and window.winfo_exists():
@@ -3011,30 +3032,42 @@ class RecoveryDeskApp(tk.Tk):
 
     def _handle_export_event(self, data):
         kind = data.get('type')
+        if kind in ('paused','resumed'):
+            if not self._exit_requested:
+                self.status.set('Export pausiert.' if kind=='paused' else 'Export wird fortgesetzt …')
         if kind == 'run_finish':
+            self.export_pause.request(False)
             self._export_ended_at = time.monotonic()
             self.export_running = False
             self.export_result = data['result']
             self.export_button.configure(state='normal')
             rep = self.export_result
-            self.export_progress.failed = bool(rep.failed)
+            checksum_errors=getattr(rep,'checksum_errors',[])
+            self.export_progress.failed = bool(rep.failed or checksum_errors)
             self.export_progress.cancelled = bool(rep.cancelled)
+            self.export_progress.paused = False
             self.export_progress.ended = True
-            label = translate('Beendet mit Fehlern', self.language) if rep.failed else (
+            label = translate('Beendet mit Fehlern', self.language) if rep.failed or checksum_errors else (
                 'Abgebrochen' if rep.cancelled else 'Beendet')
             self.status.set(f'Stapel-Export {label.lower()}: {rep.exported} neu, '
-                            f'{rep.verified_existing} {translate(RESUME_LABEL, self.language)}, {rep.failed} Fehler.')
+                            f'{rep.verified_existing} {translate(RESUME_LABEL, self.language)}, {rep.failed+len(checksum_errors)} Fehler.')
             self._refresh_export_view()
             if rep.failed:
                 warning=translate('Beim Stapel-Export sind {count} Fehler aufgetreten. Nicht alle Dateien konnten exportiert oder bestätigt werden. Details stehen im Ergebnisbericht.',
                                   self.language).format(count=rep.failed)
                 if not self._defer_exit_error(warning):
                     messagebox.showwarning(translate('Beendet mit Fehlern',self.language),warning,parent=self)
+            if checksum_errors:
+                warning=translate('Prüfsummendateien konnten nicht vollständig gespeichert oder zusammengefasst werden. Vorhandene Einzeldateien bleiben nach Möglichkeit erhalten. Details:',self.language)+'\n\n'+'\n'.join(checksum_errors)
+                if not self._defer_exit_error(warning):
+                    messagebox.showwarning(translate('Beendet mit Fehlern',self.language),warning,parent=self)
             return
         if kind == 'run_error':
+            self.export_pause.request(False)
             self._export_ended_at = time.monotonic()
             self.export_blocks.errors += 1
             self.export_progress.failed = self.export_progress.ended = True
+            self.export_progress.paused = False
             self.export_running = False
             self.export_button.configure(state='normal')
             self.status.set('Stapel-Export mit Fehler abgebrochen.')
@@ -3044,6 +3077,7 @@ class RecoveryDeskApp(tk.Tk):
         self.export_blocks.handle(data)
         self.export_progress.handle(data)
         if kind == 'plan':
+            if self._export_job is not None:self._export_job['root']=data['root']
             if self._export_started_at is None:
                 self._export_started_at = time.monotonic()
             if data.get('resumed'):
@@ -3072,6 +3106,7 @@ class RecoveryDeskApp(tk.Tk):
         if not self.browser_index or not self.browser_source:
             messagebox.showinfo('Export', 'Zuerst ein Dateisystem einlesen.')
             return
+        src,index=self.browser_source,self.browser_index
         chosen = self._selected_browser_entries()
         if not chosen:
             messagebox.showinfo('Export', 'Rechts Dateien/Ordner auswählen (Strg/Umschalt für mehrere).')
@@ -3080,22 +3115,30 @@ class RecoveryDeskApp(tk.Tk):
         if not target:
             return
         try:
-            ensure_safe_destination(self.browser_source, target)
+            ensure_safe_destination(src, target)
         except Exception as exc:
             messagebox.showerror('Sicherer Export', str(exc))
             return
         if not messagebox.askyesno('Stapel-Export',
-                f'{len(chosen)} ausgewählte Einträge samt Unterordnern exportieren?\n\n'
-                f'Zielordner: {target}\n\n'
-                'Ein eigener Exportordner mit Statusdatei wird angelegt. '
-                'Bei gleicher Auswahl ist Fortsetzen möglich. '\
-                'Vorhandene fremde Dateien bleiben unangetastet.'):
+                translate('{count} ausgewählte Einträge samt Unterordnern exportieren?\n\n'
+                          'Zielordner: {target}\n\n'
+                          'Zum Fortsetzen nach einem Programmneustart dieselbe Quelle und Auswahl sowie denselben ursprünglichen Zielordner wählen. '
+                          'Fertige Dateien werden geprüft. Unvollständige Dateien beginnen von vorn. '
+                          'Vorhandene fremde Dateien bleiben unangetastet.',self.language).format(count=len(chosen),target=target)):
             return
-        src, index = self.browser_source, self.browser_index
+        self._start_export_job(dict(source=src,index=index,selection=tuple(chosen),target=target,root=None))
+
+    def _start_export_job(self,job,*,resume_root=None):
+        """Use the captured job, including when the browser now shows another source."""
+        if (self.export_running or self._exit_requested or self._closing or
+                self.__dict__.get('_export_report_saving') or self.__dict__.get('_session_running')):return
+        src,index,chosen,target=job['source'],job['index'],job['selection'],job['target']
+        self._export_job=job
         self.export_cancel.clear()
         self.export_running = True
         self.export_result = None
         self._export_events = queue.SimpleQueue()
+        self.export_pause = ExportPause(self.export_cancel,self._export_events.put)
         self.export_progress = QueueProgress()
         self.export_blocks = ExportBlocks()
         self._export_started_at = time.monotonic()
@@ -3105,17 +3148,18 @@ class RecoveryDeskApp(tk.Tk):
         # Paint the main action state before starting the worker.
         self.tabs.select(self.ntfs_tab)
         self.update_idletasks()
-        self.status.set('Stapel-Export gestartet …')
+        self.status.set('Export wird fortgesetzt …' if resume_root is not None else 'Stapel-Export gestartet …')
         self._show_export_progress()
 
+        control,events=self.export_pause,self._export_events
         def worker():
             try:
-                rep = export_batch(src, index, chosen, target,
-                                   cancel=self.export_cancel.is_set,
-                                   event=self._export_events.put)
-                self._export_events.put({'type': 'run_finish', 'result': rep})
+                options=dict(cancel=control.check_cancel,event=events.put)
+                if resume_root is not None:options['expected_root']=resume_root
+                rep = export_batch(src,index,chosen,target,**options)
+                events.put({'type': 'run_finish', 'result': rep})
             except Exception as exc:
-                self._export_events.put({'type': 'run_error', 'error': export_error_message(exc, self.language)})
+                events.put({'type': 'run_error', 'error': export_error_message(exc, self.language)})
         # Tkinter variables from previously closed windows must be finalized
         # on the UI thread, not later by Python's GC inside the export worker.
         # Otherwise Tcl cleanup can block an otherwise healthy background export.

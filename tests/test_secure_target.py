@@ -13,6 +13,57 @@ from recoverydesk import secure_target, imaging
 
 @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux dirfd defenses only')
 class LinuxDestinationHandleTests(unittest.TestCase):
+    def test_empty_directory_cleanup_does_not_follow_links(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);source=root/'source.img';source.write_bytes(b'protected')
+            outside=root/'outside';outside.mkdir();link=root/'checksums';link.symlink_to(outside,target_is_directory=True)
+            with self.assertRaises(ValueError):secure_target.remove_empty_directory(str(link),str(source))
+            self.assertTrue(link.is_symlink());self.assertTrue(outside.is_dir())
+
+    def test_empty_directory_cleanup_uses_pinned_parent_after_swap(self):
+        from contextlib import contextmanager
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);source=root/'source.img';source.write_bytes(b'protected')
+            parent=root/'job';parent.mkdir();(parent/'checksums').mkdir()
+            original=secure_target.secure_parent
+            @contextmanager
+            def swapped(*args):
+                with original(*args) as fd:
+                    parent.rename(root/'old');parent.mkdir();(parent/'checksums').mkdir()
+                    yield fd
+            with mock.patch.object(secure_target,'secure_parent',swapped):
+                self.assertTrue(secure_target.remove_empty_directory(str(parent/'checksums'),str(source)))
+            self.assertFalse((root/'old/checksums').exists())
+            self.assertTrue((parent/'checksums').is_dir());self.assertEqual(source.read_bytes(),b'protected')
+
+    def test_checksum_cleanup_stays_in_open_parent_after_directory_swap(self):
+        from contextlib import contextmanager
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);source=root/'source.img';source.write_bytes(b'protected')
+            parent=root/'checksums';parent.mkdir();path=parent/'file.sha256';path.write_bytes(b'owned')
+            meta=path.stat();expected=(meta.st_dev,meta.st_ino)
+            original=secure_target.secure_parent
+            @contextmanager
+            def swapped(*args):
+                with original(*args) as fd:
+                    parent.rename(root/'old');parent.mkdir()
+                    (parent/path.name).write_bytes(b'foreign')
+                    yield fd
+            with mock.patch.object(secure_target,'secure_parent',swapped):
+                secure_target.remove_owned_output(str(path),str(source),expected,b'owned')
+            self.assertEqual(path.read_bytes(),b'foreign')
+            self.assertFalse((root/'old'/path.name).exists())
+            self.assertEqual(source.read_bytes(),b'protected')
+
+    def test_checksum_cleanup_rejects_symlink_to_source(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);source=root/'source.img';source.write_bytes(b'protected')
+            path=root/'file.sha256';path.symlink_to(source)
+            meta=source.stat()
+            with self.assertRaises((OSError,ValueError)):
+                secure_target.remove_owned_output(str(path),str(source),(meta.st_dev,meta.st_ino),b'protected')
+            self.assertTrue(path.is_symlink());self.assertEqual(source.read_bytes(),b'protected')
+
     def test_new_file_is_regular_exclusive_and_pinned(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'new.img'

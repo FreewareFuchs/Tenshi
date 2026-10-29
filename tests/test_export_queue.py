@@ -70,6 +70,8 @@ class ExportQueueTests(unittest.TestCase):
             self.assertEqual(events[0]['total'], 5)
             self.assertEqual(len([e for e in events if e['type'] == 'done']), 5)
             self.assertEqual(sum(e['delta'] for e in events if e['type'] == 'bytes'), report.bytes_written)
+            self.assertTrue(any(e['type']=='verify' for e in events))
+            self.assertTrue(all(not e['existing'] for e in events if e['type']=='verify'))
             q = QueueProgress()
             for n, event in enumerate(events):
                 q.handle(event, now=n / 5)
@@ -84,6 +86,8 @@ class ExportQueueTests(unittest.TestCase):
             self.assertEqual(second.exported, 0)
             self.assertEqual(len([e for e in events2 if e.get('status') == 'Bereits verifiziert']), 3)
             self.assertEqual(sum(e['delta'] for e in events2 if e['type'] == 'bytes'), 0)
+            self.assertTrue(any(e['type']=='verify' for e in events2))
+            self.assertTrue(all(e['existing'] for e in events2 if e['type']=='verify'))
             # A tampered target must be shown as an explicit error, never overwritten.
             bad = Path(report.root) / 'files' / 'Dokumente' / 'bericht.txt'
             bad.write_bytes(b'OTHER')

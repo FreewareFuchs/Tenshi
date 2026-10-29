@@ -45,6 +45,9 @@ class QueueProgress:
     active_path: str = ''
     active_written: int = 0
     verifying: bool = False
+    verifying_existing: bool = False
+    checksum_phase: str = ''
+    paused: bool = False
     verified_bytes: int = 0
     verification_size: int = 0
     visible_items: dict[str, dict] = field(default_factory=dict)
@@ -58,6 +61,8 @@ class QueueProgress:
         kind = event['type']
         if kind in ('plan', 'start', 'done', 'complete'):
             self.verifying = False
+            self.verifying_existing = False
+            self.checksum_phase = ''
             self.verified_bytes = self.verification_size = 0
         if kind == 'plan':
             self.total = int(event['total'])
@@ -66,6 +71,7 @@ class QueueProgress:
             self.root, self.log = event.get('root', ''), event.get('log', '')
             self.resumed = bool(event.get('resumed'))
             self.failed = self.cancelled = self.ended = False
+            self.paused=False
             self.active_path = ''
             self.active_written = self._active_size = 0
             self._current_seen.clear()
@@ -92,6 +98,7 @@ class QueueProgress:
             if event['path'] != self.active_path:
                 return
             self.verifying = True
+            self.verifying_existing = bool(event.get('existing', False))
             self.verification_size = max(0, int(event['size']))
             self.verified_bytes = min(self.verification_size, max(0, int(event['read'])))
             item = self.visible_items.get(self.active_path)
@@ -111,15 +118,27 @@ class QueueProgress:
                 item['detail'] = event.get('detail', '')
             self.active_path = ''
             self.active_written = self._active_size = 0
+        elif kind == 'paused':
+            self.paused=True
+            self._samples.clear()
+        elif kind == 'resumed':
+            self.paused=False
+            self._samples.clear()
+        elif kind == 'checksums':
+            self.verifying=self.verifying_existing=False
+            self.checksum_phase=event['phase']
         elif kind == 'complete':
             self.ended = True
+            self.paused=False
             self.cancelled = bool(event.get('cancelled'))
+            self.failed = self.failed or bool(event.get('checksum_errors'))
 
     def _trim(self, now: float) -> None:
         while len(self._samples) > 2 and self._samples[1][0] < now - 8:
             self._samples.popleft()
 
     def speed(self, now: float | None = None) -> float:
+        if self.paused:return 0.
         if now is None:
             now = time.monotonic()
         self._trim(now)
@@ -137,7 +156,7 @@ class QueueProgress:
 
     def eta(self, now: float | None = None) -> float | None:
         rate = self.speed(now)
-        if rate <= 0 or self.ended or self.verifying:
+        if rate <= 0 or self.ended or self.paused or self.verifying or self.checksum_phase:
             return None
         return self.remaining_bytes / rate
 

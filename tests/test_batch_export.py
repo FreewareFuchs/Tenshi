@@ -14,6 +14,30 @@ from test_filesystems import fat_img
 
 
 class BatchExportTests(unittest.TestCase):
+    def test_expected_resume_root_prevents_silent_new_job_after_source_change(self):
+        import os
+        with tempfile.TemporaryDirectory() as temp:
+            src,index,parent,target=self.fixture(Path(temp))
+            first=export_batch(str(src),index,[parent],str(target))
+            original=src.read_bytes();before=set(target.iterdir());stamp=src.stat()
+            os.utime(src,ns=(stamp.st_atime_ns,stamp.st_mtime_ns+1000000000))
+            with patch('recoverydesk.batch_export.export_ntfs_file') as writer:
+                with self.assertRaisesRegex(ValueError,'bisherige Export'):
+                    export_batch(str(src),index,[parent],str(target),expected_root=first.root)
+            writer.assert_not_called();self.assertEqual(set(target.iterdir()),before)
+            self.assertEqual(src.read_bytes(),original)
+
+    def test_expected_resume_root_must_still_exist(self):
+        with tempfile.TemporaryDirectory() as temp:
+            src,index,parent,target=self.fixture(Path(temp))
+            first=export_batch(str(src),index,[parent],str(target))
+            old=Path(first.root);saved=target/'saved-export'
+            self.assertEqual(old.resolve().parent,target.resolve())
+            old.rename(saved)
+            with self.assertRaisesRegex(ValueError,'bisherige Export'):
+                export_batch(str(src),index,[parent],str(target),expected_root=first.root)
+            self.assertFalse(old.exists());self.assertTrue((saved/'files/Dokumente/bericht.txt').is_file())
+
     def fixture(self, folder):
         src = folder / 'ntfs.raw'
         src.write_bytes(image_with_folders())
@@ -129,7 +153,7 @@ class BatchExportTests(unittest.TestCase):
                                  cancel=lambda: stop['value'], progress=on_progress)
             self.assertTrue(first.cancelled)
             self.assertEqual(first.exported, 1)
-            second = export_batch(str(src), idx, [parent], str(dest))
+            second = export_batch(str(src), idx, [parent], str(dest),expected_root=first.root)
             self.assertTrue(second.resumed)
             self.assertEqual(second.exported, 2)
             self.assertEqual(second.verified_existing, 1)

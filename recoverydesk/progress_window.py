@@ -78,12 +78,12 @@ class ExportProgressWindow(tk.Toplevel):
         self.report_button = ttk.Button(footer, text='Ergebnisbericht', command=app._show_export_results)
         self.save_button = ttk.Button(footer, text='Bericht speichern', command=app._save_export_report)
         self.folder_button = ttk.Button(footer, text='Zielordner öffnen', command=app._open_export_folder)
-        self.cancel_button = ttk.Button(footer, text='Abbrechen', command=app._cancel_export)
+        self.pause_button = ttk.Button(footer, text='Pause', command=app._toggle_export_pause)
         self.close_button = ttk.Button(footer, text='Schließen', command=self.destroy)
-        self.scope_button = ttk.Button(footer, text='Prüfumfang', command=app._show_export_scope)
+        self.cancel_button = ttk.Button(footer, text='Abbrechen', command=app._cancel_export)
         for button, row, col in ((self.report_button,0,0),(self.save_button,0,1),
-                                 (self.folder_button,1,0),(self.cancel_button,1,1),
-                                 (self.scope_button,2,0),(self.close_button,2,1)):
+                                 (self.pause_button,1,0),(self.folder_button,1,1),
+                                 (self.cancel_button,2,0),(self.close_button,2,1)):
             button.grid(row=row, column=col, sticky='ew', padx=3, pady=3)
         body = ttk.Frame(self, padding=(12, 10, 12, 0))
         body.pack(fill='both', expand=True)
@@ -149,16 +149,23 @@ class ExportProgressWindow(tk.Toplevel):
         q, blocks = app.export_progress, app.export_blocks
         t = lambda text: translate(text, app.language)
         running = app.export_running
+        can_resume = app._can_resume_export()
         if not running and q.ended:
             phase = 'Abgebrochen' if q.cancelled else 'Beendet mit Fehlern' if q.failed else 'Beendet'
         elif not running and app.__dict__.get('_export_started_at') is None:
             phase = 'Noch kein Stapel-Export gestartet.'
         elif app.export_cancel.is_set() and running:
             phase = 'Export-Abbruch angefordert …'
+        elif q.paused:
+            phase = 'Export pausiert.' if app.export_pause.requested else 'Export wird fortgesetzt …'
+        elif app.export_pause.requested and running:
+            phase = 'Export-Pause angefordert …'
         elif q.ended:
             phase = 'Export wird abgeschlossen …'
+        elif q.checksum_phase:
+            phase = 'Prüfsummen zusammenfassen …' if q.checksum_phase=='summary' else 'Prüfsummendatei speichern …'
         elif q.verifying:
-            phase = 'SHA256 prüfen'
+            phase = 'Vorhandene Datei prüfen' if q.verifying_existing else 'SHA256 prüfen'
         elif q.active_path:
             phase = 'Datei kopieren'
         elif blocks.planned:
@@ -170,8 +177,8 @@ class ExportProgressWindow(tk.Toplevel):
         ended = app.__dict__.get('_export_ended_at')
         elapsed = max(0, (ended if ended is not None else now)-started) if started is not None else 0
         self._set('elapsed', t('Laufzeit: {duration}').format(duration=readable_duration(elapsed)))
-        rate = 0 if q.verifying or not running else q.speed(now)
-        eta = q.eta(now) if running else None
+        rate = 0 if q.paused or q.verifying or q.checksum_phase or not running else q.speed(now)
+        eta = q.eta(now) if running and not q.paused and not q.checksum_phase else None
         transfer = t('Neu übertragen: {size} · Kopiertempo: {rate}/s').format(
             size=readable_bytes(q.written_bytes),rate=readable_bytes(rate))
         if eta is not None:
@@ -180,8 +187,11 @@ class ExportProgressWindow(tk.Toplevel):
         self._set('progress',t('Export bestätigt: {percent:.1f} %').format(percent=100*blocks.confirmed_fraction))
         # Hashing the copied stream and checking the destination are separate
         # existing engine steps. Neither starts another graphical progress bar.
-        if q.verifying and running:
-            notice = 'SHA256-Prüfung der Zieldatei läuft …'
+        if q.paused or app.export_pause.requested or (q.checksum_phase and running):
+            notice = ''
+        elif q.verifying and running:
+            notice = ('Vorhandene Datei wird geprüft, nicht erneut kopiert.' if q.verifying_existing else
+                      'SHA256-Prüfung der Zieldatei läuft …')
         elif running and q.active_path and q.active_written>0:
             notice = 'SHA256 wird während des Kopierens berechnet.'
         elif not running and q.ended and app.export_result and getattr(app.export_result,'log',''):
@@ -193,11 +203,14 @@ class ExportProgressWindow(tk.Toplevel):
             done=q.done_count,total=q.total,errors=blocks.errors,skipped=blocks.skipped))
         path = q.active_path
         self._set('path', t('Aktuelle Datei: {path}').format(path=path[:22]+'…'+path[-32:] if len(path)>60 else path) if path else '')
-        self._set('scope', t('Noch kein Exportplan vorhanden.' if not blocks.planned else
+        scope = t('Noch kein Exportplan vorhanden.' if not blocks.planned else
                             'Exportplan enthält keine Einträge.' if not blocks.total else
                             '100 Felder = 100 % der Einträge.' if blocks.entries else
-                            '100 Felder = 100 % der geplanten Dateigrößen.'))
-        self._set('note', t('Exportanteile, keine Datenträgersektoren.')+'\n'+t('Bestätigung betrifft den Export, nicht den Originalinhalt.'))
+                            '100 Felder = 100 % der geplanten Dateigrößen.')
+        if q.resumed:scope += '\n'+t('Bestehender Export erkannt.')
+        self._set('scope', scope)
+        self._set('note', t('Fortsetzen prüft fertige Dateien; unvollständige Dateien beginnen von vorn.' if can_resume else
+                            'Pause erhält den aktuellen Stand, solange Tenshi geöffnet bleibt.')+'\n'+t('Bestätigung betrifft den Export, nicht den Originalinhalt.'))
         width = max(200, (self.winfo_width() if self.winfo_width()>1 else 760)-30)
         for name,label in self.labels.items():
             wrap = width if name=='phase' else max(150,width//2-12)
@@ -215,6 +228,9 @@ class ExportProgressWindow(tk.Toplevel):
         self._state(self.report_button, available)
         self._state(self.save_button, available and not app.__dict__.get('_export_report_saving'))
         self._state(self.folder_button, bool(q.root) and os.path.isdir(q.root))
-        self._state(self.cancel_button, running and not app.export_cancel.is_set())
+        pause_text=t('Fortsetzen' if app.export_pause.requested or can_resume else 'Pause')
+        if self.pause_button.cget('text')!=pause_text:self.pause_button.configure(text=pause_text)
+        self._state(self.pause_button, can_resume or (running and not app.export_cancel.is_set() and not app._exit_requested))
+        self._state(self.cancel_button, running and not app.export_cancel.is_set() and not app._exit_requested)
         colors = app._palette()
         self.grid_view.paint(blocks.cell_states(), app.theme=='dark', colors['bg'])

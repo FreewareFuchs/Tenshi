@@ -83,6 +83,13 @@ def check_installed_gui() -> None:
                     assert progress.labels['verification'].cget('text') == translate('SHA256-Prüfung der Zieldatei läuft …',language)
                     assert '%' not in progress.labels['verification'].cget('text')
                     assert app.grab_current() is None
+                    progress.pause_button.invoke()
+                    app._handle_export_event(dict(type='paused'));progress.refresh_display()
+                    assert progress.pause_button.cget('text')==translate('Fortsetzen',language)
+                    assert progress.labels['phase'].cget('text')==translate('Export pausiert.',language)
+                    assert app.export_progress.written_bytes==100
+                    progress.pause_button.invoke();app._handle_export_event(dict(type='resumed'))
+                    assert not app.export_progress.paused and not app.export_cancel.is_set()
                     progress.destroy()
                     assert app.export_running and not app.export_cancel.is_set()
                     progress = app._show_export_progress()
@@ -176,6 +183,63 @@ def main() -> None:
         assert result.exported == len(expected)
         for name, checksum in expected.items():
             assert digest(output / name) == checksum
+        from recoverydesk.batch_export import export_batch
+        batch_output=Path(temporary)/'batch';batch_output.mkdir()
+        stop=False
+        def interrupt_after_file(event):
+            nonlocal stop
+            if event['type']=='done' and event['status']=='Erfolgreich':stop=True
+        interrupted=export_batch(str(image),index,entries,str(batch_output),
+                                 event=interrupt_after_file,cancel=lambda:stop)
+        assert interrupted.cancelled and not interrupted.checksum_errors,interrupted
+        singles=Path(interrupted.root)/'Pruefsummen_Einzeln'
+        assert len(list(singles.glob('*.sha256')))==1
+        resumed=export_batch(str(image),index,entries,str(batch_output),expected_root=interrupted.root)
+        assert not resumed.failed and not resumed.checksum_errors,resumed
+        assert resumed.verified_existing==1 and resumed.exported==len(expected)-1
+        assert not list(singles.glob('*.sha256'))
+        assert not singles.exists()
+        summary=Path(resumed.checksums)
+        lines=summary.read_text(encoding='utf-8').splitlines()
+        assert len(lines)==len(expected)
+        for line in lines:
+            checksum,relative=line.split('  ',1)
+            assert digest(summary.parent/relative)==checksum
+        # A real in-session pause must retain a partially written large file.
+        from recoverydesk.export_pause import ExportPause
+        import threading
+        pause_output=Path(temporary)/'pause-batch';pause_output.mkdir()
+        large=next(entry for entry in entries if entry.name=='binary.bin')
+        cancelled=threading.Event();paused=threading.Event();finished=threading.Event()
+        results=[];failures=[];requested=False
+        def pause_event(event):
+            if event['type']=='paused':paused.set()
+        control=ExportPause(cancelled,pause_event)
+        def copied(count):
+            nonlocal requested
+            if not requested:requested=True;control.request(True)
+        def paused_worker():
+            try:
+                results.append(export_batch(str(image),index,[large],str(pause_output),
+                    byte_progress=copied,cancel=control.check_cancel,event=pause_event))
+            except Exception as exc:failures.append(exc)
+            finally:finished.set()
+        worker=threading.Thread(target=paused_worker);worker.start()
+        try:
+            assert paused.wait(10) and not finished.is_set(),failures
+            paused_root=next(pause_output.glob('Tenshi_Export_*'))
+            partial=paused_root/'files/binary.bin';meta=partial.stat()
+            assert 0<meta.st_size<large.size
+            assert not list(paused_root.rglob('*.sha256'))
+            control.request(False);assert finished.wait(20),failures
+        finally:
+            cancelled.set();control.request(False);worker.join(5)
+        assert not failures,failures
+        resumed_pause=results[0]
+        assert not resumed_pause.cancelled and not resumed_pause.checksum_errors,resumed_pause
+        assert resumed_pause.exported==1 and digest(partial)==expected['binary.bin']
+        assert not (Path(resumed_pause.root)/'Pruefsummen_Einzeln').exists()
+        assert partial.stat().st_ino==meta.st_ino
         copy = Path(temporary) / 'copy.img'
         create_image(str(image), str(copy))
         assert digest(copy) == before

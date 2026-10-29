@@ -32,6 +32,58 @@ def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
 add('System', 'System', 'Sistema', '系统', 'Система', 'システム')
+add('Fortsetzen prüft fertige Dateien; unvollständige Dateien beginnen von vorn.',
+    'Resume verifies completed files; incomplete files start from the beginning.',
+    'Continuar verifica los archivos completos; los incompletos se copian desde el principio.',
+    '继续时会检查已完成的文件；未完成的文件将从头复制。',
+    'При продолжении готовые файлы проверяются, а неполные файлы копируются с начала.',
+    '再開時は完了済みのファイルを検証し、未完了のファイルは最初からコピーします。')
+add('Der bisherige Export kann nicht fortgesetzt werden: Quelle, Auswahl oder Exportordner wurde geändert. Bitte Quelle und Exportordner prüfen.',
+    'The previous export cannot be resumed: the source, selection or export folder has changed. Please check the source and export folder.',
+    'No se puede continuar la exportación anterior: cambió el origen, la selección o la carpeta de exportación. Compruebe el origen y la carpeta.',
+    '无法继续之前的导出：来源、选择或导出文件夹已更改。请检查来源和导出文件夹。',
+    'Невозможно продолжить предыдущий экспорт: изменён источник, выбор или папка экспорта. Проверьте источник и папку.',
+    'ソース、選択内容、または出力フォルダーが変更されたため、前の出力を再開できません。ソースと出力フォルダーを確認してください。')
+add('Pause','Pause','Pausar','暂停','Пауза','一時停止')
+add('Fortsetzen','Resume','Continuar','继续','Продолжить','再開')
+add('Export-Pause angefordert …','Export pause requested …','Pausa de exportación solicitada …','已请求暂停导出…','Запрошена пауза экспорта …','出力の一時停止を要求しました…')
+add('Export pausiert.','Export paused.','Exportación en pausa.','导出已暂停。','Экспорт приостановлен.','出力を一時停止しました。')
+add('Export wird fortgesetzt …','Resuming export …','Continuando exportación …','正在继续导出…','Продолжение экспорта …','出力を再開中…')
+add('Pause erhält den aktuellen Stand, solange Tenshi geöffnet bleibt.',
+    'Pause keeps the current progress while Tenshi remains open.',
+    'La pausa conserva el progreso mientras Tenshi permanece abierto.',
+    '暂停会保留当前进度，直到关闭 Tenshi。',
+    'Пауза сохраняет текущий прогресс, пока Tenshi открыт.',
+    'Tenshiを開いている間、一時停止中の進捗を保持します。')
+add('Prüfsummendatei speichern …','Saving checksum file …','Guardando archivo de suma …','正在保存校验和文件…','Сохранение файла контрольной суммы …','チェックサムファイルを保存中…')
+add('Prüfsummen zusammenfassen …','Consolidating checksums …','Agrupando sumas de comprobación …','正在汇总校验和…','Объединение контрольных сумм …','チェックサムを集約中…')
+add('Prüfsummendateien konnten nicht vollständig gespeichert oder zusammengefasst werden. Vorhandene Einzeldateien bleiben nach Möglichkeit erhalten. Details:',
+    'Checksum files could not be fully saved or consolidated. Existing individual files are retained where possible. Details:',
+    'No se pudieron guardar o agrupar todas las sumas. Los archivos individuales existentes se conservan cuando es posible. Detalles:',
+    '无法完整保存或汇总校验和文件。将尽可能保留现有的单独文件。详情：',
+    'Не удалось полностью сохранить или объединить файлы контрольных сумм. Существующие отдельные файлы по возможности сохранены. Подробности:',
+    'チェックサムファイルの保存または集約を完了できませんでした。既存の個別ファイルは可能な限り保持します。詳細:')
+
+add('Vorhandene Datei prüfen','Verify existing file','Verificar archivo existente','检查现有文件','Проверка существующего файла','既存ファイルを検証')
+add('Vorhandene Datei wird geprüft, nicht erneut kopiert.',
+    'The existing file is being verified, not copied again.',
+    'Se está verificando el archivo existente, sin volver a copiarlo.',
+    '正在检查现有文件，不会重新复制。',
+    'Существующий файл проверяется, а не копируется повторно.',
+    '既存ファイルを検証中です。再コピーはしていません。')
+add('Bestehender Export erkannt.','Existing export detected.','Exportación existente detectada.','已检测到现有导出。','Обнаружен существующий экспорт.','既存の出力を検出しました。')
+add('Unvollständige Dateien beginnen beim Fortsetzen von vorn.',
+    'Incomplete files are copied from the beginning when resuming.',
+    'Los archivos incompletos se copian desde el principio al continuar.',
+    '继续导出时，未完成的文件将从头复制。',
+    'При продолжении неполные файлы копируются с начала.',
+    '再開時、未完了のファイルは最初からコピーします。')
+add('{count} ausgewählte Einträge samt Unterordnern exportieren?\n\nZielordner: {target}\n\nZum Fortsetzen nach einem Programmneustart dieselbe Quelle und Auswahl sowie denselben ursprünglichen Zielordner wählen. Fertige Dateien werden geprüft. Unvollständige Dateien beginnen von vorn. Vorhandene fremde Dateien bleiben unangetastet.',
+    'Export {count} selected entries including subfolders?\n\nDestination folder: {target}\n\nTo resume after restarting Tenshi, use the same source, selection and original destination folder. Completed files are verified. Incomplete files are copied from the beginning. Unrelated existing files are left untouched.',
+    '¿Exportar {count} entradas seleccionadas y sus subcarpetas?\n\nCarpeta de destino: {target}\n\nPara continuar después de reiniciar Tenshi, use el mismo origen, selección y carpeta de destino original. Los archivos completos se verifican. Los incompletos se copian desde el principio. Los archivos existentes ajenos no se modifican.',
+    '导出所选的 {count} 个条目及其子文件夹？\n\n目标文件夹：{target}\n\n重启 Tenshi 后继续时请使用相同的来源、选择和原始目标文件夹。已完成的文件会进行检查。未完成的文件将从头复制。其他现有文件保持不变。',
+    'Экспортировать выбранные элементы ({count}) с вложенными папками?\n\nПапка назначения: {target}\n\nДля продолжения после перезапуска Tenshi выберите тот же источник, набор элементов и исходную папку назначения. Готовые файлы проверяются. Неполные файлы копируются с начала. Посторонние существующие файлы не изменяются.',
+    '選択した {count} 件とサブフォルダーを出力しますか？\n\n保存先フォルダー: {target}\n\n再起動後に再開する場合は同じソース、選択内容、元の保存先フォルダーを指定してください。完了済みのファイルは検証し、未完了のファイルは最初からコピーします。無関係な既存ファイルは変更しません。')
 
 # Non-modal export window: format translated templates before adding filenames.
 add('Tenshi – Exportfortschritt', 'Tenshi – Export progress', 'Tenshi – Progreso de exportación', 'Tenshi – 导出进度', 'Tenshi – Ход экспорта', 'Tenshi – 出力の進捗')
