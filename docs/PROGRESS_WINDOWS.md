@@ -7,6 +7,11 @@ dieser Einstieg und die bisherige Export-Vorprüfung; die sichtbare Warteschlang
 ihre Dateiliste und ihre Fortschrittsbalken entfallen vollständig.
 „Pause“ und „Fortsetzen“ steuern denselben laufenden Exportauftrag. Die interne
 Planung, Abbruchbehandlung und Wiederaufnahme nach einem Neustart bleiben erhalten.
+„Abbrechen“ beendet den Auftrag kontrolliert, auch während einer Pause. Eine
+unvollständige Datei wird dabei entfernt; fertige Dateien und Einzel-Prüfsummen
+bleiben erhalten. „Schließen“ blendet weiterhin nur die Fortschrittsansicht aus.
+Die Aktionen stehen in drei Reihen: Ergebnisbericht / Bericht speichern,
+Pause bzw. Fortsetzen / Zielordner öffnen, Abbrechen / Schließen.
 
 ## Pause und Fortsetzen
 
@@ -44,13 +49,20 @@ Plänen wird ausdrücklich auf die Anzahl der Einträge umgeschaltet.
 - Nicht bestätigt: übersprungene, abgebrochene oder unbekannte Dateiergebnisse.
 - Gemischt / teilweise: ein Prozentfeld enthält unterschiedlich bearbeitete Anteile.
 
+Dateigrenzen liegen häufig innerhalb eines Prozentfeldes. Dieses kann bestätigte
+Bytes der vorherigen Datei und bereits kopierte, noch ungeprüfte Bytes der gerade
+laufenden Datei enthalten. Es bleibt dann bis zur Bestätigung der laufenden Datei
+gemischt. Bei 34,3 % Bestätigung betrifft das beispielsweise das Feld von 34 bis
+35 %. Das bedeutet keinen festhängenden oder fehlerhaften ersten Dateiblock.
+
 Fehler und nicht bestätigte Anteile bleiben in gemischten Feldern sichtbar.
 Die Darstellung arbeitet mit ganzzahligen Intervallen und konstant 100 Zellen;
 auch Einträge außerhalb der intern begrenzten Vorschau gehen ein.
 100 % Bestätigung setzt die Bestätigung sämtlicher geplanter Anteile voraus.
 Ein vollständiger SHA-Lesestand vor dem Digestvergleich wird nicht grün.
-Die Bestätigung betrifft den Export, nicht die ursprüngliche Dateiintegrität;
-der vollständige Prüfumfang ist über eine eigene Schaltfläche erreichbar.
+Die Bestätigung betrifft den Export, nicht die ursprüngliche Dateiintegrität.
+Der Ergebnisbericht erläutert den Prüfumfang; eine eigene Schaltfläche dafür
+ist im Fortschrittsfenster nicht vorhanden.
 
 ## Weitere Angaben und Aktionen
 

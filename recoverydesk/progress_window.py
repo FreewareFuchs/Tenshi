@@ -80,10 +80,10 @@ class ExportProgressWindow(tk.Toplevel):
         self.folder_button = ttk.Button(footer, text='Zielordner öffnen', command=app._open_export_folder)
         self.pause_button = ttk.Button(footer, text='Pause', command=app._toggle_export_pause)
         self.close_button = ttk.Button(footer, text='Schließen', command=self.destroy)
-        self.scope_button = ttk.Button(footer, text='Prüfumfang', command=app._show_export_scope)
+        self.cancel_button = ttk.Button(footer, text='Abbrechen', command=app._cancel_export)
         for button, row, col in ((self.report_button,0,0),(self.save_button,0,1),
-                                 (self.folder_button,1,0),(self.pause_button,1,1),
-                                 (self.scope_button,2,0),(self.close_button,2,1)):
+                                 (self.pause_button,1,0),(self.folder_button,1,1),
+                                 (self.cancel_button,2,0),(self.close_button,2,1)):
             button.grid(row=row, column=col, sticky='ew', padx=3, pady=3)
         body = ttk.Frame(self, padding=(12, 10, 12, 0))
         body.pack(fill='both', expand=True)
@@ -229,5 +229,6 @@ class ExportProgressWindow(tk.Toplevel):
         pause_text=t('Fortsetzen' if app.export_pause.requested else 'Pause')
         if self.pause_button.cget('text')!=pause_text:self.pause_button.configure(text=pause_text)
         self._state(self.pause_button, running and not app.export_cancel.is_set() and not app._exit_requested)
+        self._state(self.cancel_button, running and not app.export_cancel.is_set() and not app._exit_requested)
         colors = app._palette()
         self.grid_view.paint(blocks.cell_states(), app.theme=='dark', colors['bg'])

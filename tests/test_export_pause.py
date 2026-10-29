@@ -197,3 +197,15 @@ class ExportPauseGuiTests(unittest.TestCase):
         self.assertTrue(app.export_result.cancelled);self.assertTrue(Path(app.export_result.log).is_file())
         self.assertFalse(output.exists());self.assertEqual(self.source.read_bytes(),self.original)
         self.warning.assert_not_called();self.error.assert_not_called()
+
+    def test_cancel_button_stops_paused_export_without_closing_the_application(self):
+        output,_=self.start_paused();app=self.app
+        view=app._export_progress_window;view.cancel_button.invoke()
+        self.pump(lambda:not app.export_running)
+        self.assertTrue(app.export_result.cancelled);self.assertFalse(app._closing)
+        self.assertFalse(output.exists());self.assertTrue(Path(app.export_result.log).is_file())
+        view.refresh_display()
+        self.assertEqual(str(view.cancel_button.cget('state')),'disabled')
+        self.assertEqual(str(view.pause_button.cget('state')),'disabled')
+        self.assertEqual(self.source.read_bytes(),self.original)
+        self.warning.assert_not_called();self.error.assert_not_called()

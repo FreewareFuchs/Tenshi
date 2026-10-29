@@ -97,7 +97,7 @@ class ExportWindowTests(unittest.TestCase):
                 app.update();win.refresh_display();app.update_idletasks()
                 self.assertEqual(len(win.grid_view.find_all()),200)
                 self.assertEqual(win.labels['phase'].cget('text'),translate('Datei kopieren',language))
-                for widget in (win.close_button,win.pause_button,win.save_button,win.folder_button,win.report_button):
+                for widget in (win.close_button,win.pause_button,win.cancel_button,win.save_button,win.folder_button,win.report_button):
                     self.assertTrue(widget.winfo_ismapped())
                     self.assertGreaterEqual(widget.winfo_width(),widget.winfo_reqwidth(),str(widget.cget('text')))
                     self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),win.winfo_rooty()+win.winfo_height())
