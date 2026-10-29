@@ -133,6 +133,27 @@ def mkdir_checked(path: str, source: str) -> None:
     with secure_parent(path, source) as parent_fd:
         os.mkdir(os.path.basename(os.path.abspath(path)), dir_fd=parent_fd)
 
+
+def remove_owned_output(path, source, expected_identity, expected_payload):
+    """Remove only an unchanged, identity-checked regular metadata file."""
+    if sys.platform=='win32':
+        from .windows_target import remove_owned_output as remove
+        return remove(path,source,expected_identity,expected_payload)
+    if not _linux():
+        raise ValueError('Sichere Prüfsummenbereinigung ist auf diesem System nicht verfügbar.')
+    with secure_parent(path,source) as parent_fd:
+        name=os.path.basename(os.path.abspath(path))
+        fd=os.open(name,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC,dir_fd=parent_fd)
+        with os.fdopen(fd,'rb') as stream:
+            _validate_output(stream.fileno(),source,expected_identity)
+            if stream.read(len(expected_payload)+1)!=expected_payload:
+                raise ValueError('Prüfsummendatei wurde verändert und bleibt erhalten.')
+            named=os.stat(name,dir_fd=parent_fd,follow_symlinks=False)
+            if (named.st_dev,named.st_ino)!=expected_identity or not stat.S_ISREG(named.st_mode):
+                raise ValueError('Prüfsummendatei wurde ausgetauscht und bleibt erhalten.')
+            os.unlink(name,dir_fd=parent_fd)
+            os.fsync(parent_fd)
+
 def atomic_bytes_checkpoint(path: str, payload: bytes, source: str) -> None:
     """Atomically persist bytes relative to a physically verified Linux dirfd.
 

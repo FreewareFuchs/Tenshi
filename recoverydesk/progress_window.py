@@ -157,6 +157,8 @@ class ExportProgressWindow(tk.Toplevel):
             phase = 'Export-Abbruch angefordert …'
         elif q.ended:
             phase = 'Export wird abgeschlossen …'
+        elif q.checksum_phase:
+            phase = 'Prüfsummen zusammenfassen …' if q.checksum_phase=='summary' else 'Prüfsummendatei speichern …'
         elif q.verifying:
             phase = 'Vorhandene Datei prüfen' if q.verifying_existing else 'SHA256 prüfen'
         elif q.active_path:
@@ -170,8 +172,8 @@ class ExportProgressWindow(tk.Toplevel):
         ended = app.__dict__.get('_export_ended_at')
         elapsed = max(0, (ended if ended is not None else now)-started) if started is not None else 0
         self._set('elapsed', t('Laufzeit: {duration}').format(duration=readable_duration(elapsed)))
-        rate = 0 if q.verifying or not running else q.speed(now)
-        eta = q.eta(now) if running else None
+        rate = 0 if q.verifying or q.checksum_phase or not running else q.speed(now)
+        eta = q.eta(now) if running and not q.checksum_phase else None
         transfer = t('Neu übertragen: {size} · Kopiertempo: {rate}/s').format(
             size=readable_bytes(q.written_bytes),rate=readable_bytes(rate))
         if eta is not None:
@@ -180,7 +182,9 @@ class ExportProgressWindow(tk.Toplevel):
         self._set('progress',t('Export bestätigt: {percent:.1f} %').format(percent=100*blocks.confirmed_fraction))
         # Hashing the copied stream and checking the destination are separate
         # existing engine steps. Neither starts another graphical progress bar.
-        if q.verifying and running:
+        if q.checksum_phase and running:
+            notice = ''
+        elif q.verifying and running:
             notice = ('Vorhandene Datei wird geprüft, nicht erneut kopiert.' if q.verifying_existing else
                       'SHA256-Prüfung der Zieldatei läuft …')
         elif running and q.active_path and q.active_written>0:

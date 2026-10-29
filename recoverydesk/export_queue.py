@@ -46,6 +46,7 @@ class QueueProgress:
     active_written: int = 0
     verifying: bool = False
     verifying_existing: bool = False
+    checksum_phase: str = ''
     verified_bytes: int = 0
     verification_size: int = 0
     visible_items: dict[str, dict] = field(default_factory=dict)
@@ -60,6 +61,7 @@ class QueueProgress:
         if kind in ('plan', 'start', 'done', 'complete'):
             self.verifying = False
             self.verifying_existing = False
+            self.checksum_phase = ''
             self.verified_bytes = self.verification_size = 0
         if kind == 'plan':
             self.total = int(event['total'])
@@ -114,9 +116,13 @@ class QueueProgress:
                 item['detail'] = event.get('detail', '')
             self.active_path = ''
             self.active_written = self._active_size = 0
+        elif kind == 'checksums':
+            self.verifying=self.verifying_existing=False
+            self.checksum_phase=event['phase']
         elif kind == 'complete':
             self.ended = True
             self.cancelled = bool(event.get('cancelled'))
+            self.failed = self.failed or bool(event.get('checksum_errors'))
 
     def _trim(self, now: float) -> None:
         while len(self._samples) > 2 and self._samples[1][0] < now - 8:
@@ -140,7 +146,7 @@ class QueueProgress:
 
     def eta(self, now: float | None = None) -> float | None:
         rate = self.speed(now)
-        if rate <= 0 or self.ended or self.verifying:
+        if rate <= 0 or self.ended or self.verifying or self.checksum_phase:
             return None
         return self.remaining_bytes / rate
 

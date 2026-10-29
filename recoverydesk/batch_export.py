@@ -56,6 +56,8 @@ class BatchResult:
     root: str = ''
     manifest: str = ''
     log: str = ''
+    checksums: str = ''
+    checksum_errors: list[str] = field(default_factory=list)
 
 
 def _json_bytes(value) -> bytes:
@@ -192,9 +194,11 @@ def _write_log(path: Path, state: dict, result: BatchResult):
             f'Quelle: {state["identity"]["source"]}',
             f'Dateisystem: {state["identity"]["filesystem"]}',
             f'Exportziel: {result.root}',
-            f'Status: {"Abgebrochen" if result.cancelled else "Beendet"}',
+            f'Status: {"Abgebrochen" if result.cancelled else "Beendet mit Fehlern" if result.failed or result.checksum_errors else "Beendet"}',
             f'Neue Dateien: {result.exported}; Export-Prüfsumme bestätigt: {result.verified_existing}',
             f'Neue Ordner: {result.directories}; fehlgeschlagen: {result.failed}; ausgelassen: {result.skipped}',
+            f'Prüfsummendatei: {result.checksums or "Einzeldateien / noch nicht zusammengefasst"}',
+            *[f'Prüfsummendateien: {error}' for error in result.checksum_errors],
             '', EXPORT_SCOPE, RESUME_SCOPE, '', 'Einzelergebnisse:']
     for key, item in sorted(state['results'].items()):
         rows.append(f'{export_status_label(item["status"])}\t{key}\t{item.get("detail", "")}')
@@ -393,6 +397,9 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
         _atomic_json(manifest_path, state, source=source)
     if not content.is_dir() or _is_unsafe_link(content) or _is_unsafe_link(log_path):
         raise ValueError('Exportordner ist nicht sicher zugänglich.')
+    from .export_checksums import ExportChecksums
+    checksums=ExportChecksums(root,source,state,lambda:_atomic_json(manifest_path,state,source=source))
+    confirmed=[]
     exporter = export_ntfs_file if hasattr(index, 'info') else export_other_file
     from .recovery_preflight import inspect_metadata
     from .recovery_evidence import build_live_cluster_evidence
@@ -565,6 +572,15 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
             if progress:
                 progress(n, len(plan), task.path, state['results'].get(task.path, {}).get('status', ''))
         flush_bytes()
+        current=state['results'].get(task.path,{})
+        if not task.is_directory and not result.cancelled and current.get('status')=='Erfolgreich':
+            digest=current.get('sha256','')
+            confirmed.append((n,task.path,digest))
+            try:
+                if event:event({'type':'checksums','phase':'individual'})
+                checksums.save_file(n,task.path,digest)
+            except (OSError,ValueError) as exc:
+                result.checksum_errors.append(f'{task.path}: '+export_error_message(exc))
         _atomic_json(manifest_path, state, source=source)
         if event:
             current = state['results'].get(task.path, {})
@@ -574,9 +590,21 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
                    'size': max(0, int(task.entry.size)) if not task.is_directory else 0})
         if result.cancelled or source_changed:
             break
+    if cancel and cancel():result.cancelled=True
+    if not (result.cancelled or result.failed or result.skipped or result.checksum_errors):
+        try:
+            if event:event({'type':'checksums','phase':'summary'})
+            result.checksums=checksums.finish(confirmed,cancel=cancel)
+        except (OSError,ValueError) as exc:
+            # A fully saved summary may exist even if an individual file could
+            # not be removed. Record its path only when its write completed.
+            if checksums.summary_verified:result.checksums=str(root/'SHA256SUMS.sha256')
+            result.checksum_errors.append(export_error_message(exc))
+    if cancel and cancel():result.cancelled=True
     _write_log(log_path, state, result)
     result.errors = [f'{k}: {v.get("detail", "")}' for k,v in state['results'].items()
                      if v.get('status') in ('Fehler', 'Übersprungen', 'Abgebrochen')]
+    result.errors.extend(result.checksum_errors)
     if event:
-        event({'type': 'complete', 'cancelled': result.cancelled})
+        event({'type': 'complete', 'cancelled': result.cancelled,'checksum_errors':bool(result.checksum_errors)})
     return result

@@ -34,6 +34,33 @@ der vollständige Prüfumfang ist über eine eigene Schaltfläche erreichbar.
 
 ## Weitere Angaben und Aktionen
 
+Nach jeder vollständig kopierten und per SHA256 bestätigten Datei wird sofort
+eine `.sha256` unter `Pruefsummen_Einzeln` im Exportordner gespeichert. Die Namen
+enthalten eine Plannummer und den Dateinamen. Inhalt und spätere Sammeldatei
+verwenden relative Pfade ab dem Exportordner (`files/...`). So kollidieren die
+Prüfsummendateien nicht mit exportierten Dateien gleichen Namens.
+
+Nur ein vollständig erfolgreicher Lauf erzeugt `SHA256SUMS.sha256` im
+Exportordner. Erst nach Schreiben, Synchronisieren und Rücklesen dieser Datei
+werden die unveränderten, als eigene Ausgaben erfassten Einzeldateien entfernt.
+Die Prüfung der Einzeldateien erfolgt über Dateiidentität und erwarteten Inhalt;
+die Bereinigung sucht nicht pauschal nach der Dateiendung. Windows löscht über
+den geprüften geöffneten Handle, Linux relativ zum geprüften Elternverzeichnis.
+Der leere Unterordner kann bestehen bleiben.
+
+Bei Abbruch, Exportfehlern oder ausgelassenen Einträgen bleiben die bisherigen
+Einzeldateien erhalten. Vollständig kopierte, aber noch ungeprüfte Dateien
+erhalten keine bestätigte Prüfsummendatei. Beim Fortsetzen werden vorhandene
+Exportdateien wie bisher erneut geprüft; alte Statusdateien ohne Prüfsummen-
+Zusatzdaten bleiben verwendbar. Fremde oder veränderte Prüfsummendateien werden
+nicht ersetzt oder gelöscht. Fehler beim Speichern oder Bereinigen erscheinen
+im Ergebnisbericht und als Hinweis. Sie behaupten keinen fehlgeschlagenen
+Dateiinhalt, sondern betreffen die zusätzlichen Prüfsummendateien.
+
+Speichern und Zusammenfassen werden als Textphase angezeigt, ohne weiteres
+Raster. Die Prüfsummen stammen aus dem vorhandenen bestätigten Ergebnis;
+es wird keine zusätzliche vollständige Prüfung der Quelldateien gestartet.
+
 Das Fenster zeigt Arbeitsschritt, Laufzeit, neu übertragene Bytes, Kopiertempo,
 Dateizähler und bekannte Fehler/Überspringungen. Die SHA-Anzeige ist rein textlich:
 Beim Kopieren wird SHA256 für den kopierten Datenstrom berechnet. Anschließend

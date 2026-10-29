@@ -32,6 +32,14 @@ def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
 add('System', 'System', 'Sistema', '系统', 'Система', 'システム')
+add('Prüfsummendatei speichern …','Saving checksum file …','Guardando archivo de suma …','正在保存校验和文件…','Сохранение файла контрольной суммы …','チェックサムファイルを保存中…')
+add('Prüfsummen zusammenfassen …','Consolidating checksums …','Agrupando sumas de comprobación …','正在汇总校验和…','Объединение контрольных сумм …','チェックサムを集約中…')
+add('Prüfsummendateien konnten nicht vollständig gespeichert oder zusammengefasst werden. Vorhandene Einzeldateien bleiben nach Möglichkeit erhalten. Details:',
+    'Checksum files could not be fully saved or consolidated. Existing individual files are retained where possible. Details:',
+    'No se pudieron guardar o agrupar todas las sumas. Los archivos individuales existentes se conservan cuando es posible. Detalles:',
+    '无法完整保存或汇总校验和文件。将尽可能保留现有的单独文件。详情：',
+    'Не удалось полностью сохранить или объединить файлы контрольных сумм. Существующие отдельные файлы по возможности сохранены. Подробности:',
+    'チェックサムファイルの保存または集約を完了できませんでした。既存の個別ファイルは可能な限り保持します。詳細:')
 
 add('Vorhandene Datei prüfen','Verify existing file','Verificar archivo existente','检查现有文件','Проверка существующего файла','既存ファイルを検証')
 add('Vorhandene Datei wird geprüft, nicht erneut kopiert.',

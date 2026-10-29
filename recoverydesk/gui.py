@@ -3017,17 +3017,22 @@ class RecoveryDeskApp(tk.Tk):
             self.export_result = data['result']
             self.export_button.configure(state='normal')
             rep = self.export_result
-            self.export_progress.failed = bool(rep.failed)
+            checksum_errors=getattr(rep,'checksum_errors',[])
+            self.export_progress.failed = bool(rep.failed or checksum_errors)
             self.export_progress.cancelled = bool(rep.cancelled)
             self.export_progress.ended = True
-            label = translate('Beendet mit Fehlern', self.language) if rep.failed else (
+            label = translate('Beendet mit Fehlern', self.language) if rep.failed or checksum_errors else (
                 'Abgebrochen' if rep.cancelled else 'Beendet')
             self.status.set(f'Stapel-Export {label.lower()}: {rep.exported} neu, '
-                            f'{rep.verified_existing} {translate(RESUME_LABEL, self.language)}, {rep.failed} Fehler.')
+                            f'{rep.verified_existing} {translate(RESUME_LABEL, self.language)}, {rep.failed+len(checksum_errors)} Fehler.')
             self._refresh_export_view()
             if rep.failed:
                 warning=translate('Beim Stapel-Export sind {count} Fehler aufgetreten. Nicht alle Dateien konnten exportiert oder bestätigt werden. Details stehen im Ergebnisbericht.',
                                   self.language).format(count=rep.failed)
+                if not self._defer_exit_error(warning):
+                    messagebox.showwarning(translate('Beendet mit Fehlern',self.language),warning,parent=self)
+            if checksum_errors:
+                warning=translate('Prüfsummendateien konnten nicht vollständig gespeichert oder zusammengefasst werden. Vorhandene Einzeldateien bleiben nach Möglichkeit erhalten. Details:',self.language)+'\n\n'+'\n'.join(checksum_errors)
                 if not self._defer_exit_error(warning):
                     messagebox.showwarning(translate('Beendet mit Fehlern',self.language),warning,parent=self)
             return

@@ -176,6 +176,27 @@ class ExportWindowTests(unittest.TestCase):
                 else:self.assertNotIn('Unvollständige Dateien',text)
         self.assertFalse(app.export_running)
 
+    def test_checksum_save_phases_and_failures_are_visible_in_all_languages(self):
+        from recoverydesk.batch_export import BatchResult
+        app=self.app;app.export_running=True
+        app._handle_export_event(dict(type='plan',total=1,total_bytes=100,items=[]))
+        win=app._show_export_progress()
+        for language in LANGUAGES:
+            app.change_language(language)
+            for phase,text in [('individual','Prüfsummendatei speichern …'),('summary','Prüfsummen zusammenfassen …')]:
+                app._handle_export_event(dict(type='checksums',phase=phase));win.refresh_display()
+                self.assertEqual(win.labels['phase'].cget('text'),translate(text,language))
+                self.assertEqual(win.labels['verification'].cget('text'),'')
+            result=BatchResult(exported=1,checksum_errors=['disk full (checksum file)'])
+            with patch('recoverydesk.gui._messagebox.showwarning') as warning:
+                app._handle_export_event(dict(type='run_finish',result=result))
+            warning.assert_called_once()
+            self.assertIn('disk full (checksum file)',warning.call_args.args[1])
+            self.assertTrue(app.export_progress.failed)
+            win.refresh_display()
+            self.assertEqual(win.labels['phase'].cget('text'),translate('Beendet mit Fehlern',language))
+            app.export_running=True;app.export_progress.ended=False
+
     def test_report_dialog_suggests_a_new_filename_on_each_save(self):
         from types import SimpleNamespace
         report=self.root/'report.txt';report.write_text('original report')
