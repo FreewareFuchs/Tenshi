@@ -83,7 +83,8 @@ jobs:
         env:
           TENSHI_SETTINGS_FILE: ${{ runner.temp }}/tenshi-linux-test-settings.json
           TENSHI_LOG_DIR: ${{ runner.temp }}/tenshi-linux-test-logs
-        run: xvfb-run -a -s '-screen 0 1920x1080x24' python3 -m unittest discover -s tests -q
+        # Keep the active test visible when a GUI callback blocks the runner.
+        run: xvfb-run -a -s '-screen 0 1920x1080x24' python3 -m unittest discover -s tests -v
       - name: Independently formatted FAT32 reference and resume test
         run: |
           command -v mkfs.fat
