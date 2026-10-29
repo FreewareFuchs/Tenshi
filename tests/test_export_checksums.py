@@ -168,6 +168,20 @@ class ExportChecksumTests(unittest.TestCase):
         with self.assertRaises(ValueError):store._write('individual.sha256',payload)
         self.assertEqual(path.read_bytes(),b'user edit')
 
+    def test_new_checksum_is_reopened_for_readback_on_write_only_outputs(self):
+        from contextlib import contextmanager
+        from recoverydesk.export_checksums import open_regular_output
+        @contextmanager
+        def write_only_new(path,mode,source,**kwargs):
+            with open_regular_output(path,mode,source,**kwargs) as output:
+                class WriteOnly:
+                    def __getattr__(self,name):return getattr(output,name)
+                    def read(self,*args):raise AssertionError('New exclusive handle is write-only')
+                yield WriteOnly() if mode=='xb' else output
+        with patch('recoverydesk.export_checksums.open_regular_output',write_only_new):
+            result=self.export()
+        self.assertFalse(result.checksum_errors);self.assertTrue(Path(result.checksums).is_file())
+
     def test_source_named_like_checksum_file_remains_export_data(self):
         chosen=next(e for e in self.index.list_dir(self.parent.record_number) if not e.is_directory)
         chosen.name=SUMMARY

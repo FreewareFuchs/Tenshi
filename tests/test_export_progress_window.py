@@ -54,6 +54,7 @@ class ExportWindowTests(unittest.TestCase):
                  patch('recoverydesk.gui.filedialog.askdirectory',return_value=str(target)), \
                  patch('recoverydesk.gui.messagebox.askyesno',return_value=True), \
                  patch('recoverydesk.gui.export_batch',side_effect=batch), \
+                 patch('recoverydesk.gui.messagebox.showwarning') as warning, \
                  patch('recoverydesk.gui.threading.Thread',side_effect=thread):
                 self.app.export_browser_selection()
                 self.pump_until(lambda:paused.is_set() and self.app.export_progress.written_bytes>0)
@@ -71,6 +72,8 @@ class ExportWindowTests(unittest.TestCase):
                 self.pump_until(lambda:not self.app.export_running)
                 second.refresh_display()
                 self.assertFalse(self.app.export_result.failed)
+                self.assertFalse(self.app.export_result.checksum_errors)
+                warning.assert_not_called()
                 self.assertEqual(self.app.export_blocks.confirmed_fraction,1)
                 self.assertEqual(str(second.save_button.cget('state')),'normal')
                 self.assertEqual(str(second.cancel_button.cget('state')),'disabled')

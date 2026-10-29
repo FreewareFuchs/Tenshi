@@ -176,6 +176,27 @@ def main() -> None:
         assert result.exported == len(expected)
         for name, checksum in expected.items():
             assert digest(output / name) == checksum
+        from recoverydesk.batch_export import export_batch
+        batch_output=Path(temporary)/'batch';batch_output.mkdir()
+        stop=False
+        def interrupt_after_file(event):
+            nonlocal stop
+            if event['type']=='done' and event['status']=='Erfolgreich':stop=True
+        interrupted=export_batch(str(image),index,entries,str(batch_output),
+                                 event=interrupt_after_file,cancel=lambda:stop)
+        assert interrupted.cancelled and not interrupted.checksum_errors,interrupted
+        singles=Path(interrupted.root)/'Pruefsummen_Einzeln'
+        assert len(list(singles.glob('*.sha256')))==1
+        resumed=export_batch(str(image),index,entries,str(batch_output))
+        assert not resumed.failed and not resumed.checksum_errors,resumed
+        assert resumed.verified_existing==1 and resumed.exported==len(expected)-1
+        assert not list(singles.glob('*.sha256'))
+        summary=Path(resumed.checksums)
+        lines=summary.read_text(encoding='utf-8').splitlines()
+        assert len(lines)==len(expected)
+        for line in lines:
+            checksum,relative=line.split('  ',1)
+            assert digest(summary.parent/relative)==checksum
         copy = Path(temporary) / 'copy.img'
         create_image(str(image), str(copy))
         assert digest(copy) == before

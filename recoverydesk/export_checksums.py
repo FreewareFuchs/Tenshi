@@ -73,7 +73,10 @@ class ExportChecksums:
                         if not count:raise OSError('Prüfsummendatei konnte nicht vollständig gespeichert werden.')
                         remaining=remaining[count:]
                 stream.truncate(size);stream.flush();os.fsync(stream.fileno())
-            stream.seek(0)
+        # Linux exclusive outputs are write-only. Reopen the same validated
+        # inode for readback rather than assuming Windows' read/write mode.
+        with open_regular_output(str(path),'r+b',self.source,
+                                 expected_identity=tuple(record['identity'])) as stream:
             checked=hashlib.sha256();read=0
             while read<=size:
                 chunk=stream.read(min(1024*1024,size-read+1))
