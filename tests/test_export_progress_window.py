@@ -76,7 +76,7 @@ class ExportWindowTests(unittest.TestCase):
                 warning.assert_not_called()
                 self.assertEqual(self.app.export_blocks.confirmed_fraction,1)
                 self.assertEqual(str(second.save_button.cget('state')),'normal')
-                self.assertEqual(str(second.cancel_button.cget('state')),'disabled')
+                self.assertEqual(str(second.pause_button.cget('state')),'disabled')
                 self.assertTrue(Path(self.app.export_result.log).is_file())
         finally:
             resume.set()
@@ -97,7 +97,7 @@ class ExportWindowTests(unittest.TestCase):
                 app.update();win.refresh_display();app.update_idletasks()
                 self.assertEqual(len(win.grid_view.find_all()),200)
                 self.assertEqual(win.labels['phase'].cget('text'),translate('Datei kopieren',language))
-                for widget in (win.close_button,win.cancel_button,win.save_button,win.folder_button,win.report_button):
+                for widget in (win.close_button,win.pause_button,win.save_button,win.folder_button,win.report_button):
                     self.assertTrue(widget.winfo_ismapped())
                     self.assertGreaterEqual(widget.winfo_width(),widget.winfo_reqwidth(),str(widget.cget('text')))
                     self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),win.winfo_rooty()+win.winfo_height())
@@ -109,11 +109,15 @@ class ExportWindowTests(unittest.TestCase):
         before=win.grid_view.find_all()
         win.refresh_display()
         self.assertEqual(before,win.grid_view.find_all())
-        win.cancel_button.invoke()
-        self.assertTrue(app.export_cancel.is_set())
+        win.pause_button.invoke()
+        self.assertFalse(app.export_cancel.is_set())
+        self.assertTrue(app.export_pause.requested)
         self.assertTrue(app.export_running)
         win.refresh_display()
-        self.assertEqual(str(win.cancel_button.cget('state')),'disabled')
+        self.assertEqual(str(win.pause_button.cget('state')),'normal')
+        self.assertEqual(win.pause_button.cget('text'),translate('Fortsetzen',app.language))
+        win.pause_button.invoke()
+        self.assertFalse(app.export_pause.requested)
         win.destroy()
 
     def test_report_save_keeps_the_original_export_source_mapping(self):
@@ -149,7 +153,7 @@ class ExportWindowTests(unittest.TestCase):
                 self.assertEqual(win.labels['phase'].cget('text'),translate('Vorhandene Datei prüfen',language))
                 self.assertEqual(win.labels['verification'].cget('text'),translate('Vorhandene Datei wird geprüft, nicht erneut kopiert.',language))
                 self.assertIn(translate('Bestehender Export erkannt.',language),win.labels['scope'].cget('text'))
-                self.assertIn(translate('Unvollständige Dateien beginnen beim Fortsetzen von vorn.',language),win.labels['note'].cget('text'))
+                self.assertIn(translate('Pause erhält den aktuellen Stand, solange Tenshi geöffnet bleibt.',language),win.labels['note'].cget('text'))
                 for label in win.labels.values():
                     self.assertLessEqual(label.winfo_rooty()+label.winfo_height(),win.winfo_rooty()+win.winfo_height())
                 self.assertGreater(win.grid_view.winfo_height(),60)

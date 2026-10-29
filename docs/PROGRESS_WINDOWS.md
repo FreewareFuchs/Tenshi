@@ -5,8 +5,28 @@ beendet nur die Ansicht; der Export läuft weiter. Über „Fortschritt / Ergebn
 im Hauptfenster lässt sich der aktuelle Zustand wieder öffnen. Dort bleiben nur
 dieser Einstieg und die bisherige Export-Vorprüfung; die sichtbare Warteschlange,
 ihre Dateiliste und ihre Fortschrittsbalken entfallen vollständig.
-Nur „Abbrechen“ setzt das vorhandene Export-Abbruchsignal. Die interne Planung,
-Abbruchbehandlung und Wiederaufnahme bleiben unverändert erhalten.
+„Pause“ und „Fortsetzen“ steuern denselben laufenden Exportauftrag. Die interne
+Planung, Abbruchbehandlung und Wiederaufnahme nach einem Neustart bleiben erhalten.
+
+## Pause und Fortsetzen
+
+„Pause“ fordert eine Unterbrechung am nächsten vorhandenen Lese-/Schreibprüfpunkt
+an. Bis zur Bestätigung zeigt das Fenster „Export-Pause angefordert …“, danach
+„Export pausiert.“. Die Schaltfläche wechselt zu „Fortsetzen“. Bereits geschriebene
+Bytes und eine laufende SHA256-Berechnung bleiben im selben Hintergrundauftrag
+erhalten; „Fortsetzen“ startet keinen zweiten Auftrag und kopiert den Anfang
+der Datei nicht erneut. Die Fortschrittszähler bleiben stehen. Kopiertempo und
+Restzeit verwenden nach dem Fortsetzen ausschließlich neue Messwerte.
+
+Die Pause gilt innerhalb der geöffneten Programmsitzung. Ein laufender Lese-/
+Schreibaufruf oder atomarer Speichervorgang wird nicht gewaltsam unterbrochen.
+Das Fortschrittsfenster darf geschlossen und wieder geöffnet werden; der Auftrag
+bleibt dabei pausiert. Neue Exporte und Sitzungsvorgänge bleiben solange gesperrt.
+
+Beim bestätigten Beenden des Hauptfensters wird auch ein pausierter Auftrag über
+das vorhandene Abbruchsignal kontrolliert beendet. Eine unvollständige Datei wird
+dabei weiterhin entfernt und nach einem Programmneustart von vorn kopiert.
+„Nein“ in der Beenden-Abfrage lässt den pausierten Auftrag unverändert bestehen.
 
 ## Bedeutung des Rasters
 

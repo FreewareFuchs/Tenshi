@@ -47,6 +47,7 @@ class QueueProgress:
     verifying: bool = False
     verifying_existing: bool = False
     checksum_phase: str = ''
+    paused: bool = False
     verified_bytes: int = 0
     verification_size: int = 0
     visible_items: dict[str, dict] = field(default_factory=dict)
@@ -70,6 +71,7 @@ class QueueProgress:
             self.root, self.log = event.get('root', ''), event.get('log', '')
             self.resumed = bool(event.get('resumed'))
             self.failed = self.cancelled = self.ended = False
+            self.paused=False
             self.active_path = ''
             self.active_written = self._active_size = 0
             self._current_seen.clear()
@@ -116,11 +118,18 @@ class QueueProgress:
                 item['detail'] = event.get('detail', '')
             self.active_path = ''
             self.active_written = self._active_size = 0
+        elif kind == 'paused':
+            self.paused=True
+            self._samples.clear()
+        elif kind == 'resumed':
+            self.paused=False
+            self._samples.clear()
         elif kind == 'checksums':
             self.verifying=self.verifying_existing=False
             self.checksum_phase=event['phase']
         elif kind == 'complete':
             self.ended = True
+            self.paused=False
             self.cancelled = bool(event.get('cancelled'))
             self.failed = self.failed or bool(event.get('checksum_errors'))
 
@@ -129,6 +138,7 @@ class QueueProgress:
             self._samples.popleft()
 
     def speed(self, now: float | None = None) -> float:
+        if self.paused:return 0.
         if now is None:
             now = time.monotonic()
         self._trim(now)
@@ -146,7 +156,7 @@ class QueueProgress:
 
     def eta(self, now: float | None = None) -> float | None:
         rate = self.speed(now)
-        if rate <= 0 or self.ended or self.verifying or self.checksum_phase:
+        if rate <= 0 or self.ended or self.paused or self.verifying or self.checksum_phase:
             return None
         return self.remaining_bytes / rate
 
