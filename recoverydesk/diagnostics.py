@@ -105,13 +105,15 @@ def log_issue(operation: str, exc: BaseException, **info) -> None:
         pass
 
 
-def traced(operation: str):
+def traced(operation: str, *, ignore=()):
     """Preserve original traceback and behavior while logging failures."""
     def decorate(func):
         @functools.wraps(func)
         def inner(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
+            except ignore:
+                raise
             except Exception as exc:
                 log_issue(operation, exc)
                 raise

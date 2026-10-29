@@ -336,7 +336,7 @@ def _safe_dir(path: Path, content: Path):
         parent = parent.parent
 
 
-@traced("batch_export")
+@traced("batch_export", ignore=(TargetReviewDeclined,))
 def export_batch(source: str, index, selection: Iterable[object], target_dir: str,
                  progress: Callable[[int, int, str, str], None] | None = None,
                  byte_progress: Callable[[int], None] | None = None,

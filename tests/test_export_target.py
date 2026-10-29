@@ -96,10 +96,12 @@ class TargetBoundaryTests(unittest.TestCase):
             self.assertEqual(list(target.iterdir()),[])
             self.assertEqual(report.required_bytes,entry.size)
             return False
-        with patch('recoverydesk.batch_export.export_ntfs_file') as writer:
+        with patch('recoverydesk.batch_export.export_ntfs_file') as writer, \
+             patch('recoverydesk.diagnostics.log_issue') as log:
             with self.assertRaises(TargetReviewDeclined):
                 export_batch(str(src),index,[entry],str(target),target_review=decline)
         writer.assert_not_called();self.assertEqual(list(target.iterdir()),[])
+        log.assert_not_called()
         self.assertEqual(src.read_bytes(),original)
 
     def test_known_fat_overflow_and_insufficient_space_stop_before_target_changes(self):
