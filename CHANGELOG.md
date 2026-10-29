@@ -1,9 +1,12 @@
-# Noch nicht veröffentlicht – Exportziel vorab prüfen
+# Tenshi 3.0.9 – stabile Pakete in Vorbereitung
 
 - Vor dem ersten Schreibzugriff geplante Inhalte, zusätzlich benötigte Dateibytes und verfügbaren Platz anzeigen; vollständige Dateien eines gespeicherten Auftrags zur erneuten Prüfung berücksichtigen.
 - Vor knappem Speicherplatz warnen. Erkannte FAT/FAT32-Dateigrößenüberschreitungen vor dem Anlegen des Exportordners melden; unbekannte VM-/Netzwerkgrenzen ausdrücklich offenlassen.
 - Zielprüfung läuft im Hintergrund. Ablehnen und Abbrechen während dieser Prüfung verändern den Zielordner nicht; eine abgelehnte Wiederaufnahme bleibt fortsetzbar. Sechs Oberflächensprachen und Offline-Hilfe sind berücksichtigt.
 - Das Exportfortschrittsfenster bleibt über dem Hauptfenster und wird beim Öffnen daran zentriert. Ein erneuter Klick auf Stapel-Export zeigt einen laufenden oder pausierten Auftrag wieder an, ohne einen weiteren Export zu starten.
+
+Die Funktionen sind im Testpaket bestätigt. Endgültige Installer-/Portable-/DEB-Pakete, Versionsabnahme und Veröffentlichung folgen getrennt.
+[Versionshinweise und Prüfstand](RELEASE_NOTES_3.0.9.md).
 
 # Tenshi 3.0.8 – stabil veröffentlicht (29.10.2026)
 

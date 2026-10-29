@@ -12,11 +12,11 @@ if not exist "%ISCC%" (
   exit /b 1
 )
 set "INSTALL_LOG=%CD%\tenshi-installer-build.log"
-> "%INSTALL_LOG%" echo Tenshi 3.0.8 - Windows installer build
+> "%INSTALL_LOG%" echo Tenshi 3.0.9 - Windows installer build
 "%ISCC%" "installer\Tenshi.iss" >> "%INSTALL_LOG%" 2>&1
 if errorlevel 1 goto failed
-if not exist "installer_output\Tenshi_Setup_3.0.8.exe" goto failed
-echo ERFOLG: installer_output\Tenshi_Setup_3.0.8.exe
+if not exist "installer_output\Tenshi_Setup_3.0.9.exe" goto failed
+echo ERFOLG: installer_output\Tenshi_Setup_3.0.9.exe
 echo Protokoll: "%INSTALL_LOG%"
 if /I not "%~1"=="--no-pause" if not defined CI pause
 exit /b 0

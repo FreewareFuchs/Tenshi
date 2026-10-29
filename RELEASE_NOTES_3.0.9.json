@@ -1,0 +1,38 @@
+{
+  "de": [
+    "Vor dem Kopieren zeigt die Zielprüfung geplante Inhalte, zusätzlich benötigte Dateibytes und verfügbaren Platz. Vollständig vorhandene Dateien werden zur erneuten Prüfung berücksichtigt.",
+    "Warnung bei knappem Platz; erkannte FAT/FAT32-Dateigrößenüberschreitungen stoppen vor dem ersten Schreibzugriff. Unbekannte Grenzen von VM- und Netzwerkfreigaben werden offen benannt.",
+    "Das Exportfenster bleibt über dem Hauptfenster und öffnet zentriert. Stapel-Export zeigt einen laufenden oder pausierten Auftrag wieder an, ohne einen zweiten Export zu starten.",
+    "Zielprüfung und Fensterbedienung sind in der Offline-Hilfe und in allen sechs Sprachen ergänzt. Ablehnen verändert den Zielordner nicht und lässt eine Wiederaufnahme fortsetzbar."
+  ],
+  "en": [
+    "Before copying, the destination check shows planned contents, additional file bytes and available space. Complete existing files are accounted for as files to recheck.",
+    "Low space triggers a warning; detected FAT/FAT32 file size overflows stop before the first write. Unknown VM and network share limits are stated explicitly.",
+    "The export window stays above the main window and opens centered. Batch export reopens the running or paused job without starting a second export.",
+    "Destination checks and window controls are covered in offline help and all six languages. Declining leaves the destination unchanged and keeps a declined resume resumable."
+  ],
+  "es": [
+    "Antes de copiar, la comprobación del destino muestra el contenido previsto, los bytes adicionales y el espacio disponible. Los archivos completos existentes se cuentan para volver a comprobarlos.",
+    "Se advierte si hay poco espacio; los archivos que superan el límite FAT/FAT32 detectado se detienen antes de escribir. Se indican los límites desconocidos de carpetas compartidas de máquinas virtuales o de red.",
+    "La ventana de exportación permanece sobre la principal y se abre centrada. Exportación por lotes muestra el trabajo en curso o pausado sin iniciar otra exportación.",
+    "La ayuda sin conexión y los seis idiomas explican la comprobación del destino y la ventana. Rechazar no modifica el destino y permite volver a intentar una reanudación."
+  ],
+  "zh": [
+    "复制前，目标检查显示计划内容大小、额外所需文件字节数和可用空间。已有完整文件计为需要重新检查的文件。",
+    "空间不足时发出警告；超过已识别 FAT/FAT32 文件大小限制时，在首次写入前停止。明确提示虚拟机及网络共享的未知限制。",
+    "导出窗口保持在主窗口上方并居中打开。再次点击批量导出可显示正在进行或暂停的任务，不会启动第二个导出任务。",
+    "离线帮助及全部六种语言已补充目标检查和窗口操作说明。拒绝不会更改目标，拒绝继续的任务之后仍可继续。"
+  ],
+  "ru": [
+    "Перед копированием проверка назначения показывает планируемый объём, дополнительные байты и свободное место. Полные существующие файлы учитываются для повторной проверки.",
+    "При нехватке места выводится предупреждение; превышение обнаруженного предела FAT/FAT32 останавливает задание до записи. Неизвестные ограничения общих папок виртуальных машин и сети указаны явно.",
+    "Окно экспорта остаётся над главным окном и открывается по центру. Пакетный экспорт снова показывает выполняемое или приостановленное задание, не запуская второе.",
+    "Проверка назначения и управление окном описаны в автономной справке на всех шести языках. Отказ не изменяет назначение и сохраняет возможность повторить продолжение."
+  ],
+  "ja": [
+    "コピー前に保存先の検査で予定内容量、追加ファイル容量、空き容量を表示します。既存の完全なファイルは再検査の対象として数えます。",
+    "容量不足時に警告し、検出した FAT/FAT32 のファイルサイズ上限を超える場合は書き込み前に停止します。仮想マシンやネットワーク共有の不明な制限も明示します。",
+    "出力ウィンドウはメインウィンドウの上に中央配置で開きます。一括エクスポートを再度クリックすると実行中や一時停止中の処理を再表示し、別の処理は開始しません。",
+    "保存先検査とウィンドウ操作を6言語のオフラインヘルプに追加しました。拒否しても保存先を変更せず、再開を後で再試行できます。"
+  ]
+}

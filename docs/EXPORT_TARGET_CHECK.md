@@ -1,6 +1,6 @@
 # Exportziel vor dem Kopieren prüfen
 
-Entwicklungsstand nach 3.0.8, noch nicht veröffentlicht. Der bestehende
+Für 3.0.9 vorgesehen; Funktionen manuell abgenommen, endgültige Pakete noch in Vorbereitung. Der bestehende
 Exportplan einschließlich Unterordnern liefert die Dateigrößen. Die Zielprüfung
 läuft im Export-Hintergrundauftrag und wird vor dem ersten Anlegen eines
 Exportordners, einer Statusdatei oder einer Ausgabedatei bestätigt.
