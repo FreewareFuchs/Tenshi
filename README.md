@@ -10,18 +10,16 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 [![Tenshi: Dateien, Ordner und Exportprüfung](https://freewarefuchs.de/tenshi/screenshots/dateien.png)](https://freewarefuchs.de/tenshi/#screenshots)
 
-**3.0.8 wird vorbereitet.** Der neue Exportablauf mit Pause/Fortsetzen, Wiederaufnahme nach Abbruch und einzelnen sowie zusammengefassten Prüfsummendateien ist manuell abgenommen. Die endgültigen Paketstarts und Versionsanzeigen werden nach dem stabilen Neubau geprüft. [Geplante Änderungen und Paketstand](RELEASE_NOTES_3.0.8.md).
-
-**3.0.7 ist seit 28.10.2026 stabil veröffentlicht.** Windows-Installer, Portable-ZIP und Linux-DEB sind manuell abgenommen; Website und signierte APT-Quelle sind geprüft.
-[Änderungen und bestätigter Prüfstand](RELEASE_NOTES_3.0.7.md).
+**3.0.8 ist seit 29.10.2026 stabil veröffentlicht.** Pause/Fortsetzen, Wiederaufnahme nach Abbruch und einzelne sowie zusammengefasste Prüfsummendateien sind manuell abgenommen. Die endgültigen Paketstarts, Versionsanzeigen und die Hilfe in sechs Sprachen sind bestätigt. Website und signierte APT-Quelle sind öffentlich geprüft.
+[Änderungen und bestätigter Prüfstand](RELEASE_NOTES_3.0.8.md).
 
 Export und Imageerstellung haben eigene, wieder aufrufbare Fortschrittsfenster mit
 Bereichsraster und Berichtaktionen. Die Dateisystemanalyse zeigt ihren Fortschritt
-weiterhin im Hauptfenster. Die folgenden Download- und APT-Angaben gelten für 3.0.7.
+weiterhin im Hauptfenster. Die folgenden Download- und APT-Angaben gelten für 3.0.8.
 
 ## Herunterladen und starten
 
-Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.7](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.7) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.sha256`.
+Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.8](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.8) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.sha256`.
 
 | Variante | Verwendung |
 | --- | --- |
@@ -35,12 +33,12 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 
 ## Unter Linux starten
 
-Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.7`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.7) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.7.md).
+Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.8`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.8) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.8.md).
 
 ### DEB-Paket für Linux Mint 22.x
 
 Die signierte [FreewareFuchs-APT-Quelle](docs/APT_REPOSITORY.md) bietet
-`tenshi-recovery 3.0.7-1` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
+`tenshi-recovery 3.0.8-1` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
 beschreibt die einmalige Einrichtung und Prüfung des Schlüsselfingerabdrucks.
 Danach:
 
@@ -50,12 +48,12 @@ sudo apt install tenshi-recovery
 tenshi-recovery
 ```
 
-Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.7-1_all.deb).
-SHA256: `8b439125fd6be9882c7b4f3583e939f1706933b80454b5661a0590499fce1959`.
+Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.8-1_all.deb).
+SHA256: `3678ead73af9d0797cc21541db8f43e7f5cd3b67af8ba8911f7400b8ee7d1926`.
 Nach Prüfsummenvergleich im Downloadordner installieren:
 
 ```bash
-sudo apt install ./tenshi-recovery_3.0.7-1_all.deb
+sudo apt install ./tenshi-recovery_3.0.8-1_all.deb
 ```
 
 Danach **Tenshi** im Anwendungsmenü öffnen. Ohne sudo starten;
