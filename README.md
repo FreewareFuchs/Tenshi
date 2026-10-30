@@ -10,18 +10,16 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 [![Tenshi: Dateien, Ordner und Exportprüfung](https://freewarefuchs.de/tenshi/screenshots/dateien.png)](https://freewarefuchs.de/tenshi/#screenshots)
 
-**3.0.11 wird vorbereitet.** Bild-/PDF-Vorschau, begrenzte Inhaltsprüfung und manuelles Durchblättern mehrerer ausgewählter Dateien sind abgenommen. Die endgültigen Pakete werden gemeinsam gebaut und separat auf Start und Version geprüft. [Änderungen und Prüfstand](RELEASE_NOTES_3.0.11.md).
-
-**3.0.10 ist seit 30.10.2026 stabil veröffentlicht.** Exportaufträge lassen sich nach einem Programmneustart über den erzeugten Export-Unterordner wieder öffnen. Funktionen und endgültige Paketversionen sind manuell bestätigt. Website, GitHub-Downloads und signierte APT-Quelle sind öffentlich geprüft.
-[Änderungen und bestätigter Prüfstand](RELEASE_NOTES_3.0.10.md).
+**3.0.11 ist seit 30.10.2026 stabil veröffentlicht.** Bild-/PDF-Vorschau, begrenzte Inhaltsprüfung und manuelles Durchblättern mehrerer ausgewählter Dateien sind verfügbar. Funktionen und endgültige Paketversionen sind manuell bestätigt. Website, GitHub-Downloads und signierte APT-Quelle sind öffentlich geprüft.
+[Änderungen und bestätigter Prüfstand](RELEASE_NOTES_3.0.11.md).
 
 Export und Imageerstellung haben eigene, wieder aufrufbare Fortschrittsfenster mit
 Bereichsraster und Berichtaktionen. Die Dateisystemanalyse zeigt ihren Fortschritt
-weiterhin im Hauptfenster. Die folgenden Download- und APT-Angaben gelten für 3.0.10.
+weiterhin im Hauptfenster. Die folgenden Download- und APT-Angaben gelten für 3.0.11.
 
 ## Herunterladen und starten
 
-Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.10](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.10) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.sha256`.
+Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.11](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.11) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.sha256`.
 
 | Variante | Verwendung |
 | --- | --- |
@@ -35,12 +33,12 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 
 ## Unter Linux starten
 
-Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.10`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.10) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.10.md).
+Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.11`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.11) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.11.md).
 
 ### DEB-Paket für Linux Mint 22.x
 
 Die signierte [FreewareFuchs-APT-Quelle](docs/APT_REPOSITORY.md) bietet
-`tenshi-recovery 3.0.10-1` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
+`tenshi-recovery 3.0.11-1` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
 beschreibt die einmalige Einrichtung und Prüfung des Schlüsselfingerabdrucks.
 Danach:
 
@@ -50,12 +48,12 @@ sudo apt install tenshi-recovery
 tenshi-recovery
 ```
 
-Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.10-1_all.deb).
-SHA256: `ca273c2a75c4c4dd5974bdac1e641c320a73140f23cfa9012b485d36def9bdc1`.
+Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.11-1_all.deb).
+SHA256: `2fe0c478e7973bddca6b42084da374f5d2a90af4306486d5c666b6e1ebdfee3e`.
 Nach Prüfsummenvergleich im Downloadordner installieren:
 
 ```bash
-sudo apt install ./tenshi-recovery_3.0.10-1_all.deb
+sudo apt install ./tenshi-recovery_3.0.11-1_all.deb
 ```
 
 Danach **Tenshi** im Anwendungsmenü öffnen. Ohne sudo starten;

@@ -1,8 +1,10 @@
 # Tenshi 3.0.11 – Vorschau und Inhaltsprüfung
 
-Stabile Pakete in Vorbereitung. Der vollständige Funktionsstand aus PR #119
-ist mit „Funktioniert alles“ manuell bestätigt. Die endgültige Paketabnahme
-und Veröffentlichung folgen getrennt.
+Seit 30.10.2026 stabil [auf GitHub veröffentlicht](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.11).
+Vorschau, Inhaltsprüfung und manuelles Durchblättern sind mit „Funktioniert alles“
+bestätigt; die endgültigen Paketversionen mit „versionen stimmen“.
+Website und signierte APT-Quelle bieten 3.0.11. Alle 25 öffentlichen
+Abschlussvergleiche sind erfolgreich.
 
 ## Änderungen
 
@@ -36,15 +38,32 @@ schreibgeschützt; keine neuen Vorschau-Caches oder Dokumentkopien auf Platte.
 - `Tenshi_Portable_3.0.11_Win64.zip`
 - `tenshi-recovery_3.0.11-1_all.deb`
 
-Alle drei Pakete werden gemeinsam mit Kennung `stable` aus einem sauberen Commit
-gebaut. Manifest und `.sha256`-Dateien dokumentieren Größen, Prüfsummen und
-Quellstand. Dokumente erhalten keine eigenen Prüfsummendateien.
+Die abgenommenen Pakete wurden mit Kennung `stable` aus dem sauberen Commit
+`69ddc4658295ab65daa8b3ed0fdb7bb66522294c` gebaut
+([gemeinsamer Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/41071011412)).
+Der Tag `v3.0.11` zeigt auf diesen Build-Commit. Integrationscommit
+`d1617a8c8ec00cb1737aad2bdf89231725c58b9d` enthält denselben Dateistand.
 
-Abgenommener Funktionsstand: `8fc8ad87f2f835f4d838a24e41c2d5fd092aa97d`,
-übernommen als `2414916ed473389c407abb3f4e6eba770d495be8` mit identischem Dateistand.
-Windows und Linux bestehen jeweils 933 Tests (84 beziehungsweise sechs Skips).
-Das installierte experimentelle Flatpak ist ebenfalls erfolgreich geprüft.
-Die endgültigen stabilen Pakete erhalten eine gesonderte Start- und Versionsabnahme.
+Der Funktionsstand `8fc8ad87f2f835f4d838a24e41c2d5fd092aa97d` aus PR #119
+ist mit identischem Dateistand als `2414916ed473389c407abb3f4e6eba770d495be8`
+übernommen. Windows und Linux bestehen jeweils 934 Tests (84 beziehungsweise
+sechs plattformbedingte Ausnahmen). Manifest, Paketgrößen, SHA-Dateien,
+Windows-Ressourcen, Startprüfung, DEB-Buildidentität und enthaltene Hilfe sind
+geprüft. Das installierte experimentelle Flatpak mit dem Funktionsstand ist
+ebenfalls erfolgreich geprüft; es gehört nicht zu den drei regulären Paketen.
 
-GitHub-Veröffentlichung, signierte APT-Quelle und Website folgen nach der
-Paketabnahme. Frühere veröffentlichte Pakete und Prüfsummen bleiben erhalten.
+Das DEB `3.0.11-1` hat 883182 Bytes und SHA256:
+`2fe0c478e7973bddca6b42084da374f5d2a90af4306486d5c666b6e1ebdfee3e`.
+Die APT-Signatur wurde in Mint mit Archivschlüssel
+`15D67DDA4D0D3BD1DD10A8C3B714CC0415B04529` geprüft. Alle 16 öffentlichen
+APT-Dateien entsprechen diesem separat signaturgeprüften Export; der öffentliche
+Schlüssel und acht ältere DEBs sind unverändert erhalten.
+
+Alle sieben GitHub-Assets und die Website-/Download-Verweise sind geprüft.
+Der Website-Katalog enthält die [Änderungsnotizen in sechs Sprachen](RELEASE_NOTES_3.0.11.json).
+Die sechs Anleitungen erklären Vorschau, Inhaltsprüfung und manuelles
+Durchblättern auf Grundlage der abgenommenen Hilfe. Der vorherige Serverstand
+ist gesichert. Die vorbereiteten Manifestdateien mit `published: false` bleiben
+unveränderte Buildnachweise; die tatsächliche Veröffentlichung steht in separaten
+Abschlussberichten. Frühere Releases und Prüfsummen bleiben erhalten.
+Dokumente und Bilder erhalten keine zusätzlichen Prüfsummendateien.

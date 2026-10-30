@@ -1,4 +1,4 @@
-# Tenshi 3.0.11 – stabile Pakete in Vorbereitung
+# Tenshi 3.0.11 – stabil veröffentlicht (30.10.2026)
 
 - JPEG, BMP, PNG und GIF verkleinert anzeigen; PDFs mit der ersten Seite als Vorschau. DOCX kann einen begrenzten Textauszug zeigen.
 - Mehrere ausgewählte Dateien in einem Fenster mit Zurück/Weiter und Positionsanzeige durchblättern. Nur manueller Wechsel; vorherige Verarbeitung abbrechen und veraltete Ergebnisse verwerfen.
@@ -8,7 +8,7 @@
 
 [Bedienung, Umfang und Grenzen](docs/CONTENT_PREVIEW.md).
 
-Der Funktionsstand aus PR #119 ist manuell abgenommen. Endgültige Paketabnahme und Veröffentlichung folgen getrennt. [Versionshinweise](RELEASE_NOTES_3.0.11.md).
+Funktionen aus PR #119 und endgültige Paketversionen sind manuell bestätigt. GitHub, signierte APT-Quelle und Website sind veröffentlicht; alle 25 öffentlichen Abschlussvergleiche sind erfolgreich. [Versionshinweise](RELEASE_NOTES_3.0.11.md).
 
 # Tenshi 3.0.10 – stabil veröffentlicht (30.10.2026)
 
