@@ -62,9 +62,9 @@ class SignatureGuiTests(unittest.TestCase):
     def test_scan_button_is_available_in_all_six_languages(self):
         self.app.deiconify();self.app.update()
         for language in LANGUAGES:
-            self.app.change_language(language);self.app._scan_options_dialog();self.app.update()
-            self.wait_for(lambda:any(isinstance(w,ttk.Button) and w.cget('text')==translate('Bildsignaturen suchen',language) for w in self.widgets(self.app)))
-            buttons=[w for w in self.widgets(self.app) if isinstance(w,ttk.Button) and w.cget('text')==translate('Bildsignaturen suchen',language)]
-            self.assertEqual(len(buttons),2)
-            self.assertTrue(buttons[0].winfo_ismapped())
-            buttons[0].winfo_toplevel().destroy()
+            self.app.change_language(language)
+            self.app._select_main_tab('signatures')
+            self.app.update()
+            self.assertEqual(self.app.signature_search_button.cget('text'),
+                             translate('Bildsignaturen suchen',language))
+            self.assertTrue(self.app.signature_search_button.winfo_ismapped())
