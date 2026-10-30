@@ -116,6 +116,14 @@ class SignatureFormatTests(unittest.TestCase):
             types = b'<Types><Override PartName="/' + path.encode() + b'" ContentType="' + content_type + b'"/></Types>'
             office = zip_bytes({'[Content_Types].xml': types, path: b'<root/>'})
             self.assertTrue(self.scan(office, 'office').entries[0].name.endswith(extension))
+        combined = bytearray()
+        for number, (path, content_type, _) in enumerate(office_packages):
+            types = b'<Types><Override PartName="/' + path.encode() + b'" ContentType="' + content_type + b'"/></Types>'
+            combined.extend(bytes((65 + number,)) * 512)
+            combined.extend(zip_bytes({'[Content_Types].xml': types, path: b'<root/>'}))
+        self.source.write_bytes(combined + b'Z' * 512)
+        found = scan_signatures(str(self.source), category='office').entries
+        self.assertEqual(len(found), len(office_packages))
         archive = zip_bytes({'readme.txt': b'hello'})
         self.assertTrue(self.scan(archive, 'archives').entries[0].name.endswith('.zip'))
         self.assertFalse(self.scan(archive, 'office').entries)
@@ -168,3 +176,4 @@ class SignatureFormatTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
