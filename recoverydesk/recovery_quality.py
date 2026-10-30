@@ -12,6 +12,9 @@ class Assessment:
     grade: str
 
 def assess(entry) -> Assessment:
+    if getattr(entry,'locator',()) and entry.locator[0]=='signature-v1':
+        return Assessment('Signaturfund · ungeprüft',
+            'Zusammenhängende Bildstruktur erkannt. Originalname, Ordner und Löschstatus sind unbekannt. Vorschau und Inhaltsprüfung bestätigen keine unversehrten Originalinhalte.', 'uncertain')
     if getattr(entry, 'metadata_only', False):
         return Assessment('Nur Namenshinweis',
             'Aus einem NTFS-Verzeichnisindex rekonstruiert; kein verifizierter Dateidatensatz.', 'unknown')

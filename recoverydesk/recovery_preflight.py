@@ -156,6 +156,8 @@ def inspect_metadata(index, path: str, entry, *, filesystem: str | None = None,
                     blocked = True
                     issues.append(conflict)
     if not blocked:
+        if getattr(entry,'locator',()) and entry.locator[0]=='signature-v1':
+            issues.append(quality.detail)
         if getattr(entry, 'is_deleted', False):
             issues.append('Gelöscht: freie Cluster können bereits überschrieben sein.')
         missing_parent = _orphan_reason(index, entry)
