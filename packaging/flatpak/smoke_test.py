@@ -67,6 +67,8 @@ def check_installed_gui() -> None:
                     app.change_language(language)
                     app.update()
                     assert app.language == language
+                    from recoverydesk.i18n import translate
+                    assert app.export_open_job_button.cget('text') == translate('Exportauftrag öffnen',language)
                     # Installed destination review uses the UI thread, keeps
                     # paths intact and never needs physical-device enumeration.
                     from recoverydesk.export_target import TargetAssessment
@@ -221,7 +223,10 @@ def main() -> None:
         assert interrupted.cancelled and not interrupted.checksum_errors,interrupted
         singles=Path(interrupted.root)/'Pruefsummen_Einzeln'
         assert len(list(singles.glob('*.sha256')))==1
-        resumed=export_batch(str(image),index,entries,str(batch_output),expected_root=interrupted.root)
+        from recoverydesk.export_resume import read_saved_export,prepare_saved_export
+        restored=prepare_saved_export(read_saved_export(interrupted.manifest))
+        resumed=export_batch(restored['source'],restored['index'],restored['selection'],
+                             restored['target'],expected_root=restored['root'])
         assert not resumed.failed and not resumed.checksum_errors,resumed
         assert resumed.verified_existing==1 and resumed.exported==len(expected)-1
         assert not list(singles.glob('*.sha256'))

@@ -353,6 +353,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
     if not os.path.isdir(target_dir):
         raise ValueError('Zielordner nicht vorhanden.')
     ensure_safe_destination(source, target_dir)
+    selection = tuple(selection)
     plan = plan_selection(index, selection)
     if not plan:
         raise ValueError('Keine Einträge ausgewählt.')
@@ -429,9 +430,15 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
     # a too-large FAT file representable. Reject before changing the target.
     if assessment.oversized_count:
         raise ValueError(assessment.text())
+    from .export_resume import resume_metadata
+    request = resume_metadata(index, selection)
+    request_changed = state.get('resume_request') != request
+    state['resume_request'] = request
     if not result.resumed:
         mkdir_checked(str(root), source)
         mkdir_checked(str(content), source)
+        _atomic_json(manifest_path, state, source=source)
+    elif request_changed:
         _atomic_json(manifest_path, state, source=source)
     from .export_checksums import ExportChecksums,ChecksumCheckpointError
     def persist_checksums():
