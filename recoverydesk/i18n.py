@@ -289,12 +289,12 @@ add('MFT-Auswertungsfehler', 'MFT parsing errors', 'Errores de interpretación M
 add('MFT-Lesefehler', 'MFT read errors', 'Errores de lectura MFT', 'MFT 读取错误', 'Ошибки чтения MFT', 'MFT読み取りエラー')
 add('Attributlisten-Limit: nicht untersuchte Basisrecords', 'Attribute-list limit: unexamined base records', 'Límite de listas de atributos: registros base no examinados', '属性列表上限：未检查的基础记录', 'Лимит списков атрибутов: непроверенные базовые записи', '属性リスト上限：未調査の基本レコード')
 add('Verzeichnisindex-Auswertungsmeldungen', 'Directory index parsing notices', 'Avisos de interpretación de índices de directorio', '目录索引解析提示', 'Сообщения разбора индексов каталогов', 'ディレクトリ索引の解析通知')
-add('Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Diagnose… → Analysebericht speichern.',
-    'The file list may be incomplete. Parsing errors or reached limits do not prove drive damage. Details: Diagnostics… → Save analysis report.',
-    'La lista puede estar incompleta. Los errores de interpretación o límites alcanzados no demuestran daños en la unidad. Detalles: Diagnóstico… → Guardar informe de análisis.',
-    '文件列表可能不完整。解析错误或达到上限并不能证明磁盘损坏。详情：诊断… → 保存分析报告。',
-    'Список файлов может быть неполным. Ошибки разбора или достижение лимитов не доказывают повреждение диска. Подробности: Диагностика… → Сохранить отчёт анализа.',
-    'ファイル一覧は不完全な可能性があります。解析エラーや上限到達だけではディスクの損傷を証明しません。詳細：診断… → 解析レポートを保存。')
+add('Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Scanoptionen… → Analysebericht speichern.',
+    'The file list may be incomplete. Parsing errors or reached limits do not prove drive damage. Details: Scan options… → Save analysis report.',
+    'La lista puede estar incompleta. Los errores de interpretación o límites alcanzados no demuestran daños en la unidad. Detalles: Opciones de análisis… → Guardar informe de análisis.',
+    '文件列表可能不完整。解析错误或达到上限并不能证明磁盘损坏。详情：扫描选项… → 保存分析报告。',
+    'Список файлов может быть неполным. Ошибки разбора или достижение лимитов не доказывают повреждение диска. Подробности: Параметры сканирования… → Сохранить отчёт анализа.',
+    'ファイル一覧は不完全な可能性があります。解析エラーや上限到達だけではディスクの損傷を証明しません。詳細：スキャン設定… → 解析レポートを保存。')
 
 # Imaging controls (Tenshi 2.7.0)
 add('Leseversuche:', 'Read retries:', 'Reintentos:', '重试读取：', 'Повторы чтения:', '再読み取り回数:')
@@ -471,6 +471,8 @@ add('MFT-Limit (0=alle):','MFT limit (0=all):','Límite MFT (0=todos):','MFT 限
 add('Dateisystem einlesen','Read file system','Leer sistema de archivos','读取文件系统','Прочитать файловую систему','ファイルシステムを読み取る')
 add('Scan abbrechen','Cancel scan','Cancelar análisis','取消扫描','Отменить анализ','スキャン中止')
 add('Diagnose…','Diagnostics…','Diagnóstico…','诊断…','Диагностика…','診断…')
+add('Scanoptionen…','Scan options…','Opciones de análisis…','扫描选项…','Параметры сканирования…','スキャン設定…')
+add('Scanoptionen','Scan options','Opciones de análisis','扫描选项','Параметры сканирования','スキャン設定')
 add('Fehlertolerante Suche (nur Images)','Fault-tolerant scan (images only)','Análisis tolerante a fallos (solo imágenes)','容错扫描（仅镜像）','Поиск с пропуском ошибок (только образы)','エラー許容スキャン (イメージのみ)')
 add('Analysebericht speichern','Save analysis report','Guardar informe del análisis','保存分析报告','Сохранить отчёт анализа','解析レポートを保存')
 add('Gelöschte Einträge anzeigen','Show deleted entries','Mostrar elementos eliminados','显示已删除条目','Показать удалённые записи','削除済み項目を表示')

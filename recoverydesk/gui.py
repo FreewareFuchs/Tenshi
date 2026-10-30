@@ -232,6 +232,8 @@ class RecoveryDeskApp(tk.Tk):
         if hasattr(self, 'signature_search_buttons'):
             for category, button in self.signature_search_buttons.items():
                 button.configure(text=translate(self._signature_button_keys[category], language))
+        if hasattr(self, 'scan_options_button'):
+            self.scan_options_button.configure(text=translate('Scanoptionen…', language))
         help_window = getattr(self, '_help_window', None)
         if help_window is not None and help_window.winfo_exists():
             help_window.refresh_language(language)
@@ -1878,18 +1880,11 @@ class RecoveryDeskApp(tk.Tk):
         self.ntfs_cancel_btn = ttk.Button(tools, text='Scan abbrechen',
                                           command=self._cancel_scan, state='disabled')
         self.ntfs_cancel_btn.pack(side='left', padx=5)
-        diagnosis_row = ttk.Frame(self.ntfs_tab)
-        # Keep advanced scan options in a dialog to protect the limited browser height.
-        # diagnosis_row intentionally not packed (controls are recreated in the dialog).
         self.tolerant_scan = tk.BooleanVar(value=False)
-        ttk.Checkbutton(diagnosis_row, text='Fehlertolerante Suche (nur Images)',
-                        variable=self.tolerant_scan).pack(side='left')
-        ttk.Label(diagnosis_row,
-                  text='Überspringt unlesbare NTFS-Datensätze bzw. Unterordner; Ergebnis kann unvollständig sein.',
-                  style='Sub.TLabel').pack(side='left', padx=8)
-        ttk.Button(diagnosis_row, text='Analysebericht speichern',
-                   command=self.save_scan_report).pack(side='right', padx=6)
-        ttk.Button(controls, text='Diagnose…', command=self._scan_options_dialog).pack(side='right')
+        self.scan_options_button = ttk.Button(
+            controls, text=translate('Scanoptionen…', self.language),
+            command=self._scan_options_dialog)
+        self.scan_options_button.pack(side='right')
         self.show_deleted = tk.BooleanVar(value=True)
         self.deleted_toggle = ttk.Checkbutton(tools, text='Gelöschte Einträge anzeigen',
                                                variable=self.show_deleted, command=self._refresh_browser)
@@ -2455,7 +2450,7 @@ class RecoveryDeskApp(tk.Tk):
                 message = '\n'.join(f'{translate(label, self.language)}: {count:,}'
                                     for count, label in counts)
                 message += '\n\n' + translate(
-                    'Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Diagnose… → Analysebericht speichern.',
+                    'Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Scanoptionen… → Analysebericht speichern.',
                     self.language)
                 if outside:
                     message += '\n\n' + translate(
@@ -2701,7 +2696,7 @@ class RecoveryDeskApp(tk.Tk):
 
     def _scan_options_dialog(self):
         win = tk.Toplevel(self)
-        win.title('Scan-Einstellungen und Diagnose')
+        win.title(translate('Scanoptionen', self.language))
         # Let Tk derive the height from the themed widgets and wrapped text.
         # A fixed 210px height clips the close button on Linux/font scaling.
         win.minsize(640, 0)
@@ -2714,9 +2709,6 @@ class RecoveryDeskApp(tk.Tk):
                   'Die Ergebnisse können unvollständig bleiben.', wraplength=575).pack(anchor='w')
         ttk.Button(panel, text='Analysebericht speichern',
                    command=self.save_scan_report).pack(anchor='w', pady=13)
-        def signatures():
-            win.destroy();self.start_signature_scan()
-        ttk.Button(panel,text=translate('Bilder suchen',self.language),command=signatures).pack(anchor='w',pady=(0,13))
         ttk.Button(panel, text='Schließen', command=win.destroy).pack(anchor='e')
 
     def _advanced_search_dialog(self):
