@@ -1,0 +1,38 @@
+{
+  "de": [
+    "JPEG/PNG/BMP/GIF und die erste PDF-Seite in der Vorschau anzeigen; begrenzter DOCX-Textauszug.",
+    "Mehrere ausgewählte Dateien manuell mit Zurück/Weiter und Positionsanzeige durchblättern; kein automatischer Wechsel.",
+    "Inhalt prüfen ergänzt Bilddekodierung und begrenzte PDF-/DOCX/XLSX/PPTX-Strukturprüfungen. Exportierte Dateien lassen sich vom Zielmedium prüfen.",
+    "Teilprüfung, Schutz und Prüfgrenzen unterscheiden. Begrenzte schreibgeschützte Verarbeitung ohne Ausführen von Links, Makros oder Dokumentaktionen. Hilfe und Dialoge in sechs Sprachen."
+  ],
+  "en": [
+    "Preview JPEG/PNG/BMP/GIF images and the first PDF page; limited DOCX text excerpt.",
+    "Browse multiple selected files manually with Previous/Next and a position indicator; no automatic advance.",
+    "Check content adds image decoding and bounded PDF/DOCX/XLSX/PPTX structure checks. Exported files can be checked from the destination.",
+    "Distinguish partial checks, protection and limits. Bounded read-only processing without executing links, macros or document actions. Help and dialogs in six languages."
+  ],
+  "es": [
+    "Vista previa de JPEG/PNG/BMP/GIF y de la primera página PDF; extracto de texto DOCX limitado.",
+    "Recorrer varios archivos seleccionados manualmente con Anterior/Siguiente e indicador de posición, sin avance automático.",
+    "Comprobar contenido añade decodificación de imágenes y comprobaciones limitadas de estructuras PDF/DOCX/XLSX/PPTX. Permite comprobar archivos exportados desde el destino.",
+    "Distingue comprobación parcial, protección y límites. Procesamiento limitado de solo lectura, sin ejecutar enlaces, macros ni acciones del documento. Ayuda y diálogos en seis idiomas."
+  ],
+  "zh": [
+    "预览 JPEG/PNG/BMP/GIF 和 PDF 首页；支持有限的 DOCX 文本摘录。",
+    "通过上一个/下一个和位置指示手动浏览多个选定文件，不会自动切换。",
+    "内容检查新增图像解码以及受限的 PDF/DOCX/XLSX/PPTX 结构检查，也可从目标介质检查已导出的文件。",
+    "区分部分检查、保护和检查限制。使用受限的只读处理，不执行链接、宏或文档操作。帮助及对话框支持六种语言。"
+  ],
+  "ru": [
+    "Предпросмотр JPEG/PNG/BMP/GIF и первой страницы PDF; ограниченный текстовый фрагмент DOCX.",
+    "Ручной просмотр нескольких выбранных файлов кнопками «Назад»/«Далее» с указателем позиции, без автоматического перехода.",
+    "Проверка содержимого добавляет декодирование изображений и ограниченные проверки структур PDF/DOCX/XLSX/PPTX. Экспортированные файлы можно проверять на целевом носителе.",
+    "Различаются частичная проверка, защита и ограничения. Ограниченная обработка только для чтения без запуска ссылок, макросов и действий документов. Справка и диалоги на шести языках."
+  ],
+  "ja": [
+    "JPEG/PNG/BMP/GIF と PDF の最初のページをプレビュー。DOCX は制限付きのテキスト抜粋に対応。",
+    "選択した複数ファイルを「前へ」「次へ」と位置表示で手動閲覧。自動切り替えはありません。",
+    "内容検査に画像のデコードと制限付き PDF/DOCX/XLSX/PPTX 構造検査を追加。出力済みファイルを保存先から検査できます。",
+    "部分検査、保護、検査上限を区別。リンク、マクロ、文書アクションを実行せず、制限付きの読み取り専用処理を行います。ヘルプとダイアログは6言語に対応。"
+  ]
+}

@@ -1,5 +1,7 @@
 # Release-Paket automatisch vorbereiten
 
+In Vorbereitung: **3.0.11** mit Bild-/PDF-Vorschau, Inhaltsprüfung und manuellem Durchblättern aus PR #119. Der vollständige Funktionsstand ist manuell bestätigt. Installer, Portable und DEB werden gemeinsam mit Kennung `stable` gebaut; die endgültige Paketabnahme steht aus. [Änderungen und Grenzen](../RELEASE_NOTES_3.0.11.md).
+
 Aktueller veröffentlichter Stand: [Tenshi 3.0.10](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.10),
 seit 30.10.2026. Das Wiederöffnen gespeicherter Exportaufträge stammt aus dem
 manuell bestätigten PR #115. Hilfe und Dialoge erklären die Ordnerwahl in allen
