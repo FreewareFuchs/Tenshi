@@ -1,6 +1,6 @@
 # Bildsignaturen in einem Image suchen
 
-Für 3.0.12 vorgesehen. Funktionen sind mit „Bestanden“ manuell bestätigt; endgültige Pakete und Veröffentlichung werden vorbereitet.
+Seit Tenshi 3.0.12 stabil verfügbar. Funktion und endgültige Paketversionen sind manuell bestätigt. [Versionshinweise und öffentlicher Prüfstand](../RELEASE_NOTES_3.0.12.md).
 
 ## Bedienung
 

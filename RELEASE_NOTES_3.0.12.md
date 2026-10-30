@@ -1,8 +1,6 @@
-# Tenshi 3.0.12 – Bildsignaturen ohne Dateisystem suchen
+# Tenshi 3.0.12 – stabil veröffentlicht (30.10.2026)
 
-Stabile Pakete in Vorbereitung. Die Funktionen aus PR #123 sind im Windows-/
-Flatpak-Testpaket mit „Bestanden“ manuell bestätigt. Die endgültige Paketabnahme
-und Veröffentlichung folgen getrennt.
+Veröffentlicht als [v3.0.12](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.12). Bildsignatursuche und endgültige Paketversionen sind manuell bestätigt. GitHub-Downloads, signierte APT-Quelle und Website sind öffentlich geprüft.
 
 ## Änderungen
 
@@ -39,7 +37,7 @@ führen zum Abbruch. Die separate Inhaltsprüfung behält ihre eigenen Grenzen.
 - `Tenshi_Portable_3.0.12_Win64.zip`
 - `tenshi-recovery_3.0.12-1_all.deb`
 
-Alle Pakete werden gemeinsam mit Kennung `stable` aus einem sauberen Commit
+Alle Pakete wurden gemeinsam mit Kennung `stable` aus einem sauberen Commit
 gebaut. Manifest und `.sha256`-Dateien dokumentieren Größen, Prüfsummen und
 Quellstand. Dokumente und Beispielimages erhalten keine eigenen Prüfsummendateien.
 
@@ -49,5 +47,7 @@ Windows und Linux bestehen jeweils 955 Tests (84 beziehungsweise sechs Skips).
 Das installierte experimentelle Flatpak ist ebenfalls erfolgreich geprüft.
 Die endgültigen stabilen Pakete erhalten eine gesonderte Start-/Versionsabnahme.
 
-GitHub-Veröffentlichung, signierte APT-Quelle und Website folgen danach.
-Frühere veröffentlichte Pakete und Prüfsummen bleiben erhalten.
+GitHub veröffentlichte sieben geprüfte Assets. Der signierte APT-Index und das
+DEB wurden in Mint geprüft; alle 17 öffentlichen APT-Dateien stimmen mit dem
+signierten Export überein. Die Website wurde mit 25 öffentlichen Vergleichen
+abgeschlossen. Frühere veröffentlichte Pakete und Prüfsummen bleiben erhalten.
