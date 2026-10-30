@@ -224,6 +224,16 @@ class RecoveryDeskApp(tk.Tk):
         _CURRENT_LOCALE = language
         self._language_var.set(language)
         self._i18n.set_language(language)
+        if hasattr(self, 'signature_tab'):
+            self.tabs.tab(self.signature_tab, text=translate('Dateisignaturen', language))
+        if hasattr(self, '_nav_buttons') and 'signatures' in self._nav_buttons:
+            self._nav_buttons['signatures'].configure(
+                text='▣  ' + translate('Dateisignaturen', language))
+        if hasattr(self, 'signature_search_buttons'):
+            for category, button in self.signature_search_buttons.items():
+                button.configure(text=translate(self._signature_button_keys[category], language))
+        if hasattr(self, 'scan_options_button'):
+            self.scan_options_button.configure(text=translate('Scanoptionen…', language))
         help_window = getattr(self, '_help_window', None)
         if help_window is not None and help_window.winfo_exists():
             help_window.refresh_language(language)
@@ -657,7 +667,7 @@ class RecoveryDeskApp(tk.Tk):
         self._header_title = ttk.Label(description, text="Datenrettung & schreibgeschützte Datenträgeranalyse",
                   font=("Segoe UI", 13, "bold"))
         self._header_title.pack(anchor="w", fill="x", pady=(2, 2))
-        self._header_subtitle = ttk.Label(description, text="NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner · Bildsignaturen",
+        self._header_subtitle = ttk.Label(description, text=translate('NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner · Dateisignaturen', self.language),
                   style="Sub.TLabel")
         self._header_subtitle.pack(anchor="w", fill="x")
         self._header_wrap_job = None
@@ -703,7 +713,7 @@ class RecoveryDeskApp(tk.Tk):
                 command=lambda key=name: self._select_main_tab(key))
             btn.pack(side='left', fill='x', expand=True, padx=3)
             self._nav_buttons[name] = btn
-        name, label = 'signatures', '▣  Bildsignaturen'
+        name, label = 'signatures', '▣  ' + translate('Dateisignaturen', self.language)
         btn = tk.Button(self._tab_nav, text=label,
             font=('Segoe UI', 12, 'bold'), padx=14, pady=4,
             relief='flat', bd=0, cursor='hand2', takefocus=True,
@@ -737,7 +747,7 @@ class RecoveryDeskApp(tk.Tk):
         self._session_running = False
         self.tabs.add(self.partition_tab, text="Partitionen")
         self.tabs.add(self.ntfs_tab, text="Dateien & Ordner")
-        self.tabs.add(self.signature_tab, text="Bildsignaturen")
+        self.tabs.add(self.signature_tab, text=translate('Dateisignaturen', self.language))
         self.tabs.bind('<<NotebookTabChanged>>', self._update_main_tab_styles)
         self._update_main_tab_styles()
         self._build_partitions()
@@ -1811,7 +1821,7 @@ class RecoveryDeskApp(tk.Tk):
     def _build_signature_tab(self):
         panel = ttk.Frame(self.signature_tab, padding=(18, 14))
         panel.pack(fill='x', anchor='nw')
-        ttk.Label(panel, text='Bildsignaturen', style='Title.TLabel').pack(anchor='w')
+        ttk.Label(panel, text='Dateisignaturen', style='Title.TLabel').pack(anchor='w')
         from .signature_search import SCOPE
         ttk.Label(panel, text=SCOPE, justify='left',
                   wraplength=1000).pack(anchor='w', fill='x', pady=(8, 16))
@@ -1820,10 +1830,17 @@ class RecoveryDeskApp(tk.Tk):
                   justify='left').pack(anchor='w', fill='x', pady=(2, 14))
         actions = ttk.Frame(panel)
         actions.pack(anchor='w', fill='x')
-        self.signature_search_button = ttk.Button(
-            actions, text='Bildsignaturen suchen', style='Accent.TButton',
-            command=self.start_signature_scan)
-        self.signature_search_button.pack(side='left')
+        self._signature_button_keys = {
+            'images':'Bilder suchen','office':'Office-Dateien suchen',
+            'archives':'Archive suchen','audio':'Audiodateien suchen','video':'Videodateien suchen'}
+        self.signature_search_buttons = {}
+        for category, key in self._signature_button_keys.items():
+            button = ttk.Button(actions, text=translate(key, self.language),
+                style='Accent.TButton' if category == 'images' else 'TButton',
+                command=lambda selected=category: self.start_signature_scan(selected))
+            button.pack(side='left', padx=(0, 6))
+            self.signature_search_buttons[category] = button
+        self.signature_search_button = self.signature_search_buttons['images']
         self.signature_results_button = ttk.Button(
             actions, text='Ergebnisse in Dateien & Ordner anzeigen',
             command=self._open_signature_results, state='disabled')
@@ -1863,18 +1880,11 @@ class RecoveryDeskApp(tk.Tk):
         self.ntfs_cancel_btn = ttk.Button(tools, text='Scan abbrechen',
                                           command=self._cancel_scan, state='disabled')
         self.ntfs_cancel_btn.pack(side='left', padx=5)
-        diagnosis_row = ttk.Frame(self.ntfs_tab)
-        # Keep advanced scan options in a dialog to protect the limited browser height.
-        # diagnosis_row intentionally not packed (controls are recreated in the dialog).
         self.tolerant_scan = tk.BooleanVar(value=False)
-        ttk.Checkbutton(diagnosis_row, text='Fehlertolerante Suche (nur Images)',
-                        variable=self.tolerant_scan).pack(side='left')
-        ttk.Label(diagnosis_row,
-                  text='Überspringt unlesbare NTFS-Datensätze bzw. Unterordner; Ergebnis kann unvollständig sein.',
-                  style='Sub.TLabel').pack(side='left', padx=8)
-        ttk.Button(diagnosis_row, text='Analysebericht speichern',
-                   command=self.save_scan_report).pack(side='right', padx=6)
-        ttk.Button(controls, text='Diagnose…', command=self._scan_options_dialog).pack(side='right')
+        self.scan_options_button = ttk.Button(
+            controls, text=translate('Scanoptionen…', self.language),
+            command=self._scan_options_dialog)
+        self.scan_options_button.pack(side='right')
         self.show_deleted = tk.BooleanVar(value=True)
         self.deleted_toggle = ttk.Checkbutton(tools, text='Gelöschte Einträge anzeigen',
                                                variable=self.show_deleted, command=self._refresh_browser)
@@ -2108,25 +2118,27 @@ class RecoveryDeskApp(tk.Tk):
             # the "Dateisystem einlesen" button. Never opens the disk for writing.
             self.start_ntfs_scan()
 
-    def start_signature_scan(self):
+    def start_signature_scan(self, category='images'):
         from .signature_search import scan_signatures,FILESYSTEM,SCOPE
         if self._exit_requested or self._session_busy():
-            messagebox.showinfo('Bildsignaturen suchen','Bitte laufende Vorgänge zuerst abschließen.',parent=self);return
+            messagebox.showinfo(translate(self._signature_button_keys[category], self.language),'Bitte laufende Vorgänge zuerst abschließen.',parent=self);return
         try:
             source=self.get_source()
             if is_device_source(source):raise ValueError('Signatursuche erfordert ein reguläres Image.')
         except (OSError,ValueError) as exc:
-            messagebox.showerror('Bildsignaturen suchen',str(exc),parent=self);return
+            messagebox.showerror(translate(self._signature_button_keys[category], self.language),str(exc),parent=self);return
+        category_label = translate(self._signature_button_keys[category], self.language)
         note=(translate(SCOPE,self.language)+'\n\n'+translate(
-            'JPEG/PNG bis 32 MiB pro Fund. Maximal 1000 Funde und 5000 Anfangssignaturen; Prüfgrenzen können die Suche vorzeitig beenden. Das gesamte Image wird gelesen. Suche jetzt starten?',self.language))
-        if not messagebox.askyesno('Bildsignaturen suchen',note,parent=self):return
+            'Maximal 32 MiB pro Fund, 1000 Funde und 5000 Anfangssignaturen. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',self.language))
+        if not messagebox.askyesno(category_label,note,parent=self):return
         generation=self._source_generation
         display_tmp=self.show_tmp.get()
         self.ntfs_scanning=True;self._clear_browser_results();self.browser_cancel.clear()
         self.ntfs_scan_btn.configure(state='disabled');self.ntfs_cancel_btn.configure(state='normal')
-        self.signature_search_button.configure(state='disabled')
-        self.signature_status.set('Bildsignaturen werden gesucht …')
-        self.status.set('Bildsignaturen werden gesucht …')
+        for button in self.signature_search_buttons.values():button.configure(state='disabled')
+        searching = translate('Signatursuche läuft: {category} …',self.language).format(category=category_label)
+        self.signature_status.set(searching)
+        self.status.set(searching)
         last=[float('-inf')]
         def progress(done,total):
             now=time.monotonic()
@@ -2140,7 +2152,7 @@ class RecoveryDeskApp(tk.Tk):
             try:
                 # Keep two distinct sample points even for images below 64 KiB.
                 fingerprint=fingerprint_image(source,[1])
-                index=scan_signatures(source,cancel=self.browser_cancel.is_set,progress=progress)
+                index=scan_signatures(source,category=category,cancel=self.browser_cancel.is_set,progress=progress)
                 check_fingerprint(source,fingerprint,original=source)
                 paths=construct_paths(index.entries,lazy=True)
                 warnings=folder_warning_records(visible_entries(index.entries,display_tmp))
@@ -2149,7 +2161,7 @@ class RecoveryDeskApp(tk.Tk):
                         self._browser_fingerprint=fingerprint;self._set_browser_fs(FILESYSTEM)
                         self.ntfs_byte_offset.set('0')
                         self._show_browser_index(source,index,prepared=(paths,warnings,display_tmp))
-                        text='Signatursuche beendet: {count} Bildstrukturen.'.format(count=len(index.entries))
+                        text=translate('Signatursuche beendet: {count} Funde.',self.language).format(count=len(index.entries))
                         if not index.signature_complete:text+=' Prüfgrenze erreicht; Ergebnis unvollständig.'
                         self.signature_result_source=source
                         self.signature_status.set(text)
@@ -2166,7 +2178,7 @@ class RecoveryDeskApp(tk.Tk):
                 def failed(msg=str(exc)):
                     if self._scan_source_matches(generation,source):
                         self.signature_status.set('Signatursuche fehlgeschlagen.')
-                        messagebox.showerror('Bildsignaturen suchen',msg,parent=self)
+                        messagebox.showerror(category_label,msg,parent=self)
                 self._post_scan_callback(failed)
             finally:self._post_scan_callback(self._finish_ntfs_scan)
         threading.Thread(target=worker,daemon=True).start()
@@ -2277,8 +2289,8 @@ class RecoveryDeskApp(tk.Tk):
         self.ntfs_scanning = False
         self.ntfs_scan_btn.configure(state='normal')
         self.ntfs_cancel_btn.configure(state='disabled')
-        if hasattr(self, 'signature_search_button'):
-            self.signature_search_button.configure(state='normal')
+        if hasattr(self, 'signature_search_buttons'):
+            for button in self.signature_search_buttons.values():button.configure(state='normal')
 
     def _session_busy(self):
         return (self._session_running or self.ntfs_scanning or
@@ -2438,7 +2450,7 @@ class RecoveryDeskApp(tk.Tk):
                 message = '\n'.join(f'{translate(label, self.language)}: {count:,}'
                                     for count, label in counts)
                 message += '\n\n' + translate(
-                    'Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Diagnose… → Analysebericht speichern.',
+                    'Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Scanoptionen… → Analysebericht speichern.',
                     self.language)
                 if outside:
                     message += '\n\n' + translate(
@@ -2684,7 +2696,7 @@ class RecoveryDeskApp(tk.Tk):
 
     def _scan_options_dialog(self):
         win = tk.Toplevel(self)
-        win.title('Scan-Einstellungen und Diagnose')
+        win.title(translate('Scanoptionen', self.language))
         # Let Tk derive the height from the themed widgets and wrapped text.
         # A fixed 210px height clips the close button on Linux/font scaling.
         win.minsize(640, 0)
@@ -2697,9 +2709,6 @@ class RecoveryDeskApp(tk.Tk):
                   'Die Ergebnisse können unvollständig bleiben.', wraplength=575).pack(anchor='w')
         ttk.Button(panel, text='Analysebericht speichern',
                    command=self.save_scan_report).pack(anchor='w', pady=13)
-        def signatures():
-            win.destroy();self.start_signature_scan()
-        ttk.Button(panel,text='Bildsignaturen suchen',command=signatures).pack(anchor='w',pady=(0,13))
         ttk.Button(panel, text='Schließen', command=win.destroy).pack(anchor='e')
 
     def _advanced_search_dialog(self):
@@ -3412,7 +3421,7 @@ class RecoveryDeskApp(tk.Tk):
                         now=time.monotonic()
                         if done==total or now-last_post>=.15:
                             events.put(dict(type='restore_progress',done=done,total=total,
-                                signature=saved.identity['filesystem']=='JPEG/PNG signatures v1'));last_post=now
+                                signature=saved.identity['filesystem'] in ('JPEG/PNG signatures v1','File signatures v2')));last_post=now
                     active=prepare_saved_export(saved,cancel=control.check_cancel,progress=progress)
                     root=active['root']
                     events.put(dict(type='job_ready',job=active))

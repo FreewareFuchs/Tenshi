@@ -17,7 +17,7 @@ try:
     app.update()
     assert app.winfo_ismapped(), 'Installed application window was not displayed'
     assert [app.tabs.tab(tab, 'text') for tab in app.tabs.tabs()] == [
-        'Partitionen', 'Dateien & Ordner', 'Bildsignaturen'
+        'Partitionen', 'Dateien & Ordner', 'Dateisignaturen'
     ]
     from tkinter import ttk
     for theme in ('dark', 'light', 'system'):

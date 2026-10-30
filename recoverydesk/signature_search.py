@@ -10,8 +10,11 @@ import zlib
 
 from .filesystems import GenericEntry,GenericIndex,ROOT,ScanCancelled,read_exact
 from .sources import open_source,is_device_source,validate_source
+from .signature_formats import (Invalid as FormatInvalid, Limit as FormatLimit,
+                                parse as parse_format)
 
-FILESYSTEM='JPEG/PNG signatures v1'
+FILESYSTEM='File signatures v2'
+LEGACY_FILESYSTEM='JPEG/PNG signatures v1'
 PNG=b'\x89PNG\r\n\x1a\n'
 JPEG=b'\xff\xd8\xff'
 MAX_FILE=32*1024**2
@@ -19,7 +22,7 @@ SCAN_BLOCK=1024**2
 MAX_CANDIDATES=5000
 MAX_HITS=1000
 MAX_INSPECTION=512*1024**2
-SCOPE='Signaturfunde: zusammenhängende JPEG/PNG-Strukturen, keine Originalnamen oder Ordner. Belegte und freie Bereiche werden durchsucht; ein Fund beweist weder Löschung noch unversehrte Originalinhalte. Fragmentierte Dateien werden nicht zusammengesetzt.'
+SCOPE='Signaturfunde: erkannte zusammenhängende Dateistrukturen ohne Originalnamen oder Ordner. Belegte und freie Bereiche werden durchsucht; ein Fund beweist weder Löschung noch unversehrte Originalinhalte. Fragmente werden nicht zusammengesetzt.'
 
 
 class _Invalid(ValueError):pass
@@ -150,8 +153,10 @@ def _snapshot(value):
     return value.st_dev,value.st_ino,value.st_size,value.st_mtime_ns
 
 
-def scan_signatures(source,*,cancel=None,progress=None):
-    """Search the complete regular image; no output files or decoder processes."""
+def scan_signatures(source,*,category='images',cancel=None,progress=None):
+    """Search a regular image for bounded, contiguous candidates in one category."""
+    if category not in ('images','office','archives','audio','video','all'):
+        raise ValueError('Unbekannte Signaturkategorie.')
     validate_source(source)
     if is_device_source(source):raise ValueError('Signatursuche erfordert ein reguläres Image.')
     before=os.stat(source)
@@ -166,7 +171,32 @@ def scan_signatures(source,*,cancel=None,progress=None):
             stream.seek(position);block=stream.read(min(SCAN_BLOCK,total-position))
             if len(block)!=min(SCAN_BLOCK,total-position):raise OSError('Image lieferte unvollständige Daten.')
             data=tail+block;base=position-len(tail);found=[]
-            for signature,kind in ((PNG,'PNG'),(JPEG,'JPEG')):
+            if category in ('images','all'):
+                signatures=[(PNG,'PNG'),(JPEG,'JPEG'),(b'BM','OTHER'),
+                            (b'GIF87a','OTHER'),(b'GIF89a','OTHER'),(b'RIFF','OTHER'),
+                            (b'II*\0','OTHER'),(b'MM\0*','OTHER')]
+            else:signatures=[]
+            if category in ('office','archives','all'):
+                signatures.append((b'PK\x03\x04','OTHER'))
+            if category in ('archives','all'):
+                signatures.append((b'7z\xbc\xaf\x27\x1c','OTHER'))
+            if category in ('audio','video','all'):
+                signatures.append((b'RIFF','OTHER'))
+            if category in ('audio','all'):
+                signatures.extend(((b'OggS','OTHER'),(b'ID3','OTHER')))
+            if category in ('video','all'):
+                for marker in (b'ftyp',):
+                    at=data.find(marker)
+                    while at>=4:
+                        if base+at-4>last:found.append((base+at-4,'OTHER'))
+                        at=data.find(marker,at+1)
+            if category in ('archives','all'):
+                at=data.find(b'ustar')
+                while at>=0:
+                    start=base+at-257
+                    if start>=0 and start>last:found.append((start,'OTHER'))
+                    at=data.find(b'ustar',at+1)
+            for signature,kind in signatures:
                 at=data.find(signature);count=0
                 while at>=0 and count<=MAX_CANDIDATES:
                     if base+at>last:found.append((base+at,kind))
@@ -176,11 +206,22 @@ def scan_signatures(source,*,cancel=None,progress=None):
                 _stop(cancel)
                 if candidates>=MAX_CANDIDATES or len(entries)>=MAX_HITS:limited=True;break
                 candidates+=1;last=start
-                reader=_Reader(stream,start,total,budget,cancel)
-                try:size=(_png if kind=='PNG' else _jpeg)(reader)
-                except _Invalid:continue
-                except _Limit:limited=True;break
-                extension='png' if kind=='PNG' else 'jpg'
+                try:
+                    if kind=='PNG' or kind=='JPEG':
+                        reader=_Reader(stream,start,total,budget,cancel)
+                        size=(_png if kind=='PNG' else _jpeg)(reader)
+                    else:
+                        size,kind,found_category=parse_format(stream,start,total,budget,category)
+                        if category!='all' and found_category!=category:continue
+                except (FormatLimit, _Limit):limited=True;break
+                except (FormatInvalid, _Invalid):continue
+                extension={'PNG':'png','JPEG':'jpg','BMP':'bmp','GIF':'gif','WebP':'webp','TIFF':'tiff',
+                           'DOCX':'docx','DOCM':'docm','DOTX':'dotx','DOTM':'dotm',
+                           'XLSX':'xlsx','XLSM':'xlsm','XLTX':'xltx','XLTM':'xltm',
+                           'PPTX':'pptx','PPTM':'pptm','POTX':'potx','POTM':'potm',
+                           'ODT':'odt','ODS':'ods','ODP':'odp','ODG':'odg','ZIP':'zip',
+                           'TAR':'tar','7Z':'7z','WAV':'wav','AVI':'avi','MP4':'mp4',
+                           'OGG-Vorbis':'ogg','OGG-Opus':'opus','MP3':'mp3'}.get(kind,'bin')
                 entries.append(GenericEntry(start+100,f'{kind}_{start:016X}.{extension}',ROOT,False,size,('signature-v1',start,size)))
             position+=len(block);tail=data[-7:]
             if progress:progress(position,total)
@@ -192,4 +233,5 @@ def scan_signatures(source,*,cancel=None,progress=None):
     if limited:index.scan_warnings.append('Signatursuche: Prüfgrenze erreicht; Ergebnis unvollständig.')
     index.signature_scanned_bytes=position;index.signature_source_bytes=total
     index.signature_candidates=candidates;index.signature_complete=not limited
+    index.signature_category=category
     return index

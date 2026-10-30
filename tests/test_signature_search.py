@@ -6,6 +6,7 @@ from pathlib import Path
 import struct
 import tempfile
 import unittest
+import zipfile
 from unittest.mock import patch
 import zlib
 
@@ -47,7 +48,7 @@ class SignatureSearchTests(unittest.TestCase):
             self.assertEqual(verify_file(str(self.source),index,entry,filesystem=search.FILESYSTEM).read_bytes,len(content))
             self.assertEqual(assess(entry).grade,'uncertain');self.assertIn('Signatur',entry.status)
         self.assertEqual(self.source.read_bytes(),data)
-        self.assertIn('keine Originalnamen',format_scan_report(str(self.source),index))
+        self.assertIn('ohne Originalnamen',format_scan_report(str(self.source),index))
 
     def test_png_and_jpeg_headers_cross_scan_block_boundary(self):
         for kind in ('PNG','JPEG'):
@@ -128,6 +129,29 @@ class SignatureSearchTests(unittest.TestCase):
         job=prepare_saved_export(read_saved_export(first.manifest))
         second=export_batch(job['source'],job['index'],job['selection'],job['target'])
         self.assertEqual(second.exported,0);self.assertEqual(self.source.read_bytes(),data)
+
+    def test_archive_export_job_resumes_across_all_categories(self):
+        archive=BytesIO()
+        with zipfile.ZipFile(archive,'w') as package:package.writestr('readme.txt','restored')
+        data=b'X'*512+archive.getvalue()+b'Y'*512
+        self.source.write_bytes(data)
+        index=search.scan_signatures(str(self.source),category='archives')
+        target=self.base/'archive-output';target.mkdir()
+        first=export_batch(str(self.source),index,index.entries,str(target))
+        saved=read_saved_export(first.manifest)
+        prepared=prepare_saved_export(saved)
+        self.assertEqual([entry.name for entry in prepared['selection']],[index.entries[0].name])
+        self.assertEqual(prepared['index'].filesystem,search.FILESYSTEM)
+
+    def test_legacy_image_signature_job_remains_resumable(self):
+        self.source.write_bytes(picture('PNG')+b'Y'*512)
+        index=search.scan_signatures(str(self.source))
+        index.filesystem=search.LEGACY_FILESYSTEM
+        index.volumes.label=search.LEGACY_FILESYSTEM
+        target=self.base/'legacy-output';target.mkdir()
+        first=export_batch(str(self.source),index,index.entries,str(target))
+        prepared=prepare_saved_export(read_saved_export(first.manifest))
+        self.assertEqual(prepared['index'].filesystem,search.LEGACY_FILESYSTEM)
 
     def test_session_save_rejects_signature_cache_before_creating_file(self):
         index=self.scan(picture('PNG'));destination=self.base/'saved.tenshi-session'
