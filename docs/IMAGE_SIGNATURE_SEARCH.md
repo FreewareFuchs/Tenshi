@@ -1,65 +1,34 @@
-# Bildsignaturen in einem Image suchen
-
-Seit Tenshi 3.0.12 stabil verfügbar. Funktion und endgültige Paketversionen sind manuell bestätigt. [Versionshinweise und öffentlicher Prüfstand](../RELEASE_NOTES_3.0.12.md).
+# Dateisignaturen in einem Image suchen
 
 ## Bedienung
 
-Ein reguläres RAW-/IMG-/DD-Image auswählen. Im Reiter **Bildsignaturen** den
-Suchlauf mit **Bildsignaturen suchen** starten und bestätigen. Es wird das gesamte Image
-gelesen; der eingetragene Partitionsoffset wird hierbei nicht verwendet.
-Ein lesbares Dateisystem ist nicht erforderlich. Physische Geräte und rohe
-Windows-Laufwerke werden in diesem ersten Ausbau nicht direkt unterstützt.
+Ein reguläres RAW-, IMG- oder DD-Image auswählen und den Reiter **Dateisignaturen** öffnen. Die Kategorieknöpfe starten gezielt die Suche nach **Bildern**, **Office-Dateien**, **Archiven**, **Audio** oder **Video**. Für den Suchlauf wird das gesamte Image schreibgeschützt gelesen. Der eingetragene Partitionsoffset wird ignoriert; ein lesbares Dateisystem ist nicht erforderlich. Physische Geräte und rohe Windows-Laufwerke werden derzeit nicht direkt unterstützt.
 
-Der Textzähler zeigt gelesene MiB; **Scan abbrechen** stoppt den Suchlauf.
-Erst ein abgeschlossener Suchlauf übergibt die Funde an die Dateiansicht.
-Abgebrochene oder durch einen Quellenwechsel überholte Ergebnisse werden verworfen.
-Eine erreichte Prüfgrenze wird als unvollständiges Ergebnis ausgewiesen.
+Funde erscheinen danach in der bestehenden Dateiansicht und können dort wie andere Einträge geprüft, in der Vorschau geöffnet und exportiert werden. Namen setzen sich aus erkanntem Typ und Byte-Offset zusammen. Ein gespeicherter Exportauftrag wird beim Fortsetzen gegen das Image erneut aufgebaut.
 
-Namen wie `JPEG_0000000000000201.jpg` bestehen aus Bildtyp und hexadezimalem
-Byte-Offset. **Vorschau**, **Datei prüfen → Inhalt prüfen**, **Export prüfen** und
-**Stapel-Export** arbeiten mit diesen Fundbereichen. Vorschau und Inhaltsprüfung
-bleiben getrennte Aktionen. Den Export auf einem anderen physischen Medium ablegen.
-Die üblichen Zielschutz-, SHA256-, Pause- und Abbruchregeln gelten weiter.
+## Unterstützte Strukturen
 
-Ein gespeicherter Exportauftrag lässt sich nach Bestätigung wieder öffnen.
-Dafür wird das Image erneut schreibgeschützt durchsucht und der vollständige
-Exportplan verglichen. Fertige Dateien werden wie bisher erneut geprüft.
-Eine Analysesitzung mit zwischengespeicherten Signaturfunden wird noch nicht
-unterstützt; das Image erneut durchsuchen oder den gespeicherten Exportauftrag
-öffnen. Es werden keine Fundinhalte auf Platte zwischengespeichert.
+| Kategorie | Erkennung | Grenzen |
+| --- | --- | --- |
+| Bilder | JPEG, PNG, BMP, GIF, klassisches TIFF, WebP | TIFF: klassische 32-Bit-Variante und ausgewiesene Strip-/Tile-Daten; WebP: RIFF-Länge und erster Bild-Chunk. |
+| Office | DOCX/DOCM/DOTX/DOTM, XLSX/XLSM/XLTX/XLTM, PPTX/PPTM/POTX/POTM sowie ODT/ODS/ODP/ODG in ZIP-Containern | Die ZIP-Zentraldaten werden geprüft; höchstens der kleine Content-Types- bzw. MIME-Eintrag wird gelesen. Dokumentinhalte werden nicht entpackt. Klassische DOC/XLS/PPT-Dateien im OLE/CFB-Format sind noch nicht enthalten. |
+| Archive | ZIP, 7z, TAR im ustar-Format | ZIP64 und RAR werden nicht erkannt. TAR endet am ersten gültigen doppelten Nullblock; zusätzliche Nullauffüllung ist nicht Teil des Fundbereichs. |
+| Audio | WAV, Ogg mit Vorbis oder Opus, MP3 mit ID3v2-Kopf | Ogg muss als einzelne logische Bitstream-Sequenz vorliegen und eine gültige CRC sowie EOS-Seite haben. MP3 braucht mindestens drei aufeinanderfolgende passende Frames. |
+| Video | AVI, MP4/ISO-BMFF | MP4 benötigt gültige Boxgrößen sowie `ftyp`, `moov` und `mdat`; die erste ungültige Folgebox begrenzt den Kandidaten. |
+
+Nicht alle möglichen Varianten eines Formats werden erkannt. RAR, ZIP64, BigTIFF, fragmentierte Dateien und Formate ohne zuverlässig ableitbares zusammenhängendes Ende werden bewusst ausgelassen.
 
 ## Aussage und Grenzen
 
-- Zusammenhängende JPEG-/PNG-Strukturen, maximal 32 MiB pro Fund.
-- Originalname, Ordner, Zeitstempel und Löschstatus sind unbekannt.
-- Belegte und freie Bereiche werden durchsucht. Auch bestehende Dateien,
-  Vorschaubilder und eingebettete Bilder können erscheinen. Überlappende Funde
-  werden nicht als verschiedene ursprüngliche Dateien bestätigt.
-- Keine Zusammensetzung fragmentierter Dateien oder automatische Reparatur.
-- Eine lesbare Struktur, Dekodierung oder Exportbestätigung beweist keine
-  unversehrten Originalinhalte. Kein Fund bedeutet nicht endgültigen Datenverlust.
-- Maximal 1000 Funde, 5000 untersuchte Anfangssignaturen und 512 MiB zusätzliche
-  Lesezugriffe für Strukturprüfungen pro Suchlauf. PNG ist auf 4096 Chunks,
-  JPEG auf 65536 Marker begrenzt. Funde über diesen Grenzen werden ausgelassen;
-  die globalen Prüfgrenzen stoppen den Lauf mit einem Unvollständigkeitshinweis.
-- Lesefehler führen zum Abbruch statt zum Erraten oder Zusammenziehen fehlender
-  Bereiche. Bilder über der Vorschau-Pixelgrenze können als Strukturfund
-  erscheinen und erst bei der Inhaltsprüfung die Pixelgrenze melden.
+- Nur strukturell plausible, zusammenhängende Bereiche werden veröffentlicht. Prüfsummen/CRC werden dort kontrolliert, wo die jeweilige Struktur sie bereitstellt; das ersetzt keine vollständige Dekodierung oder Inhaltsprüfung.
+- Ein Fund zeigt weder, ob eine Datei gelöscht war, noch ob der gesamte ursprüngliche Inhalt unversehrt ist. Originalnamen, Pfade, Zeitstempel und Fragmentzuordnung sind nicht bekannt.
+- Es werden belegte und freie Imagebereiche durchsucht. Daher können aktive Dateien, Vorschaubilder, eingebettete Objekte und überlappende Kandidaten erscheinen.
+- Es gibt keine Zusammensetzung fragmentierter Dateien und keine automatische Reparatur. Vorschau, Inhaltsprüfung und Export bleiben getrennte Aktionen.
+- Pro Suchlauf gelten maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen. JPEG/PNG/GIF/WebP/TIFF sowie ZIP-Indizes sind auf 32 MiB begrenzt; Formatlängen können bei anderen Formaten größere Fundbereiche bestimmen, maximal 4 TiB und nie über das Image-Ende hinaus.
+- Lesefehler brechen den Scan ab. Das Quell-Image wird vor und nach der Suche auf Identität und Metadatenänderungen kontrolliert und bleibt schreibgeschützt.
 
-## Erkennung
+## Formatgrundlagen
 
-PNG: vollständige Signatur, IHDR-Metadaten, begrenzte Chunk-Längen/-Reihenfolge,
-CRC-Prüfsummen und abschließender IEND-Chunk. Eine Zeichenfolge „IEND“ innerhalb
-anderer Daten gilt nicht als Dateiende. Bilddaten werden beim Suchlauf nicht
-dekomprimiert. [PNG-Spezifikation](https://www.w3.org/TR/png/).
+PNG prüft IHDR, Chunk-Reihenfolge, CRC-Prüfsummen und IEND; JPEG prüft Markersegmente, Bildgeometrie und EOI. BMP, GIF, WebP und TIFF werden anhand begrenzter Header- und Datenbereichsangaben geprüft. Office-Erkennung beruht auf den Paketpfaden in der ZIP-Zentralstruktur. ZIP nutzt EOCD und Zentralverzeichnis; 7z prüft Start- und Endheader-CRC; TAR kontrolliert ustar-Headerchecksummen und Eintragslängen. WAV/AVI basieren auf RIFF-Längen und benötigten Unterstrukturen; Ogg auf Seitenfolge, CRC und EOS; MP3 auf ID3v2-Länge und mindestens drei plausiblen MPEG-Audioframes; MP4 auf Boxgrenzen und erforderlichen Top-Level-Boxen.
 
-JPEG: SOI, begrenzte Markersegmente und Bildgeometrie, SOS und EOI außerhalb
-von Metadaten. Byte-Stuffing und Restart-Marker in Bilddaten sowie mehrere
-Scans progressiver JPEGs werden berücksichtigt. Es gibt keine Bilddekodierung
-im Suchlauf und keine Unterstützung aller JPEG-Erweiterungen.
-[JPEG-Dateiformat und Marker](https://www.media.mit.edu/pia/Research/deepview/exif.html).
-
-Nur reguläre Images werden über den vorhandenen schreibgeschützten Leser
-geöffnet. Dateigröße, Änderungszeit und Dateiidentität werden vor/nach dem
-Suchlauf sowie beim Lesen eines Fundbereichs kontrolliert. Diese Prüfungen
-sind kein vollständiger Inhaltsfingerabdruck des Images.
+Formatreferenzen: [PNG](https://www.w3.org/TR/png/), [GNU tar – Basisformat und Headerchecksummen](https://www.gnu.org/software/tar/manual/tar.html), [7z-Struktur](https://www.7-zip.org/recover.html), [QuickTime/MP4-Atome](https://developer.apple.com/documentation/quicktime-file-format/atoms).

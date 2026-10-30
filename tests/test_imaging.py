@@ -162,7 +162,7 @@ class ImagingTests(unittest.TestCase):
         self.assertIn("bg=self._palette()['accent']", source)
         self.assertIn('self.tabs.add(self.partition_tab, text="Partitionen")', source)
         self.assertIn('self.tabs.add(self.ntfs_tab, text="Dateien & Ordner")', source)
-        self.assertIn('self.tabs.add(self.signature_tab, text="Bildsignaturen")', source)
+        self.assertIn("self.tabs.add(self.signature_tab, text=translate('Dateisignaturen', self.language))", source)
 
 if __name__ == '__main__':
     unittest.main()
