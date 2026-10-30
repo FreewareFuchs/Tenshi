@@ -1,6 +1,6 @@
 # Bildsignaturen in einem Image suchen
 
-Entwicklungsstand nach 3.0.11, noch nicht veröffentlicht.
+Für 3.0.12 vorgesehen. Funktionen sind mit „Bestanden“ manuell bestätigt; endgültige Pakete und Veröffentlichung werden vorbereitet.
 
 ## Bedienung
 

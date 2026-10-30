@@ -1,0 +1,38 @@
+{
+  "de": [
+    "Zusammenhängende JPEG-/PNG-Strukturen in regulären Images ohne lesbares Dateisystem suchen. Fundnamen enthalten den Bildtyp und den Byte-Offset.",
+    "Suchlauf mit Bestätigung, MiB-Fortschritt, Abbruch und begrenzten JPEG-Marker-/PNG-Chunk-/CRC-Prüfungen. Globale Prüfgrenzen werden als unvollständiges Ergebnis gemeldet.",
+    "Gefundene Bereiche über Vorschau, Inhaltsprüfung und sicheren Stapel-Export verwenden. Gespeicherte Exportaufträge werden nach Quellenbestätigung durch erneute Signatursuche rekonstruiert.",
+    "Originalname, Ordner und Löschstatus sind unbekannt. Belegte und freie Bereiche werden durchsucht; keine fragmentierte Rekonstruktion oder Garantie unversehrter Originalinhalte. Hilfe und Oberfläche in sechs Sprachen."
+  ],
+  "en": [
+    "Find contiguous JPEG/PNG structures in regular images without a readable filesystem. Candidate names contain image type and byte offset.",
+    "Confirmed search with MiB progress, cancellation and bounded JPEG marker/PNG chunk/CRC checks. Global limits are reported as incomplete results.",
+    "Use candidates with preview, content checking and safe batch export. Saved export jobs are rebuilt by searching signatures again after source confirmation.",
+    "Original names, folders and deletion status are unknown. Allocated and free areas are searched; no fragment reassembly or guarantee of intact original contents. Help and interface in six languages."
+  ],
+  "es": [
+    "Buscar estructuras JPEG/PNG contiguas en archivos de imagen normales sin un sistema de archivos legible. Los nombres incluyen el tipo y la posición en bytes.",
+    "Búsqueda con confirmación, progreso en MiB, cancelación y comprobaciones limitadas de marcadores JPEG y chunks/CRC PNG. Los límites globales indican resultados incompletos.",
+    "Usar los candidatos con vista previa, comprobación del contenido y exportación por lotes segura. Los trabajos guardados se reconstruyen buscando de nuevo tras confirmar la fuente.",
+    "Se desconocen nombres originales, carpetas y estado de eliminación. Se buscan áreas ocupadas y libres; no se reconstruyen fragmentos ni se garantiza la integridad del original. Ayuda e interfaz en seis idiomas."
+  ],
+  "zh": [
+    "在普通磁盘映像中搜索连续的 JPEG/PNG 结构，无需可读文件系统。候选名称包含图像类型和字节偏移。",
+    "搜索前需确认，显示 MiB 进度并支持取消，对 JPEG 标记及 PNG 块和 CRC 进行受限检查。达到全局限制时显示结果不完整。",
+    "候选项可使用预览、内容检查和安全批量导出。确认来源后，已保存的导出任务通过重新搜索签名来重建。",
+    "原始名称、文件夹和删除状态未知。搜索已分配及空闲区域；不重组碎片，也不保证原始内容完整。帮助和界面支持六种语言。"
+  ],
+  "ru": [
+    "Поиск непрерывных структур JPEG/PNG в обычных файлах образов без читаемой файловой системы. Имена кандидатов содержат тип и смещение в байтах.",
+    "Подтверждение поиска, прогресс в МиБ, отмена и ограниченные проверки маркеров JPEG и блоков/CRC PNG. Общие ограничения отмечаются как неполные результаты.",
+    "Доступны предпросмотр, проверка содержимого и безопасный пакетный экспорт. После подтверждения источника сохранённые задания восстанавливаются повторным поиском сигнатур.",
+    "Исходные имена, папки и факт удаления неизвестны. Проверяются занятые и свободные области; фрагменты не собираются, целостность оригинала не гарантируется. Справка и интерфейс на шести языках."
+  ],
+  "ja": [
+    "読み取り可能なファイルシステムがなくても、通常のイメージファイル内の連続した JPEG/PNG 構造を検索。候補名には画像形式とバイト位置が入ります。",
+    "検索前の確認、MiB 単位の進捗、中止、制限付き JPEG マーカーおよび PNG チャンク/CRC 検査に対応。全体の上限到達時は結果が不完全と表示します。",
+    "候補にプレビュー、内容検査、安全な一括出力を利用できます。保存済みの出力処理は、ソース確認後にシグネチャを再検索して復元します。",
+    "元の名前、フォルダー、削除状態は不明です。使用中と空き領域を検索し、断片は再構成せず、元の完全性を保証しません。ヘルプと画面は6言語に対応。"
+  ]
+}
