@@ -180,6 +180,8 @@ def save_session(destination: str, source: str, report=None, index=None,
     """Atomically create a new session; never overwrite or write to source."""
     if report is None and index is None:
         raise SessionError('Bitte zunächst eine Partition oder ein Dateisystem analysieren.')
+    if getattr(index,'filesystem','')=='JPEG/PNG signatures v1':
+        raise SessionError('Signaturfunde werden nicht als Analysesitzung gespeichert. Das Image erneut durchsuchen oder einen gespeicherten Exportauftrag öffnen.')
     source, _ = _plain_image(source)
     dest = os.path.abspath(destination)
     if os.path.normcase(dest) == os.path.normcase(source):

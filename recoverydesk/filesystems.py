@@ -62,6 +62,7 @@ class GenericEntry:
     def recoverable(self): return not self.is_directory and not self.unsupported_reason
     @property
     def status(self):
+        if self.locator and self.locator[0]=='signature-v1':return 'Signaturfund · ungeprüft'
         if self.is_deleted: return 'Gelöscht · unsicher' if self.recoverable else 'Gelöscht · nur Hinweis'
         return 'Vorhanden' if not self.unsupported_reason else 'Eingeschränkt'
 

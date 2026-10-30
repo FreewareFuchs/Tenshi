@@ -2056,6 +2056,56 @@ class RecoveryDeskApp(tk.Tk):
             # the "Dateisystem einlesen" button. Never opens the disk for writing.
             self.start_ntfs_scan()
 
+    def start_signature_scan(self):
+        from .signature_search import scan_signatures,FILESYSTEM,SCOPE
+        if self._exit_requested or self._session_busy():
+            messagebox.showinfo('Bildsignaturen suchen','Bitte laufende Vorgänge zuerst abschließen.',parent=self);return
+        try:
+            source=self.get_source()
+            if is_device_source(source):raise ValueError('Signatursuche erfordert ein reguläres Image.')
+        except (OSError,ValueError) as exc:
+            messagebox.showerror('Bildsignaturen suchen',str(exc),parent=self);return
+        note=(translate(SCOPE,self.language)+'\n\n'+translate(
+            'JPEG/PNG bis 32 MiB pro Fund. Maximal 1000 Funde und 5000 Anfangssignaturen; Prüfgrenzen können die Suche vorzeitig beenden. Das gesamte Image wird gelesen. Suche jetzt starten?',self.language))
+        if not messagebox.askyesno('Bildsignaturen suchen',note,parent=self):return
+        generation=self._source_generation
+        display_tmp=self.show_tmp.get()
+        self.ntfs_scanning=True;self._clear_browser_results();self.browser_cancel.clear()
+        self.ntfs_scan_btn.configure(state='disabled');self.ntfs_cancel_btn.configure(state='normal')
+        self._select_main_tab('files');self.status.set('Bildsignaturen werden gesucht …')
+        last=[float('-inf')]
+        def progress(done,total):
+            now=time.monotonic()
+            if done!=total and now-last[0]<.1:return
+            last[0]=now
+            def update():
+                if self._scan_source_matches(generation,source):
+                    self.status.set(translate('Signatursuche: {done} / {total} MiB gelesen …',self.language).format(done=done//1024**2,total=(total+1024**2-1)//1024**2))
+            self._post_scan_callback(update)
+        def worker():
+            try:
+                # Keep two distinct sample points even for images below 64 KiB.
+                fingerprint=fingerprint_image(source,[1])
+                index=scan_signatures(source,cancel=self.browser_cancel.is_set,progress=progress)
+                check_fingerprint(source,fingerprint,original=source)
+                paths=construct_paths(index.entries,lazy=True)
+                warnings=folder_warning_records(visible_entries(index.entries,display_tmp))
+                def publish():
+                    if self._scan_source_matches(generation,source):
+                        self._browser_fingerprint=fingerprint;self._set_browser_fs(FILESYSTEM)
+                        self.ntfs_byte_offset.set('0')
+                        self._show_browser_index(source,index,prepared=(paths,warnings,display_tmp))
+                        text=translate('Signatursuche beendet: {count} Bildstrukturen.',self.language).format(count=len(index.entries))
+                        if not index.signature_complete:text+=' '+translate('Prüfgrenze erreicht; Ergebnis unvollständig.',self.language)
+                        self.status.set(text)
+                self._post_scan_callback(publish)
+            except OtherScanCancelled:
+                self._post_scan_callback(lambda:self.status.set('Scan abgebrochen.') if self._scan_source_matches(generation,source) else None)
+            except Exception as exc:
+                self._post_scan_callback(lambda msg=str(exc):messagebox.showerror('Bildsignaturen suchen',msg,parent=self) if self._scan_source_matches(generation,source) else None)
+            finally:self._post_scan_callback(self._finish_ntfs_scan)
+        threading.Thread(target=worker,daemon=True).start()
+
     def start_ntfs_scan(self):
         if self.ntfs_scanning:
             return
@@ -2580,6 +2630,9 @@ class RecoveryDeskApp(tk.Tk):
                   'Die Ergebnisse können unvollständig bleiben.', wraplength=575).pack(anchor='w')
         ttk.Button(panel, text='Analysebericht speichern',
                    command=self.save_scan_report).pack(anchor='w', pady=13)
+        def signatures():
+            win.destroy();self.start_signature_scan()
+        ttk.Button(panel,text='Bildsignaturen suchen',command=signatures).pack(anchor='w',pady=(0,13))
         ttk.Button(panel, text='Schließen', command=win.destroy).pack(anchor='e')
 
     def _advanced_search_dialog(self):
@@ -3091,8 +3144,12 @@ class RecoveryDeskApp(tk.Tk):
             self._export_restoring=False
             return
         if kind == 'restore_progress':
-            text=translate('Dateisystem für Wiederaufnahme: {done} / {total} Einträge geprüft …',self.language).format(
-                done=data['done'],total=data['total'])
+            if data.get('signature'):
+                text=translate('Signatursuche: {done} / {total} MiB gelesen …',self.language).format(
+                    done=data['done']//1024**2,total=(data['total']+1024**2-1)//1024**2)
+            else:
+                text=translate('Dateisystem für Wiederaufnahme: {done} / {total} Einträge geprüft …',self.language).format(
+                    done=data['done'],total=data['total'])
             self._export_restore_status=text
             if not self._exit_requested:self.status.set(text)
             return
@@ -3287,7 +3344,8 @@ class RecoveryDeskApp(tk.Tk):
                         nonlocal last_post
                         now=time.monotonic()
                         if done==total or now-last_post>=.15:
-                            events.put(dict(type='restore_progress',done=done,total=total));last_post=now
+                            events.put(dict(type='restore_progress',done=done,total=total,
+                                signature=saved.identity['filesystem']=='JPEG/PNG signatures v1'));last_post=now
                     active=prepare_saved_export(saved,cancel=control.check_cancel,progress=progress)
                     root=active['root']
                     events.put(dict(type='job_ready',job=active))

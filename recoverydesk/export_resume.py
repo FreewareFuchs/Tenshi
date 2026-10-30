@@ -17,9 +17,10 @@ from .sources import is_device_source, validate_source, ensure_safe_destination
 from .ntfs_browser import scan_ntfs_tree, ScanCancelled
 from .filesystems import scan_tree, ScanCancelled as OtherScanCancelled
 from .export_target import TargetReviewDeclined
+from .signature_search import FILESYSTEM as SIGNATURE_FS,scan_signatures
 
 MAX_STATUS_BYTES = 64*1024*1024
-FILESYSTEMS = {'NTFS','FAT32','exFAT','ext2','ext3','ext4','Btrfs','XFS'}
+FILESYSTEMS = {'NTFS','FAT32','exFAT','ext2','ext3','ext4','Btrfs','XFS',SIGNATURE_FS}
 
 
 class ExportResumeError(ValueError):
@@ -103,6 +104,8 @@ def read_saved_export(filename):
         source=identity['source']
         _require(isinstance(source,str) and 0<len(source)<=32768 and '\0' not in source and os.path.isabs(source))
         _require(identity['filesystem'] in FILESYSTEMS)
+        if identity['filesystem']==SIGNATURE_FS:
+            _require(not is_device_source(source) and identity['offset']==0)
         _require(type(identity['size']) is int and identity['size']>=512)
         _require(type(identity['offset']) is int and 0<=identity['offset']<identity['size'] and identity['offset']%512==0)
         if is_device_source(source):_require(isinstance(identity['device_snapshot'],dict))
@@ -148,6 +151,8 @@ def prepare_saved_export(saved, *, cancel=None, progress=None):
         if identity['filesystem']=='NTFS':
             index=scan_ntfs_tree(source,partition_offset=identity['offset'],max_records=saved.limit,
                 tolerate_read_errors=saved.tolerant,cancel=cancel,progress=progress)
+        elif identity['filesystem']==SIGNATURE_FS:
+            index=scan_signatures(source,cancel=cancel,progress=progress)
         else:
             index=scan_tree(source,offset=identity['offset'],tolerate_read_errors=saved.tolerant,
                             cancel=cancel,progress=progress)
