@@ -1,17 +1,14 @@
 # Release-Paket automatisch vorbereiten
 
-In Vorbereitung: **3.0.11** mit Bild-/PDF-Vorschau, Inhaltsprüfung und manuellem Durchblättern aus PR #119. Der vollständige Funktionsstand ist manuell bestätigt. Installer, Portable und DEB werden gemeinsam mit Kennung `stable` gebaut; die endgültige Paketabnahme steht aus. [Änderungen und Grenzen](../RELEASE_NOTES_3.0.11.md).
-
-Aktueller veröffentlichter Stand: [Tenshi 3.0.10](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.10),
-seit 30.10.2026. Das Wiederöffnen gespeicherter Exportaufträge stammt aus dem
-manuell bestätigten PR #115. Hilfe und Dialoge erklären die Ordnerwahl in allen
-sechs Sprachen. Die endgültigen Pakete stammen unverändert vom sauberen Commit
-`6ffd94118181c67db0fa299d9edd426f843bfe47` aus dem
-[gemeinsamen stabilen Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/41032646545).
-Funktionen und endgültige Paketversionen sind manuell bestätigt.
-Alle sieben GitHub-Assets, 15 APT-Dateien und 25 abschließenden öffentlichen
-Vergleiche sind erfolgreich. [Versionshinweise und Abnahme](../RELEASE_NOTES_3.0.10.md).
-Frühere Releases und ihre Prüfsummen bleiben unverändert erhalten.
+Aktueller veröffentlichter Stand: [Tenshi 3.0.11](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.11), seit 30.10.2026.
+Vorschau, Inhaltsprüfung und manuelles Durchblättern aus PR #119 sowie die
+endgültigen Paketversionen sind manuell bestätigt. Die Pakete stammen unverändert
+vom sauberen Commit `69ddc4658295ab65daa8b3ed0fdb7bb66522294c` aus dem
+[gemeinsamen stabilen Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/41071011412).
+Windows/Linux bestehen jeweils 934 Tests (84/sechs plattformbedingte Ausnahmen).
+Alle sieben GitHub-Assets, 16 APT-Dateien und 25 abschließenden öffentlichen
+Vergleiche sind erfolgreich. [Versionshinweise und Abnahme](../RELEASE_NOTES_3.0.11.md).
+Frühere Releases und ihre Prüfsummen bleiben erhalten.
 
 Unter GitHub Actions **Prepare release bundle (no publishing)** manuell starten,
 den gewünschten Branch und `stable` für eine stabile Ausgabe oder `beta.N` für

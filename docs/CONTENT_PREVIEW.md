@@ -1,6 +1,6 @@
 # Erweiterte Dateivorschau und Inhaltsprüfung
 
-Für 3.0.11 vorgesehen. Der vollständige Funktionsstand ist manuell bestätigt; endgültige Pakete und Veröffentlichung werden vorbereitet.
+Seit 30.10.2026 mit 3.0.11 veröffentlicht. Funktionen und endgültige Paketversionen sind manuell bestätigt.
 
 ## Bedienung
 
