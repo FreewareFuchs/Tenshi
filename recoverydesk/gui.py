@@ -3067,7 +3067,7 @@ class RecoveryDeskApp(tk.Tk):
                     decision['accepted'] = True
                 else:
                     text = assessment.text(self.language)+'\n\n'+translate(
-                        'Nach einem Programmneustart dieselbe Quelle, Auswahl und den ursprünglichen Zielordner wählen, nicht den erzeugten Export-Unterordner.',self.language)+'\n\n'+translate(
+                        'Nach Neustart: „Exportauftrag öffnen“ → erzeugten Tenshi_Export_…-Unterordner wählen. Beim manuellen Fortsetzen über „Stapel-Export“: gleiche Quelle und Auswahl, ursprünglicher Zielordner.',self.language)+'\n\n'+translate(
                         'Export jetzt starten? Fertige Dateien werden geprüft; unvollständige beginnen von vorn. Fremde Dateien bleiben erhalten.',self.language)
                     decision['accepted'] = messagebox.askyesno('Exportziel prüfen',text,parent=self,
                         default='no' if assessment.insufficient else 'yes',

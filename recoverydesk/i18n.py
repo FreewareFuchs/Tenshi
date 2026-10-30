@@ -1147,12 +1147,12 @@ add('Der gespeicherte Exportplan passt nicht mehr zur Quelle. Der Export wurde n
     '保存的导出计划已与来源不符。未继续导出。',
     'Сохранённый план больше не соответствует источнику. Экспорт не продолжен.',
     '保存された出力計画がソースと一致しません。出力は再開していません。')
-add('Nach einem Programmneustart dieselbe Quelle, Auswahl und den ursprünglichen Zielordner wählen, nicht den erzeugten Export-Unterordner.',
-    'After restarting Tenshi, use the same source, selection and original destination folder, rather than the generated export subfolder.',
-    'Tras reiniciar Tenshi, usa la misma fuente, selección y carpeta de destino original, no la subcarpeta de exportación generada.',
-    '重启 Tenshi 后，请选择相同的来源、文件选择和原始目标文件夹，而不是生成的导出子文件夹。',
-    'После перезапуска Tenshi выберите тот же источник, выбор и исходную папку назначения, а не созданную подпапку экспорта.',
-    'Tenshi の再起動後は同じソースと選択、および元の保存先フォルダーを選んでください。生成された出力サブフォルダーは選びません。')
+add('Nach Neustart: „Exportauftrag öffnen“ → erzeugten Tenshi_Export_…-Unterordner wählen. Beim manuellen Fortsetzen über „Stapel-Export“: gleiche Quelle und Auswahl, ursprünglicher Zielordner.',
+    'After restart: “Open export job” → choose the generated Tenshi_Export_… subfolder. For manual resume via “Batch export”: same source and selection, original destination folder.',
+    'Tras reiniciar: «Abrir trabajo de exportación» → elegir la subcarpeta Tenshi_Export_… generada. Para reanudar manualmente mediante «Exportación por lotes»: misma fuente y selección, carpeta de destino original.',
+    '重启后：“打开导出任务” → 选择生成的 Tenshi_Export_… 子文件夹。通过“批量导出”手动继续时：使用相同来源和文件选择，并选择原始目标文件夹。',
+    'После перезапуска: «Открыть задание экспорта» → созданная подпапка Tenshi_Export_…. Для ручного продолжения через пакетный экспорт: прежний источник и выбор, исходная папка назначения.',
+    '再起動後：「出力処理を開く」→ 生成された Tenshi_Export_… サブフォルダーを選択。一括エクスポートから手動で再開する場合は、同じソースと選択、および元の保存先フォルダーを指定します。')
 add('Exportziel prüfen', 'Check export destination', 'Comprobar destino de exportación', '检查导出目标', 'Проверить папку экспорта', '出力先を確認')
 add('Exportziel wird geprüft …', 'Checking export destination …', 'Comprobando destino de exportación …', '正在检查导出目标…', 'Проверка папки экспорта …', '出力先を確認中…')
 add('Export nicht gestartet.', 'Export not started.', 'Exportación no iniciada.', '未开始导出。', 'Экспорт не запущен.', '出力を開始していません。')
