@@ -231,7 +231,8 @@ def _zip(stream, start, total, budget):
                 with zipfile.ZipFile(BytesIO(data[:end])) as archive:
                     types = archive.read('[Content_Types].xml')
                 lowered = types.lower()
-            except (OSError, RuntimeError, ValueError, zipfile.BadZipFile, zlib.error):
+            except (OSError, RuntimeError, ValueError, NotImplementedError, EOFError,
+                    struct.error, zipfile.BadZipFile, zlib.error):
                 raise Invalid()
             if records['[content_types].xml'][2] != len(types):
                 raise Invalid()
