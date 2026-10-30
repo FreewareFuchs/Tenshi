@@ -22,7 +22,7 @@ on:
       - '.github/workflows/prepare-release.yml'
 
 concurrency:
-  group: windows-check-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: windows-check-${{ github.event.pull_request.head.ref || github.ref_name }}-${{ inputs.release || 'development' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
