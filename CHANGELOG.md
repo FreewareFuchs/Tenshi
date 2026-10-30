@@ -1,3 +1,12 @@
+# Noch nicht veröffentlicht – erweiterte Vorschau und Inhaltsprüfung
+
+- JPEG, BMP, PNG und GIF verkleinert anzeigen; PDFs mit der ersten Seite als Vorschau. DOCX kann einen begrenzten Textauszug zeigen.
+- Im vorhandenen Dateiprüfungsdialog Bilddekodierung, erste PDF-Seite und DOCX/XLSX/PPTX-Container-/XML-Prüfung anbieten. Lesetest und SHA256 bleiben getrennt.
+- Beschädigungsverdacht, Teilprüfung, Schutz und erreichte Grenzen unterscheiden. Links, Makros und Dokumentaktionen werden nicht ausgeführt.
+- Verarbeitung mit begrenztem Quelllesen und abbrechbarem separatem Prozess. Sechs Sprachen und Offline-Hilfe ergänzt.
+
+[Bedienung, Umfang und Grenzen](docs/CONTENT_PREVIEW.md).
+
 # Tenshi 3.0.10 – stabil veröffentlicht (30.10.2026)
 
 - Exportauftrag öffnen liest nach einem Programmneustart Quelle, Auswahl und Scan-Einstellungen aus dem bisherigen Exportordner. Ein erneutes manuelles Zusammenstellen der Auswahl entfällt.

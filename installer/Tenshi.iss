@@ -32,6 +32,7 @@ Source: "..\dist\Tenshi.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\recoverydesk\assets\sun_valley\LICENSE"; DestDir: "{app}\licenses\sun-valley"; Flags: ignoreversion
+Source: "..\recoverydesk\assets\content_licenses\*.txt"; DestDir: "{app}\licenses\content"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\Tenshi"; Filename: "{app}\Tenshi.exe"

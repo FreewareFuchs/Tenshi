@@ -55,10 +55,11 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
         copy(ROOT / 'main.py', 'usr/share/tenshi-recovery/main.py')
         write_build_info(stage / 'usr/share/tenshi-recovery/recoverydesk/_build_info.json', ROOT, release)
         for source in sorted((ROOT / 'recoverydesk').rglob('*')):
+            license_asset = source.is_relative_to(ROOT / 'recoverydesk/assets/content_licenses') and source.suffix == '.txt'
             theme_asset = (source.is_relative_to(ROOT / 'recoverydesk/assets/sun_valley')
                            and (source.suffix == '.tcl' or source.name in ('LICENSE', 'UPSTREAM.md')))
             if (source.is_file() and '__pycache__' not in source.parts
-                    and (source.suffix in ('.py', '.png', '.ico') or theme_asset)):
+                    and (source.suffix in ('.py', '.png', '.ico') or theme_asset or license_asset)):
                 copy(source, 'usr/share/tenshi-recovery/' + source.relative_to(ROOT).as_posix())
         copy(ROOT / 'packaging/linux/tenshi-recovery', 'usr/bin/tenshi-recovery', 0o755)
         copy(ROOT / 'packaging/linux/de.freewarefuchs.Tenshi.desktop',
@@ -68,6 +69,7 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
         for name in ('README.md', 'THIRD_PARTY_NOTICES.md', 'RELEASE_NOTES_LINUX_BETA.md', 'RELEASE_NOTES_3.0.2_BETA4.md', 'RELEASE_NOTES_3.0.2.md', 'RELEASE_NOTES_3.0.3.md'):
             copy(ROOT / name, f'usr/share/doc/tenshi-recovery/{name}')
         copy(ROOT / 'LICENSE', 'usr/share/doc/tenshi-recovery/copyright')
+        copy(ROOT / 'THIRD_PARTY_NOTICES.md', 'usr/share/doc/tenshi-recovery/THIRD_PARTY_NOTICES.md')
         changelog = stage / 'usr/share/doc/tenshi-recovery/changelog.gz'
         changelog.write_bytes(gzip.compress((ROOT / 'CHANGELOG.md').read_bytes(), mtime=0))
         installed_size = sum((p.stat().st_size + 1023) // 1024 for p in stage.rglob('*') if p.is_file())
@@ -77,7 +79,7 @@ def build(output: Path, version: str = DEFAULT_VERSION, release: str | None = No
             f'Package: {PACKAGE_NAME}\nVersion: {version}\nSection: utils\nPriority: optional\n'
             'Architecture: all\nMaintainer: FreewareFuchs <344442684+FreewareFuchs@users.noreply.github.com>\n'
             f'Installed-Size: {installed_size}\n'
-            'Depends: python3 (>= 3.11), python3-tk, util-linux\n'
+            'Depends: python3 (>= 3.11), python3-tk, python3-pil, python3-defusedxml, poppler-utils, util-linux\n'
             'Homepage: https://github.com/FreewareFuchs/Tenshi\n'
             'Description: Read-only disk analysis and file recovery\n'
             ' Browse supported filesystems, export recoverable files to another drive,\n'
