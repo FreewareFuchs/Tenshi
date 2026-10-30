@@ -1,11 +1,11 @@
-# Tenshi 3.0.12 – stabile Pakete in Vorbereitung
+# Tenshi 3.0.12 – stabil veröffentlicht (30.10.2026)
 
 - Zusammenhängende JPEG-/PNG-Strukturen in regulären Images ohne Dateisystem suchen; Fundnamen enthalten den Byte-Offset. Belegte und freie Bereiche bleiben ausdrücklich ununterschieden.
 - Fortschritt, Abbruch und begrenzte Strukturprüfungen; keine fragmentierte Rekonstruktion oder Behauptung unversehrter Originalinhalte.
 - Gefundene Bereiche mit vorhandener Vorschau, Inhaltsprüfung und sicherem Stapel-Export verwenden. Gespeicherte Exportaufträge werden durch erneute Signatursuche rekonstruiert; keine Speicherung als Analysesitzung.
 - Oberfläche und Hilfe in sechs Sprachen. [Bedienung und Grenzen](docs/IMAGE_SIGNATURE_SEARCH.md).
 
-Die Funktionen aus PR #123 sind mit „Bestanden“ manuell bestätigt. Endgültige Paketabnahme und Veröffentlichung folgen getrennt. [Versionshinweise](RELEASE_NOTES_3.0.12.md).
+Die Funktionen aus PR #123 und die endgültigen Paketversionen sind manuell bestätigt. GitHub, signierte APT-Quelle und Website sind veröffentlicht; alle 25 öffentlichen Abschlussvergleiche sind erfolgreich. [Versionshinweise und Prüfstand](RELEASE_NOTES_3.0.12.md).
 
 # Tenshi 3.0.11 – stabil veröffentlicht (30.10.2026)
 

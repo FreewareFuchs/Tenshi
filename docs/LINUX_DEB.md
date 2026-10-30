@@ -1,6 +1,6 @@
 # Natives Linux-DEB – Umstellung auf tenshi-recovery
 
-Die veröffentlichte stabile Version ist `tenshi-recovery_3.0.11-1_all.deb` mit Paketname
+Die veröffentlichte stabile Version ist `tenshi-recovery_3.0.12-1_all.deb` mit Paketname
 und Startbefehl `tenshi-recovery`. Der sichtbare Name bleibt Tenshi.
 Dieses Paket ist seit 30.10.2026 in der signierten [APT-Quelle](APT_REPOSITORY.md)
 veröffentlicht; Installation, stabile Versionskennung und Start sind unter Mint bestätigt.
@@ -11,17 +11,17 @@ Die folgenden Release-Dateien dokumentieren den bisherigen Stand 3.0.2;
 das veröffentlichte `tenshi_3.0.2-1_all.deb` wird nicht stillschweigend ersetzt.
 Für Umstieg und eigene APT-Quelle: [Paketwechsel](DEB_PACKAGE_RENAME.md).
 
-## Aktuelle stabile Version 3.0.11
+## Aktuelle stabile Version 3.0.12
 
-[Gemeinsamer stabiler Paketbuild](https://github.com/FreewareFuchs/Tenshi/actions/runs/41071011412)
-aus Commit `69ddc4658295ab65daa8b3ed0fdb7bb66522294c`.
-Veröffentlicht als [v3.0.11](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.11).
-Paketgröße: 883182 Bytes; SHA256:
-`2fe0c478e7973bddca6b42084da374f5d2a90af4306486d5c666b6e1ebdfee3e`.
-Paketstart, Versionsanzeige unter Mint und die aktualisierte Hilfe sind
+[Gemeinsamer stabiler Paketbuild](https://github.com/FreewareFuchs/Tenshi/actions/runs/41086040649)
+aus Commit `7329c461b8b9abc64e4904412f60cf5f5533fbbf`.
+Veröffentlicht als [v3.0.12](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.12).
+Paketgröße: 889510 Bytes; SHA256:
+`8ca5d7d5bfd3f5e3a4fb2970d47e9aa891dfb9a4f3dc4a1ba1852eb56f882431`.
+Paketstart und Versionsanzeige unter Mint sowie die aktualisierte Hilfe sind
 manuell bestätigt. Signierter Index und DEB wurden über den VM-Ablauf geprüft;
-die 16 öffentlichen APT-Dateien entsprechen diesem Export.
-[Änderungen und Prüfgrenzen](../RELEASE_NOTES_3.0.11.md).
+die 17 öffentlichen APT-Dateien entsprechen diesem Export.
+[Änderungen und Prüfgrenzen](../RELEASE_NOTES_3.0.12.md).
 
 ## Historische stabile Version 3.0.4
 
@@ -62,7 +62,7 @@ sudo apt update && sudo apt install tenshi-recovery
 Oder nach Prüfsummenvergleich des direkten DEB-Downloads:
 
 ```bash
-sudo apt install ./tenshi-recovery_3.0.11-1_all.deb
+sudo apt install ./tenshi-recovery_3.0.12-1_all.deb
 tenshi-recovery
 ```
 
@@ -92,7 +92,7 @@ Für identische Quellen verwendet der Bau den Zeitstempel des letzten Git-Commit
 
 ## CI und Release
 
-Der Linux-Workflow stellt das Artefakt `Tenshi-3.0.11-Linux-DEB` bereit. Er installiert das Paket, startet die installierte Anwendung ohne Gerätezugriff, prüft Logo, Offline-Hilfe und GUI unter virtuellem X11 und entfernt das Paket anschließend wieder. Diese Tests laufen unter Ubuntu und ersetzen den manuellen Pakettest auf Linux Mint nicht.
+Der Linux-Workflow stellt das Artefakt `Tenshi-3.0.12-Linux-DEB` bereit. Er installiert das Paket, startet die installierte Anwendung ohne Gerätezugriff, prüft Logo, Offline-Hilfe und GUI unter virtuellem X11 und entfernt das Paket anschließend wieder. Diese Tests laufen unter Ubuntu und ersetzen den manuellen Pakettest auf Linux Mint nicht.
 
 Am 23.10.2026 wurde das lokal gebaute DEB unter Linux Mint erfolgreich installiert und gestartet. Die Anzeige des vorhandenen `liteon-test.img` sowie der Export einer kleinen und einer größeren Datei wurden bestätigt. Anschließend wurde das Paket mit `apt remove tenshi` erfolgreich entfernt. Die früheren Linux-Praxistests bezogen sich auf den Quellcodestart; dieser zusätzliche Test bezieht sich auf das DEB-Paket. Die Linux-CI einschließlich DEB-Bau, Installation, Startprüfung und Entfernung ist inzwischen erfolgreich, zuletzt für [`a96d584`](https://github.com/FreewareFuchs/Tenshi/actions/runs/40104529828). Der manuelle Mint-Test bleibt dem damals getesteten Entwicklungsstand zugeordnet.
 
@@ -102,10 +102,10 @@ Der [Release-Build für 3.0.2](https://github.com/FreewareFuchs/Tenshi/actions/r
 
 ## Paketkennung
 
-`python3 build_deb.py` baut standardmäßig `tenshi-recovery_3.0.11-1_all.deb`. Ein solcher lokaler Bau ist nicht automatisch eine offizielle Veröffentlichung. Für einen ausdrücklich gekennzeichneten Release-Build sind ein bekannter sauberer Git-Commit und eine passende Paketversion erforderlich:
+`python3 build_deb.py` baut standardmäßig `tenshi-recovery_3.0.12-1_all.deb`. Ein solcher lokaler Bau ist nicht automatisch eine offizielle Veröffentlichung. Für einen ausdrücklich gekennzeichneten Release-Build sind ein bekannter sauberer Git-Commit und eine passende Paketversion erforderlich:
 
 ```bash
-python3 build_deb.py --package-version 3.0.11-1 --release stable
+python3 build_deb.py --package-version 3.0.12-1 --release stable
 ```
 
 Ohne explizite saubere Release-Kennung oder passenden Git-Tag zeigt die Anwendung weiterhin `+dev`. Einzelheiten: [Build-Kennung](BUILD_IDENTITY.md) und [Release-Vorbereitung](RELEASE_PREPARATION.md).
