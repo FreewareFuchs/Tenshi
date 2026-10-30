@@ -139,12 +139,12 @@ class PartitionHealthTests(unittest.TestCase):
 
 
 class PartitionHealthGuiTests(unittest.TestCase):
-    def test_two_tabs_and_diagnostic_column(self):
+    def test_main_tabs_and_diagnostic_column(self):
         from recoverydesk.gui import RecoveryDeskApp
         app = RecoveryDeskApp()
         app.withdraw()
         try:
-            self.assertEqual(len(app.tabs.tabs()),2)
+            self.assertEqual(len(app.tabs.tabs()),3)
             self.assertIn('usage', app.part_tree['columns'])
             self.assertIn('health', app.part_tree['columns'])
             self.assertTrue(app.detail_btn.winfo_exists())

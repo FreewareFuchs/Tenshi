@@ -65,7 +65,7 @@ class ImagingGuiTests(unittest.TestCase):
                 state = json.loads(manifest.read_text())
                 self.assertEqual(state['verification']['status'], 'verified')
                 self.assertEqual(state['bad_sector_policy'], 'stop')
-                self.assertEqual(len(app.tabs.tabs()), 2)
+                self.assertEqual(len(app.tabs.tabs()), 3)
             finally:
                 app.destroy()
 

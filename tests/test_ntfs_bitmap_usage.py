@@ -173,7 +173,7 @@ class UsageBarTests(unittest.TestCase):
         app.geometry('1024x650')
         app.update()
         try:
-            self.assertEqual(len(app.tabs.tabs()), 2)
+            self.assertEqual(len(app.tabs.tabs()), 3)
             self.assertTrue(app.usage_canvas.winfo_exists())
             self.assertTrue(app.usage_canvas.winfo_ismapped())
             self.assertGreaterEqual(app.usage_canvas.winfo_width(), 200)

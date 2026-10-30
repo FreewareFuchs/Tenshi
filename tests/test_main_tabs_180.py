@@ -9,7 +9,7 @@ class MainTabs180Tests(unittest.TestCase):
         app = RecoveryDeskApp()
         try:
             app.update()
-            self.assertEqual(len(app.tabs.tabs()), 2)
+            self.assertEqual(len(app.tabs.tabs()), 3)
             self.assertEqual(set(app._nav_buttons), {'partition', 'files'})
             part = app._nav_buttons['partition']
             files = app._nav_buttons['files']

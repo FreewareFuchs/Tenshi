@@ -154,7 +154,7 @@ class ImagingTests(unittest.TestCase):
             create_image(str(self.src), str(self.dst))
         self.assertEqual(self.src.read_bytes(), self.data)
 
-    def test_gui_still_two_tabs_and_accent_button(self):
+    def test_gui_has_signature_tab_and_accent_button(self):
         import inspect
         from recoverydesk.gui import RecoveryDeskApp
         source = inspect.getsource(RecoveryDeskApp)
@@ -162,7 +162,7 @@ class ImagingTests(unittest.TestCase):
         self.assertIn("bg=self._palette()['accent']", source)
         self.assertIn('self.tabs.add(self.partition_tab, text="Partitionen")', source)
         self.assertIn('self.tabs.add(self.ntfs_tab, text="Dateien & Ordner")', source)
-        self.assertNotIn('text="Signatursuche"', source)
+        self.assertIn('self.tabs.add(self.signature_tab, text="Bildsignaturen")', source)
 
 if __name__ == '__main__':
     unittest.main()

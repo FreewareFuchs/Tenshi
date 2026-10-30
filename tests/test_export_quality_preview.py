@@ -153,7 +153,7 @@ class LargeImageTests(unittest.TestCase):
         app = RecoveryDeskApp()
         app.withdraw()
         try:
-            self.assertEqual(app.tabs.tabs().__len__(), 2)
+            self.assertEqual(app.tabs.tabs().__len__(), 3)
             self.assertIn('quality', app.file_tree['columns'])
             self.assertEqual(app.file_tree.heading('quality')['text'], 'Rettbarkeit')
         finally:

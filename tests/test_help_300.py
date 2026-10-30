@@ -104,12 +104,12 @@ class HelpWindowTests(unittest.TestCase):
                 self.assertEqual(self.app.source_path.get(), 'test-image.raw')
                 self.assertIn(display_version(), self.app.title())
 
-    def test_button_opens_help_without_changing_two_tabs_or_source(self):
+    def test_button_opens_help_without_changing_tabs_or_source(self):
         self.app.source_path.set('test-image.raw')
         with mock.patch('recoverydesk.gui.open_source', side_effect=AssertionError('disk read')):
             window = self.app.show_help()
             self.app.update()
-        self.assertEqual(len(self.app.tabs.tabs()), 2)
+        self.assertEqual(len(self.app.tabs.tabs()), 3)
         self.assertEqual(self.app.source_path.get(), 'test-image.raw')
         self.assertEqual(window.topic, 'start')
         self.assertEqual(window.topics_list.size(), 9)
@@ -155,7 +155,7 @@ class HelpWindowTests(unittest.TestCase):
         self.assertGreater(self.app.help_button.winfo_width(), 45)
         self.assertLessEqual(self.app.help_button.winfo_rootx() + self.app.help_button.winfo_width(),
                              self.app.winfo_rootx() + self.app.winfo_width())
-        self.assertEqual(len(self.app.tabs.tabs()), 2)
+        self.assertEqual(len(self.app.tabs.tabs()), 3)
 
     def test_tab_navigation_and_reuse(self):
         window = self.app.show_help('browser')
