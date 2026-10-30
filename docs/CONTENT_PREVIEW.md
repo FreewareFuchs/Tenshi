@@ -1,6 +1,6 @@
 # Erweiterte Dateivorschau und Inhaltsprüfung
 
-Entwicklungsstand nach 3.0.10, noch nicht veröffentlicht.
+Für 3.0.11 vorgesehen. Der vollständige Funktionsstand ist manuell bestätigt; endgültige Pakete und Veröffentlichung werden vorbereitet.
 
 ## Bedienung
 

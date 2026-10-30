@@ -1,4 +1,4 @@
-# Noch nicht veröffentlicht – erweiterte Vorschau und Inhaltsprüfung
+# Tenshi 3.0.11 – stabile Pakete in Vorbereitung
 
 - JPEG, BMP, PNG und GIF verkleinert anzeigen; PDFs mit der ersten Seite als Vorschau. DOCX kann einen begrenzten Textauszug zeigen.
 - Mehrere ausgewählte Dateien in einem Fenster mit Zurück/Weiter und Positionsanzeige durchblättern. Nur manueller Wechsel; vorherige Verarbeitung abbrechen und veraltete Ergebnisse verwerfen.
@@ -7,6 +7,8 @@
 - Verarbeitung mit begrenztem Quelllesen und abbrechbarem separatem Prozess. Sechs Sprachen und Offline-Hilfe ergänzt.
 
 [Bedienung, Umfang und Grenzen](docs/CONTENT_PREVIEW.md).
+
+Der Funktionsstand aus PR #119 ist manuell abgenommen. Endgültige Paketabnahme und Veröffentlichung folgen getrennt. [Versionshinweise](RELEASE_NOTES_3.0.11.md).
 
 # Tenshi 3.0.10 – stabil veröffentlicht (30.10.2026)
 

@@ -20,6 +20,17 @@ def test_exe(path: Path, payload=b'MZ' + b'Q' * 3000):
 
 
 class PortableArchiveTests(unittest.TestCase):
+    def test_notice_order_is_identical_across_windows_and_linux(self):
+        names=sorted(path.name for path in (ROOT/'recoverydesk/assets/content_licenses').glob('*.txt'))
+        # Mixed-case upstream names reproduce Path's different Windows/Linux
+        # ordering. Compare actual sections, including their complete texts.
+        self.assertNotEqual(names,sorted(names,key=str.lower))
+        notices=release_tools.content_notices().replace(b'\r\n',b'\n')
+        prefix=(ROOT/'THIRD_PARTY_NOTICES.md').read_bytes().replace(b'\r\n',b'\n')
+        sections=[b'\n\n===== '+name.encode('utf-8')+b' =====\n\n'+
+                  (ROOT/'recoverydesk/assets/content_licenses'/name).read_bytes().replace(b'\r\n',b'\n') for name in names]
+        self.assertEqual(notices,b'\n'.join([prefix,*sections]))
+
     def test_create_and_verify_portable_archive_with_sha256(self):
         with tempfile.TemporaryDirectory() as tmp:
             d = Path(tmp)

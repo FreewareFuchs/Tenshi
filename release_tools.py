@@ -23,7 +23,9 @@ PACKAGE_ITEMS = (EXECUTABLE, 'PORTABLE_START.txt', 'SHA256SUMS.sha256', 'LICENSE
 def content_notices() -> bytes:
     root=Path(__file__).resolve().parent
     parts=[(root/'THIRD_PARTY_NOTICES.md').read_bytes().replace(b'\r\n',b'\n')]
-    for path in sorted((root/'recoverydesk/assets/content_licenses').glob('*.txt')):
+    # Path ordering folds case on Windows but not on Linux. Sort names as
+    # strings so both platforms generate exactly the same notice bytes.
+    for path in sorted((root/'recoverydesk/assets/content_licenses').glob('*.txt'),key=lambda path:path.name):
         parts.append(b'\n\n===== '+path.name.encode('utf-8')+b' =====\n\n'+path.read_bytes().replace(b'\r\n',b'\n'))
     return b'\n'.join(parts)
 

@@ -49,7 +49,7 @@ on:
 
 
 concurrency:
-  group: linux-check-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: linux-check-${{ github.event.pull_request.head.ref || github.ref_name }}-${{ inputs.release || 'development' }}
   cancel-in-progress: true
 
 jobs:
@@ -147,7 +147,7 @@ jobs:
       - name: Upload Linux release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Tenshi-3.0.10-Linux-DEB
+          name: Tenshi-3.0.11-Linux-DEB
           path: |
             deb_output/*.deb
             deb_output/*.deb.sha256
