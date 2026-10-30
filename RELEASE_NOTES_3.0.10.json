@@ -1,0 +1,38 @@
+{
+  "de": [
+    "Exportaufträge nach einem Programmneustart über Exportauftrag öffnen aus dem erzeugten Export-Unterordner wiederherstellen, ohne die ursprüngliche Dateiauswahl erneut zusammenzustellen.",
+    "Quellenzugriff erst nach Bestätigung. Das Dateisystem wird schreibgeschützt erneut eingelesen; Quelle und vollständiger Plan müssen übereinstimmen. Die Vorbereitung zeigt einen abbrechbaren Textzähler.",
+    "Fertige Dateien werden weiterhin per SHA256 geprüft; unvollständige Dateien beginnen von vorn. Ältere Aufträge bleiben manuell mit derselben Quelle, Auswahl und dem ursprünglichen Zielordner fortsetzbar.",
+    "Auswahl und Scan-Einstellungen bleiben in der bestehenden Statusdatei im Exportordner. Keine neue Index-/Inhaltskopie oder Auftragsliste im Benutzerprofil. Dialoge und Hilfe erklären beide Wiederaufnahmewege in sechs Sprachen."
+  ],
+  "en": [
+    "Reopen export jobs after restarting Tenshi by choosing the generated export subfolder with Open export job, without rebuilding the original file selection.",
+    "Source access requires confirmation. The filesystem is scanned again in read-only mode; source and complete plan must match. Preparation shows a cancellable text counter.",
+    "Complete files still undergo SHA256 checking; incomplete files restart from the beginning. Older jobs retain manual resume using the same source, selection and original destination folder.",
+    "Selection and scan settings stay in the existing status file inside the export folder. No new index/content cache or profile job list. Dialogs and help distinguish both resume paths in six languages."
+  ],
+  "es": [
+    "Tras reiniciar Tenshi, Abrir trabajo de exportación recupera el trabajo desde la subcarpeta generada sin volver a seleccionar los archivos originales.",
+    "El acceso a la fuente requiere confirmación. El sistema de archivos vuelve a analizarse en modo de solo lectura; la fuente y el plan completo deben coincidir. Un contador de texto permite seguir y cancelar la preparación.",
+    "Los archivos completos siguen comprobándose mediante SHA256; los incompletos se copian desde el principio. Los trabajos antiguos se reanudan manualmente con la misma fuente, selección y carpeta de destino original.",
+    "La selección y los ajustes de análisis permanecen en el archivo de estado existente dentro de la carpeta de exportación. No se crea una caché de índice o contenido ni una lista de trabajos en el perfil. Los diálogos y la ayuda explican ambas formas de reanudar en seis idiomas."
+  ],
+  "zh": [
+    "重启 Tenshi 后，通过“打开导出任务”选择生成的导出子文件夹来恢复任务，无需重新选择原来的文件。",
+    "访问来源前需要确认。以只读方式重新扫描文件系统；来源和完整计划必须一致。准备阶段显示可取消的文本计数器。",
+    "已有完整文件仍通过 SHA256 检查；不完整文件从头复制。旧任务仍可使用相同来源、文件选择和原始目标文件夹手动继续。",
+    "选择及扫描设置保存在导出文件夹原有的状态文件中。不会新增索引或内容缓存，也不会在用户配置中创建任务列表。对话框和帮助以全部六种语言区分两种继续方式。"
+  ],
+  "ru": [
+    "После перезапуска Tenshi действие «Открыть задание экспорта» восстанавливает задание из созданной подпапки без повторного выбора исходных файлов.",
+    "Перед доступом к источнику требуется подтверждение. Файловая система снова сканируется только для чтения; источник и полный план должны совпадать. Подготовка показывает текстовый счётчик и допускает отмену.",
+    "Полные файлы по-прежнему проверяются по SHA256; неполные копируются заново. Старые задания можно продолжать вручную с тем же источником, выбором и исходной папкой назначения.",
+    "Выбор и настройки сканирования сохраняются в существующем файле состояния в папке экспорта. Не создаётся кэш индекса/содержимого или список заданий в профиле. Диалоги и справка различают оба способа продолжения на шести языках."
+  ],
+  "ja": [
+    "Tenshi の再起動後、「出力処理を開く」で生成済みの出力サブフォルダーを選び、元のファイル選択をやり直さずに処理を復元できます。",
+    "ソースへのアクセス前に確認が必要です。ファイルシステムを読み取り専用で再解析し、ソースと計画全体の一致を検査します。準備中は中止可能な文字のカウンターを表示します。",
+    "完全なファイルは引き続き SHA256 で検査し、不完全なファイルは最初からコピーします。古い処理は同じソースと選択、および元の保存先フォルダーで手動再開できます。",
+    "選択と解析設定は出力フォルダー内の既存の状態ファイルに保存します。索引・内容キャッシュやプロファイルの処理一覧は追加しません。ダイアログとヘルプで両方の再開方法を6言語で説明します。"
+  ]
+}

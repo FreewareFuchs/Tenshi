@@ -1,6 +1,6 @@
 # Gespeicherten Exportauftrag wieder öffnen
 
-Entwicklungsstand nach 3.0.9, noch nicht veröffentlicht.
+Für 3.0.10 vorgesehen. Die Funktionen sind manuell abgenommen; endgültige Pakete und Veröffentlichung werden vorbereitet.
 
 Neue Aufträge speichern die ausgewählten Wurzeleinträge und verwendeten
 Scan-Einstellungen in der vorhandenen Statusdatei im Exportordner. Es entstehen
