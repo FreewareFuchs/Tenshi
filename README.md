@@ -10,6 +10,8 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 [![Tenshi: Dateien, Ordner und Exportprüfung](https://freewarefuchs.de/tenshi/screenshots/dateien.png)](https://freewarefuchs.de/tenshi/#screenshots)
 
+**3.0.10 wird vorbereitet.** Das Wiederöffnen gespeicherter Exportaufträge nach einem Programmneustart ist manuell abgenommen. Die endgültigen Installer-, Portable- und DEB-Pakete werden gemeinsam gebaut und anschließend separat auf Start und Versionsanzeige geprüft. [Geplante Änderungen und Paketstand](RELEASE_NOTES_3.0.10.md).
+
 **3.0.9 ist seit 29.10.2026 stabil veröffentlicht.** Die Zielprüfung vor dem Export und das über dem Hauptfenster zentrierte, über Stapel-Export wieder aufrufbare Fortschrittsfenster sind manuell abgenommen. Auch endgültige Paketstarts und Versionsanzeigen sind bestätigt. Website und signierte APT-Quelle sind öffentlich geprüft.
 [Änderungen und bestätigter Prüfstand](RELEASE_NOTES_3.0.9.md).
 
@@ -152,7 +154,7 @@ Der [Windows-Abnahmeplan](WINDOWS_ABNAHME_3.0.0.md) ist ein Prüfplan, kein Nach
 - [Versionshinweise zu 3.0.4](RELEASE_NOTES_3.0.4.md)
 - [Versionshinweise zu 3.0.3](RELEASE_NOTES_3.0.3.md)
 - [Versionshinweise zu 3.0.2](RELEASE_NOTES_3.0.2.md)
-- [Aktuelle Benutzerhilfe](HILFE_3.0.9.md)
+- [Aktuelle Benutzerhilfe](HILFE_3.0.10.md)
 - [Bisheriges README mit historischen Entwicklungsdetails](docs/README_HISTORY_2026-10-20.md)
 
 ## Aus dem Quellcode bauen
