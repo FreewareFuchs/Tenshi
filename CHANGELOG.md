@@ -1,6 +1,7 @@
 # Noch nicht veröffentlicht – erweiterte Vorschau und Inhaltsprüfung
 
 - JPEG, BMP, PNG und GIF verkleinert anzeigen; PDFs mit der ersten Seite als Vorschau. DOCX kann einen begrenzten Textauszug zeigen.
+- Mehrere ausgewählte Dateien in einem Fenster mit Zurück/Weiter und Positionsanzeige durchblättern. Nur manueller Wechsel; vorherige Verarbeitung abbrechen und veraltete Ergebnisse verwerfen.
 - Im vorhandenen Dateiprüfungsdialog Bilddekodierung, erste PDF-Seite und DOCX/XLSX/PPTX-Container-/XML-Prüfung anbieten. Lesetest und SHA256 bleiben getrennt.
 - Beschädigungsverdacht, Teilprüfung, Schutz und erreichte Grenzen unterscheiden. Links, Makros und Dokumentaktionen werden nicht ausgeführt.
 - Verarbeitung mit begrenztem Quelllesen und abbrechbarem separatem Prozess. Sechs Sprachen und Offline-Hilfe ergänzt.

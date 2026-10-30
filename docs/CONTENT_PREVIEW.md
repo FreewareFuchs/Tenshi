@@ -4,7 +4,20 @@ Entwicklungsstand nach 3.0.10, noch nicht veröffentlicht.
 
 ## Bedienung
 
-Eine Datei auswählen und **Vorschau** öffnen. JPEG, PNG, BMP und GIF erscheinen
+Eine oder mehrere Dateien auswählen und **Vorschau** öffnen.
+**Zurück / Weiter** blättert nur durch die beim Öffnen erfasste Dateiauswahl.
+Die Anzeige **Datei … von …** nennt die Position. Am Anfang beziehungsweise Ende
+ist die jeweilige Richtung gesperrt; es gibt keinen automatischen Dateiwechsel.
+Ordner werden ausgelassen. Nicht darstellbare Dateien zeigen ihren Hinweis,
+bleiben aber Teil der Auswahl. Eine spätere Änderung der Hauptansicht verändert
+weder Auswahl noch Quelle des geöffneten Vorschaufensters.
+
+Ein Fenster verarbeitet jeweils nur eine Datei. Beim Wechsel wird der bisherige
+Vorgang abgebrochen. Schon überholte, wartende Aufträge werden vor dem Quellzugriff
+übersprungen; verspätete Ergebnisse können keine andere Datei überschreiben.
+Es werden keine weiteren Dateien vorgeladen oder auf Platte zwischengespeichert.
+
+JPEG, PNG, BMP und GIF erscheinen
 verkleinert; bei PDF wird die erste Seite gezeigt. Der Bildbereich ist scrollbar,
 damit bei kleinen Fenstern keine Bereiche unerreichbar bleiben. Text bleibt auf
 128 KiB begrenzt. Für DOCX ist ein begrenzter Textauszug möglich; eine vollständige

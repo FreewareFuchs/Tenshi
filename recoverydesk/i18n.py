@@ -1201,6 +1201,10 @@ add('Export jetzt starten? Fertige Dateien werden geprüft; unvollständige begi
     '出力を開始しますか？完了済みファイルは検査し、不完全なファイルは最初から処理します。既存の無関係なファイルは保持します。')
 
 # Extended content checks and isolated previews.
+add('Bitte mindestens eine Datei auswählen.','Select at least one file.','Selecciona al menos un archivo.','请至少选择一个文件。','Выберите хотя бы один файл.','ファイルを1つ以上選択してください。')
+add('Zurück','Previous','Anterior','上一个','Назад','前へ')
+add('Weiter','Next','Siguiente','下一个','Далее','次へ')
+add('Datei {current} von {total}','File {current} of {total}','Archivo {current} de {total}','文件 {current}／{total}','Файл {current} из {total}','ファイル {current}／{total}')
 add('Exportierte Datei prüfen …','Check exported file …','Comprobar archivo exportado …','检查导出的文件…','Проверить экспортированный файл …','出力したファイルを検査…')
 add('Bilder / PDF / Office','Images / PDF / Office','Imágenes / PDF / Office','图像／PDF／Office','Изображения / PDF / Office','画像／PDF／Office')
 add('Bitte eine reguläre Datei ohne symbolische Verknüpfung wählen.',

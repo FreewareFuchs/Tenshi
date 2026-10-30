@@ -3580,51 +3580,90 @@ class RecoveryDeskApp(tk.Tk):
             content_btn.configure(state='disabled')
 
     def preview_entry(self):
-        selection = self._selected_browser_entries()
-        if len(selection) != 1:
-            messagebox.showinfo('Vorschau', 'Bitte genau eine Datei auswählen.')
-            return
-        item=selection[0];quality=assess(item)
-        if item.is_directory or not item.recoverable:
-            messagebox.showwarning('Vorschau',quality.detail);return
+        # Capture only this selection and its source; never follow later browser changes.
+        items=tuple(item for item in self._selected_browser_entries() if not item.is_directory)
+        if not items:
+            messagebox.showinfo('Vorschau','Bitte mindestens eine Datei auswählen.');return
+        if len(items)==1 and not items[0].recoverable:
+            messagebox.showwarning('Vorschau',assess(items[0]).detail);return
         source,index,filesystem=self.browser_source,self.browser_index,self.browser_fs
-        win=tk.Toplevel(self);win.title('Dateivorschau – '+item.name)
-        win.geometry('850x650');win.minsize(650,500)
-        info=(f'Name: {item.name}\nDateisystem: {filesystem}\n'
-              f'Dateigröße: {item.size:,} Bytes\nStatus: {item.status}\n'
-              f'Rettbarkeit: {quality.label}\n{quality.detail}\n'+translate(
-                  'Vorschau: bis 128 KiB Text oder 32 MiB Bild-/Dokumentdaten. Keine Bestätigung der Originalinhalte.',self.language))
-        ttk.Label(win,text=info,wraplength=800,justify='left').pack(fill='x',padx=14,pady=(12,8))
+        win=tk.Toplevel(self);win.geometry('850x650');win.minsize(650,500)
+        metadata=ttk.Label(win,wraplength=800,justify='left')
+        metadata.pack(fill='x',padx=14,pady=(12,8))
+        footer=ttk.Frame(win);footer.pack(side='bottom',fill='x',padx=14,pady=(0,8))
+        previous=ttk.Button(footer,text='Zurück',command=lambda:load(state['position']-1))
+        previous.grid(row=0,column=0,padx=(0,8))
+        counter=ttk.Label(footer,anchor='center');counter.grid(row=0,column=1,sticky='ew')
+        following=ttk.Button(footer,text='Weiter',command=lambda:load(state['position']+1))
+        following.grid(row=0,column=2,padx=(8,12))
+        ttk.Button(footer,text='Schließen',command=lambda:close()).grid(row=0,column=3)
+        footer.columnconfigure(1,weight=1)
         content=ttk.Frame(win);content.pack(fill='both',expand=True,padx=14,pady=(0,12))
-        notice=ttk.Label(content,text='Lese einen begrenzten Dateiausschnitt …',wraplength=760,justify='left')
-        notice.pack(anchor='w',fill='x')
-        cancelled=threading.Event()
-        def close():cancelled.set();win.destroy()
+        jobs=queue.SimpleQueue()
+        state=dict(position=0,revision=0,cancelled=None,closed=False,notice=None)
+        def close(destroy=True):
+            if not state['closed']:
+                state['closed']=True
+                if state['cancelled']:state['cancelled'].set()
+                jobs.put(None)
+            if destroy and win.winfo_exists():win.destroy()
         win.protocol('WM_DELETE_WINDOW',close)
-        win.bind('<Destroy>',lambda event:cancelled.set() if event.widget is win else None,add='+')
-        ttk.Button(win,text='Schließen',command=close).pack(side='bottom',pady=(0,8))
+        win.bind('<Destroy>',lambda event:close(False) if event.widget is win else None,add='+')
+        def current(revision):
+            return not state['closed'] and revision==state['revision'] and win.winfo_exists()
+        def load(position):
+            if state['closed'] or not 0<=position<len(items):return
+            if state['cancelled']:state['cancelled'].set()
+            cancelled=threading.Event();state['cancelled']=cancelled
+            state['position']=position;state['revision']+=1
+            revision=state['revision'];item=items[position];quality=assess(item)
+            win.title('Dateivorschau – '+item.name)
+            info=(f'Name: {item.name}\nDateisystem: {filesystem}\n'
+                  f'Dateigröße: {item.size:,} Bytes\nStatus: {item.status}\n'
+                  f'Rettbarkeit: {quality.label}\n{quality.detail}\n'+translate(
+                      'Vorschau: bis 128 KiB Text oder 32 MiB Bild-/Dokumentdaten. Keine Bestätigung der Originalinhalte.',self.language))
+            metadata.configure(text=info)
+            counter.configure(text=translate('Datei {current} von {total}',self.language).format(current=position+1,total=len(items)))
+            previous.configure(state='normal' if position else 'disabled')
+            following.configure(state='normal' if position+1<len(items) else 'disabled')
+            for child in content.winfo_children():child.destroy()
+            notice=state['notice']=ttk.Label(content,text='Lese einen begrenzten Dateiausschnitt …',wraplength=760,justify='left')
+            notice.pack(anchor='w',fill='x')
+            if not item.recoverable:
+                notice.configure(text=quality.detail);return
+            jobs.put((item,revision,cancelled))
         def worker():
-            try:
-                data=read_preview_file(source,index,item,filesystem,limit=PREVIEW_LIMIT,
-                                       cancel=cancelled.is_set,opener=open_source)
-                answer=None
-                if content_kind(data,Path(item.name).suffix.lower()):
-                    if item.size>MAX_CONTENT_BYTES:
-                        from .content_worker import result
-                        answer=result('limited','','input_limit')
-                    else:
-                        if len(data)!=item.size:
-                            data=read_preview_file(source,index,item,filesystem,
-                                                   cancel=cancelled.is_set,opener=open_source)
-                        answer=analyze_content(data,item.name,preview=True,cancel=cancelled.is_set)
-                self._post_scan_callback(lambda d=data,a=answer:show_preview(d,a))
-            except ContentCancelled:pass
-            except Exception as exc:
-                self._post_scan_callback(lambda msg=str(exc):show_error(msg))
-        def show_error(message):
-            if win.winfo_exists():notice.configure(text='Vorschau fehlgeschlagen: '+message)
-        def show_preview(data,answer):
-            if not win.winfo_exists():return
+            # One worker per window: rapid navigation cannot create parallel
+            # source reads or a growing set of decoder processes. Cancelled
+            # queued selections are skipped before opening their source.
+            while True:
+                job=jobs.get()
+                if job is None:return
+                item,revision,cancelled=job
+                if cancelled.is_set():continue
+                try:
+                    data=read_preview_file(source,index,item,filesystem,limit=PREVIEW_LIMIT,
+                                           cancel=cancelled.is_set,opener=open_source)
+                    answer=None
+                    if content_kind(data,Path(item.name).suffix.lower()):
+                        if item.size>MAX_CONTENT_BYTES:
+                            from .content_worker import result
+                            answer=result('limited','','input_limit')
+                        else:
+                            if len(data)!=item.size:
+                                data=read_preview_file(source,index,item,filesystem,
+                                                       cancel=cancelled.is_set,opener=open_source)
+                            answer=analyze_content(data,item.name,preview=True,cancel=cancelled.is_set)
+                    if not cancelled.is_set():
+                        self._post_scan_callback(lambda d=data,a=answer,r=revision:show_preview(r,d,a))
+                except ContentCancelled:pass
+                except Exception as exc:
+                    self._post_scan_callback(lambda msg=str(exc),r=revision:show_error(r,msg))
+        def show_error(revision,message):
+            if current(revision):state['notice'].configure(text='Vorschau fehlgeschlagen: '+message)
+        def show_preview(revision,data,answer):
+            if not current(revision):return
+            item=items[state['position']];notice=state['notice']
             if answer:
                 message=describe_content(answer,self.language)
                 if answer.get('image'):
@@ -3648,7 +3687,10 @@ class RecoveryDeskApp(tk.Tk):
             tb.configure(yscrollcommand=scrollbar.set)
             scrollbar.pack(side='right',fill='y');tb.pack(side='left',fill='both',expand=True)
             tb.insert('1.0',message);tb.configure(state='disabled')
-        threading.Thread(target=worker,daemon=True).start()
+
+        load(0)
+        win._preview_thread=threading.Thread(target=worker,daemon=True)
+        win._preview_thread.start()
 
 
 
