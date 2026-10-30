@@ -41,10 +41,11 @@ def prepare(output: Path, root: Path = ROOT) -> Path:
             copy(root / name, Path(name))
         # Never copy sessions, images, arbitrary JSON, caches or the Git database.
         for source in sorted((root / 'recoverydesk').rglob('*')):
+            license_asset = source.is_relative_to(root / 'recoverydesk/assets/content_licenses') and source.suffix == '.txt'
             theme_asset = (source.is_relative_to(root / 'recoverydesk/assets/sun_valley')
                            and (source.suffix == '.tcl' or source.name in ('LICENSE', 'UPSTREAM.md')))
             if ('__pycache__' not in source.parts
-                    and (source.suffix in ('.py', '.png', '.ico') or theme_asset)):
+                    and (source.suffix in ('.py', '.png', '.ico') or theme_asset or license_asset)):
                 if source.is_file() or source.is_symlink():
                     copy(source, source.relative_to(root))
         for name in PACKAGING:

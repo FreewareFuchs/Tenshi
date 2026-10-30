@@ -35,7 +35,8 @@ class DebPackageTests(unittest.TestCase):
                 self.assertNotIn(field, metadata)
             self.assertTrue(first.name.startswith('tenshi-recovery_'))
             self.assertIn('Architecture: all', metadata)
-            self.assertIn('Depends: python3 (>= 3.11), python3-tk, util-linux', metadata)
+            for dependency in ('python3 (>= 3.11)','python3-tk','python3-pil','python3-defusedxml','poppler-utils','util-linux'):
+                self.assertIn(dependency,metadata)
             archive = subprocess.check_output(['dpkg-deb', '--fsys-tarfile', str(first)])
             with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
                 metadata = json.load(tar.extractfile('./usr/share/tenshi-recovery/recoverydesk/_build_info.json'))

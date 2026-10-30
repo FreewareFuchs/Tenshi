@@ -67,6 +67,30 @@
       ]
     },
     {
+      "name": "content-dependencies",
+      "buildsystem": "simple",
+      "build-commands": [
+        "python3 -m pip install --no-index --no-deps --no-compile --prefix=/app *.whl"
+      ],
+      "sources": [
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/ef/fe/f5cdaa2d1c4086e757430f368c271a58ee29cfe7378e7ae7b9d964015c25/pillow-13.0.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "sha256": "5f56499c1a74d2b862beb0c33b8016f99d095858455df9d21583bbbc1c15b582"
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/4f/a3/c9cc797fc8bdfb8f37b9b0f8b9d02a5fc196b2015f408d53624cab5b0519/pypdfium2-5.14.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "11f281613fa22313d9c7ab89947665e84eccf8ebe40e1198a84a88352305648d"
+        },
+        {
+          "type": "file",
+          "url": "https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl",
+          "sha256": "a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"
+        }
+      ]
+    },
+    {
       "name": "tenshi",
       "buildsystem": "simple",
       "build-commands": [

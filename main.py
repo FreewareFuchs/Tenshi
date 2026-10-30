@@ -14,6 +14,13 @@ def smoke_test() -> int:
             raise RuntimeError('Required application asset is missing.')
     if gui.APP_NAME != 'Tenshi' or not __version__:
         raise RuntimeError('Invalid application identity.')
+    if not (asset_path('tenshi_icon.png').parent/'content_licenses/SOURCES.txt').is_file():
+        raise RuntimeError('Content dependency notices are missing.')
+    from PIL import Image
+    from defusedxml import ElementTree
+    from recoverydesk.content_worker import pdf_backend
+    if not pdf_backend():
+        raise RuntimeError('PDF preview backend is missing.')
     if getattr(sys, 'frozen', False):
         from pathlib import Path
         from recoverydesk import version_info
@@ -30,11 +37,16 @@ def smoke_test() -> int:
             title, body = topic_text(topic, language)
             if not title.strip() or len(body) < 50:
                 raise RuntimeError('Offline help translation is missing.')
+    from recoverydesk.content_smoke import run as check_content_package
+    check_content_package()
     return 0
 
 
 def main(argv=None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+    if len(args) == 3 and args[0] == '--content-worker':
+        from recoverydesk.content_worker import main as content_main
+        return content_main(args[1], '' if args[2] == '-' else args[2])
     if args == ['--smoke-test']:
         try:
             return smoke_test()

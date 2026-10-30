@@ -790,7 +790,13 @@ class UITranslator:
     def _apply_var(self, row):
         value = translate(row['source'], self.language)
         row['last'] = value
-        if row['var'].get() != value:
+        try:
+            current = row['var'].get()
+        except tk.TclError:
+            # Dialog-local StringVars may be unset when their window closes.
+            self.var_data.pop(str(row['var']), None)
+            return
+        if current != value:
             self._in_var_change = True
             try:
                 row['var'].set(value)
@@ -1193,3 +1199,189 @@ add('Export jetzt starten? Fertige Dateien werden geprüft; unvollständige begi
     '现在开始导出？已完成的文件将被检查；不完整的文件从头开始。其他文件会保留。',
     'Начать экспорт? Готовые файлы проверяются; неполные копируются заново. Посторонние файлы сохраняются.',
     '出力を開始しますか？完了済みファイルは検査し、不完全なファイルは最初から処理します。既存の無関係なファイルは保持します。')
+
+# Extended content checks and isolated previews.
+add('Bitte mindestens eine Datei auswählen.','Select at least one file.','Selecciona al menos un archivo.','请至少选择一个文件。','Выберите хотя бы один файл.','ファイルを1つ以上選択してください。')
+add('Zurück','Previous','Anterior','上一个','Назад','前へ')
+add('Weiter','Next','Siguiente','下一个','Далее','次へ')
+add('Datei {current} von {total}','File {current} of {total}','Archivo {current} de {total}','文件 {current}／{total}','Файл {current} из {total}','ファイル {current}／{total}')
+add('Exportierte Datei prüfen …','Check exported file …','Comprobar archivo exportado …','检查导出的文件…','Проверить экспортированный файл …','出力したファイルを検査…')
+add('Bilder / PDF / Office','Images / PDF / Office','Imágenes / PDF / Office','图像／PDF／Office','Изображения / PDF / Office','画像／PDF／Office')
+add('Bitte eine reguläre Datei ohne symbolische Verknüpfung wählen.',
+    'Choose a regular file without a symbolic link.','Elige un archivo regular sin enlace simbólico.','请选择没有符号链接的常规文件。','Выберите обычный файл без символической ссылки.','シンボリックリンクではない通常ファイルを選択してください。')
+add('Datei wurde während der Prüfung geändert.',
+    'The file changed during the check.','El archivo cambió durante la comprobación.','文件在检查期间发生了变化。','Во время проверки файл изменился.','検査中にファイルが変更されました。')
+add('Inhalt prüfen: Bilder, erste PDF-Seite und Office-Paketstruktur, höchstens 32 MiB.',
+    'Check contents: images, the first PDF page and Office package structure, up to 32 MiB.',
+    'Comprobar contenido: imágenes, primera página PDF y estructura del paquete Office, hasta 32 MiB.',
+    '检查内容：图像、PDF 第一页及 Office 包结构，最多 32 MiB。',
+    'Проверка содержимого: изображения, первая страница PDF и структура пакета Office, до 32 МиБ.',
+    '内容検査：画像、PDF の最初のページ、Office パッケージ構造。32 MiB まで。')
+add('OLE-/geschützter Office-Container. Alte Office-Formate und verschlüsselte Office-Dateien werden hier nicht geprüft.',
+    'OLE/protected Office container. Legacy Office formats and encrypted Office files are not checked here.',
+    'Contenedor Office OLE/protegido. Aquí no se comprueban formatos Office antiguos ni archivos cifrados.',
+    'OLE／受保护的 Office 容器。此处不检查旧版 Office 格式及加密的 Office 文件。',
+    'Контейнер Office OLE/защищённый. Старые форматы и зашифрованные файлы Office здесь не проверяются.',
+    'OLE／保護された Office コンテナーです。旧形式や暗号化された Office ファイルはここでは検査しません。')
+add('Struktur lesbar',
+    'Readable structure',
+    'Estructura legible',
+    '结构可读',
+    'Структура читается',
+    '構造を読み取り可能')
+add('Teilprüfung',
+    'Partial check',
+    'Comprobación parcial',
+    '部分检查',
+    'Частичная проверка',
+    '部分検査')
+add('Nicht als unterstütztes Format lesbar',
+    'Unreadable as a supported format',
+    'No se puede leer como formato compatible',
+    '无法按支持的格式读取',
+    'Не читается как поддерживаемый формат',
+    '対応形式として読み取れません')
+add('Prüfgrenze erreicht',
+    'Check limit reached',
+    'Límite de comprobación alcanzado',
+    '已达到检查限制',
+    'Достигнут предел проверки',
+    '検査上限に達しました')
+add('Nicht geprüft',
+    'Not checked',
+    'Sin comprobar',
+    '未检查',
+    'Не проверено',
+    '未検査')
+add('Verschlüsselt / geschützt',
+    'Encrypted / protected',
+    'Cifrado / protegido',
+    '已加密／受保护',
+    'Зашифровано / защищено',
+    '暗号化／保護されています')
+add('Bilddaten dekodiert: {width} × {height} Pixel.',
+    'Image data decoded: {width} × {height} pixels.',
+    'Imagen decodificada: {width} × {height} píxeles.',
+    '图像数据已解码：{width} × {height} 像素。',
+    'Изображение декодировано: {width} × {height} пикселей.',
+    '画像データを復号：{width} × {height} ピクセル。')
+add('Erstes Bild dekodiert: {width} × {height} Pixel. Weitere Animationsbilder sind nicht geprüft.',
+    'First frame decoded: {width} × {height} pixels. Other animation frames are unchecked.',
+    'Primer fotograma decodificado: {width} × {height} píxeles. Los demás no se han comprobado.',
+    '首帧已解码：{width} × {height} 像素。其余动画帧未检查。',
+    'Первый кадр декодирован: {width} × {height} пикселей. Остальные кадры не проверены.',
+    '最初のフレームを復号：{width} × {height} ピクセル。他のアニメーションフレームは未検査です。')
+add('PDF mit {pages} Seiten erkannt. Nur die erste Seite wurde gerendert; weitere Seiten, Anhänge und aktive Inhalte sind nicht geprüft.',
+    'PDF with {pages} pages detected. Only page one was rendered; other pages, attachments and active content are unchecked.',
+    'PDF de {pages} páginas detectado. Solo se ha representado la primera; las demás, los adjuntos y el contenido activo no están comprobados.',
+    '检测到含 {pages} 页的 PDF。仅渲染了第一页；其他页面、附件和活动内容均未检查。',
+    'Обнаружен PDF: {pages} стр. Отрисована только первая страница; остальные, вложения и активное содержимое не проверены.',
+    '{pages} ページの PDF を検出。最初のページのみ描画し、他のページ、添付、アクティブコンテンツは未検査です。')
+add('Office-Paket mit {members} Einträgen: ZIP-Prüfsummen und XML-Struktur lesbar. Darstellung, eingebettete Dateien und Makros sind nicht inhaltlich geprüft.',
+    'Office package with {members} entries: ZIP checksums and XML structure are readable. Layout, embedded files and macros have not undergone content validation.',
+    'Paquete Office de {members} entradas: sumas ZIP y estructura XML legibles. No se ha validado el contenido del diseño, archivos incrustados ni macros.',
+    'Office 包含 {members} 个条目：ZIP 校验和及 XML 结构可读。未验证版式、嵌入文件或宏的内容。',
+    'Пакет Office: {members} записей. Контрольные суммы ZIP и XML читаются. Содержимое макетов, вложенных файлов и макросов не проверено.',
+    '{members} 項目の Office パッケージ：ZIP チェックサムと XML 構造を読み取り可能。レイアウト、埋め込みファイル、マクロの内容は未検査です。')
+add('Das PDF benötigt ein Passwort oder erlaubt keine Vorschau. Es wurde nicht entschlüsselt.',
+    'The PDF requires a password or disallows preview. It has not been decrypted.',
+    'El PDF necesita contraseña o no permite la vista previa. No se ha descifrado.',
+    '该 PDF 需要密码或不允许预览。尚未解密。',
+    'PDF требует пароль или запрещает просмотр. Расшифровка не выполнялась.',
+    'PDF にパスワードが必要か、プレビューが許可されていません。復号は行っていません。')
+add('Das Office-Paket ist geschützt. Es wurde nicht entschlüsselt.',
+    'The Office package is protected. It has not been decrypted.',
+    'El paquete Office está protegido. No se ha descifrado.',
+    'Office 包受保护，尚未解密。',
+    'Пакет Office защищён. Расшифровка не выполнялась.',
+    'Office パッケージは保護されています。復号は行っていません。')
+add('Die Inhaltsprüfung und erweiterte Vorschau sind auf 32 MiB pro Datei begrenzt.',
+    'Content checks and extended previews are limited to 32 MiB per file.',
+    'La comprobación y vista previa ampliada están limitadas a 32 MiB por archivo.',
+    '内容检查及扩展预览限制为每个文件 32 MiB。',
+    'Проверка содержимого и расширенный просмотр ограничены 32 МиБ на файл.',
+    '内容検査と拡張プレビューは1ファイル32 MiBまでです。')
+add('Zeit-, Speicher- oder Formatgrenze erreicht. Daraus folgt keine Beschädigung der Datei.',
+    'A time, memory or format limit was reached. This does not establish file damage.',
+    'Se alcanzó un límite de tiempo, memoria o formato. Esto no demuestra que el archivo esté dañado.',
+    '已达到时间、内存或格式限制。这并不表明文件已损坏。',
+    'Достигнут предел времени, памяти или формата. Это не доказывает повреждение файла.',
+    '時間、メモリ、形式の上限に達しました。ファイルの破損を示すものではありません。')
+add('Die getrennte Verarbeitung wurde beendet. Eine Beurteilung des Dateiinhalts ist nicht möglich.',
+    'The separate process stopped. File contents cannot be assessed.',
+    'El proceso separado terminó. No se puede evaluar el contenido.',
+    '独立处理已停止，无法评估文件内容。',
+    'Отдельный процесс завершён. Оценить содержимое невозможно.',
+    '別プロセスでの処理が終了しました。内容を評価できません。')
+add('Die Daten lassen sich nicht als unterstütztes Format lesen. Eine Beschädigung oder ein abweichender Dateityp ist möglich.',
+    'The data cannot be read as a supported format. It may be damaged or belong to another file type.',
+    'Los datos no se leen como formato compatible. Pueden estar dañados o ser de otro tipo de archivo.',
+    '数据无法按支持的格式读取，可能已损坏或属于其他文件类型。',
+    'Данные не читаются как поддерживаемый формат. Возможно повреждение или другой тип файла.',
+    '対応形式として読み取れません。破損または別のファイル形式の可能性があります。')
+add('Eine benötigte Komponente für dieses Format fehlt.',
+    'A required component for this format is missing.',
+    'Falta un componente necesario para este formato.',
+    '缺少此格式所需的组件。',
+    'Отсутствует компонент для этого формата.',
+    'この形式に必要なコンポーネントがありません。')
+add('Für ZIP-Archive steht die ZIP-Prüfung im Exportbericht zur Verfügung.',
+    'ZIP archives can be checked using the ZIP check in the export report.',
+    'Los archivos ZIP se pueden comprobar desde el informe de exportación.',
+    'ZIP 归档可通过导出报告中的 ZIP 检查进行检查。',
+    'Для архивов ZIP доступна проверка в отчёте экспорта.',
+    'ZIP アーカイブは出力レポートの ZIP 検査で確認できます。')
+add('Für diesen Dateityp ist keine Inhaltsprüfung verfügbar.',
+    'No content check is available for this file type.',
+    'No hay comprobación de contenido para este tipo de archivo.',
+    '此文件类型没有可用的内容检查。',
+    'Для этого типа файла нет проверки содержимого.',
+    'この種類のファイルには内容検査がありません。')
+add('Die Prüfung bewertet lesbare Strukturen und Darstellbarkeit. Sie bestätigt weder vollständige Originalinhalte noch die Rettbarkeit gelöschter Daten. Links, Makros und Dokumentaktionen werden nicht ausgeführt.',
+    'The check assesses readable structures and renderability. It does not confirm complete original contents or recoverability of deleted data. Links, macros and document actions are not executed.',
+    'La comprobación evalúa estructuras legibles y representación. No confirma contenidos originales completos ni recuperación de datos borrados. No se ejecutan enlaces, macros ni acciones del documento.',
+    '此检查评估结构是否可读及能否呈现，不确认原始内容完整，也不确认已删除数据可恢复。不会执行链接、宏或文档操作。',
+    'Проверка оценивает читаемость структуры и отображение. Она не подтверждает полноту оригинала или восстановимость удалённых данных. Ссылки, макросы и действия не выполняются.',
+    '読み取れる構造と描画可否を検査します。元の内容の完全性や削除データの復元を保証しません。リンク、マクロ、文書アクションは実行しません。')
+add('Inhalt prüfen',
+    'Check contents',
+    'Comprobar contenido',
+    '检查内容',
+    'Проверить содержимое',
+    '内容を検査')
+add('Inhaltsprüfung läuft …',
+    'Checking contents …',
+    'Comprobando contenido …',
+    '正在检查内容…',
+    'Проверка содержимого …',
+    '内容を検査中…')
+add('Inhaltsprüfung abgeschlossen.',
+    'Content check finished.',
+    'Comprobación de contenido finalizada.',
+    '内容检查已完成。',
+    'Проверка содержимого завершена.',
+    '内容検査が終了しました。')
+add('Prüfung abgebrochen.',
+    'Check cancelled.',
+    'Comprobación cancelada.',
+    '检查已取消。',
+    'Проверка отменена.',
+    '検査を中止しました。')
+add('Keine Inhaltsbestätigung möglich.',
+    'Contents cannot be confirmed.',
+    'No se puede confirmar el contenido.',
+    '无法确认内容。',
+    'Содержимое подтвердить невозможно.',
+    '内容を確認できません。')
+add('Die Inhaltsprüfung liest die ausgewählte Datei erneut. Möglichst zuerst ein Image erstellen. Jetzt lesen?',
+    'The content check reads the selected file again. Create an image first if possible. Read now?',
+    'La comprobación vuelve a leer el archivo seleccionado. Crea una imagen primero si es posible. ¿Leer ahora?',
+    '内容检查会再次读取选定文件。建议先制作镜像。现在读取吗？',
+    'Проверка повторно читает выбранный файл. По возможности сначала создайте образ. Читать сейчас?',
+    '選択ファイルを再度読み取ります。可能なら先にイメージを作成してください。今すぐ読み取りますか？')
+add('Vorschau: bis 128 KiB Text oder 32 MiB Bild-/Dokumentdaten. Keine Bestätigung der Originalinhalte.',
+    'Preview: up to 128 KiB of text or 32 MiB of image/document data. Original contents are not confirmed.',
+    'Vista previa: hasta 128 KiB de texto o 32 MiB de imagen/documento. No confirma los contenidos originales.',
+    '预览：最多 128 KiB 文本或 32 MiB 图像／文档数据。不确认原始内容。',
+    'Просмотр: до 128 КиБ текста или 32 МиБ изображений/документов. Исходное содержимое не подтверждается.',
+    'プレビュー：テキスト128 KiB、画像・文書32 MiBまで。元の内容の確認ではありません。')

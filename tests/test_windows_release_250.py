@@ -31,6 +31,8 @@ class PortableArchiveTests(unittest.TestCase):
                 self.assertEqual(z.read('Tenshi.exe'), exe.read_bytes())
                 self.assertIn((f'Tenshi {__version__}'.encode('ascii')), z.read('PORTABLE_START.txt'))
                 self.assertIn(b'APPDATA', z.read('PORTABLE_START.txt'))
+                for name in (b'Pillow',b'PDFium',b'defusedxml'):
+                    self.assertIn(name,z.read('THIRD_PARTY_NOTICES.txt'))
                 self.assertNotIn(b'tenshi-errors.log\n2026', z.read('PORTABLE_START.txt'))
 
     def test_rejects_non_exe_or_short_input(self):

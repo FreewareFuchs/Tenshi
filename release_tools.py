@@ -17,7 +17,15 @@ import zipfile
 from recoverydesk import __version__
 
 EXECUTABLE = 'Tenshi.exe'
-PACKAGE_ITEMS = (EXECUTABLE, 'PORTABLE_START.txt', 'SHA256SUMS.sha256', 'LICENSE')
+PACKAGE_ITEMS = (EXECUTABLE, 'PORTABLE_START.txt', 'SHA256SUMS.sha256', 'LICENSE', 'THIRD_PARTY_NOTICES.txt')
+
+
+def content_notices() -> bytes:
+    root=Path(__file__).resolve().parent
+    parts=[(root/'THIRD_PARTY_NOTICES.md').read_bytes().replace(b'\r\n',b'\n')]
+    for path in sorted((root/'recoverydesk/assets/content_licenses').glob('*.txt')):
+        parts.append(b'\n\n===== '+path.name.encode('utf-8')+b' =====\n\n'+path.read_bytes().replace(b'\r\n',b'\n'))
+    return b'\n'.join(parts)
 
 PORTABLE_TEXT = '''Tenshi {version} - Windows 10/11 (64-Bit), portable Ausgabe
 
@@ -95,6 +103,7 @@ def create_portable(exe_path: str | Path, output_path: str | Path, *, overwrite:
             put_bytes('PORTABLE_START.txt', PORTABLE_TEXT.format(version=__version__).encode('utf-8'), zipfile.ZIP_DEFLATED)
             put_bytes('SHA256SUMS.sha256', (checksum_before + '  ' + EXECUTABLE + '\n').encode('ascii'), zipfile.ZIP_DEFLATED)
             put_bytes('LICENSE', (Path(__file__).resolve().parent / 'LICENSE').read_bytes(), zipfile.ZIP_DEFLATED)
+            put_bytes('THIRD_PARTY_NOTICES.txt', content_notices(), zipfile.ZIP_DEFLATED)
         if file_sha256(exe) != checksum_before:
             raise ValueError('Die EXE hat sich waehrend des Packens geaendert.')
         verify_portable(temp)
@@ -108,8 +117,11 @@ def verify_portable(path: str | Path) -> str:
     """Check archive names, checksums, PE header, and reject path injection."""
     with zipfile.ZipFile(path, 'r') as archive:
         names = archive.namelist()
-        legacy = (set(PACKAGE_ITEMS) - {'SHA256SUMS.sha256'}) | {'SHA256SUMS.txt'}
-        if len(names) != len(set(names)) or set(names) not in (set(PACKAGE_ITEMS), legacy):
+        current=set(PACKAGE_ITEMS)
+        historical=current-{'THIRD_PARTY_NOTICES.txt'}
+        allowed=(current,historical,(current-{'SHA256SUMS.sha256'})|{'SHA256SUMS.txt'},
+                 (historical-{'SHA256SUMS.sha256'})|{'SHA256SUMS.txt'})
+        if len(names) != len(set(names)) or set(names) not in allowed:
             raise ValueError(f'ZIP muss ausschliesslich {PACKAGE_ITEMS} enthalten.')
         checksum = 'SHA256SUMS.sha256' if 'SHA256SUMS.sha256' in names else 'SHA256SUMS.txt'
         manifest = archive.read(checksum).decode('ascii')
@@ -133,6 +145,8 @@ def verify_portable(path: str | Path) -> str:
         license_text = archive.read('LICENSE').decode('utf-8').replace('\r\n', '\n')
         if not license_text.startswith('MIT License\n') or 'Copyright (c)' not in license_text:
             raise ValueError('MIT-Lizenzdatei im Portable-ZIP fehlt oder ist ungueltig.')
+        if 'THIRD_PARTY_NOTICES.txt' in names and archive.read('THIRD_PARTY_NOTICES.txt').replace(b'\r\n',b'\n')!=content_notices():
+            raise ValueError('Drittkomponenten-Lizenztexte im Portable-ZIP stimmen nicht.')
         info = archive.read('PORTABLE_START.txt').decode('utf-8')
         if f'Tenshi {__version__}' not in info:
             raise ValueError('Portabler Hinweis passt nicht zur Quellversion.')

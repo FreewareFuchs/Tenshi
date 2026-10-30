@@ -69,7 +69,7 @@ jobs:
       - name: Check generated version metadata
         run: python3 sync_release_version.py --check
       - name: Install Tk and Xvfb
-        run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb e2fsprogs btrfs-progs xfsprogs desktop-file-utils dosfstools mtools ntfs-3g exfatprogs python3-venv
+        run: sudo apt-get update && sudo apt-get install -y python3-tk python3-pil python3-defusedxml poppler-utils xvfb e2fsprogs btrfs-progs xfsprogs desktop-file-utils dosfstools mtools ntfs-3g exfatprogs python3-venv
       - name: Compile source modules
         run: python3 -m compileall -q main.py recoverydesk tests
       - name: Smoke test
