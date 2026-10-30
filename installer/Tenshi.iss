@@ -1,20 +1,20 @@
 #define AppName "Tenshi"
-#define AppVersion "3.0.11"
+#define AppVersion "3.0.12"
 
 [Setup]
 AppId={{C2771C39-6ACF-4F62-AFDC-C5B5D8D4C28A}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
-VersionInfoVersion=3.0.11.0
+VersionInfoVersion=3.0.12.0
 VersionInfoDescription=Tenshi Windows Installer
 VersionInfoProductName=Tenshi
-VersionInfoProductVersion=3.0.11.0
+VersionInfoProductVersion=3.0.12.0
 DefaultDirName={localappdata}\Programs\Tenshi
 DefaultGroupName=Tenshi
 PrivilegesRequired=lowest
 OutputDir=..\installer_output
-OutputBaseFilename=Tenshi_Setup_3.0.11
+OutputBaseFilename=Tenshi_Setup_3.0.12
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
