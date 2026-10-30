@@ -46,7 +46,8 @@ jobs:
       - name: Check generated version metadata
         run: python sync_release_version.py --check
       - name: Install pinned preview dependencies for tests
-        run: python -m pip install --require-hashes --only-binary=:all: -r requirements-content.txt
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-content.txt
       - name: Test suite (isolated settings and logs)
         timeout-minutes: 10
         shell: pwsh
