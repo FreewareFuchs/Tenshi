@@ -4,8 +4,8 @@ Seit Tenshi 3.0.12 stabil verfügbar. Funktion und endgültige Paketversionen si
 
 ## Bedienung
 
-Ein reguläres RAW-/IMG-/DD-Image auswählen. Unter **Dateien & Ordner → Diagnose… →
-Bildsignaturen suchen** den Suchlauf bestätigen. Es wird das gesamte Image
+Ein reguläres RAW-/IMG-/DD-Image auswählen. Im Reiter **Bildsignaturen** den
+Suchlauf mit **Bildsignaturen suchen** starten und bestätigen. Es wird das gesamte Image
 gelesen; der eingetragene Partitionsoffset wird hierbei nicht verwendet.
 Ein lesbares Dateisystem ist nicht erforderlich. Physische Geräte und rohe
 Windows-Laufwerke werden in diesem ersten Ausbau nicht direkt unterstützt.

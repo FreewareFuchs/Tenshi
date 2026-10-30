@@ -16,7 +16,9 @@ app = gui.RecoveryDeskApp()
 try:
     app.update()
     assert app.winfo_ismapped(), 'Installed application window was not displayed'
-    assert len(app.tabs.tabs()) == 2
+    assert [app.tabs.tab(tab, 'text') for tab in app.tabs.tabs()] == [
+        'Partitionen', 'Dateien & Ordner', 'Bildsignaturen'
+    ]
     from tkinter import ttk
     for theme in ('dark', 'light', 'system'):
         app.change_theme(theme)

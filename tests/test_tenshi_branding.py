@@ -24,7 +24,7 @@ class BrandingTests(unittest.TestCase):
             app.update_idletasks()
             self.assertIn('Tenshi', app.title())
             self.assertIsNotNone(app.brand_logo)
-            self.assertEqual(app.tabs.tabs().__len__(), 2)
+            self.assertEqual(app.tabs.tabs().__len__(), 3)
             self.assertEqual(app.tabs.tab(app.tabs.tabs()[0], 'text'), 'Partitionen')
             self.assertEqual(app.tabs.tab(app.tabs.tabs()[1], 'text'), 'Dateien & Ordner')
             self.assertTrue(app.brand_logo.width() >= 200)

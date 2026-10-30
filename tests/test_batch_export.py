@@ -304,7 +304,7 @@ class BatchExportTests(unittest.TestCase):
         from recoverydesk.gui import RecoveryDeskApp
         app = RecoveryDeskApp()
         try:
-            self.assertEqual(app.tabs.tabs().__len__(), 2)
+            self.assertEqual(app.tabs.tabs().__len__(), 3)
             labels = []
             def gather(widget):
                 try:

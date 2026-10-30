@@ -101,7 +101,7 @@ class NoticeGuiTests(unittest.TestCase):
         labels=self._find_labels()
         self.assertIn(BROWSER_NOTICE, labels)
         self.assertIn(FOOTER_NOTICE, labels)
-        self.assertEqual(len(self.app.tabs.tabs()),2)
+        self.assertEqual(len(self.app.tabs.tabs()),3)
         self.assertEqual(self.app.export_button.cget('bg'),self.app._palette()['accent'])
         self.assertEqual(self.app.tmp_toggle.cget('text'),'TMP anzeigen (nur Ansicht)')
 

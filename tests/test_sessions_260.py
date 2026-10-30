@@ -247,10 +247,10 @@ class SessionGuiTests(unittest.TestCase):
         self.app.withdraw()
         self.addCleanup(self.app.destroy)
 
-    def test_buttons_keep_existing_two_tabs(self):
+    def test_buttons_keep_existing_main_tabs(self):
         self.assertTrue(self.app.session_menu_button.winfo_exists())
         self.assertTrue(self.app.session_menu_button.winfo_exists())
-        self.assertEqual(len(self.app.tabs.tabs()), 2)
+        self.assertEqual(len(self.app.tabs.tabs()), 3)
         self.assertEqual(self.app.export_button.cget('bg'), self.app._palette()['accent'])
 
     def test_restored_index_moves_to_files_tab(self):

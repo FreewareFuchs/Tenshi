@@ -238,6 +238,6 @@ class WindowsInterfaceTests(unittest.TestCase):
                 app.show_error_log()
                 app.update_idletasks()
                 self.assertTrue(app.error_log_button.winfo_exists())
-                self.assertEqual(len(app.tabs.tabs()), 2)
+                self.assertEqual(len(app.tabs.tabs()), 3)
             finally:
                 app.destroy()

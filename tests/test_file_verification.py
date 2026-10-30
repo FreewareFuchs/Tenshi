@@ -148,7 +148,7 @@ class VerificationGuiTests(unittest.TestCase):
         app = RecoveryDeskApp()
         app.withdraw()
         try:
-            self.assertEqual(len(app.tabs.tabs()), 2)
+            self.assertEqual(len(app.tabs.tabs()), 3)
             self.assertEqual(app.export_button.cget('background'), app._palette()['accent'])
             self.assertEqual(app.export_button.cget('foreground'), app._palette()['accent_text'])
             self.assertEqual(app.export_button.cget('text'), 'Stapel-Export / fortsetzen')

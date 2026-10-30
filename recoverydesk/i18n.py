@@ -854,6 +854,12 @@ add('NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Datei
     'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  分区 · 文件与文件夹',
     'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Разделы · Файлы и папки',
     'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  パーティション · ファイルとフォルダー')
+add('NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner · Bildsignaturen',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitions · Files & Folders · Image signatures',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Particiones · Archivos y carpetas · Firmas de imágenes',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  分区 · 文件与文件夹 · 图像签名',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Разделы · Файлы и папки · Сигнатуры изображений',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  パーティション · ファイルとフォルダー · 画像シグネチャ')
 add('Dateiansicht: NTFS, FAT32, exFAT, ext2/3/4 sowie eingeschränkt Btrfs und XFS. Gelöschte Dateien: NTFS, FAT32, exFAT und ext2/3/4 teilweise rettbar; Btrfs/XFS nur nicht exportierbare Metadatenhinweise. Ein Export garantiert keine intakten Inhalte.',
     'File browser: NTFS, FAT32, exFAT, ext2/3/4, with limited Btrfs/XFS support. Deleted files: partial recovery for NTFS, FAT32, exFAT and ext2/3/4; Btrfs/XFS provide non-exportable metadata hints only. An export does not guarantee intact contents.',
     'Explorador: NTFS, FAT32, exFAT, ext2/3/4 y Btrfs/XFS con limitaciones. Borrados: recuperación parcial en NTFS, FAT32, exFAT y ext2/3/4; Btrfs/XFS solo muestran pistas de metadatos no exportables. La exportación no garantiza archivos íntegros.',
@@ -1387,6 +1393,11 @@ add('Vorschau: bis 128 KiB Text oder 32 MiB Bild-/Dokumentdaten. Keine Bestätig
     'プレビュー：テキスト128 KiB、画像・文書32 MiBまで。元の内容の確認ではありません。')
 
 # Image signature search.
+add('▣  Bildsignaturen','▣  Image signatures','▣  Firmas de imágenes','▣  图像签名','▣  Сигнатуры изображений','▣  画像シグネチャ')
+add('Bildsignaturen','Image signatures','Firmas de imágenes','图像签名','Сигнатуры изображений','画像シグネチャ')
+add('Ergebnisse in Dateien & Ordner anzeigen','Show results in Files & folders','Mostrar resultados en Archivos y carpetas','在“文件与文件夹”中显示结果','Показать результаты в разделе «Файлы и папки»','「ファイルとフォルダー」に結果を表示')
+add('Signatursuche abgebrochen.','Signature search cancelled.','Búsqueda de firmas cancelada.','签名搜索已取消。','Поиск сигнатур отменён.','シグネチャ検索を中止しました。')
+add('Signatursuche fehlgeschlagen.','Signature search failed.','La búsqueda de firmas ha fallado.','签名搜索失败。','Ошибка поиска сигнатур.','シグネチャ検索に失敗しました。')
 add('Bildsignaturen suchen','Search image signatures','Buscar firmas de imágenes','搜索图像签名','Поиск сигнатур изображений','画像シグネチャを検索')
 add('Signatursuche erfordert ein reguläres Image.','Signature search requires a regular image file.','La búsqueda de firmas requiere un archivo de imagen normal.','签名搜索需要普通磁盘映像文件。','Для поиска сигнатур требуется обычный файл образа.','シグネチャ検索には通常のイメージファイルが必要です。')
 add('Signaturfunde: zusammenhängende JPEG/PNG-Strukturen, keine Originalnamen oder Ordner. Belegte und freie Bereiche werden durchsucht; ein Fund beweist weder Löschung noch unversehrte Originalinhalte. Fragmentierte Dateien werden nicht zusammengesetzt.','Signature candidates: contiguous JPEG/PNG structures, without original names or folders. Both allocated and free areas are searched; a match proves neither deletion nor intact original contents. Fragmented files are not reassembled.','Candidatos por firma: estructuras JPEG/PNG contiguas, sin nombres ni carpetas originales. Se buscan zonas ocupadas y libres; un hallazgo no demuestra eliminación ni contenido original intacto. No se reconstruyen archivos fragmentados.','签名候选项：连续的 JPEG/PNG 结构，不含原始名称或文件夹。搜索已分配和空闲区域；找到结构不能证明文件已删除或原始内容完整。不会重组碎片文件。','Кандидаты по сигнатурам: непрерывные структуры JPEG/PNG без исходных имён и папок. Проверяются занятые и свободные области; находка не доказывает удаление или целостность оригинала. Фрагментированные файлы не собираются.','シグネチャ候補は連続した JPEG/PNG 構造で、元の名前やフォルダーは不明です。使用中と空き領域の両方を検索します。検出は削除や元の内容の完全性を証明しません。断片化ファイルは再構成しません。')

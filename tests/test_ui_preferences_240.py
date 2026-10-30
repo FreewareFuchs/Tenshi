@@ -76,7 +76,7 @@ class AppearanceGuiTests(unittest.TestCase):
         self.assertEqual(self.app.theme, 'dark')
         self.assertEqual(self.app.cget('bg'), '#1c1c1c')
         self.assertEqual(self.app.export_button.cget('bg'), '#57c8ff')
-        self.assertEqual(len(self.app.tabs.tabs()), 2)
+        self.assertEqual(len(self.app.tabs.tabs()), 3)
         self.assertEqual(load_ui_preferences()['theme'], 'dark')
         self.app.change_theme('light')
         self.assertEqual(self.app.cget('bg'), '#fafafa')
