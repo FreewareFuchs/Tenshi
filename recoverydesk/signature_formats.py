@@ -181,14 +181,25 @@ def _tiff(stream, start, total, budget):
 
 def _zip(stream, start, total, budget):
     data = _read(stream, start, min(MAX_FILE, total - start), total, budget)
-    eocd = data.rfind(b'PK\x05\x06')
+    eocd = len(data)
+    while True:
+        eocd = data.rfind(b'PK\x05\x06', 0, eocd)
+        if eocd < 0:
+            raise Invalid()
+        if eocd + 22 > len(data):
+            continue
+        disk, cd_disk, disk_entries, entries, cd_size, cd_offset, comment_len = struct.unpack_from('<4H2IH', data, eocd + 4)
+        end = eocd + 22 + comment_len
+        # A carving candidate starts at its first local header, so its central
+        # directory must end exactly at this archive's EOCD. This also avoids
+        # mistaking a later ZIP in the same image for the current archive end.
+        if (disk == 0 and cd_disk == 0 and disk_entries == entries and
+                entries <= MAX_ZIP_ENTRIES and end <= len(data) and
+                cd_offset + cd_size == eocd):
+            break
     if eocd < 0 or eocd + 22 > len(data):
         raise Invalid()
-    disk, cd_disk, disk_entries, entries, cd_size, cd_offset, comment_len = struct.unpack_from('<4H2IH', data, eocd + 4)
-    end = eocd + 22 + comment_len
-    if disk or cd_disk or disk_entries != entries or entries > MAX_ZIP_ENTRIES or end > len(data):
-        raise Invalid()
-    if cd_offset + cd_size > eocd or cd_offset + cd_size < cd_offset:
+    if cd_offset + cd_size < cd_offset:
         raise Invalid()
     names = set()
     records = {}
@@ -559,3 +570,4 @@ def parse(stream, start, total, budget, category):
         except Invalid:
             continue
     raise Invalid()
+
