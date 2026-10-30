@@ -131,7 +131,8 @@ class RecoveryDeskApp(tk.Tk):
 
     def _help_shortcut(self, event=None):
         """F1 explains the currently selected main tab, without starting I/O."""
-        topic = 'browser' if self.tabs.select() == str(self.ntfs_tab) else 'partitions'
+        topic = ('browser' if self.tabs.select() in
+                 (str(self.ntfs_tab), str(self.signature_tab)) else 'partitions')
         self.show_help(topic)
         return 'break'
 
@@ -656,7 +657,7 @@ class RecoveryDeskApp(tk.Tk):
         self._header_title = ttk.Label(description, text="Datenrettung & schreibgeschützte Datenträgeranalyse",
                   font=("Segoe UI", 13, "bold"))
         self._header_title.pack(anchor="w", fill="x", pady=(2, 2))
-        self._header_subtitle = ttk.Label(description, text="NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner",
+        self._header_subtitle = ttk.Label(description, text="NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner · Bildsignaturen",
                   style="Sub.TLabel")
         self._header_subtitle.pack(anchor="w", fill="x")
         self._header_wrap_job = None
@@ -702,6 +703,13 @@ class RecoveryDeskApp(tk.Tk):
                 command=lambda key=name: self._select_main_tab(key))
             btn.pack(side='left', fill='x', expand=True, padx=3)
             self._nav_buttons[name] = btn
+        name, label = 'signatures', '▣  Bildsignaturen'
+        btn = tk.Button(self._tab_nav, text=label,
+            font=('Segoe UI', 12, 'bold'), padx=14, pady=4,
+            relief='flat', bd=0, cursor='hand2', takefocus=True,
+            command=lambda: self._select_main_tab('signatures'))
+        btn.pack(side='left', fill='x', expand=True, padx=3)
+        self._nav_buttons[name] = btn
         # Hide small system-themed tab labels; the large buttons above are the navigation.
         style = ttk.Style(self)
         style.layout('TenshiHidden.TNotebook.Tab', [])
@@ -709,6 +717,7 @@ class RecoveryDeskApp(tk.Tk):
         self.tabs.pack(fill="both", expand=True)
         self.partition_tab = ttk.Frame(self.tabs, padding=12)
         self.ntfs_tab = ttk.Frame(self.tabs, padding=12)
+        self.signature_tab = ttk.Frame(self.tabs, padding=12)
         self.ntfs_entries = []
         self.scan_report_text = None
         self.ntfs_source = None
@@ -720,6 +729,7 @@ class RecoveryDeskApp(tk.Tk):
         self.partition_source = None
         self.partition_details = {}
         self.partition_diagnosing = False
+        self.signature_result_source = None
         self._source_generation = 0
         self._pending_source_quick_scan = None
         self._partition_fingerprint = None
@@ -727,10 +737,12 @@ class RecoveryDeskApp(tk.Tk):
         self._session_running = False
         self.tabs.add(self.partition_tab, text="Partitionen")
         self.tabs.add(self.ntfs_tab, text="Dateien & Ordner")
+        self.tabs.add(self.signature_tab, text="Bildsignaturen")
         self.tabs.bind('<<NotebookTabChanged>>', self._update_main_tab_styles)
         self._update_main_tab_styles()
         self._build_partitions()
         self._build_ntfs()
+        self._build_signature_tab()
         self.status_bar = ttk.Frame(self, padding=(12, 2, 12, 3))
         # Reserve progress BEFORE the expanding body takes its requested space.
         self.status_bar.pack(side='bottom', fill='x', before=body)
@@ -781,7 +793,7 @@ class RecoveryDeskApp(tk.Tk):
             style.configure(name, padding=(7, 2) if compact else (10, 7))
         style.configure('TCheckbutton', padding=1 if compact else 4)
         self.export_button.configure(pady=2 if compact else 7)
-        for tab in (self.partition_tab, self.ntfs_tab):
+        for tab in (self.partition_tab, self.ntfs_tab, self.signature_tab):
             tab.configure(padding=(8, 2) if compact else 12)
         # Keep the live status line visible at every supported window size.
         # The long, repeated safety caption yields space in compact mode.
@@ -794,7 +806,8 @@ class RecoveryDeskApp(tk.Tk):
         style.configure('Treeview', rowheight=22 if compact else 27)
 
     def _select_main_tab(self, name: str):
-        target = self.partition_tab if name == 'partition' else self.ntfs_tab
+        target = {'partition': self.partition_tab, 'files': self.ntfs_tab,
+                  'signatures': self.signature_tab}[name]
         self.tabs.select(target)
         self._update_main_tab_styles()
 
@@ -802,8 +815,10 @@ class RecoveryDeskApp(tk.Tk):
         selected = self.tabs.select()
         colors = self._palette()
         self._tab_nav.configure(bg=colors['inactive'])
+        tab_by_name = {'partition': self.partition_tab, 'files': self.ntfs_tab,
+                       'signatures': self.signature_tab}
         for name, button in self._nav_buttons.items():
-            active = selected == str(self.partition_tab if name == 'partition' else self.ntfs_tab)
+            active = selected == str(tab_by_name[name])
             button.configure(
                 bg=colors['nav'] if active else colors['inactive'],
                 fg='#ffffff' if active else colors['inactive_fg'],
@@ -877,6 +892,10 @@ class RecoveryDeskApp(tk.Tk):
         self.browser_nodes = {}
         self.browser_warning_records = set()
         self.browser_warning_files = {}
+        if hasattr(self, 'signature_results_button'):
+            self.signature_result_source = None
+            self.signature_status.set('')
+            self.signature_results_button.configure(state='disabled')
 
     def _scan_source_matches(self, generation, source):
         return (generation == self._source_generation and
@@ -1789,6 +1808,39 @@ class RecoveryDeskApp(tk.Tk):
         self.status.set(f'Partitionsbericht gespeichert: {filename}')
         messagebox.showinfo('Partitionsbericht', 'Bericht erfolgreich gespeichert.', parent=self)
 
+    def _build_signature_tab(self):
+        panel = ttk.Frame(self.signature_tab, padding=(18, 14))
+        panel.pack(fill='x', anchor='nw')
+        ttk.Label(panel, text='Bildsignaturen', style='Title.TLabel').pack(anchor='w')
+        from .signature_search import SCOPE
+        ttk.Label(panel, text=SCOPE, justify='left',
+                  wraplength=1000).pack(anchor='w', fill='x', pady=(8, 16))
+        ttk.Label(panel, text='Ausgewählte Quelle:', style='Sub.TLabel').pack(anchor='w')
+        ttk.Label(panel, textvariable=self.source_path, wraplength=1000,
+                  justify='left').pack(anchor='w', fill='x', pady=(2, 14))
+        actions = ttk.Frame(panel)
+        actions.pack(anchor='w', fill='x')
+        self.signature_search_button = ttk.Button(
+            actions, text='Bildsignaturen suchen', style='Accent.TButton',
+            command=self.start_signature_scan)
+        self.signature_search_button.pack(side='left')
+        self.signature_results_button = ttk.Button(
+            actions, text='Ergebnisse in Dateien & Ordner anzeigen',
+            command=self._open_signature_results, state='disabled')
+        self.signature_results_button.pack(side='left', padx=(8, 0))
+        self.signature_status = tk.StringVar(value='')
+        ttk.Label(panel, textvariable=self.signature_status, style='Sub.TLabel',
+                  justify='left', wraplength=1000).pack(anchor='w', fill='x', pady=(14, 0))
+
+    def _open_signature_results(self):
+        if (self.signature_result_source != self.source_path.get().strip() or
+                self.browser_index is None):
+            self.signature_results_button.configure(state='disabled')
+            self.signature_result_source = None
+            self.signature_status.set('')
+            return
+        self._select_main_tab('files')
+
     def _build_ntfs(self):
         self._browser_spacing = []
         controls = ttk.Frame(self.ntfs_tab)
@@ -2072,7 +2124,9 @@ class RecoveryDeskApp(tk.Tk):
         display_tmp=self.show_tmp.get()
         self.ntfs_scanning=True;self._clear_browser_results();self.browser_cancel.clear()
         self.ntfs_scan_btn.configure(state='disabled');self.ntfs_cancel_btn.configure(state='normal')
-        self._select_main_tab('files');self.status.set('Bildsignaturen werden gesucht …')
+        self.signature_search_button.configure(state='disabled')
+        self.signature_status.set('Bildsignaturen werden gesucht …')
+        self.status.set('Bildsignaturen werden gesucht …')
         last=[float('-inf')]
         def progress(done,total):
             now=time.monotonic()
@@ -2095,14 +2149,25 @@ class RecoveryDeskApp(tk.Tk):
                         self._browser_fingerprint=fingerprint;self._set_browser_fs(FILESYSTEM)
                         self.ntfs_byte_offset.set('0')
                         self._show_browser_index(source,index,prepared=(paths,warnings,display_tmp))
-                        text=translate('Signatursuche beendet: {count} Bildstrukturen.',self.language).format(count=len(index.entries))
-                        if not index.signature_complete:text+=' '+translate('Prüfgrenze erreicht; Ergebnis unvollständig.',self.language)
+                        text='Signatursuche beendet: {count} Bildstrukturen.'.format(count=len(index.entries))
+                        if not index.signature_complete:text+=' Prüfgrenze erreicht; Ergebnis unvollständig.'
+                        self.signature_result_source=source
+                        self.signature_status.set(text)
+                        self.signature_results_button.configure(state='normal')
                         self.status.set(text)
                 self._post_scan_callback(publish)
             except OtherScanCancelled:
-                self._post_scan_callback(lambda:self.status.set('Scan abgebrochen.') if self._scan_source_matches(generation,source) else None)
+                def cancelled():
+                    if self._scan_source_matches(generation,source):
+                        text='Signatursuche abgebrochen.'
+                        self.signature_status.set(text);self.status.set(text)
+                self._post_scan_callback(cancelled)
             except Exception as exc:
-                self._post_scan_callback(lambda msg=str(exc):messagebox.showerror('Bildsignaturen suchen',msg,parent=self) if self._scan_source_matches(generation,source) else None)
+                def failed(msg=str(exc)):
+                    if self._scan_source_matches(generation,source):
+                        self.signature_status.set('Signatursuche fehlgeschlagen.')
+                        messagebox.showerror('Bildsignaturen suchen',msg,parent=self)
+                self._post_scan_callback(failed)
             finally:self._post_scan_callback(self._finish_ntfs_scan)
         threading.Thread(target=worker,daemon=True).start()
 
@@ -2212,6 +2277,8 @@ class RecoveryDeskApp(tk.Tk):
         self.ntfs_scanning = False
         self.ntfs_scan_btn.configure(state='normal')
         self.ntfs_cancel_btn.configure(state='disabled')
+        if hasattr(self, 'signature_search_button'):
+            self.signature_search_button.configure(state='normal')
 
     def _session_busy(self):
         return (self._session_running or self.ntfs_scanning or
