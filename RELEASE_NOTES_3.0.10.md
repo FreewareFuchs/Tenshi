@@ -1,8 +1,9 @@
 # Tenshi 3.0.10 – Exportauftrag nach Neustart wieder öffnen
 
-Stabile Pakete in Vorbereitung. Die Funktionen aus PR #115 sind im Windows-/
-Flatpak-Testpaket manuell bestätigt. Die endgültige Paketabnahme und die
-Veröffentlichung folgen getrennt.
+Seit 30.10.2026 stabil [auf GitHub veröffentlicht](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.10).
+Funktionen und endgültige Installer-/Portable-/Mint-DEB-Versionsanzeigen sind
+manuell bestätigt. Website und signierte APT-Quelle bieten 3.0.10;
+alle 25 öffentlichen Abschlussvergleiche sind erfolgreich.
 
 ## Wiederaufnahme
 
@@ -37,16 +38,38 @@ zum Export. Die erneute Analyse verursacht zusätzliche Lesezugriffe.
 - `Tenshi_Portable_3.0.10_Win64.zip`
 - `tenshi-recovery_3.0.10-1_all.deb`
 
-Installer, Portable und DEB werden gemeinsam mit expliziter Kennung `stable`
-aus einem sauberen Commit gebaut. Manifest und `.sha256`-Dateien dokumentieren
-Größen, Prüfsummen und Quellstand. Dokumente erhalten keine eigenen Sidecars.
+Die abgenommenen Pakete wurden mit Kennung `stable` unverändert aus dem sauberen
+Commit `6ffd94118181c67db0fa299d9edd426f843bfe47` gebaut
+([gemeinsamer Release-Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/41032646545)).
+Der Tag `v3.0.10` zeigt auf diesen Build-Commit. Integrationscommit
+`d68f8f7a6c7e0c3e4f48203a9934b5a1dbd55e49` enthält denselben Dateistand.
 
-Abgenommener Funktionsstand: `821f244dd89550e29cd64e24fdc789d49abb936c`,
-übernommen als `27e5d76933adfbe0bcc27544010dbc74320c5a63` mit identischem Dateistand.
-Windows und Linux bestehen jeweils 898 Tests (83 beziehungsweise sechs Skips).
-Das installierte experimentelle Flatpak ist ebenfalls geprüft. Der Anwender
-bestätigt das Testpaket mit „alle Prüfungen erfolgreich“. Die endgültigen
-stabilen Pakete erhalten eine gesonderte Start- und Versionsabnahme.
+Der Funktionsstand aus PR #115 war als
+`821f244dd89550e29cd64e24fdc789d49abb936c` im Windows-/Flatpak-Testpaket
+mit „alle Prüfungen erfolgreich“ bestätigt und mit identischem Dateistand als
+`27e5d76933adfbe0bcc27544010dbc74320c5a63` übernommen.
+Die endgültigen Paketversionen bestätigt der Anwender mit „alle versionen stimmen“.
+Windows und Linux bestehen jeweils 898 Tests (83 beziehungsweise sechs
+plattformbedingte Ausnahmen). Manifest, Paketgrößen, SHA-Dateien,
+Windows-Ressourcen und Programmstart, DEB-Buildidentität sowie enthaltene
+Exportmodule und Hilfe sind geprüft. Diese Abnahme ist keine Garantie für
+andere Hardware oder beschädigte Medien.
 
-GitHub-Veröffentlichung, signierte APT-Quelle und Website folgen nach der
-Paketabnahme. Frühere veröffentlichte Pakete und Prüfsummen bleiben erhalten.
+Das DEB `3.0.10-1` hat 830106 Bytes und SHA256:
+`ca273c2a75c4c4dd5974bdac1e641c320a73140f23cfa9012b485d36def9bdc1`.
+Die APT-Signatur wurde in Mint mit Archivschlüssel
+`15D67DDA4D0D3BD1DD10A8C3B714CC0415B04529` geprüft. Alle 15 öffentlichen
+APT-Dateien entsprechen dem VM-Export; öffentlicher Schlüssel und sieben ältere
+DEBs sind unverändert erhalten. Die öffentliche Prüfung vergleicht Bytes und
+Prüfsummen mit diesem separat signaturgeprüften Export.
+
+Alle sieben GitHub-Assets und die Website-/Download-Verweise sind geprüft.
+Der Website-Katalog enthält die [Änderungsnotizen in sechs Sprachen](RELEASE_NOTES_3.0.10.json).
+Die sechs Anleitungen erklären Wiederaufnahme und eindeutige Ordnerwahl;
+veraltete Anweisungen zur ausschließlich manuellen Wiederaufnahme wurden ersetzt.
+Der vorherige Serverstand ist gesichert. Die vorbereiteten Manifestdateien mit
+`published: false` bleiben unveränderte Buildnachweise; die tatsächliche
+Veröffentlichung steht in separaten Abschlussberichten. Frühere Releases und
+ihre Prüfsummen bleiben erhalten. Dokumente und Bilder erhalten keine
+zusätzlichen Prüfsummen-Sidecars. Flatpak bleibt experimentell und gehört nicht
+zu den drei regulären Paketen.

@@ -1,15 +1,15 @@
 # APT-Quelle für Linux Mint 22.x
 
-Stand 29.10.2026: Die eigene signierte Quelle unter
-https://freewarefuchs.de/tenshi/apt/ bietet `tenshi-recovery 3.0.9-1` für
+Stand 30.10.2026: Die eigene signierte Quelle unter
+https://freewarefuchs.de/tenshi/apt/ bietet `tenshi-recovery 3.0.10-1` für
 Mint 22.x (amd64). Benötigt werden Python >= 3.11, Tkinter und util-linux.
 Mint 21.x mit Python 3.10 ist kein unterstütztes Paket-Ziel.
 
-Das DEB hat 824286 Bytes und SHA256
-`829758afc3b612cc6428936b02cc7fdcbd5daac3fe5b108e64a0a9ad45e12f0b`.
-Die VM-Signaturprüfung und der öffentliche Vergleich aller 14 APT-Dateien
+Das DEB hat 830106 Bytes und SHA256
+`ca273c2a75c4c4dd5974bdac1e641c320a73140f23cfa9012b485d36def9bdc1`.
+Die VM-Signaturprüfung und der öffentliche Vergleich aller 15 APT-Dateien
 sind erfolgreich. Der bisherige Archivschlüssel und ältere Pakete sind erhalten.
-[Aktuelles Release und Prüfstand](../RELEASE_NOTES_3.0.9.md).
+[Aktuelles Release und Prüfstand](../RELEASE_NOTES_3.0.10.md).
 
 Die Quelle muss auf jedem Rechner einmal bewusst hinzugefügt werden.
 Sie ist keine offizielle Mint-/Ubuntu-Quelle. Ein DEB-Download richtet sie
@@ -75,7 +75,7 @@ tenshi-recovery --version
 tenshi-recovery
 ```
 
-Das veröffentlichte Paket zeigt `Tenshi 3.0.4 (b1caea8b40)`.
+Das veröffentlichte Paket zeigt `Tenshi 3.0.10 (6ffd941181)`.
 Das Paket vergibt keine Geräteberechtigungen. Leserechte für physische
 Quellen müssen bei Bedarf gezielt außerhalb der Anwendung eingerichtet werden.
 

@@ -1,4 +1,4 @@
-# Tenshi 3.0.10 – stabile Pakete in Vorbereitung
+# Tenshi 3.0.10 – stabil veröffentlicht (30.10.2026)
 
 - Exportauftrag öffnen liest nach einem Programmneustart Quelle, Auswahl und Scan-Einstellungen aus dem bisherigen Exportordner. Ein erneutes manuelles Zusammenstellen der Auswahl entfällt.
 - Quellenzugriff erst nach Bestätigung. Das Dateisystem wird schreibgeschützt neu eingelesen; Quelle, Auswahl und vollständiger Plan müssen zum gespeicherten Auftrag passen. Fertige Dateien werden weiter per SHA256 geprüft.
@@ -7,7 +7,7 @@
 
 [Bedienung und Grenzen](docs/EXPORT_RESUME.md).
 
-Die Funktionen aus PR #115 sind manuell bestätigt. Endgültige Paketabnahme und Veröffentlichung folgen getrennt. [Versionshinweise und Prüfstand](RELEASE_NOTES_3.0.10.md).
+Funktionen und endgültige Paketversionen sind manuell bestätigt. GitHub, signierte APT-Quelle und Website sind veröffentlicht; alle 25 öffentlichen Abschlussvergleiche sind erfolgreich. [Versionshinweise und Prüfstand](RELEASE_NOTES_3.0.10.md).
 
 # Tenshi 3.0.9 – stabil veröffentlicht (29.10.2026)
 
