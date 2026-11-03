@@ -1836,7 +1836,7 @@ class RecoveryDeskApp(tk.Tk):
         self.signature_search_buttons = {}
         for category, key in self._signature_button_keys.items():
             button = ttk.Button(actions, text=translate(key, self.language),
-                style='Accent.TButton' if category == 'images' else 'TButton',
+                style='Accent.TButton',
                 command=lambda selected=category: self.start_signature_scan(selected))
             button.pack(side='left', padx=(0, 6))
             self.signature_search_buttons[category] = button
