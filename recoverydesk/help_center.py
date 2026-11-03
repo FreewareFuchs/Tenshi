@@ -229,6 +229,8 @@ def topic_text(topic: str, language: str) -> tuple[str, str]:
             'Ausgewählte Kategorien werden in einem Durchgang durchsucht.', language)
         body += '\n\n' + translate(
             'Die Prüfgrenze ist auf 32, 64, 128 oder 256 MiB einstellbar. Sie gilt für JPEG/PNG/GIF/TIFF und Office/ZIP. Größere Grenzen können mehr Lesezeit benötigen; das Gesamtbudget bleibt begrenzt. Vorschau und Inhaltsprüfung behalten ihre eigenen Grenzen.', language)
+        body += '\n\n' + translate(
+            'Suchstand speichern sichert vollständig bearbeitete Abschnitte. Mit Anhalten und Suchstand öffnen lässt sich die Suche auch nach einem Neustart fortsetzen. Zuerst dasselbe Image auswählen. Kategorien und Prüfgrenze werden übernommen; Quelle und gespeicherte Funde werden erneut geprüft. Ein unvollständiger Abschnitt wird wiederholt. Die Quellenprüfung verwendet Stichproben.', language)
     return labels[lang], body
 
 

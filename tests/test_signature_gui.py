@@ -48,6 +48,25 @@ class SignatureGuiTests(unittest.TestCase):
             self.app.start_signature_scan()
         scan.assert_not_called();self.assertIs(self.app.browser_index,index)
 
+    def test_checkpoint_save_and_reopen_from_gui(self):
+        self.prepare()
+        checkpoint = self.source.parent / 'saved.tenshi-search.json'
+        self.app.signature_save_checkpoint.set(True)
+        self.app.signature_file_limit_mib.set('64')
+        with patch('recoverydesk.gui.messagebox.askyesno',return_value=True), patch('recoverydesk.gui.messagebox.showerror') as error, patch('recoverydesk.gui.filedialog.asksaveasfilename',return_value=str(checkpoint)):
+            self.app.start_signature_scan(('images','archives'))
+            self.wait_for(lambda:not self.app.ntfs_scanning)
+        error.assert_not_called()
+        self.assertTrue(checkpoint.is_file())
+        self.app.signature_file_limit_mib.set('32')
+        with patch('recoverydesk.gui.messagebox.askyesno',return_value=True), patch('recoverydesk.gui.messagebox.showerror') as error, patch('recoverydesk.gui.filedialog.askopenfilename',return_value=str(checkpoint)):
+            self.app._resume_signature_search()
+            self.wait_for(lambda:not self.app.ntfs_scanning)
+        error.assert_not_called()
+        self.assertEqual(self.app.signature_file_limit_mib.get(),'64')
+        self.assertEqual(len(self.app.browser_index.entries),2)
+        self.assertEqual(str(self.app.signature_pause_button.cget('state')),'disabled')
+
     def test_cancelled_scan_does_not_publish_an_index(self):
         self.prepare();started=threading.Event()
         def scan(*args,cancel,**kwargs):

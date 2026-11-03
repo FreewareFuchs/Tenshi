@@ -6,9 +6,17 @@ Ein reguläres RAW-, IMG- oder DD-Image auswählen und den Reiter **Dateisignatu
 
 Funde erscheinen danach in der bestehenden Dateiansicht und können dort wie andere Einträge geprüft, in der Vorschau geöffnet und exportiert werden. Namen setzen sich aus erkanntem Typ und Byte-Offset zusammen. Ein gespeicherter Exportauftrag wird beim Fortsetzen gegen das Image erneut aufgebaut.
 
-## Unterstützte Strukturen
-
 Mit **Kategorien gemeinsam suchen…** lassen sich mehrere Kategorien auswählen. Standardmäßig sind alle fünf ausgewählt; mindestens eine muss aktiv bleiben. Tenshi durchsucht die Quelle dabei in einem gemeinsamen Durchgang und veröffentlicht die passenden Funde in einer gemeinsamen Ergebnisliste. Die Einzelbuttons stehen weiterhin zur Verfügung. Die Grenzen für Kandidaten, Funde und Strukturprüfungen gelten für den gesamten gemeinsamen Lauf; der Analysebericht nennt die ausgewählten Kategorien.
+
+## Suchstand speichern und fortsetzen
+
+Vor einer Suche **Suchstand speichern** aktivieren und nach dem Bestätigen eine neue `.tenshi-search.json`-Datei als Ziel wählen. Tenshi sichert abgeschlossene 1-MiB-Suchabschnitte regelmäßig (nach 16 MiB oder zwei Sekunden) und beim kontrollierten Anhalten. **Anhalten** stoppt eine Suche mit aktivierter Speicherung. Ein gerade bearbeiteter Abschnitt oder Fund wird beim Fortsetzen erneut gelesen. Bei einem unerwarteten Programmende kann die zuletzt automatisch gesicherte Position etwas zurückliegen.
+
+Nach einem Programmneustart zuerst dasselbe reguläre Image auswählen und **Suchstand öffnen…** verwenden. Kategorien und Größenbegrenzung werden aus der Datei übernommen. Tenshi prüft Größe, Stichproben-Fingerabdruck und beim ursprünglichen Pfad die Änderungszeit. Gespeicherte Funde werden strukturell neu geprüft, bevor sie in die Ergebnisse gelangen. Die Stichproben sind kein vollständiger Hash des Images. Der Suchstand enthält Positionen und Metadaten, keine Dateiinhalte. Eine Prüfsumme erkennt beschädigte Statusdaten; sie ist kein Echtheitsnachweis.
+
+Zähler und Strukturprüfbudget werden nicht zurückgesetzt. Die erneute Prüfung gespeicherter Funde hat ein eigenes begrenztes Lesebudget. Ein Suchstand, der bereits eine Suchlaufgrenze erreicht hat, erfordert eine neue Suche. Ein abgeschlossener Suchstand kann zum erneuten Anzeigen seiner verifizierten Funde geöffnet werden. Die Quelle darf niemals als Statusdatei dienen. Bei einem Schreibfehler bleibt der vorherige atomar gesicherte Suchstand erhalten; die Oberfläche meldet den Fehler.
+
+## Unterstützte Strukturen
 
 | Kategorie | Erkennung | Grenzen |
 | --- | --- | --- |

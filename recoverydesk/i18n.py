@@ -1402,6 +1402,46 @@ add('Signatursuche abgebrochen.','Signature search cancelled.','Búsqueda de fir
 add('Signatursuche fehlgeschlagen.','Signature search failed.','La búsqueda de firmas ha fallado.','签名搜索失败。','Ошибка поиска сигнатур.','シグネチャ検索に失敗しました。')
 add('Bilder suchen','Search images','Buscar imágenes','搜索图像','Поиск изображений','画像を検索')
 add('Kategorien gemeinsam suchen…','Search categories together…','Buscar categorías juntas…','联合搜索类别…','Искать категории вместе…','複数のカテゴリを検索…')
+add('Suchstand speichern','Save search progress','Guardar progreso de búsqueda','保存搜索进度','Сохранять ход поиска','検索状況を保存')
+add('Suchstand oder Sucheinstellungen wurden geändert. Bitte erneut öffnen.',
+    'Search progress or settings have changed. Please open it again.',
+    'El progreso o las opciones cambiaron. Vuelve a abrirlo.',
+    '搜索进度或设置已更改。请重新打开。',
+    'Состояние или параметры поиска изменились. Откройте файл заново.',
+    '検索状況または設定が変更されました。もう一度開いてください。')
+add('Anhalten','Stop','Detener','停止','Остановить','停止')
+add('Suchstand öffnen…','Open search progress…','Abrir progreso de búsqueda…','打开搜索进度…','Открыть ход поиска…','検索状況を開く…')
+add('Suchstand wird gespeichert…','Saving search progress…','Guardando progreso de búsqueda…','正在保存搜索进度…','Сохраняется ход поиска…','検索状況を保存中…')
+add('Signatursuche angehalten. Suchstand: {path}',
+    'Signature search stopped. Saved progress: {path}',
+    'Búsqueda de firmas detenida. Progreso guardado: {path}',
+    '签名搜索已停止。保存的进度：{path}',
+    'Поиск сигнатур остановлен. Сохранённый ход: {path}',
+    'シグネチャ検索を停止しました。保存先: {path}')
+add('Ungültiger gespeicherter Suchstand.','Invalid saved search progress.','Progreso de búsqueda guardado no válido.','保存的搜索进度无效。','Недопустимое сохранённое состояние поиска.','保存された検索状況が無効です。')
+add('Suchstand darf nicht über einen Link geöffnet werden.', 'Search progress cannot be accessed through a link.', 'No se puede acceder al progreso mediante un enlace.', '不能通过链接访问搜索进度。', 'Нельзя открывать состояние поиска через ссылку.', 'リンク経由で検索状況にアクセスできません。')
+add('Suchstand muss eine reguläre Datei sein.', 'Search progress must be a regular file.', 'El progreso debe ser un archivo normal.', '搜索进度必须是普通文件。', 'Состояние поиска должно быть обычным файлом.', '検索状況は通常のファイルである必要があります。')
+add('Gespeicherter Suchstand ist zu groß.', 'Saved search progress is too large.', 'El progreso guardado es demasiado grande.', '保存的搜索进度过大。', 'Сохранённое состояние поиска слишком велико.', '保存された検索状況が大きすぎます。')
+add('Suchstand wurde während des Öffnens geändert.', 'Search progress changed while being opened.', 'El progreso cambió mientras se abría.', '搜索进度在打开时已更改。', 'Состояние поиска изменилось во время открытия.', '検索状況が開いている間に変更されました。')
+add('Quelle und Suchstand dürfen nicht identisch sein.', 'Source and search progress must be different files.', 'La fuente y el progreso deben ser archivos distintos.', '源和搜索进度不能是同一文件。', 'Источник и состояние поиска должны быть разными файлами.', 'ソースと検索状況は別のファイルにしてください。')
+add('Suchstand hat eine Prüfgrenze erreicht. Bitte eine neue Suche starten.',
+    'The saved search reached an inspection limit. Please start a new search.',
+    'La búsqueda guardada alcanzó un límite. Inicia una búsqueda nueva.',
+    '保存的搜索已达到检查上限。请开始新搜索。',
+    'Сохранённый поиск достиг лимита проверки. Начните новый поиск.',
+    '保存した検索は検査上限に達しました。新しい検索を開始してください。')
+add('Gespeicherte Signaturfunde konnten nicht bestätigt werden.',
+    'Saved signature candidates could not be verified.',
+    'No se pudieron verificar los hallazgos de firmas guardados.',
+    '无法验证保存的签名候选文件。',
+    'Не удалось подтвердить сохранённые находки сигнатур.',
+    '保存されたシグネチャ候補を検証できませんでした。')
+add('Suchstand speichern sichert vollständig bearbeitete Abschnitte. Mit Anhalten und Suchstand öffnen lässt sich die Suche auch nach einem Neustart fortsetzen. Zuerst dasselbe Image auswählen. Kategorien und Prüfgrenze werden übernommen; Quelle und gespeicherte Funde werden erneut geprüft. Ein unvollständiger Abschnitt wird wiederholt. Die Quellenprüfung verwendet Stichproben.',
+    'Save search progress stores completed sections. Stop and Open search progress let you continue after a restart. Select the same image first. Categories and size limit are restored; the source and saved candidates are checked again. An unfinished section is repeated. Source checking uses samples.',
+    'Guardar progreso conserva los tramos completos. Detener y Abrir progreso permiten continuar tras reiniciar. Selecciona primero la misma imagen. Se restauran categorías y límite; se verifican la fuente y los hallazgos. Se repite un tramo incompleto. La fuente se comprueba por muestreo.',
+    '保存搜索进度可保存已完成的区段。停止后可通过打开搜索进度在重启后继续。请先选择同一镜像。类别和大小上限将恢复，并重新检查源和候选文件。未完成的区段会重新扫描。源检查使用抽样。',
+    'Сохраняются полностью обработанные участки. Остановите поиск и откройте сохранённый ход, чтобы продолжить после перезапуска. Сначала выберите тот же образ. Категории и лимит восстановятся; источник и находки проверяются повторно. Незавершённый участок повторяется. Источник проверяется выборочно.',
+    '完了した区間の検索状況を保存できます。停止後に検索状況を開くと、再起動後も続行できます。先に同じイメージを選択してください。カテゴリと上限を復元し、ソースと候補を再検証します。未完了の区間は再検索します。ソースの検証にはサンプルを使います。')
 add('Prüfgrenze für JPEG/PNG/GIF/TIFF und Office/ZIP (MiB):',
     'JPEG/PNG/GIF/TIFF and Office/ZIP limit (MiB):',
     'Límite JPEG/PNG/GIF/TIFF y Office/ZIP (MiB):',

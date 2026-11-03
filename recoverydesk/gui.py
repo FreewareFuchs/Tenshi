@@ -236,6 +236,9 @@ class RecoveryDeskApp(tk.Tk):
             self.scan_options_button.configure(text=translate('Scanoptionen…', language))
         if hasattr(self, 'signature_combined_button'):
             self.signature_combined_button.configure(text=translate('Kategorien gemeinsam suchen…', language))
+        if hasattr(self, 'signature_resume_button'):
+            self.signature_resume_button.configure(text=translate('Suchstand öffnen…', language))
+            self.signature_pause_button.configure(text=translate('Anhalten', language))
         help_window = getattr(self, '_help_window', None)
         if help_window is not None and help_window.winfo_exists():
             help_window.refresh_language(language)
@@ -1836,6 +1839,9 @@ class RecoveryDeskApp(tk.Tk):
         self.signature_file_limit_mib = tk.StringVar(value='32')
         ttk.Combobox(limits, textvariable=self.signature_file_limit_mib,
                      values=('32', '64', '128', '256'), state='readonly', width=7).pack(side='left', padx=8)
+        self.signature_save_checkpoint = tk.BooleanVar(value=False)
+        ttk.Checkbutton(limits, text=translate('Suchstand speichern', self.language),
+                        variable=self.signature_save_checkpoint).pack(side='left', padx=8)
         actions = ttk.Frame(panel)
         actions.pack(anchor='w', fill='x')
         self._signature_button_keys = {
@@ -1853,10 +1859,18 @@ class RecoveryDeskApp(tk.Tk):
             actions, text='Ergebnisse in Dateien & Ordner anzeigen',
             command=self._open_signature_results, state='disabled')
         self.signature_results_button.pack(side='left', padx=(8, 0))
+        continuation = ttk.Frame(panel)
+        continuation.pack(anchor='w', fill='x', pady=(8, 0))
         self.signature_combined_button = ttk.Button(
-            panel, text=translate('Kategorien gemeinsam suchen…', self.language),
+            continuation, text=translate('Kategorien gemeinsam suchen…', self.language),
             style='Accent.TButton', command=self._signature_category_dialog)
-        self.signature_combined_button.pack(anchor='w', pady=(8, 0))
+        self.signature_combined_button.pack(side='left')
+        self.signature_resume_button = ttk.Button(continuation,
+            text=translate('Suchstand öffnen…', self.language), command=self._resume_signature_search)
+        self.signature_resume_button.pack(side='left', padx=8)
+        self.signature_pause_button = ttk.Button(continuation,
+            text=translate('Anhalten', self.language), state='disabled', command=self._pause_signature_search)
+        self.signature_pause_button.pack(side='left')
         self.signature_status = tk.StringVar(value='')
         ttk.Label(panel, textvariable=self.signature_status, style='Sub.TLabel',
                   justify='left', wraplength=1000).pack(anchor='w', fill='x', pady=(14, 0))
@@ -2156,7 +2170,28 @@ class RecoveryDeskApp(tk.Tk):
                    command=start).pack(anchor='e', pady=(12, 0))
         win.bind('<Escape>', lambda event: win.destroy())
 
-    def start_signature_scan(self, category='images'):
+    def _pause_signature_search(self):
+        self.browser_cancel.set()
+        self.signature_pause_button.configure(state='disabled')
+        self.signature_status.set(translate('Suchstand wird gespeichert…', self.language))
+
+    def _resume_signature_search(self):
+        if self._session_busy():
+            return
+        path = filedialog.askopenfilename(parent=self, title=translate('Suchstand öffnen…', self.language),
+                                          filetypes=[('Tenshi search', '*.tenshi-search.json'), ('JSON', '*.json')])
+        if not path:
+            return
+        from .signature_checkpoint import read_checkpoint
+        try:
+            state = read_checkpoint(path)
+            self.signature_file_limit_mib.set(str(state['file_limit'] // 1024**2))
+            self.signature_save_checkpoint.set(True)
+            self.start_signature_scan(tuple(state['categories']), checkpoint_path=path, resume=True)
+        except (OSError, ValueError) as exc:
+            messagebox.showerror(translate('Suchstand öffnen…', self.language), str(exc), parent=self)
+
+    def start_signature_scan(self, category='images', *, checkpoint_path=None, resume=False):
         from .signature_search import scan_signatures,FILESYSTEM,SCOPE
         selected = (category,) if isinstance(category, str) else tuple(category)
         category_label = ', '.join(translate(self._signature_button_keys[key], self.language) for key in selected)
@@ -2175,12 +2210,21 @@ class RecoveryDeskApp(tk.Tk):
             'JPEG/PNG/GIF/TIFF und Office/ZIP: maximal {limit} MiB je Fund. Andere Formate können größer sein. Maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen je Suchlauf. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',self.language).format(limit=file_limit_mib))
         scan_options['max_file_bytes'] = file_limit_mib * 1024**2
         if not messagebox.askyesno(category_label,note,parent=self):return
+        if checkpoint_path is None and self.signature_save_checkpoint.get():
+            checkpoint_path = filedialog.asksaveasfilename(parent=self,
+                title=translate('Suchstand speichern', self.language),
+                defaultextension='.tenshi-search.json',filetypes=[('Tenshi search', '*.tenshi-search.json')])
+            if not checkpoint_path:return
+        if checkpoint_path is not None:
+            scan_options.update(checkpoint_path=checkpoint_path,resume=resume)
         generation=self._source_generation
         display_tmp=self.show_tmp.get()
         self.ntfs_scanning=True;self._clear_browser_results();self.browser_cancel.clear()
         self.ntfs_scan_btn.configure(state='disabled');self.ntfs_cancel_btn.configure(state='normal')
         for button in self.signature_search_buttons.values():button.configure(state='disabled')
         self.signature_combined_button.configure(state='disabled')
+        self.signature_resume_button.configure(state='disabled')
+        self.signature_pause_button.configure(state='normal' if checkpoint_path else 'disabled')
         searching = translate('Signatursuche läuft: {category} …',self.language).format(category=category_label)
         self.signature_status.set(searching)
         self.status.set(searching)
@@ -2216,7 +2260,8 @@ class RecoveryDeskApp(tk.Tk):
             except OtherScanCancelled:
                 def cancelled():
                     if self._scan_source_matches(generation,source):
-                        text='Signatursuche abgebrochen.'
+                        text=(translate('Signatursuche angehalten. Suchstand: {path}', self.language).format(path=checkpoint_path)
+                              if checkpoint_path else 'Signatursuche abgebrochen.')
                         self.signature_status.set(text);self.status.set(text)
                 self._post_scan_callback(cancelled)
             except Exception as exc:
@@ -2338,6 +2383,8 @@ class RecoveryDeskApp(tk.Tk):
             for button in self.signature_search_buttons.values():button.configure(state='normal')
         if hasattr(self, 'signature_combined_button'):
             self.signature_combined_button.configure(state='normal')
+            self.signature_resume_button.configure(state='normal')
+            self.signature_pause_button.configure(state='disabled')
 
     def _session_busy(self):
         return (self._session_running or self.ntfs_scanning or

@@ -165,7 +165,56 @@ def _snapshot(value):
     return value.st_dev,value.st_ino,value.st_size,value.st_mtime_ns
 
 
-def scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None):
+def scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None,
+                    checkpoint_path=None,resume=False):
+    """Optionally persist completed scan blocks and resume an explicitly selected image."""
+    if checkpoint_path is None:
+        if resume:
+            raise ValueError('Bitte einen gespeicherten Suchstand auswählen.')
+        return _scan_signatures(source,category=category,categories=categories,
+                                max_file_bytes=max_file_bytes,cancel=cancel,progress=progress)
+    from .signature_checkpoint import read_checkpoint, CheckpointWriter
+    from .session_store import fingerprint_image, check_fingerprint
+    if max_file_bytes is not None and max_file_bytes not in tuple(m*1024**2 for m in (32,64,128,256)):
+        raise ValueError('Ungültige Größenbegrenzung für die Signatursuche.')
+    state = read_checkpoint(checkpoint_path) if resume else None
+    if state is not None:
+        if ((categories is not None and frozenset(categories) != frozenset(state['categories'])) or
+                (max_file_bytes is not None and max_file_bytes != state['file_limit'])):
+            raise ValueError('Suchstand oder Sucheinstellungen wurden geändert. Bitte erneut öffnen.')
+        if state['limited']:
+            raise ValueError('Suchstand hat eine Prüfgrenze erreicht. Bitte eine neue Suche starten.')
+        fingerprint = check_fingerprint(source,state['fingerprint'],original=state['source'])
+        categories = tuple(state['categories'])
+        max_file_bytes = state['file_limit']
+    else:
+        fingerprint = fingerprint_image(source,[1])
+    source_snapshot = _snapshot(os.stat(source))
+    if fingerprint['size'] != source_snapshot[2] or fingerprint['mtime_ns'] != source_snapshot[3]:
+        raise ValueError('Quell-Image wurde geändert.')
+    writer = CheckpointWriter(checkpoint_path,source,fingerprint,source_snapshot)
+    try:
+        return _scan_signatures(source,category=category,categories=categories,max_file_bytes=max_file_bytes,
+                                cancel=cancel,progress=progress,_resume=state,_checkpoint=writer.update)
+    finally:
+        writer.flush()
+
+
+def _signature_entry(start,size,kind):
+    extension={'PNG':'png','JPEG':'jpg','BMP':'bmp','GIF':'gif','WebP':'webp','TIFF':'tiff',
+               'DOCX':'docx','DOCM':'docm','DOTX':'dotx','DOTM':'dotm',
+               'XLSX':'xlsx','XLSM':'xlsm','XLTX':'xltx','XLTM':'xltm',
+               'PPTX':'pptx','PPTM':'pptm','POTX':'potx','POTM':'potm',
+               'ODT':'odt','ODS':'ods','ODP':'odp','ODG':'odg','ZIP':'zip',
+               'TAR':'tar','7Z':'7z','WAV':'wav','AVI':'avi','MP4':'mp4',
+               'OGG-Vorbis':'ogg','OGG-Opus':'opus','MP3':'mp3'}.get(kind)
+    if extension is None:
+        raise ValueError('Ungültiger gespeicherter Suchstand.')
+    return GenericEntry(start+100,f'{kind}_{start:016X}.{extension}',ROOT,False,size,('signature-v1',start,size))
+
+
+def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None,
+                     _resume=None,_checkpoint=None):
     """Search selected categories in a single sequential pass over a regular image."""
     available = ('images','office','archives','audio','video')
     selected = frozenset(categories) if categories is not None else frozenset(available if category == 'all' else (category,))
@@ -184,6 +233,34 @@ def scan_signatures(source,*,category='images',categories=None,max_file_bytes=No
         opened=os.fstat(stream.fileno())
         if _snapshot(opened)!=_snapshot(before):raise ValueError('Quell-Image wurde geändert.')
         total=opened.st_size
+        if _resume is not None:
+            # Reparse every cached candidate instead of trusting stored extents.
+            validation = _Budget(file_limit,cancel)
+            for start, expected_size, expected_kind in _resume['hits']:
+                _stop(cancel)
+                try:
+                    if expected_kind in ('PNG','JPEG'):
+                        if 'images' not in selected:raise _Invalid()
+                        reader = _Reader(stream,start,total,validation,cancel)
+                        size = (_png if expected_kind == 'PNG' else _jpeg)(reader)
+                        kind = expected_kind
+                    else:
+                        size,kind,found_category = parse_format(stream,start,total,validation,category)
+                        if found_category not in selected or (kind in ('GIF','TIFF') and size > file_limit):raise _Invalid()
+                    if size != expected_size or kind != expected_kind:raise _Invalid()
+                    entries.append(_signature_entry(start,size,kind))
+                except (FormatInvalid,_Invalid,_Limit) as exc:
+                    raise ValueError('Gespeicherte Signaturfunde konnten nicht bestätigt werden.') from exc
+            position = _resume['position'];last = _resume['last']
+            candidates = _resume['candidates'];budget[0] = _resume['inspection']
+            stream.seek(max(0,position-264));tail=stream.read(min(264,position))
+        def save_block():
+            if _checkpoint is not None:
+                _checkpoint(dict(position=position,last=last,candidates=candidates,inspection=budget[0],
+                                 categories=[key for key in available if key in selected],file_limit=file_limit,
+                                 limited=limited,hits=[[e.locator[1],e.size,e.name.split('_',1)[0]] for e in entries]))
+        save_block()
+        if _resume is not None and progress:progress(position,total)
         while position<total:
             _stop(cancel)
             stream.seek(position);block=stream.read(min(SCAN_BLOCK,total-position))
@@ -234,15 +311,9 @@ def scan_signatures(source,*,category='images',categories=None,max_file_bytes=No
                         if kind in ('GIF','TIFF') and size > file_limit:continue
                 except (FormatLimit, _Limit):limited=True;break
                 except (FormatInvalid, _Invalid):continue
-                extension={'PNG':'png','JPEG':'jpg','BMP':'bmp','GIF':'gif','WebP':'webp','TIFF':'tiff',
-                           'DOCX':'docx','DOCM':'docm','DOTX':'dotx','DOTM':'dotm',
-                           'XLSX':'xlsx','XLSM':'xlsm','XLTX':'xltx','XLTM':'xltm',
-                           'PPTX':'pptx','PPTM':'pptm','POTX':'potx','POTM':'potm',
-                           'ODT':'odt','ODS':'ods','ODP':'odp','ODG':'odg','ZIP':'zip',
-                           'TAR':'tar','7Z':'7z','WAV':'wav','AVI':'avi','MP4':'mp4',
-                           'OGG-Vorbis':'ogg','OGG-Opus':'opus','MP3':'mp3'}.get(kind,'bin')
-                entries.append(GenericEntry(start+100,f'{kind}_{start:016X}.{extension}',ROOT,False,size,('signature-v1',start,size)))
-            position+=len(block);tail=data[-7:]
+                entries.append(_signature_entry(start,size,kind))
+            position+=len(block);tail=data[-264:]
+            save_block()
             if progress:progress(position,total)
             if limited:break
         after=os.fstat(stream.fileno());_stop(cancel)
