@@ -309,7 +309,7 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
                     if base+at>last:found.append((base+at,kind))
                     count+=1
                     at=data.find(signature,at+1)
-            for start,kind in sorted(found):
+            for start,kind in sorted(set(found)):
                 _stop(cancel)
                 if candidates>=MAX_CANDIDATES or len(entries)>=MAX_HITS:limited=True;break
                 candidates+=1;last=start
@@ -319,6 +319,7 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
                         size=(_png if kind=='PNG' else _jpeg)(reader)
                     else:
                         size,kind,found_category=parse_format(stream,start,total,budget,category)
+                        if _parser_revision == 1 and kind in ('PDF','RAR'):continue
                         if found_category not in selected:continue
                         if kind in ('GIF','TIFF') and size > file_limit:continue
                 except (FormatLimit, _Limit):limited=True;break

@@ -25,8 +25,8 @@ def _v(number):
     return bytes(result)
 
 
-def rar_fixture(version=5, volume=False, encrypted=False):
-    name = b'test.txt'; data = b'hello RAR test\n'
+def rar_fixture(version=5, volume=False, encrypted=False, data=None):
+    name = b'test.txt'; data = b'hello RAR test\n' if data is None else data
     if version == 4:
         def block(kind,flags,body=b''):
             header=struct.pack('<BHH',kind,flags,7+len(body))+body
@@ -132,6 +132,16 @@ class SignatureDocumentTests(unittest.TestCase):
             data=bytearray(rar_fixture(version));data[10]^=0x40
             for bad in (bytes(data),rar_fixture(version)[:-3],rar_fixture(version,volume=True),rar_fixture(version,encrypted=True)):
                 self.assertFalse(self.scan(bad,'archives').entries)
+
+    def test_overlapping_archive_markers_are_unique_and_keep_legacy_scope(self):
+        data=bytearray(b'x'*512);data[197:202]=b'ustar'
+        archive=rar_fixture(4,data=bytes(data))
+        self.assertEqual(archive[257:262],b'ustar')
+        self.source.write_bytes(b'X'*512+archive+b'Y'*512)
+        legacy=scan_signatures(str(self.source),category='archives',parser_revision=1)
+        self.assertEqual(legacy.entries,[])
+        current=scan_signatures(str(self.source),category='archives')
+        self.assertEqual([e.size for e in current.entries],[len(archive)])
 
     def test_pdf_rar_export_job_keeps_new_parser_scope(self):
         self.source.write_bytes(b'X'*512+pdf_fixture()+b'Y'*512+rar_fixture()+b'Z'*512)
