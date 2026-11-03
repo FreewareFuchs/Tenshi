@@ -157,6 +157,7 @@ class SignatureSearchTests(unittest.TestCase):
         # Signature jobs written before configurable limits remain resumable.
         original['resume_request']['scan'].pop('signature_file_limit')
         original['resume_request']['scan'].pop('signature_categories')
+        original['resume_request']['scan'].pop('signature_parser_revision',None)
         manifest.write_text(json.dumps(original), encoding='utf-8')
         old_job = prepare_saved_export(read_saved_export(manifest))
         self.assertEqual(old_job['selection'][0].name, index.entries[0].name)

@@ -41,6 +41,7 @@ class SavedExport:
     tolerant: bool
     signature_file_limit: int | None = None
     signature_categories: tuple[str, ...] | None = None
+    signature_parser_revision: int = 1
 
     @property
     def source(self): return self.identity['source']
@@ -55,6 +56,7 @@ def resume_metadata(index, selection):
     if getattr(index, 'filesystem', None) == SIGNATURE_FS:
         scan['signature_file_limit'] = getattr(index, 'signature_file_limit', 32*1024**2)
         scan['signature_categories'] = list(getattr(index, 'signature_categories', ('images','office','archives','audio','video')))
+        scan['signature_parser_revision'] = getattr(index,'signature_parser_revision',1)
     return dict(schema=1,selected=[_key(e) for e in _selected_roots(index,selection)], scan=scan)
 
 
@@ -132,6 +134,8 @@ def read_saved_export(filename):
         scan=request['scan'];limit=scan['max_records'];tolerant=scan['tolerant']
         signature_limit=scan.get('signature_file_limit')
         signature_categories=scan.get('signature_categories')
+        signature_revision=scan.get('signature_parser_revision',1)
+        _require(type(signature_revision) is int and signature_revision in (1,2))
         if signature_limit is not None or signature_categories is not None:
             _require(identity['filesystem'] == SIGNATURE_FS)
             _require(type(signature_limit) is int and 0 < signature_limit <= 256*1024**2)
@@ -144,7 +148,7 @@ def read_saved_export(filename):
     except (KeyError,TypeError,ValueError) as exc:
         raise ExportResumeError('Ungültige gespeicherte Exportauswahl.') from exc
     return SavedExport(str(root),identity,signature,tuple(keys),limit,tolerant,signature_limit,
-                       tuple(signature_categories) if signature_categories is not None else None)
+                       tuple(signature_categories) if signature_categories is not None else None,signature_revision)
 
 
 def prepare_saved_export(saved, *, cancel=None, progress=None):
@@ -168,6 +172,7 @@ def prepare_saved_export(saved, *, cancel=None, progress=None):
         elif identity['filesystem'] in (SIGNATURE_FS,LEGACY_SIGNATURE_FS):
             index=scan_signatures(source,category=('all' if identity['filesystem']==SIGNATURE_FS else 'images'),
                                   categories=saved.signature_categories, max_file_bytes=saved.signature_file_limit,
+                                  parser_revision=saved.signature_parser_revision,
                                   cancel=cancel,progress=progress)
             if identity['filesystem']==LEGACY_SIGNATURE_FS:
                 index.filesystem=LEGACY_SIGNATURE_FS

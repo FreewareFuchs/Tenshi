@@ -1402,6 +1402,20 @@ add('Signatursuche abgebrochen.','Signature search cancelled.','Búsqueda de fir
 add('Signatursuche fehlgeschlagen.','Signature search failed.','La búsqueda de firmas ha fallado.','签名搜索失败。','Ошибка поиска сигнатур.','シグネチャ検索に失敗しました。')
 add('Bilder suchen','Search images','Buscar imágenes','搜索图像','Поиск изображений','画像を検索')
 add('Kategorien gemeinsam suchen…','Search categories together…','Buscar categorías juntas…','联合搜索类别…','Искать категории вместе…','複数のカテゴリを検索…')
+add('Office/PDF suchen','Search Office/PDF','Buscar Office/PDF','搜索 Office/PDF','Искать Office/PDF','Office/PDFを検索')
+add('Ungültige Suchversion.','Invalid search version.','Versión de búsqueda no válida.','搜索版本无效。','Недопустимая версия поиска.','検索バージョンが無効です。')
+add('Älterer Suchstand: PDF/RAR erfordern eine neue Suche.',
+    'Older search progress: start a new search to include PDF/RAR.',
+    'Progreso antiguo: inicia una búsqueda nueva para incluir PDF/RAR.',
+    '旧版搜索进度：需开始新搜索才能包含 PDF/RAR。',
+    'Старое состояние поиска: для PDF/RAR начните новый поиск.',
+    '旧版の検索状況: PDF/RARを含めるには新しい検索を開始してください。')
+add('Office/PDF umfasst auch PDF-Strukturkandidaten mit Querverweistabelle oder Querverweisstrom. RAR 4/5 wird über Header-Prüfsummen und Blocklängen erkannt. Mehrteilige RAR-Archive und verschlüsselte RAR-Header werden nicht unterstützt. Dokumentaktionen werden nicht ausgeführt und Archive nicht entpackt. Ältere Suchstände behalten ihren bisherigen Formatumfang; für PDF/RAR eine neue Suche starten.',
+    'Office/PDF also includes PDF candidates with cross-reference tables or streams. RAR 4/5 uses header checksums and block lengths. Multi-volume RAR and encrypted RAR headers are not supported. Document actions are not run and archives are not extracted. Older saved searches keep their original formats; start a new search for PDF/RAR.',
+    'Office/PDF incluye candidatos PDF con tablas o flujos de referencias. RAR 4/5 usa sumas de cabeceras y tamaños de bloques. No se admiten volúmenes RAR ni cabeceras cifradas. No se ejecutan acciones ni se extraen archivos. Las búsquedas guardadas antiguas conservan sus formatos; inicia otra para PDF/RAR.',
+    'Office/PDF 包含具有交叉引用表或流的 PDF 结构候选。RAR 4/5 根据头部校验和与块长度识别。不支持分卷 RAR 或加密头部。不执行文档操作，也不解压归档。旧搜索进度保留原格式范围；PDF/RAR 需开始新搜索。',
+    'Office/PDF включает PDF с таблицами или потоками перекрёстных ссылок. RAR 4/5 проверяется по контрольным суммам заголовков и длинам блоков. Многотомные RAR и зашифрованные заголовки не поддерживаются. Действия документов не выполняются, архивы не распаковываются. Старые поиски сохраняют прежние форматы; для PDF/RAR начните новый поиск.',
+    'Office/PDFには相互参照表やストリームを持つPDF候補も含まれます。RAR 4/5はヘッダーのチェックサムとブロック長で識別します。分割RARや暗号化ヘッダーは未対応です。文書の操作は実行せず、アーカイブは展開しません。旧版の検索状況は以前の形式を維持するため、PDF/RARには新しい検索を開始してください。')
 add('Suchstand speichern','Save search progress','Guardar progreso de búsqueda','保存搜索进度','Сохранять ход поиска','検索状況を保存')
 add('Suchstand oder Sucheinstellungen wurden geändert. Bitte erneut öffnen.',
     'Search progress or settings have changed. Please open it again.',
@@ -1442,27 +1456,27 @@ add('Suchstand speichern sichert vollständig bearbeitete Abschnitte. Mit Anhalt
     '保存搜索进度可保存已完成的区段。停止后可通过打开搜索进度在重启后继续。请先选择同一镜像。类别和大小上限将恢复，并重新检查源和候选文件。未完成的区段会重新扫描。源检查使用抽样。',
     'Сохраняются полностью обработанные участки. Остановите поиск и откройте сохранённый ход, чтобы продолжить после перезапуска. Сначала выберите тот же образ. Категории и лимит восстановятся; источник и находки проверяются повторно. Незавершённый участок повторяется. Источник проверяется выборочно.',
     '完了した区間の検索状況を保存できます。停止後に検索状況を開くと、再起動後も続行できます。先に同じイメージを選択してください。カテゴリと上限を復元し、ソースと候補を再検証します。未完了の区間は再検索します。ソースの検証にはサンプルを使います。')
-add('Prüfgrenze für JPEG/PNG/GIF/TIFF und Office/ZIP (MiB):',
-    'JPEG/PNG/GIF/TIFF and Office/ZIP limit (MiB):',
-    'Límite JPEG/PNG/GIF/TIFF y Office/ZIP (MiB):',
-    'JPEG/PNG/GIF/TIFF 和 Office/ZIP 上限（MiB）：',
-    'Лимит JPEG/PNG/GIF/TIFF и Office/ZIP (МиБ):',
-    'JPEG/PNG/GIF/TIFF・Office/ZIPの上限 (MiB):')
+add('Prüfgrenze für JPEG/PNG/GIF/TIFF/PDF und Office/ZIP (MiB):',
+    'JPEG/PNG/GIF/TIFF/PDF and Office/ZIP limit (MiB):',
+    'Límite JPEG/PNG/GIF/TIFF/PDF y Office/ZIP (MiB):',
+    'JPEG/PNG/GIF/TIFF/PDF 和 Office/ZIP 上限（MiB）：',
+    'Лимит JPEG/PNG/GIF/TIFF/PDF и Office/ZIP (МиБ):',
+    'JPEG/PNG/GIF/TIFF/PDF・Office/ZIPの上限 (MiB):')
 add('Ungültige Größenbegrenzung für die Signatursuche.', 'Invalid signature-search size limit.',
     'Límite de tamaño no válido para buscar firmas.', '签名搜索大小上限无效。',
     'Недопустимый предел размера для поиска сигнатур.', 'シグネチャ検索のサイズ上限が無効です。')
-add('Die Prüfgrenze ist auf 32, 64, 128 oder 256 MiB einstellbar. Sie gilt für JPEG/PNG/GIF/TIFF und Office/ZIP. Größere Grenzen können mehr Lesezeit benötigen; das Gesamtbudget bleibt begrenzt. Vorschau und Inhaltsprüfung behalten ihre eigenen Grenzen.',
-    'The inspection limit can be set to 32, 64, 128 or 256 MiB for JPEG/PNG/GIF/TIFF and Office/ZIP. Larger limits may require more reading time; the total budget stays bounded. Preview and content checks keep their own limits.',
-    'El límite se puede ajustar a 32, 64, 128 o 256 MiB para JPEG/PNG/GIF/TIFF y Office/ZIP. Un límite mayor puede requerir más tiempo de lectura; el presupuesto total sigue limitado. La vista previa y comprobación de contenido tienen sus propios límites.',
-    'JPEG/PNG/GIF/TIFF 和 Office/ZIP 的检查上限可设为 32、64、128 或 256 MiB。更高的上限可能需要更长的读取时间；总读取预算仍受限制。预览和内容检查有各自的上限。',
-    'Для JPEG/PNG/GIF/TIFF и Office/ZIP можно выбрать 32, 64, 128 или 256 МиБ. Больший лимит может увеличить время чтения; общий бюджет ограничен. Предпросмотр и проверка содержимого имеют собственные ограничения.',
-    'JPEG/PNG/GIF/TIFF・Office/ZIPの検査上限を32、64、128、256 MiBから選択できます。上限を増やすと読み取り時間が増える場合がありますが、合計読み取り量にも上限があります。プレビューと内容検査には別の上限があります。')
-add('JPEG/PNG/GIF/TIFF und Office/ZIP: maximal {limit} MiB je Fund. Andere Formate können größer sein. Maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen je Suchlauf. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',
-    'JPEG/PNG/GIF/TIFF and Office/ZIP: up to {limit} MiB per candidate. Other formats may be larger. Up to 1000 candidates, 5000 starting signatures and 512 MiB of additional structural reads per scan. The whole image is scanned; limits may leave results incomplete. Start now?',
-    'JPEG/PNG/GIF/TIFF y Office/ZIP: hasta {limit} MiB por hallazgo. Otros formatos pueden ser mayores. Hasta 1000 hallazgos, 5000 firmas iniciales y 512 MiB de lecturas estructurales adicionales por análisis. Se recorre toda la imagen; los límites pueden dejar resultados incompletos. ¿Iniciar?',
-    'JPEG/PNG/GIF/TIFF 和 Office/ZIP：每个候选文件最多 {limit} MiB。其他格式可以更大。每次扫描最多 1000 个候选、5000 个起始签名和 512 MiB 的额外结构读取。扫描整个镜像；达到上限时结果可能不完整。现在开始？',
-    'JPEG/PNG/GIF/TIFF и Office/ZIP: до {limit} МиБ на находку. Другие форматы могут быть больше. За один поиск: до 1000 находок, 5000 начальных сигнатур и 512 МиБ дополнительного чтения структур. Проверяется весь образ; лимиты могут сделать результаты неполными. Начать?',
-    'JPEG/PNG/GIF/TIFF・Office/ZIP: 候補ごとに最大{limit} MiB。他の形式はこれより大きい場合があります。1回の検索で最大1000候補、5000開始シグネチャ、追加構造読み取り512 MiB。イメージ全体を走査し、上限により結果が不完全になる場合があります。開始しますか？')
+add('Die Prüfgrenze ist auf 32, 64, 128 oder 256 MiB einstellbar. Sie gilt für JPEG/PNG/GIF/TIFF/PDF und Office/ZIP. Größere Grenzen können mehr Lesezeit benötigen; das Gesamtbudget bleibt begrenzt. Vorschau und Inhaltsprüfung behalten ihre eigenen Grenzen.',
+    'The inspection limit can be set to 32, 64, 128 or 256 MiB for JPEG/PNG/GIF/TIFF/PDF and Office/ZIP. Larger limits may require more reading time; the total budget stays bounded. Preview and content checks keep their own limits.',
+    'El límite se puede ajustar a 32, 64, 128 o 256 MiB para JPEG/PNG/GIF/TIFF/PDF y Office/ZIP. Un límite mayor puede requerir más tiempo de lectura; el presupuesto total sigue limitado. La vista previa y comprobación de contenido tienen sus propios límites.',
+    'JPEG/PNG/GIF/TIFF/PDF 和 Office/ZIP 的检查上限可设为 32、64、128 或 256 MiB。更高的上限可能需要更长的读取时间；总读取预算仍受限制。预览和内容检查有各自的上限。',
+    'Для JPEG/PNG/GIF/TIFF/PDF и Office/ZIP можно выбрать 32, 64, 128 или 256 МиБ. Больший лимит может увеличить время чтения; общий бюджет ограничен. Предпросмотр и проверка содержимого имеют собственные ограничения.',
+    'JPEG/PNG/GIF/TIFF/PDF・Office/ZIPの検査上限を32、64、128、256 MiBから選択できます。上限を増やすと読み取り時間が増える場合がありますが、合計読み取り量にも上限があります。プレビューと内容検査には別の上限があります。')
+add('JPEG/PNG/GIF/TIFF/PDF und Office/ZIP: maximal {limit} MiB je Fund. Andere Formate können größer sein. Maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen je Suchlauf. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',
+    'JPEG/PNG/GIF/TIFF/PDF and Office/ZIP: up to {limit} MiB per candidate. Other formats may be larger. Up to 1000 candidates, 5000 starting signatures and 512 MiB of additional structural reads per scan. The whole image is scanned; limits may leave results incomplete. Start now?',
+    'JPEG/PNG/GIF/TIFF/PDF y Office/ZIP: hasta {limit} MiB por hallazgo. Otros formatos pueden ser mayores. Hasta 1000 hallazgos, 5000 firmas iniciales y 512 MiB de lecturas estructurales adicionales por análisis. Se recorre toda la imagen; los límites pueden dejar resultados incompletos. ¿Iniciar?',
+    'JPEG/PNG/GIF/TIFF/PDF 和 Office/ZIP：每个候选文件最多 {limit} MiB。其他格式可以更大。每次扫描最多 1000 个候选、5000 个起始签名和 512 MiB 的额外结构读取。扫描整个镜像；达到上限时结果可能不完整。现在开始？',
+    'JPEG/PNG/GIF/TIFF/PDF и Office/ZIP: до {limit} МиБ на находку. Другие форматы могут быть больше. За один поиск: до 1000 находок, 5000 начальных сигнатур и 512 МиБ дополнительного чтения структур. Проверяется весь образ; лимиты могут сделать результаты неполными. Начать?',
+    'JPEG/PNG/GIF/TIFF/PDF・Office/ZIP: 候補ごとに最大{limit} MiB。他の形式はこれより大きい場合があります。1回の検索で最大1000候補、5000開始シグネチャ、追加構造読み取り512 MiB。イメージ全体を走査し、上限により結果が不完全になる場合があります。開始しますか？')
 add('Ausgewählte Kategorien werden in einem Durchgang durchsucht.',
     'Selected categories are searched in a single pass.',
     'Las categorías seleccionadas se buscan en una sola pasada.',

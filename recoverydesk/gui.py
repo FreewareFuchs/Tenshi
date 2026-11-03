@@ -1835,7 +1835,7 @@ class RecoveryDeskApp(tk.Tk):
                   justify='left').pack(anchor='w', fill='x', pady=(2, 14))
         limits = ttk.Frame(panel)
         limits.pack(anchor='w', pady=(0, 10))
-        ttk.Label(limits, text=translate('Prüfgrenze für JPEG/PNG/GIF/TIFF und Office/ZIP (MiB):', self.language)).pack(side='left')
+        ttk.Label(limits, text=translate('Prüfgrenze für JPEG/PNG/GIF/TIFF/PDF und Office/ZIP (MiB):', self.language)).pack(side='left')
         self.signature_file_limit_mib = tk.StringVar(value='32')
         ttk.Combobox(limits, textvariable=self.signature_file_limit_mib,
                      values=('32', '64', '128', '256'), state='readonly', width=7).pack(side='left', padx=8)
@@ -1845,7 +1845,7 @@ class RecoveryDeskApp(tk.Tk):
         actions = ttk.Frame(panel)
         actions.pack(anchor='w', fill='x')
         self._signature_button_keys = {
-            'images':'Bilder suchen','office':'Office-Dateien suchen',
+            'images':'Bilder suchen','office':'Office/PDF suchen',
             'archives':'Archive suchen','audio':'Audiodateien suchen','video':'Videodateien suchen'}
         self.signature_search_buttons = {}
         for category, key in self._signature_button_keys.items():
@@ -2207,7 +2207,7 @@ class RecoveryDeskApp(tk.Tk):
         except (OSError,ValueError) as exc:
             messagebox.showerror(category_label,str(exc),parent=self);return
         note=(translate(SCOPE,self.language)+'\n\n'+translate(
-            'JPEG/PNG/GIF/TIFF und Office/ZIP: maximal {limit} MiB je Fund. Andere Formate können größer sein. Maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen je Suchlauf. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',self.language).format(limit=file_limit_mib))
+            'JPEG/PNG/GIF/TIFF/PDF und Office/ZIP: maximal {limit} MiB je Fund. Andere Formate können größer sein. Maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen je Suchlauf. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',self.language).format(limit=file_limit_mib))
         scan_options['max_file_bytes'] = file_limit_mib * 1024**2
         if not messagebox.askyesno(category_label,note,parent=self):return
         if checkpoint_path is None and self.signature_save_checkpoint.get():
@@ -2252,6 +2252,8 @@ class RecoveryDeskApp(tk.Tk):
                         self._show_browser_index(source,index,prepared=(paths,warnings,display_tmp))
                         text=translate('Signatursuche beendet: {count} Funde.',self.language).format(count=len(index.entries))
                         if not index.signature_complete:text+=' Prüfgrenze erreicht; Ergebnis unvollständig.'
+                        if getattr(index,'signature_parser_revision',2) == 1:
+                            text+=' '+translate('Älterer Suchstand: PDF/RAR erfordern eine neue Suche.',self.language)
                         self.signature_result_source=source
                         self.signature_status.set(text)
                         self.signature_results_button.configure(state='normal')

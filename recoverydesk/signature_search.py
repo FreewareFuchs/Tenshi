@@ -166,13 +166,14 @@ def _snapshot(value):
 
 
 def scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None,
-                    checkpoint_path=None,resume=False):
+                    checkpoint_path=None,resume=False,parser_revision=2):
     """Optionally persist completed scan blocks and resume an explicitly selected image."""
     if checkpoint_path is None:
         if resume:
             raise ValueError('Bitte einen gespeicherten Suchstand auswählen.')
         return _scan_signatures(source,category=category,categories=categories,
-                                max_file_bytes=max_file_bytes,cancel=cancel,progress=progress)
+                                max_file_bytes=max_file_bytes,cancel=cancel,progress=progress,
+                                _parser_revision=parser_revision)
     from .signature_checkpoint import read_checkpoint, CheckpointWriter
     from .session_store import fingerprint_image, check_fingerprint
     if max_file_bytes is not None and max_file_bytes not in tuple(m*1024**2 for m in (32,64,128,256)):
@@ -187,6 +188,7 @@ def scan_signatures(source,*,category='images',categories=None,max_file_bytes=No
         fingerprint = check_fingerprint(source,state['fingerprint'],original=state['source'])
         categories = tuple(state['categories'])
         max_file_bytes = state['file_limit']
+        parser_revision = state.get('parser_revision',1)
     else:
         fingerprint = fingerprint_image(source,[1])
     source_snapshot = _snapshot(os.stat(source))
@@ -195,7 +197,8 @@ def scan_signatures(source,*,category='images',categories=None,max_file_bytes=No
     writer = CheckpointWriter(checkpoint_path,source,fingerprint,source_snapshot)
     try:
         return _scan_signatures(source,category=category,categories=categories,max_file_bytes=max_file_bytes,
-                                cancel=cancel,progress=progress,_resume=state,_checkpoint=writer.update)
+                                cancel=cancel,progress=progress,_resume=state,_checkpoint=writer.update,
+                                _parser_revision=parser_revision)
     finally:
         writer.flush()
 
@@ -206,7 +209,7 @@ def _signature_entry(start,size,kind):
                'XLSX':'xlsx','XLSM':'xlsm','XLTX':'xltx','XLTM':'xltm',
                'PPTX':'pptx','PPTM':'pptm','POTX':'potx','POTM':'potm',
                'ODT':'odt','ODS':'ods','ODP':'odp','ODG':'odg','ZIP':'zip',
-               'TAR':'tar','7Z':'7z','WAV':'wav','AVI':'avi','MP4':'mp4',
+               'TAR':'tar','7Z':'7z','RAR':'rar','PDF':'pdf','WAV':'wav','AVI':'avi','MP4':'mp4',
                'OGG-Vorbis':'ogg','OGG-Opus':'opus','MP3':'mp3'}.get(kind)
     if extension is None:
         raise ValueError('Ungültiger gespeicherter Suchstand.')
@@ -214,9 +217,11 @@ def _signature_entry(start,size,kind):
 
 
 def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None,
-                     _resume=None,_checkpoint=None):
+                     _resume=None,_checkpoint=None,_parser_revision=2):
     """Search selected categories in a single sequential pass over a regular image."""
     available = ('images','office','archives','audio','video')
+    if type(_parser_revision) is not int or _parser_revision not in (1,2):
+        raise ValueError('Ungültige Suchversion.')
     selected = frozenset(categories) if categories is not None else frozenset(available if category == 'all' else (category,))
     if not selected or not selected.issubset(available):
         raise ValueError('Unbekannte Signaturkategorie.')
@@ -238,6 +243,8 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
             validation = _Budget(file_limit,cancel)
             for start, expected_size, expected_kind in _resume['hits']:
                 _stop(cancel)
+                if _parser_revision == 1 and expected_kind in ('PDF','RAR'):
+                    raise ValueError('Ungültiger gespeicherter Suchstand.')
                 try:
                     if expected_kind in ('PNG','JPEG'):
                         if 'images' not in selected:raise _Invalid()
@@ -258,6 +265,7 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
             if _checkpoint is not None:
                 _checkpoint(dict(position=position,last=last,candidates=candidates,inspection=budget[0],
                                  categories=[key for key in available if key in selected],file_limit=file_limit,
+                                 parser_revision=_parser_revision,
                                  limited=limited,hits=[[e.locator[1],e.size,e.name.split('_',1)[0]] for e in entries]))
         save_block()
         if _resume is not None and progress:progress(position,total)
@@ -273,6 +281,10 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
             else:signatures=[]
             if selected.intersection(('office','archives')):
                 signatures.append((b'PK\x03\x04','OTHER'))
+            if _parser_revision >= 2 and 'office' in selected:
+                signatures.append((b'%PDF-','OTHER'))
+            if _parser_revision >= 2 and 'archives' in selected:
+                signatures.append((b'Rar!\x1a\x07','OTHER'))
             if 'archives' in selected:
                 signatures.append((b'7z\xbc\xaf\x27\x1c','OTHER'))
             if selected.intersection(('audio','video')):
@@ -326,4 +338,7 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
     index.signature_category=category
     index.signature_categories=tuple(key for key in available if key in selected)
     index.signature_file_limit=file_limit
+    index.signature_parser_revision=_parser_revision
+    if _parser_revision == 1:
+        index.scan_warnings.append('Älterer Suchstand: PDF/RAR erfordern eine neue Suche.')
     return index
