@@ -7,9 +7,10 @@ def format_scan_report(source, index) -> str:
     lines = ["Tenshi – Analysebericht", "UTC: " + datetime.now(timezone.utc).isoformat(),
              "Quelle: " + source, "Quelle nur gelesen, kein Dateisystem repariert.", ""]
     fs = getattr(index, 'filesystem', 'NTFS')
-    if fs=='JPEG/PNG signatures v1':
-        lines.extend(['Signatursuche: JPEG/PNG',
-            f'Gefundene Bildstrukturen: {len(index.entries)}',
+    if fs in ('JPEG/PNG signatures v1','File signatures v2'):
+        category=getattr(index,'signature_category','images')
+        lines.extend([f'Signatursuche: {category}',
+            f'Gefundene Dateistrukturen: {len(index.entries)}',
             f'Suchbereich gelesen: {index.signature_scanned_bytes} / {index.signature_source_bytes} Bytes',
             f'Untersuchte Anfangssignaturen: {index.signature_candidates}',
             f'Bis zum Image-Ende gesucht: {index.signature_complete}',

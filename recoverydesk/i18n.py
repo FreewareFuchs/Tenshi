@@ -289,12 +289,12 @@ add('MFT-Auswertungsfehler', 'MFT parsing errors', 'Errores de interpretación M
 add('MFT-Lesefehler', 'MFT read errors', 'Errores de lectura MFT', 'MFT 读取错误', 'Ошибки чтения MFT', 'MFT読み取りエラー')
 add('Attributlisten-Limit: nicht untersuchte Basisrecords', 'Attribute-list limit: unexamined base records', 'Límite de listas de atributos: registros base no examinados', '属性列表上限：未检查的基础记录', 'Лимит списков атрибутов: непроверенные базовые записи', '属性リスト上限：未調査の基本レコード')
 add('Verzeichnisindex-Auswertungsmeldungen', 'Directory index parsing notices', 'Avisos de interpretación de índices de directorio', '目录索引解析提示', 'Сообщения разбора индексов каталогов', 'ディレクトリ索引の解析通知')
-add('Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Diagnose… → Analysebericht speichern.',
-    'The file list may be incomplete. Parsing errors or reached limits do not prove drive damage. Details: Diagnostics… → Save analysis report.',
-    'La lista puede estar incompleta. Los errores de interpretación o límites alcanzados no demuestran daños en la unidad. Detalles: Diagnóstico… → Guardar informe de análisis.',
-    '文件列表可能不完整。解析错误或达到上限并不能证明磁盘损坏。详情：诊断… → 保存分析报告。',
-    'Список файлов может быть неполным. Ошибки разбора или достижение лимитов не доказывают повреждение диска. Подробности: Диагностика… → Сохранить отчёт анализа.',
-    'ファイル一覧は不完全な可能性があります。解析エラーや上限到達だけではディスクの損傷を証明しません。詳細：診断… → 解析レポートを保存。')
+add('Die Dateiliste kann unvollständig sein. Auswertungsfehler oder erreichte Limits beweisen keinen Datenträgerschaden. Details: Scanoptionen… → Analysebericht speichern.',
+    'The file list may be incomplete. Parsing errors or reached limits do not prove drive damage. Details: Scan options… → Save analysis report.',
+    'La lista puede estar incompleta. Los errores de interpretación o límites alcanzados no demuestran daños en la unidad. Detalles: Opciones de análisis… → Guardar informe de análisis.',
+    '文件列表可能不完整。解析错误或达到上限并不能证明磁盘损坏。详情：扫描选项… → 保存分析报告。',
+    'Список файлов может быть неполным. Ошибки разбора или достижение лимитов не доказывают повреждение диска. Подробности: Параметры сканирования… → Сохранить отчёт анализа.',
+    'ファイル一覧は不完全な可能性があります。解析エラーや上限到達だけではディスクの損傷を証明しません。詳細：スキャン設定… → 解析レポートを保存。')
 
 # Imaging controls (Tenshi 2.7.0)
 add('Leseversuche:', 'Read retries:', 'Reintentos:', '重试读取：', 'Повторы чтения:', '再読み取り回数:')
@@ -471,6 +471,8 @@ add('MFT-Limit (0=alle):','MFT limit (0=all):','Límite MFT (0=todos):','MFT 限
 add('Dateisystem einlesen','Read file system','Leer sistema de archivos','读取文件系统','Прочитать файловую систему','ファイルシステムを読み取る')
 add('Scan abbrechen','Cancel scan','Cancelar análisis','取消扫描','Отменить анализ','スキャン中止')
 add('Diagnose…','Diagnostics…','Diagnóstico…','诊断…','Диагностика…','診断…')
+add('Scanoptionen…','Scan options…','Opciones de análisis…','扫描选项…','Параметры сканирования…','スキャン設定…')
+add('Scanoptionen','Scan options','Opciones de análisis','扫描选项','Параметры сканирования','スキャン設定')
 add('Fehlertolerante Suche (nur Images)','Fault-tolerant scan (images only)','Análisis tolerante a fallos (solo imágenes)','容错扫描（仅镜像）','Поиск с пропуском ошибок (только образы)','エラー許容スキャン (イメージのみ)')
 add('Analysebericht speichern','Save analysis report','Guardar informe del análisis','保存分析报告','Сохранить отчёт анализа','解析レポートを保存')
 add('Gelöschte Einträge anzeigen','Show deleted entries','Mostrar elementos eliminados','显示已删除条目','Показать удалённые записи','削除済み項目を表示')
@@ -854,12 +856,12 @@ add('NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Datei
     'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  分区 · 文件与文件夹',
     'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Разделы · Файлы и папки',
     'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  パーティション · ファイルとフォルダー')
-add('NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner · Bildsignaturen',
-    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitions · Files & Folders · Image signatures',
-    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Particiones · Archivos y carpetas · Firmas de imágenes',
-    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  分区 · 文件与文件夹 · 图像签名',
-    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Разделы · Файлы и папки · Сигнатуры изображений',
-    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  パーティション · ファイルとフォルダー · 画像シグネチャ')
+add('NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitionen · Dateien & Ordner · Dateisignaturen',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Partitions · Files & Folders · File signatures',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Particiones · Archivos y carpetas · Firmas de archivos',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  分区 · 文件与文件夹 · 文件签名',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  Разделы · Файлы и папки · Сигнатуры файлов',
+    'NTFS · FAT32 · exFAT · ext2/3/4 · Btrfs · XFS  |  パーティション · ファイルとフォルダー · ファイルシグネチャ')
 add('Dateiansicht: NTFS, FAT32, exFAT, ext2/3/4 sowie eingeschränkt Btrfs und XFS. Gelöschte Dateien: NTFS, FAT32, exFAT und ext2/3/4 teilweise rettbar; Btrfs/XFS nur nicht exportierbare Metadatenhinweise. Ein Export garantiert keine intakten Inhalte.',
     'File browser: NTFS, FAT32, exFAT, ext2/3/4, with limited Btrfs/XFS support. Deleted files: partial recovery for NTFS, FAT32, exFAT and ext2/3/4; Btrfs/XFS provide non-exportable metadata hints only. An export does not guarantee intact contents.',
     'Explorador: NTFS, FAT32, exFAT, ext2/3/4 y Btrfs/XFS con limitaciones. Borrados: recuperación parcial en NTFS, FAT32, exFAT y ext2/3/4; Btrfs/XFS solo muestran pistas de metadatos no exportables. La exportación no garantiza archivos íntegros.',
@@ -1393,18 +1395,22 @@ add('Vorschau: bis 128 KiB Text oder 32 MiB Bild-/Dokumentdaten. Keine Bestätig
     'プレビュー：テキスト128 KiB、画像・文書32 MiBまで。元の内容の確認ではありません。')
 
 # Image signature search.
-add('▣  Bildsignaturen','▣  Image signatures','▣  Firmas de imágenes','▣  图像签名','▣  Сигнатуры изображений','▣  画像シグネチャ')
-add('Bildsignaturen','Image signatures','Firmas de imágenes','图像签名','Сигнатуры изображений','画像シグネチャ')
+add('▣  Dateisignaturen','▣  File signatures','▣  Firmas de archivos','▣  文件签名','▣  Сигнатуры файлов','▣  ファイルシグネチャ')
+add('Dateisignaturen','File signatures','Firmas de archivos','文件签名','Сигнатуры файлов','ファイルシグネチャ')
 add('Ergebnisse in Dateien & Ordner anzeigen','Show results in Files & folders','Mostrar resultados en Archivos y carpetas','在“文件与文件夹”中显示结果','Показать результаты в разделе «Файлы и папки»','「ファイルとフォルダー」に結果を表示')
 add('Signatursuche abgebrochen.','Signature search cancelled.','Búsqueda de firmas cancelada.','签名搜索已取消。','Поиск сигнатур отменён.','シグネチャ検索を中止しました。')
 add('Signatursuche fehlgeschlagen.','Signature search failed.','La búsqueda de firmas ha fallado.','签名搜索失败。','Ошибка поиска сигнатур.','シグネチャ検索に失敗しました。')
-add('Bildsignaturen suchen','Search image signatures','Buscar firmas de imágenes','搜索图像签名','Поиск сигнатур изображений','画像シグネチャを検索')
+add('Bilder suchen','Search images','Buscar imágenes','搜索图像','Поиск изображений','画像を検索')
+add('Office-Dateien suchen','Search Office files','Buscar archivos de Office','搜索 Office 文件','Поиск файлов Office','Office ファイルを検索')
+add('Archive suchen','Search archives','Buscar archivos comprimidos','搜索归档文件','Поиск архивов','アーカイブを検索')
+add('Audiodateien suchen','Search audio files','Buscar archivos de audio','搜索音频文件','Поиск аудиофайлов','音声ファイルを検索')
+add('Videodateien suchen','Search video files','Buscar archivos de vídeo','搜索视频文件','Поиск видеофайлов','動画ファイルを検索')
 add('Signatursuche erfordert ein reguläres Image.','Signature search requires a regular image file.','La búsqueda de firmas requiere un archivo de imagen normal.','签名搜索需要普通磁盘映像文件。','Для поиска сигнатур требуется обычный файл образа.','シグネチャ検索には通常のイメージファイルが必要です。')
-add('Signaturfunde: zusammenhängende JPEG/PNG-Strukturen, keine Originalnamen oder Ordner. Belegte und freie Bereiche werden durchsucht; ein Fund beweist weder Löschung noch unversehrte Originalinhalte. Fragmentierte Dateien werden nicht zusammengesetzt.','Signature candidates: contiguous JPEG/PNG structures, without original names or folders. Both allocated and free areas are searched; a match proves neither deletion nor intact original contents. Fragmented files are not reassembled.','Candidatos por firma: estructuras JPEG/PNG contiguas, sin nombres ni carpetas originales. Se buscan zonas ocupadas y libres; un hallazgo no demuestra eliminación ni contenido original intacto. No se reconstruyen archivos fragmentados.','签名候选项：连续的 JPEG/PNG 结构，不含原始名称或文件夹。搜索已分配和空闲区域；找到结构不能证明文件已删除或原始内容完整。不会重组碎片文件。','Кандидаты по сигнатурам: непрерывные структуры JPEG/PNG без исходных имён и папок. Проверяются занятые и свободные области; находка не доказывает удаление или целостность оригинала. Фрагментированные файлы не собираются.','シグネチャ候補は連続した JPEG/PNG 構造で、元の名前やフォルダーは不明です。使用中と空き領域の両方を検索します。検出は削除や元の内容の完全性を証明しません。断片化ファイルは再構成しません。')
-add('JPEG/PNG bis 32 MiB pro Fund. Maximal 1000 Funde und 5000 Anfangssignaturen; Prüfgrenzen können die Suche vorzeitig beenden. Das gesamte Image wird gelesen. Suche jetzt starten?','JPEG/PNG up to 32 MiB per candidate. At most 1000 candidates and 5000 starting signatures; limits may stop the search early. The entire image is read. Start search now?','JPEG/PNG de hasta 32 MiB por candidato. Máximo de 1000 hallazgos y 5000 firmas iniciales; los límites pueden detener la búsqueda antes de tiempo. Se lee toda la imagen. ¿Iniciar ahora?','每个 JPEG/PNG 候选项最大 32 MiB。最多 1000 个结果和 5000 个起始签名；达到限制可能提前停止搜索。将读取整个映像。现在开始搜索？','JPEG/PNG до 32 МиБ на кандидата. Не более 1000 находок и 5000 начальных сигнатур; ограничения могут остановить поиск раньше. Читается весь образ. Начать поиск?','JPEG/PNG は候補ごとに最大32 MiB。最大1000件、開始シグネチャ5000件で、上限により検索が早期終了する場合があります。イメージ全体を読みます。検索を開始しますか？')
-add('Bildsignaturen werden gesucht …','Searching image signatures …','Buscando firmas de imágenes…','正在搜索图像签名…','Поиск сигнатур изображений…','画像シグネチャを検索中…')
+add('Signaturfunde: erkannte zusammenhängende Dateistrukturen ohne Originalnamen oder Ordner. Belegte und freie Bereiche werden durchsucht; ein Fund beweist weder Löschung noch unversehrte Originalinhalte. Fragmente werden nicht zusammengesetzt.','Signature candidates are recognized contiguous file structures without original names or folders. Both allocated and free areas are searched; a match proves neither deletion nor intact original contents. Fragments are not reassembled.','Los candidatos son estructuras de archivo contiguas reconocidas, sin nombres ni carpetas originales. Se buscan zonas ocupadas y libres; un hallazgo no demuestra eliminación ni contenido original intacto. No se reconstruyen fragmentos.','签名候选项是识别出的连续文件结构，不含原始名称或文件夹。搜索已分配和空闲区域；找到结构不能证明文件已删除或原始内容完整。不会重组碎片。','Кандидаты — распознанные непрерывные структуры файлов без исходных имён и папок. Проверяются занятые и свободные области; находка не доказывает удаление или целостность оригинала. Фрагменты не собираются.','シグネチャ候補は認識された連続ファイル構造で、元の名前やフォルダーは不明です。使用中と空き領域の両方を検索します。検出は削除や元の内容の完全性を証明しません。断片は再構成しません。')
+add('Bis zu 1000 Funde und 5000 Anfangssignaturen. Das gesamte Image wird gelesen; Größen- und Prüfgrenzen können Ergebnisse unvollständig machen. Jetzt starten?','Up to 1000 candidates and 5000 starting signatures. The entire image is read; size and inspection limits may make results incomplete. Start now?','Hasta 1000 candidatos y 5000 firmas iniciales. Se lee toda la imagen; los límites de tamaño y comprobación pueden dejar resultados incompletos. ¿Iniciar?','最多 1000 个候选项和 5000 个起始签名。搜索会读取整个映像；大小和检查限制可能导致结果不完整。现在开始？','До 1000 находок и 5000 начальных сигнатур. Поиск читает весь образ; ограничения размера и проверки могут сделать результаты неполными. Начать?','候補は最大1000件、開始シグネチャは5000件です。イメージ全体を読み込み、サイズと検査の上限により結果が不完全になる場合があります。開始しますか？')
+add('Signatursuche läuft: {category} …','Signature search running: {category} …','Búsqueda de firmas en curso: {category}…','正在搜索签名：{category}…','Выполняется поиск сигнатур: {category}…','シグネチャ検索中：{category}…')
 add('Signatursuche: {done} / {total} MiB gelesen …','Signature search: {done} / {total} MiB read …','Búsqueda de firmas: {done} / {total} MiB leídos…','签名搜索：已读取 {done} / {total} MiB…','Поиск сигнатур: прочитано {done} / {total} МиБ…','シグネチャ検索：{done} / {total} MiB 読み取り済み…')
-add('Signatursuche beendet: {count} Bildstrukturen.','Signature search finished: {count} image structures.','Búsqueda de firmas finalizada: {count} estructuras de imagen.','签名搜索结束：{count} 个图像结构。','Поиск сигнатур завершён: структур изображений — {count}.','シグネチャ検索完了：画像構造 {count} 件。')
+add('Signatursuche beendet: {count} Funde.','Signature search finished: {count} candidates.','Búsqueda de firmas finalizada: {count} candidatos.','签名搜索结束：{count} 个候选项。','Поиск сигнатур завершён: находок — {count}.','シグネチャ検索完了：候補 {count} 件。')
 add('Prüfgrenze erreicht; Ergebnis unvollständig.','Limit reached; results are incomplete.','Límite alcanzado; resultados incompletos.','已达到检查限制；结果不完整。','Достигнут предел; результаты неполные.','検査上限に達したため、結果は不完全です。')
 add('Signaturfund · ungeprüft','Signature candidate · unverified','Candidato por firma · sin verificar','签名候选项 · 未验证','Кандидат по сигнатуре · не проверен','シグネチャ候補 · 未検証')
 add('Zusammenhängende Bildstruktur erkannt. Originalname, Ordner und Löschstatus sind unbekannt. Vorschau und Inhaltsprüfung bestätigen keine unversehrten Originalinhalte.','Contiguous image structure detected. Original name, folder and deletion status are unknown. Preview and content checks do not prove intact original contents.','Estructura de imagen contigua detectada. Nombre original, carpeta y estado de eliminación desconocidos. La vista previa y la comprobación del contenido no demuestran que el original esté intacto.','检测到连续图像结构。原始名称、文件夹和删除状态未知。预览和内容检查不能证明原始内容完整。','Обнаружена непрерывная структура изображения. Исходное имя, папка и факт удаления неизвестны. Предпросмотр и проверка содержимого не доказывают целостность оригинала.','連続した画像構造を検出しました。元の名前、フォルダー、削除状態は不明です。プレビューと内容検査は元の内容の完全性を証明しません。')

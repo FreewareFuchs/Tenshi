@@ -65,6 +65,7 @@ class SignatureGuiTests(unittest.TestCase):
             self.app.change_language(language)
             self.app._select_main_tab('signatures')
             self.app.update()
-            self.assertEqual(self.app.signature_search_button.cget('text'),
-                             translate('Bildsignaturen suchen',language))
-            self.assertTrue(self.app.signature_search_button.winfo_ismapped())
+            for category, key in self.app._signature_button_keys.items():
+                button = self.app.signature_search_buttons[category]
+                self.assertEqual(button.cget('text'), translate(key,language))
+                self.assertTrue(button.winfo_ismapped())

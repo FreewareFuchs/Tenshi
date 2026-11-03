@@ -187,7 +187,7 @@ class ExportQueueTests(unittest.TestCase):
             app.tabs.select(app.ntfs_tab);app.update()
             self.assertEqual(len(app.tabs.tabs()),3)
             self.assertEqual([app.tabs.tab(i,'text') for i in app.tabs.tabs()],
-                             ['Partitionen','Dateien & Ordner','Bildsignaturen'])
+                             ['Partitionen','Dateien & Ordner','Dateisignaturen'])
             self.assertNotIn('export_queue_tree',app.__dict__)
             self.assertNotIn('export_queue_bar',app.__dict__)
             self.assertNotIn('export_queue_frame',app.__dict__)
