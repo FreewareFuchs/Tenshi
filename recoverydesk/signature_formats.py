@@ -553,6 +553,13 @@ def parse(stream, start, total, budget, category):
     """Return (size, display type, category) for a recognized candidate."""
     head = _read(stream, start, min(12, total - start), total, budget)
     parsers = []
+    if category in ('office', 'all') and head.startswith(b'%PDF-'):
+        from .signature_pdf import pdf
+        parsers.append(pdf)
+    if category in ('archives', 'all') and head.startswith(b'Rar!\x1a\x07'):
+        from .signature_rar import rar4, rar5, RAR4, RAR5
+        if head.startswith(RAR4):parsers.append(rar4)
+        elif head.startswith(RAR5):parsers.append(rar5)
     if category in ('images', 'all'):
         if head.startswith((b'II*\0', b'MM\0*')):
             parsers.append(_tiff)

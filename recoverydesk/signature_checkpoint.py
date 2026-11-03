@@ -40,6 +40,8 @@ def validate_checkpoint(data):
     try:
         if not isinstance(data, dict) or data['schema'] != SCHEMA:
             raise ValueError()
+        revision = data.get('parser_revision',1)
+        if type(revision) is not int or revision not in (1,2):raise ValueError()
         source = data['source']
         if not isinstance(source, str) or not 0 < len(source) <= 32768 or '\0' in source or not os.path.isabs(source):
             raise ValueError()
