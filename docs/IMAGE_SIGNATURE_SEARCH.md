@@ -26,7 +26,9 @@ Nicht alle möglichen Varianten eines Formats werden erkannt. RAR, ZIP64, BigTIF
 - Ein Fund zeigt weder, ob eine Datei gelöscht war, noch ob der gesamte ursprüngliche Inhalt unversehrt ist. Originalnamen, Pfade, Zeitstempel und Fragmentzuordnung sind nicht bekannt.
 - Es werden belegte und freie Imagebereiche durchsucht. Daher können aktive Dateien, Vorschaubilder, eingebettete Objekte und überlappende Kandidaten erscheinen.
 - Es gibt keine Zusammensetzung fragmentierter Dateien und keine automatische Reparatur. Vorschau, Inhaltsprüfung und Export bleiben getrennte Aktionen.
-- Pro Suchlauf gelten maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen. JPEG/PNG/GIF/WebP/TIFF sowie ZIP-Indizes sind auf 32 MiB begrenzt; Formatlängen können bei anderen Formaten größere Fundbereiche bestimmen, maximal 4 TiB und nie über das Image-Ende hinaus.
+- Pro Suchlauf gelten maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen. Für JPEG/PNG/GIF/TIFF sowie Office-/ZIP-Dateien lässt sich vor dem Start eine Grenze von 32, 64, 128 oder 256 MiB je Fund wählen (Standard: 32 MiB). Dateien darüber können bei der Suche fehlen. Größere Grenzen erhöhen gegebenenfalls die Lesezeit; das Gesamtbudget gilt weiterhin für den gesamten Suchlauf.
+- JPEG/PNG und ZIP werden blockweise gelesen. ZIP-Inhalte werden nicht vollständig entpackt; nur der begrenzte Office-Inhaltstyp-Eintrag wird zur Typbestimmung entpackt und per CRC geprüft. TIFF-Metadaten und die übrigen Formatprüfungen haben zusätzliche feste Grenzen. Für BMP/WebP, Archive wie TAR/7z, Audio und Video können Formatlängen größere Fundbereiche bestimmen, maximal 4 TiB und nie über das Image-Ende hinaus.
+- Analysebericht und neue gespeicherte Exportaufträge enthalten die gewählte Grenze. Beim Fortsetzen werden Grenze und Kategorien des Auftrags erneut verwendet; alte Aufträge bleiben lesbar. Vorschau und Inhaltsprüfung behalten ihre eigenen 32-MiB-Grenzen.
 - Lesefehler brechen den Scan ab. Das Quell-Image wird vor und nach der Suche auf Identität und Metadatenänderungen kontrolliert und bleibt schreibgeschützt.
 
 ## Formatgrundlagen

@@ -14,7 +14,8 @@ def format_scan_report(source, index) -> str:
             f'Suchbereich gelesen: {index.signature_scanned_bytes} / {index.signature_source_bytes} Bytes',
             f'Untersuchte Anfangssignaturen: {index.signature_candidates}',
             f'Bis zum Image-Ende gesucht: {index.signature_complete}',
-            'Grenzen: 32 MiB pro Fund, 1000 Funde, 5000 Anfangssignaturen, 512 MiB zusätzliche Strukturprüfungen.',
+            f'Prüfgrenze JPEG/PNG/GIF/TIFF und Office/ZIP: {getattr(index, "signature_file_limit", 32*1024**2) // 1024**2} MiB je Fund. Andere Formate können größer sein.',
+            'Suchlaufgrenzen: 1000 Funde, 5000 Anfangssignaturen, 512 MiB zusätzliche Strukturprüfungen.',
             *index.scan_warnings])
         return '\n'.join(lines)+'\n'
     lines.append('Dateisystem: ' + fs)

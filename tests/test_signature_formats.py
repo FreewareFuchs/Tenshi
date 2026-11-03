@@ -7,6 +7,8 @@ import tempfile
 import unittest
 import wave
 import zipfile
+import zlib
+from unittest.mock import patch
 
 from PIL import Image
 
@@ -181,6 +183,60 @@ class SignatureFormatTests(unittest.TestCase):
         for categories in ((), ('unknown',), ('images', 'unknown')):
             with self.assertRaises(ValueError):
                 scan_signatures(str(self.source), categories=categories)
+
+    def test_zip_over_32_mib_uses_configured_limit_and_small_reads(self):
+        with zipfile.ZipFile(self.source, 'w', zipfile.ZIP_STORED) as archive:
+            with archive.open('large.bin', 'w') as entry:
+                for _ in range(33):
+                    entry.write(b'x' * 1024**2)
+        self.assertFalse(scan_signatures(str(self.source), category='archives').entries)
+        import recoverydesk.signature_formats as formats
+        with patch.object(formats, '_read', wraps=formats._read) as reads:
+            index = scan_signatures(str(self.source), category='archives', max_file_bytes=64*1024**2)
+        self.assertEqual(len(index.entries), 1)
+        self.assertEqual(index.entries[0].size, self.source.stat().st_size)
+        self.assertLessEqual(max(call.args[2] for call in reads.call_args_list), 64*1024)
+        from recoverydesk.filesystems import ScanCancelled
+        checks = []
+        def cancel():
+            checks.append(True)
+            return len(checks) > 10
+        with self.assertRaises(ScanCancelled):
+            scan_signatures(str(self.source), category='archives', max_file_bytes=64*1024**2, cancel=cancel)
+
+    def test_configured_image_limit_and_invalid_values(self):
+        data = image_bytes('PNG')
+        self.source.write_bytes(data + b'X' * 512)
+        self.assertFalse(scan_signatures(str(self.source), max_file_bytes=len(data)-1).entries)
+        index = scan_signatures(str(self.source), max_file_bytes=len(data))
+        self.assertEqual(index.entries[0].size, len(data))
+        for value in (0, -1, True, '64', 257*1024**2):
+            with self.assertRaises(ValueError):
+                scan_signatures(str(self.source), max_file_bytes=value)
+
+    def test_zip_end_record_across_streaming_block_boundary(self):
+        with zipfile.ZipFile(self.source, 'w', zipfile.ZIP_STORED) as archive:
+            archive.writestr('x', b'x' * (65536 - 10 - 78))
+            archive.comment = b'comment PK\x05\x06'
+        index = scan_signatures(str(self.source), category='archives')
+        self.assertEqual(len(index.entries), 1)
+        self.assertEqual(index.entries[0].size, self.source.stat().st_size)
+
+    def test_png_over_32_mib_is_read_incrementally(self):
+        png = image_bytes('PNG')
+        with self.source.open('wb') as stream:
+            stream.write(png[:33])
+            stream.write(struct.pack('>I4s', 33*1024**2, b'tEXt'))
+            crc = zlib.crc32(b'tEXt')
+            for _ in range(33):
+                block = b'K' * 1024**2
+                stream.write(block)
+                crc = zlib.crc32(block, crc)
+            stream.write(struct.pack('>I', crc & 0xffffffff))
+            stream.write(png[33:])
+        self.assertFalse(scan_signatures(str(self.source)).entries)
+        index = scan_signatures(str(self.source), max_file_bytes=64*1024**2)
+        self.assertEqual(index.entries[0].size, self.source.stat().st_size)
 
     def test_invalid_archive_and_wrong_category_are_rejected(self):
         invalid = bytearray(zip_bytes({'a.txt': b'a'}))

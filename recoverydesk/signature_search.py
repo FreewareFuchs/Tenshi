@@ -22,11 +22,22 @@ SCAN_BLOCK=1024**2
 MAX_CANDIDATES=5000
 MAX_HITS=1000
 MAX_INSPECTION=512*1024**2
+MAX_CONFIGURABLE_FILE=256*1024**2
 SCOPE='Signaturfunde: erkannte zusammenhängende Dateistrukturen ohne Originalnamen oder Ordner. Belegte und freie Bereiche werden durchsucht; ein Fund beweist weder Löschung noch unversehrte Originalinhalte. Fragmente werden nicht zusammengesetzt.'
 
 
 class _Invalid(ValueError):pass
 class _Limit(ValueError):pass
+
+
+class _Budget(list):
+    def __init__(self, file_limit, cancel):
+        super().__init__([0])
+        self.file_limit = file_limit
+        self.cancel = cancel
+
+    def check(self):
+        _stop(self.cancel)
 
 
 def _stop(cancel):
@@ -35,7 +46,7 @@ def _stop(cancel):
 
 class _Reader:
     def __init__(self,stream,start,total,budget,cancel):
-        self.stream=stream;self.start=start;self.limit=min(MAX_FILE,total-start)
+        self.stream=stream;self.start=start;self.limit=min(getattr(budget,'file_limit',MAX_FILE),total-start)
         self.pos=0;self.buffer=b'';self.budget=budget;self.cancel=cancel
     def read(self,n):
         _stop(self.cancel)
@@ -70,10 +81,11 @@ def _png(reader):
     ihdr=False;idat=False;ended_idat=False;palette=False;indexed=False
     for _ in range(4096):
         size,kind=struct.unpack('>I4s',reader.read(8))
-        if size>MAX_FILE or size+4>reader.limit-reader.pos:raise _Invalid()
+        if size+4>reader.limit-reader.pos:raise _Invalid()
         if any(not (65<=x<=90 or 97<=x<=122) for x in kind) or kind[2]&32:raise _Invalid()
         if not ihdr and (kind!=b'IHDR' or size!=13):raise _Invalid()
         if kind==b'IHDR' and ihdr:raise _Invalid()
+        if kind==b'IHDR' and size!=13:raise _Invalid()
         if kind[0]&32==0 and kind not in (b'IHDR',b'PLTE',b'IDAT',b'IEND'):raise _Invalid()
         crc=zlib.crc32(kind);remaining=size;header=b''
         while remaining:
@@ -153,18 +165,21 @@ def _snapshot(value):
     return value.st_dev,value.st_ino,value.st_size,value.st_mtime_ns
 
 
-def scan_signatures(source,*,category='images',categories=None,cancel=None,progress=None):
+def scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None):
     """Search selected categories in a single sequential pass over a regular image."""
     available = ('images','office','archives','audio','video')
     selected = frozenset(categories) if categories is not None else frozenset(available if category == 'all' else (category,))
     if not selected or not selected.issubset(available):
         raise ValueError('Unbekannte Signaturkategorie.')
+    file_limit = MAX_FILE if max_file_bytes is None else max_file_bytes
+    if type(file_limit) is not int or not 0 < file_limit <= MAX_CONFIGURABLE_FILE:
+        raise ValueError('Ungültige Größenbegrenzung für die Signatursuche.')
     category = next(iter(selected)) if len(selected) == 1 else 'all'
     validate_source(source)
     if is_device_source(source):raise ValueError('Signatursuche erfordert ein reguläres Image.')
     before=os.stat(source)
     if not stat.S_ISREG(before.st_mode) or before.st_size<512:raise ValueError('Signatursuche erfordert ein reguläres Image.')
-    entries=[];candidates=0;budget=[0];position=0;tail=b'';last=-1;limited=False
+    entries=[];candidates=0;budget=_Budget(file_limit,cancel);position=0;tail=b'';last=-1;limited=False
     with open_source(source) as stream:
         opened=os.fstat(stream.fileno())
         if _snapshot(opened)!=_snapshot(before):raise ValueError('Quell-Image wurde geändert.')
@@ -216,6 +231,7 @@ def scan_signatures(source,*,category='images',categories=None,cancel=None,progr
                     else:
                         size,kind,found_category=parse_format(stream,start,total,budget,category)
                         if found_category not in selected:continue
+                        if kind in ('GIF','TIFF') and size > file_limit:continue
                 except (FormatLimit, _Limit):limited=True;break
                 except (FormatInvalid, _Invalid):continue
                 extension={'PNG':'png','JPEG':'jpg','BMP':'bmp','GIF':'gif','WebP':'webp','TIFF':'tiff',
@@ -238,4 +254,5 @@ def scan_signatures(source,*,category='images',categories=None,cancel=None,progr
     index.signature_candidates=candidates;index.signature_complete=not limited
     index.signature_category=category
     index.signature_categories=tuple(key for key in available if key in selected)
+    index.signature_file_limit=file_limit
     return index
