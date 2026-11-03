@@ -8,6 +8,8 @@ Funde erscheinen danach in der bestehenden Dateiansicht und können dort wie and
 
 ## Unterstützte Strukturen
 
+Mit **Kategorien gemeinsam suchen…** lassen sich mehrere Kategorien auswählen. Standardmäßig sind alle fünf ausgewählt; mindestens eine muss aktiv bleiben. Tenshi durchsucht die Quelle dabei in einem gemeinsamen Durchgang und veröffentlicht die passenden Funde in einer gemeinsamen Ergebnisliste. Die Einzelbuttons stehen weiterhin zur Verfügung. Die Grenzen für Kandidaten, Funde und Strukturprüfungen gelten für den gesamten gemeinsamen Lauf; der Analysebericht nennt die ausgewählten Kategorien.
+
 | Kategorie | Erkennung | Grenzen |
 | --- | --- | --- |
 | Bilder | JPEG, PNG, BMP, GIF, klassisches TIFF, WebP | TIFF: klassische 32-Bit-Variante und ausgewiesene Strip-/Tile-Daten; WebP: RIFF-Länge und erster Bild-Chunk. |

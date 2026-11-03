@@ -32,6 +32,16 @@ class SignatureGuiTests(unittest.TestCase):
         self.assertIn('Signatursuche beendet',self.app.status.get());self.assertEqual(self.source.read_bytes(),before)
         self.assertEqual(str(self.app.ntfs_cancel_btn.cget('state')),'disabled')
 
+    def test_combined_scan_uses_selected_categories_and_restores_button(self):
+        self.prepare()
+        with patch('recoverydesk.gui.messagebox.askyesno', return_value=True), patch('recoverydesk.gui.messagebox.showerror') as error:
+            self.app.start_signature_scan(('images', 'audio'))
+            self.wait_for(lambda: not self.app.ntfs_scanning)
+        error.assert_not_called()
+        self.assertEqual(len(self.app.browser_index.entries), 2)
+        self.assertEqual(self.app.browser_index.signature_categories, ('images', 'audio'))
+        self.assertEqual(str(self.app.signature_combined_button.cget('state')), 'normal')
+
     def test_decline_keeps_previous_browser(self):
         self.prepare();index=self.app.browser_index
         with patch('recoverydesk.gui.messagebox.askyesno',return_value=False),patch('recoverydesk.signature_search.scan_signatures') as scan:

@@ -167,6 +167,21 @@ class SignatureFormatTests(unittest.TestCase):
         self.assertEqual(len(index.entries), 1)
         self.assertEqual(index.entries[0].size, target_size)
 
+    def test_combined_categories_filter_results_and_do_not_duplicate_riff(self):
+        payload = bmp() + b'X' * 512 + wav_bytes() + b'Y' * 512 + mp4_bytes()
+        self.source.write_bytes(b'Z' * 512 + payload + b'Z' * 512)
+        progress = []
+        index = scan_signatures(str(self.source), categories=('images', 'audio'),
+                                progress=lambda done, total: progress.append((done, total)))
+        self.assertEqual([entry.name.rsplit('.', 1)[-1] for entry in index.entries], ['bmp', 'wav'])
+        self.assertEqual(index.signature_categories, ('images', 'audio'))
+        self.assertEqual(progress, [(self.source.stat().st_size, self.source.stat().st_size)])
+        all_index = scan_signatures(str(self.source), category='all')
+        self.assertEqual(len(all_index.entries), 3)
+        for categories in ((), ('unknown',), ('images', 'unknown')):
+            with self.assertRaises(ValueError):
+                scan_signatures(str(self.source), categories=categories)
+
     def test_invalid_archive_and_wrong_category_are_rejected(self):
         invalid = bytearray(zip_bytes({'a.txt': b'a'}))
         invalid[-8] ^= 0x40

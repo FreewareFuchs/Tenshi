@@ -1401,6 +1401,16 @@ add('Ergebnisse in Dateien & Ordner anzeigen','Show results in Files & folders',
 add('Signatursuche abgebrochen.','Signature search cancelled.','Búsqueda de firmas cancelada.','签名搜索已取消。','Поиск сигнатур отменён.','シグネチャ検索を中止しました。')
 add('Signatursuche fehlgeschlagen.','Signature search failed.','La búsqueda de firmas ha fallado.','签名搜索失败。','Ошибка поиска сигнатур.','シグネチャ検索に失敗しました。')
 add('Bilder suchen','Search images','Buscar imágenes','搜索图像','Поиск изображений','画像を検索')
+add('Kategorien gemeinsam suchen…','Search categories together…','Buscar categorías juntas…','联合搜索类别…','Искать категории вместе…','複数のカテゴリを検索…')
+add('Ausgewählte Kategorien werden in einem Durchgang durchsucht.',
+    'Selected categories are searched in a single pass.',
+    'Las categorías seleccionadas se buscan en una sola pasada.',
+    '一次扫描即可搜索所选类别。',
+    'Выбранные категории ищутся за один проход.',
+    '選択したカテゴリを1回の走査で検索します。')
+add('Bitte mindestens eine Kategorie auswählen.', 'Please select at least one category.',
+    'Selecciona al menos una categoría.', '请至少选择一个类别。',
+    'Выберите хотя бы одну категорию.', 'カテゴリを1つ以上選択してください。')
 add('Office-Dateien suchen','Search Office files','Buscar archivos de Office','搜索 Office 文件','Поиск файлов Office','Office ファイルを検索')
 add('Archive suchen','Search archives','Buscar archivos comprimidos','搜索归档文件','Поиск архивов','アーカイブを検索')
 add('Audiodateien suchen','Search audio files','Buscar archivos de audio','搜索音频文件','Поиск аудиофайлов','音声ファイルを検索')

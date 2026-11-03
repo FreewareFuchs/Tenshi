@@ -234,6 +234,8 @@ class RecoveryDeskApp(tk.Tk):
                 button.configure(text=translate(self._signature_button_keys[category], language))
         if hasattr(self, 'scan_options_button'):
             self.scan_options_button.configure(text=translate('Scanoptionen…', language))
+        if hasattr(self, 'signature_combined_button'):
+            self.signature_combined_button.configure(text=translate('Kategorien gemeinsam suchen…', language))
         help_window = getattr(self, '_help_window', None)
         if help_window is not None and help_window.winfo_exists():
             help_window.refresh_language(language)
@@ -1845,6 +1847,10 @@ class RecoveryDeskApp(tk.Tk):
             actions, text='Ergebnisse in Dateien & Ordner anzeigen',
             command=self._open_signature_results, state='disabled')
         self.signature_results_button.pack(side='left', padx=(8, 0))
+        self.signature_combined_button = ttk.Button(
+            panel, text=translate('Kategorien gemeinsam suchen…', self.language),
+            style='Accent.TButton', command=self._signature_category_dialog)
+        self.signature_combined_button.pack(anchor='w', pady=(8, 0))
         self.signature_status = tk.StringVar(value='')
         ttk.Label(panel, textvariable=self.signature_status, style='Sub.TLabel',
                   justify='left', wraplength=1000).pack(anchor='w', fill='x', pady=(14, 0))
@@ -2118,16 +2124,44 @@ class RecoveryDeskApp(tk.Tk):
             # the "Dateisystem einlesen" button. Never opens the disk for writing.
             self.start_ntfs_scan()
 
+    def _signature_category_dialog(self):
+        if self._session_busy():
+            return
+        win = tk.Toplevel(self)
+        win.title(translate('Kategorien gemeinsam suchen…', self.language))
+        win.transient(self)
+        panel = ttk.Frame(win, padding=18)
+        panel.pack(fill='both', expand=True)
+        ttk.Label(panel, text=translate('Ausgewählte Kategorien werden in einem Durchgang durchsucht.', self.language),
+                  wraplength=450).pack(anchor='w', pady=(0, 10))
+        choices = {}
+        for key, label in self._signature_button_keys.items():
+            choices[key] = tk.BooleanVar(value=True)
+            ttk.Checkbutton(panel, text=translate(label, self.language),
+                            variable=choices[key]).pack(anchor='w', pady=3)
+        def start():
+            selected = tuple(key for key, value in choices.items() if value.get())
+            if not selected:
+                messagebox.showinfo(win.title(), translate('Bitte mindestens eine Kategorie auswählen.', self.language), parent=win)
+                return
+            win.destroy()
+            self.start_signature_scan(selected)
+        ttk.Button(panel, text=translate('Suchen', self.language), style='Accent.TButton',
+                   command=start).pack(anchor='e', pady=(12, 0))
+        win.bind('<Escape>', lambda event: win.destroy())
+
     def start_signature_scan(self, category='images'):
         from .signature_search import scan_signatures,FILESYSTEM,SCOPE
+        selected = (category,) if isinstance(category, str) else tuple(category)
+        category_label = ', '.join(translate(self._signature_button_keys[key], self.language) for key in selected)
+        scan_options = {'category': category} if isinstance(category, str) else {'categories': selected}
         if self._exit_requested or self._session_busy():
-            messagebox.showinfo(translate(self._signature_button_keys[category], self.language),'Bitte laufende Vorgänge zuerst abschließen.',parent=self);return
+            messagebox.showinfo(category_label,'Bitte laufende Vorgänge zuerst abschließen.',parent=self);return
         try:
             source=self.get_source()
             if is_device_source(source):raise ValueError('Signatursuche erfordert ein reguläres Image.')
         except (OSError,ValueError) as exc:
-            messagebox.showerror(translate(self._signature_button_keys[category], self.language),str(exc),parent=self);return
-        category_label = translate(self._signature_button_keys[category], self.language)
+            messagebox.showerror(category_label,str(exc),parent=self);return
         note=(translate(SCOPE,self.language)+'\n\n'+translate(
             'Maximal 32 MiB pro Fund, 1000 Funde und 5000 Anfangssignaturen. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',self.language))
         if not messagebox.askyesno(category_label,note,parent=self):return
@@ -2136,6 +2170,7 @@ class RecoveryDeskApp(tk.Tk):
         self.ntfs_scanning=True;self._clear_browser_results();self.browser_cancel.clear()
         self.ntfs_scan_btn.configure(state='disabled');self.ntfs_cancel_btn.configure(state='normal')
         for button in self.signature_search_buttons.values():button.configure(state='disabled')
+        self.signature_combined_button.configure(state='disabled')
         searching = translate('Signatursuche läuft: {category} …',self.language).format(category=category_label)
         self.signature_status.set(searching)
         self.status.set(searching)
@@ -2152,7 +2187,7 @@ class RecoveryDeskApp(tk.Tk):
             try:
                 # Keep two distinct sample points even for images below 64 KiB.
                 fingerprint=fingerprint_image(source,[1])
-                index=scan_signatures(source,category=category,cancel=self.browser_cancel.is_set,progress=progress)
+                index=scan_signatures(source,**scan_options,cancel=self.browser_cancel.is_set,progress=progress)
                 check_fingerprint(source,fingerprint,original=source)
                 paths=construct_paths(index.entries,lazy=True)
                 warnings=folder_warning_records(visible_entries(index.entries,display_tmp))
@@ -2291,6 +2326,8 @@ class RecoveryDeskApp(tk.Tk):
         self.ntfs_cancel_btn.configure(state='disabled')
         if hasattr(self, 'signature_search_buttons'):
             for button in self.signature_search_buttons.values():button.configure(state='normal')
+        if hasattr(self, 'signature_combined_button'):
+            self.signature_combined_button.configure(state='normal')
 
     def _session_busy(self):
         return (self._session_running or self.ntfs_scanning or
