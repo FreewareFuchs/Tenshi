@@ -10,6 +10,8 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 [![Tenshi: Dateien, Ordner und Exportprüfung](https://freewarefuchs.de/tenshi/screenshots/dateien.png)](https://freewarefuchs.de/tenshi/#screenshots)
 
+**3.0.13 wird vorbereitet:** Erweiterte und fortsetzbare Signatursuche mit Kategorien, gemeinsamer Suche, einstellbaren Prüfgrenzen sowie PDF/RAR. Die Funktionen sind abgenommen; die endgültigen Pakete werden noch geprüft. [Geplante Änderungen und Freigabestand](RELEASE_NOTES_3.0.13.md).
+
 **3.0.12 ist seit 30.10.2026 stabil veröffentlicht.** Die JPEG-/PNG-Signatursuche in regulären Images ohne lesbares Dateisystem ist verfügbar. Installer, Portable und Linux-DEB sind manuell bestätigt; GitHub, signierte APT-Quelle und Website sind öffentlich geprüft. [Änderungen und bestätigter Prüfstand](RELEASE_NOTES_3.0.12.md).
 
 Export und Imageerstellung haben eigene, wieder aufrufbare Fortschrittsfenster mit
@@ -151,7 +153,7 @@ Der [Windows-Abnahmeplan](WINDOWS_ABNAHME_3.0.0.md) ist ein Prüfplan, kein Nach
 - [Versionshinweise zu 3.0.4](RELEASE_NOTES_3.0.4.md)
 - [Versionshinweise zu 3.0.3](RELEASE_NOTES_3.0.3.md)
 - [Versionshinweise zu 3.0.2](RELEASE_NOTES_3.0.2.md)
-- [Aktuelle Benutzerhilfe](HILFE_3.0.12.md)
+- [Benutzerhilfe für den aktuellen Quellstand](HILFE_3.0.13.md)
 - [Bisheriges README mit historischen Entwicklungsdetails](docs/README_HISTORY_2026-10-20.md)
 
 ## Aus dem Quellcode bauen

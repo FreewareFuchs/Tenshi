@@ -1,3 +1,13 @@
+# Tenshi 3.0.13 – in Vorbereitung
+
+- Eigener Signaturreiter mit Bildern, Office/PDF, Archiven, Audio und Video; mehrere Kategorien in einem Durchgang durchsuchen.
+- Erweiterte Dateitypen einschließlich PDF und RAR 4/5, blockweise Prüfung größerer Strukturen und wählbare Grenze von 32/64/128/256 MiB.
+- Suchstand speichern, anhalten und nach einem Neustart mit erneuter Quellen- und Fundprüfung fortsetzen.
+- Gespeicherte Exportaufträge übernehmen Kategorien und Grenze; ältere Aufträge behalten ihren bisherigen Formatumfang.
+- Scanoptionen, Bedienung und Hilfe in sechs Sprachen aktualisiert. Funktionsabnahmen aus PR #126–#131 bestätigt.
+
+Endgültige Paket- und Versionsbestätigung sowie Veröffentlichung stehen noch aus. [Änderungen und Grenzen](RELEASE_NOTES_3.0.13.md).
+
 # Tenshi 3.0.12 – stabil veröffentlicht (30.10.2026)
 
 - Zusammenhängende JPEG-/PNG-Strukturen in regulären Images ohne Dateisystem suchen; Fundnamen enthalten den Byte-Offset. Belegte und freie Bereiche bleiben ausdrücklich ununterschieden.
