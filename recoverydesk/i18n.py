@@ -1402,6 +1402,27 @@ add('Signatursuche abgebrochen.','Signature search cancelled.','Búsqueda de fir
 add('Signatursuche fehlgeschlagen.','Signature search failed.','La búsqueda de firmas ha fallado.','签名搜索失败。','Ошибка поиска сигнатур.','シグネチャ検索に失敗しました。')
 add('Bilder suchen','Search images','Buscar imágenes','搜索图像','Поиск изображений','画像を検索')
 add('Kategorien gemeinsam suchen…','Search categories together…','Buscar categorías juntas…','联合搜索类别…','Искать категории вместе…','複数のカテゴリを検索…')
+add('Prüfgrenze für JPEG/PNG/GIF/TIFF und Office/ZIP (MiB):',
+    'JPEG/PNG/GIF/TIFF and Office/ZIP limit (MiB):',
+    'Límite JPEG/PNG/GIF/TIFF y Office/ZIP (MiB):',
+    'JPEG/PNG/GIF/TIFF 和 Office/ZIP 上限（MiB）：',
+    'Лимит JPEG/PNG/GIF/TIFF и Office/ZIP (МиБ):',
+    'JPEG/PNG/GIF/TIFF・Office/ZIPの上限 (MiB):')
+add('Ungültige Größenbegrenzung für die Signatursuche.', 'Invalid signature-search size limit.',
+    'Límite de tamaño no válido para buscar firmas.', '签名搜索大小上限无效。',
+    'Недопустимый предел размера для поиска сигнатур.', 'シグネチャ検索のサイズ上限が無効です。')
+add('Die Prüfgrenze ist auf 32, 64, 128 oder 256 MiB einstellbar. Sie gilt für JPEG/PNG/GIF/TIFF und Office/ZIP. Größere Grenzen können mehr Lesezeit benötigen; das Gesamtbudget bleibt begrenzt. Vorschau und Inhaltsprüfung behalten ihre eigenen Grenzen.',
+    'The inspection limit can be set to 32, 64, 128 or 256 MiB for JPEG/PNG/GIF/TIFF and Office/ZIP. Larger limits may require more reading time; the total budget stays bounded. Preview and content checks keep their own limits.',
+    'El límite se puede ajustar a 32, 64, 128 o 256 MiB para JPEG/PNG/GIF/TIFF y Office/ZIP. Un límite mayor puede requerir más tiempo de lectura; el presupuesto total sigue limitado. La vista previa y comprobación de contenido tienen sus propios límites.',
+    'JPEG/PNG/GIF/TIFF 和 Office/ZIP 的检查上限可设为 32、64、128 或 256 MiB。更高的上限可能需要更长的读取时间；总读取预算仍受限制。预览和内容检查有各自的上限。',
+    'Для JPEG/PNG/GIF/TIFF и Office/ZIP можно выбрать 32, 64, 128 или 256 МиБ. Больший лимит может увеличить время чтения; общий бюджет ограничен. Предпросмотр и проверка содержимого имеют собственные ограничения.',
+    'JPEG/PNG/GIF/TIFF・Office/ZIPの検査上限を32、64、128、256 MiBから選択できます。上限を増やすと読み取り時間が増える場合がありますが、合計読み取り量にも上限があります。プレビューと内容検査には別の上限があります。')
+add('JPEG/PNG/GIF/TIFF und Office/ZIP: maximal {limit} MiB je Fund. Andere Formate können größer sein. Maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen je Suchlauf. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',
+    'JPEG/PNG/GIF/TIFF and Office/ZIP: up to {limit} MiB per candidate. Other formats may be larger. Up to 1000 candidates, 5000 starting signatures and 512 MiB of additional structural reads per scan. The whole image is scanned; limits may leave results incomplete. Start now?',
+    'JPEG/PNG/GIF/TIFF y Office/ZIP: hasta {limit} MiB por hallazgo. Otros formatos pueden ser mayores. Hasta 1000 hallazgos, 5000 firmas iniciales y 512 MiB de lecturas estructurales adicionales por análisis. Se recorre toda la imagen; los límites pueden dejar resultados incompletos. ¿Iniciar?',
+    'JPEG/PNG/GIF/TIFF 和 Office/ZIP：每个候选文件最多 {limit} MiB。其他格式可以更大。每次扫描最多 1000 个候选、5000 个起始签名和 512 MiB 的额外结构读取。扫描整个镜像；达到上限时结果可能不完整。现在开始？',
+    'JPEG/PNG/GIF/TIFF и Office/ZIP: до {limit} МиБ на находку. Другие форматы могут быть больше. За один поиск: до 1000 находок, 5000 начальных сигнатур и 512 МиБ дополнительного чтения структур. Проверяется весь образ; лимиты могут сделать результаты неполными. Начать?',
+    'JPEG/PNG/GIF/TIFF・Office/ZIP: 候補ごとに最大{limit} MiB。他の形式はこれより大きい場合があります。1回の検索で最大1000候補、5000開始シグネチャ、追加構造読み取り512 MiB。イメージ全体を走査し、上限により結果が不完全になる場合があります。開始しますか？')
 add('Ausgewählte Kategorien werden in einem Durchgang durchsucht.',
     'Selected categories are searched in a single pass.',
     'Las categorías seleccionadas se buscan en una sola pasada.',

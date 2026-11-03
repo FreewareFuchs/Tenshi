@@ -39,6 +39,8 @@ class SavedExport:
     keys: tuple[str, ...]
     limit: int
     tolerant: bool
+    signature_file_limit: int | None = None
+    signature_categories: tuple[str, ...] | None = None
 
     @property
     def source(self): return self.identity['source']
@@ -49,8 +51,11 @@ def resume_metadata(index, selection):
     total=int(getattr(index,'total_records',0))
     scanned=int(getattr(index,'scanned_records',0))
     limit=scanned if hasattr(index,'info') and 0<scanned<total else 0
-    return dict(schema=1,selected=[_key(e) for e in _selected_roots(index,selection)],
-                scan=dict(max_records=limit,tolerant=bool(getattr(index,'tolerant',False))))
+    scan = dict(max_records=limit,tolerant=bool(getattr(index,'tolerant',False)))
+    if getattr(index, 'filesystem', None) == SIGNATURE_FS:
+        scan['signature_file_limit'] = getattr(index, 'signature_file_limit', 32*1024**2)
+        scan['signature_categories'] = list(getattr(index, 'signature_categories', ('images','office','archives','audio','video')))
+    return dict(schema=1,selected=[_key(e) for e in _selected_roots(index,selection)], scan=scan)
 
 
 def _pairs(items):
@@ -125,12 +130,21 @@ def read_saved_export(filename):
         _require(all(isinstance(k,str) and re.fullmatch(r'-?[0-9]{1,20}:[0-9]{1,10}',k) for k in keys))
         _require(len(set(keys))==len(keys))
         scan=request['scan'];limit=scan['max_records'];tolerant=scan['tolerant']
+        signature_limit=scan.get('signature_file_limit')
+        signature_categories=scan.get('signature_categories')
+        if signature_limit is not None or signature_categories is not None:
+            _require(identity['filesystem'] == SIGNATURE_FS)
+            _require(type(signature_limit) is int and 0 < signature_limit <= 256*1024**2)
+            _require(isinstance(signature_categories,list) and 0 < len(signature_categories) <= 5)
+            _require(all(isinstance(key,str) and key in ('images','office','archives','audio','video') for key in signature_categories))
+            _require(len(set(signature_categories)) == len(signature_categories))
         _require(type(limit) is int and 0<=limit<=30_000_000 and type(tolerant) is bool)
         _require(identity['filesystem']=='NTFS' or limit==0)
         _require(not (tolerant and is_device_source(source)))
     except (KeyError,TypeError,ValueError) as exc:
         raise ExportResumeError('Ungültige gespeicherte Exportauswahl.') from exc
-    return SavedExport(str(root),identity,signature,tuple(keys),limit,tolerant)
+    return SavedExport(str(root),identity,signature,tuple(keys),limit,tolerant,signature_limit,
+                       tuple(signature_categories) if signature_categories is not None else None)
 
 
 def prepare_saved_export(saved, *, cancel=None, progress=None):
@@ -152,7 +166,9 @@ def prepare_saved_export(saved, *, cancel=None, progress=None):
             index=scan_ntfs_tree(source,partition_offset=identity['offset'],max_records=saved.limit,
                 tolerate_read_errors=saved.tolerant,cancel=cancel,progress=progress)
         elif identity['filesystem'] in (SIGNATURE_FS,LEGACY_SIGNATURE_FS):
-            index=scan_signatures(source,category=('all' if identity['filesystem']==SIGNATURE_FS else 'images'),cancel=cancel,progress=progress)
+            index=scan_signatures(source,category=('all' if identity['filesystem']==SIGNATURE_FS else 'images'),
+                                  categories=saved.signature_categories, max_file_bytes=saved.signature_file_limit,
+                                  cancel=cancel,progress=progress)
             if identity['filesystem']==LEGACY_SIGNATURE_FS:
                 index.filesystem=LEGACY_SIGNATURE_FS
                 index.volumes.label=LEGACY_SIGNATURE_FS

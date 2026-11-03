@@ -6,13 +6,15 @@ candidate. They do not establish original filenames, integrity or recoverability
 import math
 import struct
 import zlib
-from io import BytesIO
-import zipfile
 
 MAX_FILE = 32 * 1024**2
 MAX_FORMAT_FILE = 4 * 1024**4
 MAX_ZIP_ENTRIES = 10_000
 MAX_TAR_ENTRIES = 100_000
+
+
+def _file_limit(budget):
+    return getattr(budget, 'file_limit', MAX_FILE)
 
 
 class Invalid(ValueError):
@@ -24,6 +26,8 @@ class Limit(Invalid):
 
 
 def _read(stream, start, size, total, budget):
+    if hasattr(budget, 'check'):
+        budget.check()
     if size < 0 or start < 0 or start + size > total or size > MAX_FILE:
         raise Invalid()
     if size > 512 * 1024**2 - budget[0]:
@@ -59,7 +63,7 @@ def _gif(stream, start, total, budget):
         raise Invalid()
     packed = head[10]
     pos = 13 + (3 * (2 ** ((packed & 7) + 1)) if packed & 0x80 else 0)
-    if pos > MAX_FILE:
+    if pos > _file_limit(budget):
         raise Invalid()
     for _ in range(100_000):
         code = _read(stream, start + pos, 1, total, budget)[0]
@@ -87,7 +91,7 @@ def _gif(stream, start, total, budget):
                     break
                 pos += length
                 _read(stream, start + pos - length, length, total, budget)
-                if pos > MAX_FILE:
+                if pos > _file_limit(budget):
                     raise Invalid()
             else:
                 raise Invalid()
@@ -126,7 +130,7 @@ def _tiff(stream, start, total, budget):
     seen = set()
     pages = 0
     while ifd_offset:
-        if ifd_offset in seen or pages >= 64 or ifd_offset + 2 > MAX_FILE:
+        if ifd_offset in seen or pages >= 64 or ifd_offset + 2 > _file_limit(budget):
             raise Invalid()
         seen.add(ifd_offset)
         count = struct.unpack(endian + 'H', _read(stream, start + ifd_offset, 2, total, budget))[0]
@@ -164,11 +168,11 @@ def _tiff(stream, start, total, budget):
         if not offsets or len(offsets) != len(counts):
             raise Invalid()
         for offset, length in zip(offsets, counts):
-            if not length or offset + length > MAX_FILE or start + offset + length > total:
+            if not length or offset + length > _file_limit(budget) or start + offset + length > total:
                 raise Invalid()
             extent = max(extent, offset + length)
         next_offset = struct.unpack_from(endian + 'I', table, 2 + count * 12)[0]
-        if next_offset >= MAX_FILE:
+        if next_offset >= _file_limit(budget):
             raise Invalid()
         if next_offset:
             extent = max(extent, next_offset + 2)
@@ -180,57 +184,71 @@ def _tiff(stream, start, total, budget):
 
 
 def _zip(stream, start, total, budget):
-    data = _read(stream, start, min(MAX_FILE, total - start), total, budget)
-    eocd = len(data)
-    while True:
-        eocd = data.rfind(b'PK\x05\x06', 0, eocd)
-        if eocd < 0:
-            raise Invalid()
-        if eocd + 22 > len(data):
-            continue
-        disk, cd_disk, disk_entries, entries, cd_size, cd_offset, comment_len = struct.unpack_from('<4H2IH', data, eocd + 4)
-        end = eocd + 22 + comment_len
-        # A carving candidate starts at its first local header, so its central
-        # directory must end exactly at this archive's EOCD. This also avoids
-        # mistaking a later ZIP in the same image for the current archive end.
-        if (disk == 0 and cd_disk == 0 and disk_entries == entries and
-                entries <= MAX_ZIP_ENTRIES and end <= len(data) and
-                cd_offset + cd_size == eocd):
-            break
-    if eocd < 0 or eocd + 22 > len(data):
+    # Search for this archive's end in small blocks. Never buffer a whole ZIP.
+    limit = min(_file_limit(budget), total - start)
+    position = 0
+    tail = b''
+    candidate = None
+    while position < limit and candidate is None:
+        block = _read(stream, start + position, min(64 * 1024, limit - position), total, budget)
+        data = tail + block
+        base = position - len(tail)
+        at = data.find(b'PK\x05\x06')
+        while at >= 0:
+            if at + 22 <= len(data):
+                fields = struct.unpack_from('<4H2IH', data, at + 4)
+                disk, cd_disk, disk_entries, entries, cd_size, cd_offset, comment_len = fields
+                eocd = base + at
+                end = eocd + 22 + comment_len
+                if (not disk and not cd_disk and disk_entries == entries and
+                        0 < entries <= MAX_ZIP_ENTRIES and end <= limit and
+                        cd_size <= MAX_FILE and cd_offset + cd_size == eocd):
+                    candidate = (eocd, end, entries, cd_size, cd_offset)
+                    break
+            at = data.find(b'PK\x05\x06', at + 1)
+        position += len(block)
+        tail = data[-21:]
+    if candidate is None:
         raise Invalid()
-    if cd_offset + cd_size < cd_offset:
-        raise Invalid()
+    eocd, end, entries, cd_size, cd_offset = candidate
     names = set()
     records = {}
+    crcs = {}
     pos = cd_offset
     for _ in range(entries):
-        if pos + 46 > cd_offset + cd_size or data[pos:pos + 4] != b'PK\x01\x02':
+        if pos + 46 > eocd:
             raise Invalid()
-        name_len, extra_len, note_len = struct.unpack_from('<3H', data, pos + 28)
+        central = _read(stream, start + pos, 46, total, budget)
+        if central[:4] != b'PK\x01\x02':
+            raise Invalid()
+        name_len, extra_len, note_len = struct.unpack_from('<3H', central, 28)
         rec_end = pos + 46 + name_len + extra_len + note_len
         if rec_end > cd_offset + cd_size:
             raise Invalid()
-        name_bytes = data[pos + 46:pos + 46 + name_len]
+        name_bytes = _read(stream, start + pos + 46, name_len, total, budget)
         name = name_bytes.decode('ascii', 'ignore').lower()
-        local_offset = struct.unpack_from('<I', data, pos + 42)[0]
-        compressed_size = struct.unpack_from('<I', data, pos + 20)[0]
-        if local_offset + 30 > cd_offset or data[local_offset:local_offset + 4] != b'PK\x03\x04':
+        local_offset = struct.unpack_from('<I', central, 42)[0]
+        compressed_size = struct.unpack_from('<I', central, 20)[0]
+        if local_offset + 30 > cd_offset:
             raise Invalid()
-        flags = struct.unpack_from('<H', data, pos + 8)[0]
-        method = struct.unpack_from('<H', data, pos + 10)[0]
-        local_name_len, local_extra_len = struct.unpack_from('<2H', data, local_offset + 26)
+        local = _read(stream, start + local_offset, 30, total, budget)
+        if local[:4] != b'PK\x03\x04':
+            raise Invalid()
+        flags = struct.unpack_from('<H', central, 8)[0]
+        method = struct.unpack_from('<H', central, 10)[0]
+        local_name_len, local_extra_len = struct.unpack_from('<2H', local, 26)
         local_end = local_offset + 30 + local_name_len + local_extra_len + compressed_size
-        local_flags, local_method = struct.unpack_from('<HH', data, local_offset + 6)
-        if (local_name_len != name_len or data[local_offset + 30:local_offset + 30 + local_name_len] != name_bytes or
+        local_flags, local_method = struct.unpack_from('<HH', local, 6)
+        if (local_name_len != name_len or _read(stream, start + local_offset + 30, local_name_len, total, budget) != name_bytes or
                 local_end > cd_offset or local_flags != flags or local_method != method):
             raise Invalid()
-        uncompressed_size = struct.unpack_from('<I', data, pos + 24)[0]
+        uncompressed_size = struct.unpack_from('<I', central, 24)[0]
         if flags & 1 or name in records:
             raise Invalid()
         names.add(name)
         records[name] = (local_offset + 30 + local_name_len + local_extra_len,
                          compressed_size, uncompressed_size, method)
+        crcs[name] = struct.unpack_from('<I', central, 16)[0]
         pos = rec_end
     if pos != cd_offset + cd_size or not entries:
         raise Invalid()
@@ -239,11 +257,19 @@ def _zip(stream, start, total, budget):
         offset, compressed, uncompressed, method = records['[content_types].xml']
         if uncompressed <= 1024 * 1024 and compressed <= 1024 * 1024 and method in (0, 8):
             try:
-                with zipfile.ZipFile(BytesIO(data[:end])) as archive:
-                    types = archive.read('[Content_Types].xml')
+                packed = _read(stream, start + offset, compressed, total, budget)
+                if method == 0:
+                    types = packed
+                else:
+                    decoder = zlib.decompressobj(-15)
+                    types = decoder.decompress(packed, uncompressed + 1)
+                    if not decoder.eof or decoder.unused_data or decoder.unconsumed_tail:
+                        raise Invalid()
+                if zlib.crc32(types) & 0xffffffff != crcs['[content_types].xml']:
+                    raise Invalid()
                 lowered = types.lower()
             except (OSError, RuntimeError, ValueError, NotImplementedError, EOFError,
-                    struct.error, zipfile.BadZipFile, zlib.error):
+                    struct.error, zlib.error):
                 raise Invalid()
             if records['[content_types].xml'][2] != len(types):
                 raise Invalid()
@@ -280,7 +306,7 @@ def _zip(stream, start, total, budget):
     elif 'mimetype' in names:
         offset, compressed, uncompressed, method = records['mimetype']
         if method == 0 and 1 <= uncompressed <= 128 and compressed == uncompressed:
-            mime = data[offset:offset + compressed].lower()
+            mime = _read(stream, start + offset, compressed, total, budget).lower()
             kind = {
                 b'application/vnd.oasis.opendocument.text':'ODT',
                 b'application/vnd.oasis.opendocument.spreadsheet':'ODS',

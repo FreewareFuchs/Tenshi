@@ -227,6 +227,8 @@ def topic_text(topic: str, language: str) -> tuple[str, str]:
     if topic == 'browser':
         body += '\n\n' + translate('Kategorien gemeinsam suchen…', language) + ': ' + translate(
             'Ausgewählte Kategorien werden in einem Durchgang durchsucht.', language)
+        body += '\n\n' + translate(
+            'Die Prüfgrenze ist auf 32, 64, 128 oder 256 MiB einstellbar. Sie gilt für JPEG/PNG/GIF/TIFF und Office/ZIP. Größere Grenzen können mehr Lesezeit benötigen; das Gesamtbudget bleibt begrenzt. Vorschau und Inhaltsprüfung behalten ihre eigenen Grenzen.', language)
     return labels[lang], body
 
 

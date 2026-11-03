@@ -135,13 +135,31 @@ class SignatureSearchTests(unittest.TestCase):
         with zipfile.ZipFile(archive,'w') as package:package.writestr('readme.txt','restored')
         data=b'X'*512+archive.getvalue()+b'Y'*512
         self.source.write_bytes(data)
-        index=search.scan_signatures(str(self.source),category='archives')
+        index=search.scan_signatures(str(self.source),category='archives',max_file_bytes=64*1024**2)
         target=self.base/'archive-output';target.mkdir()
         first=export_batch(str(self.source),index,index.entries,str(target))
         saved=read_saved_export(first.manifest)
+        self.assertEqual(saved.signature_file_limit,64*1024**2)
+        self.assertEqual(saved.signature_categories,('archives',))
         prepared=prepare_saved_export(saved)
+        self.assertEqual(prepared['index'].signature_file_limit,64*1024**2)
         self.assertEqual([entry.name for entry in prepared['selection']],[index.entries[0].name])
         self.assertEqual(prepared['index'].filesystem,search.FILESYSTEM)
+        import json
+        from recoverydesk.export_resume import ExportResumeError
+        manifest = Path(first.manifest)
+        original = json.loads(manifest.read_text(encoding='utf-8'))
+        for limit in (True, 0, '64', 257*1024**2):
+            original['resume_request']['scan']['signature_file_limit'] = limit
+            manifest.write_text(json.dumps(original), encoding='utf-8')
+            with self.assertRaises(ExportResumeError):
+                read_saved_export(manifest)
+        # Signature jobs written before configurable limits remain resumable.
+        original['resume_request']['scan'].pop('signature_file_limit')
+        original['resume_request']['scan'].pop('signature_categories')
+        manifest.write_text(json.dumps(original), encoding='utf-8')
+        old_job = prepare_saved_export(read_saved_export(manifest))
+        self.assertEqual(old_job['selection'][0].name, index.entries[0].name)
 
     def test_legacy_image_signature_job_remains_resumable(self):
         self.source.write_bytes(picture('PNG')+b'Y'*512)

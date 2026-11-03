@@ -1830,6 +1830,12 @@ class RecoveryDeskApp(tk.Tk):
         ttk.Label(panel, text='Ausgewählte Quelle:', style='Sub.TLabel').pack(anchor='w')
         ttk.Label(panel, textvariable=self.source_path, wraplength=1000,
                   justify='left').pack(anchor='w', fill='x', pady=(2, 14))
+        limits = ttk.Frame(panel)
+        limits.pack(anchor='w', pady=(0, 10))
+        ttk.Label(limits, text=translate('Prüfgrenze für JPEG/PNG/GIF/TIFF und Office/ZIP (MiB):', self.language)).pack(side='left')
+        self.signature_file_limit_mib = tk.StringVar(value='32')
+        ttk.Combobox(limits, textvariable=self.signature_file_limit_mib,
+                     values=('32', '64', '128', '256'), state='readonly', width=7).pack(side='left', padx=8)
         actions = ttk.Frame(panel)
         actions.pack(anchor='w', fill='x')
         self._signature_button_keys = {
@@ -2160,10 +2166,14 @@ class RecoveryDeskApp(tk.Tk):
         try:
             source=self.get_source()
             if is_device_source(source):raise ValueError('Signatursuche erfordert ein reguläres Image.')
+            file_limit_mib = int(self.signature_file_limit_mib.get())
+            if file_limit_mib not in (32, 64, 128, 256):
+                raise ValueError('Ungültige Größenbegrenzung für die Signatursuche.')
         except (OSError,ValueError) as exc:
             messagebox.showerror(category_label,str(exc),parent=self);return
         note=(translate(SCOPE,self.language)+'\n\n'+translate(
-            'Maximal 32 MiB pro Fund, 1000 Funde und 5000 Anfangssignaturen. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',self.language))
+            'JPEG/PNG/GIF/TIFF und Office/ZIP: maximal {limit} MiB je Fund. Andere Formate können größer sein. Maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen je Suchlauf. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',self.language).format(limit=file_limit_mib))
+        scan_options['max_file_bytes'] = file_limit_mib * 1024**2
         if not messagebox.askyesno(category_label,note,parent=self):return
         generation=self._source_generation
         display_tmp=self.show_tmp.get()
