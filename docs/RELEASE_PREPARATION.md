@@ -1,5 +1,7 @@
 # Release-Paket automatisch vorbereiten
 
+**In Vorbereitung: Tenshi 3.0.13.** Die Signatursuch-Erweiterungen aus PR #126–#131 sind abgenommen. Versionsfelder, Benutzerhilfe und Änderungsnotizen werden gebündelt aktualisiert. Der gemeinsame Workflow baut Installer, Portable und DEB aus demselben sauberen Commit. Endgültige Paketstarts und Versionsanzeigen sowie die Veröffentlichung stehen noch aus. [Freigabestand und Änderungen](../RELEASE_NOTES_3.0.13.md).
+
 Aktueller stabiler Stand: [Tenshi 3.0.12](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.12), veröffentlicht am 30.10.2026. Bildsignatursuche und endgültige Paketversionen sind manuell bestätigt. Die sieben GitHub-Assets, 17 APT-Dateien und 25 Website-Abschlussvergleiche sind erfolgreich geprüft. [Änderungen und Prüfstand](../RELEASE_NOTES_3.0.12.md).
 
 Vorheriger stabiler Stand: [Tenshi 3.0.11](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.11), seit 30.10.2026.

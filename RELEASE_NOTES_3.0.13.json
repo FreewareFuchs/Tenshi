@@ -1,0 +1,44 @@
+{
+  "de": [
+    "Eigener Reiter Dateisignaturen mit Suche nach Bildern, Office/PDF, Archiven, Audio und Video; mehrere Kategorien in einem Durchgang kombinieren.",
+    "Erweiterte Erkennung: BMP, GIF, TIFF, WebP, moderne Office-/ODF-Dateien, PDF, ZIP, RAR 4/5, 7z, TAR, WAV, MP3 mit ID3v2, Ogg/Opus, AVI und MP4 zusätzlich zu JPEG/PNG.",
+    "Prüfgrenze für JPEG/PNG/GIF/TIFF/PDF und Office/ZIP auf 32, 64, 128 oder 256 MiB einstellen; große Strukturen blockweise prüfen.",
+    "Suchstand speichern, anhalten und nach einem Neustart mit erneuter Quellen- und Fundprüfung fortsetzen. Kategorien und Prüfgrenze werden auch in Exportaufträgen erhalten.",
+    "Scanoptionen, einheitliche Suchbuttons und Hilfe in sechs Sprachen. Nur zusammenhängende Strukturkandidaten; keine Fragmentrekonstruktion oder Garantie vollständiger Inhalte. RAR-Mehrteiler und verschlüsselte RAR-Header werden ausgelassen."
+  ],
+  "en": [
+    "Dedicated File signatures tab for images, Office/PDF, archives, audio and video; combine selected categories in one pass.",
+    "Expanded detection: BMP, GIF, TIFF, WebP, modern Office/ODF files, PDF, ZIP, RAR 4/5, 7z, TAR, WAV, MP3 with ID3v2, Ogg/Opus, AVI and MP4 alongside JPEG/PNG.",
+    "Set the JPEG/PNG/GIF/TIFF/PDF and Office/ZIP inspection limit to 32, 64, 128 or 256 MiB; inspect large structures in bounded blocks.",
+    "Save search progress, stop and continue after a restart with source and candidate revalidation. Export jobs also retain categories and the size limit.",
+    "Scan options, consistent search buttons and help in six languages. Contiguous structure candidates only; no fragment reconstruction or guarantee of complete contents. Multi-volume RAR and encrypted RAR headers are skipped."
+  ],
+  "es": [
+    "Pestaña Firmas de archivos para imágenes, Office/PDF, archivos comprimidos, audio y vídeo; combina categorías en una sola pasada.",
+    "Detección ampliada: BMP, GIF, TIFF, WebP, Office/ODF modernos, PDF, ZIP, RAR 4/5, 7z, TAR, WAV, MP3 con ID3v2, Ogg/Opus, AVI y MP4 además de JPEG/PNG.",
+    "Límite de inspección para JPEG/PNG/GIF/TIFF/PDF y Office/ZIP ajustable a 32, 64, 128 o 256 MiB; lectura de estructuras grandes por bloques limitados.",
+    "Guarda el progreso, detén la búsqueda y continúa tras reiniciar, verificando de nuevo la fuente y los hallazgos. Las exportaciones conservan categorías y límite.",
+    "Opciones de análisis, botones uniformes y ayuda en seis idiomas. Solo candidatos de estructuras contiguas; sin reconstrucción de fragmentos ni garantía de contenidos completos. Se omiten RAR por volúmenes y cabeceras RAR cifradas."
+  ],
+  "zh": [
+    "独立的文件签名选项卡支持图像、Office/PDF、归档、音频和视频；可在一次扫描中组合所选类别。",
+    "在 JPEG/PNG 之外，新增 BMP、GIF、TIFF、WebP、现代 Office/ODF 文件、PDF、ZIP、RAR 4/5、7z、TAR、WAV、带 ID3v2 的 MP3、Ogg/Opus、AVI 和 MP4 识别。",
+    "JPEG/PNG/GIF/TIFF/PDF 和 Office/ZIP 检查上限可设为 32、64、128 或 256 MiB；大结构按受限块读取。",
+    "保存搜索进度、停止并在重启后继续，重新验证源和候选文件。导出任务也保留类别和大小上限。",
+    "提供扫描选项、统一搜索按钮和六种语言帮助。仅识别连续结构候选，不重组碎片，也不保证内容完整。跳过分卷 RAR 和加密 RAR 头部。"
+  ],
+  "ru": [
+    "Отдельная вкладка сигнатур для изображений, Office/PDF, архивов, аудио и видео; выбранные категории можно искать за один проход.",
+    "Помимо JPEG/PNG распознаются BMP, GIF, TIFF, WebP, современные Office/ODF, PDF, ZIP, RAR 4/5, 7z, TAR, WAV, MP3 с ID3v2, Ogg/Opus, AVI и MP4.",
+    "Лимит проверки JPEG/PNG/GIF/TIFF/PDF и Office/ZIP: 32, 64, 128 или 256 МиБ. Большие структуры читаются ограниченными блоками.",
+    "Сохранение хода поиска, остановка и продолжение после перезапуска с повторной проверкой источника и находок. Задания экспорта сохраняют категории и лимит.",
+    "Параметры сканирования, единое оформление кнопок и справка на шести языках. Только непрерывные структурные кандидаты; без сборки фрагментов и гарантии полноты данных. Многотомные RAR и зашифрованные заголовки пропускаются."
+  ],
+  "ja": [
+    "画像、Office/PDF、アーカイブ、音声、動画の専用シグネチャタブを追加。選択した複数のカテゴリを1回の走査で検索できます。",
+    "JPEG/PNGに加え、BMP、GIF、TIFF、WebP、最新のOffice/ODF、PDF、ZIP、RAR 4/5、7z、TAR、WAV、ID3v2付きMP3、Ogg/Opus、AVI、MP4を識別します。",
+    "JPEG/PNG/GIF/TIFF/PDF・Office/ZIPの検査上限を32、64、128、256 MiBから選択可能。大きな構造を制限付きブロックで読み取ります。",
+    "検索状況を保存して停止し、再起動後にソースと候補を再検証して続行できます。出力処理にもカテゴリと上限を保存します。",
+    "スキャン設定、統一された検索ボタン、6言語のヘルプ。連続した構造候補のみを識別し、断片の再構成や内容の完全性は保証しません。分割RARと暗号化RARヘッダーは対象外です。"
+  ]
+}
