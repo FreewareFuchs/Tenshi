@@ -63,11 +63,12 @@ def _plain_unnamed_stream(record: bytes, total_clusters: int, name: str):
     return ('nonresident', runs, real_size)
 
 
-def read_ntfs_bitmap(f, partition_offset: int, *, max_bitmap_bytes: int = MAX_BITMAP_BYTES, cancel=None):
+def read_ntfs_bitmap(f, partition_offset: int, *, max_bitmap_bytes: int = MAX_BITMAP_BYTES, cancel=None, count_only=False):
     """Read allocation evidence via MFT system file #6; bounded memory and IO.
 
     Bitmap semantics: bit 1 = allocated cluster. Unused padding bits in the
-    final byte are masked by callers. The bitmap describes *data clusters*,
+    final byte are masked by callers. count_only retains the streaming usage
+    calculation without allocating the full bitmap. The bitmap describes *data clusters*,
     whose capacity can differ slightly from the NTFS total-sector count.
     """
     try:
@@ -118,6 +119,7 @@ def read_ntfs_bitmap(f, partition_offset: int, *, max_bitmap_bytes: int = MAX_BI
 
         # Retain bounded evidence for counting and lazy free-range iteration.
         result = bytearray()
+        used = 0
         remaining = bitmap_required
         for chunk in chunks:
             if cancel and cancel():
@@ -125,20 +127,25 @@ def read_ntfs_bitmap(f, partition_offset: int, *, max_bitmap_bytes: int = MAX_BI
                 raise ScanCancelled('Scan abgebrochen.')
             if not chunk or len(chunk) > remaining:
                 raise BitmapUnavailable('$Bitmap-Datenstrom besitzt eine ungültige Länge.')
-            result.extend(chunk)
+            if count_only:
+                if remaining == len(chunk) and total_clusters % 8:
+                    used += sum(x.bit_count() for x in memoryview(chunk)[:-1])
+                    used += (chunk[-1] & ((1 << (total_clusters % 8))-1)).bit_count()
+                else:
+                    used += sum(x.bit_count() for x in chunk)
+            else:
+                result.extend(chunk)
             remaining -= len(chunk)
         if remaining:
             raise BitmapUnavailable('$Bitmap wurde nicht vollständig gelesen.')
-        return info, bytes(result)
+        return info, used if count_only else bytes(result)
     except (NTFSError, OSError, ValueError, OverflowError) as exc:
         raise BitmapUnavailable(str(exc)) from exc
 
 
 def inspect_ntfs_bitmap(f, partition_offset: int, *, max_bitmap_bytes: int = MAX_BITMAP_BYTES) -> NTFSBitmapUsage:
-    info, bitmap = read_ntfs_bitmap(f, partition_offset, max_bitmap_bytes=max_bitmap_bytes)
+    info, used = read_ntfs_bitmap(f, partition_offset, max_bitmap_bytes=max_bitmap_bytes,count_only=True)
     total = info.total_sectors // info.sectors_per_cluster
-    used = sum(x.bit_count() for x in bitmap[:-1])
-    used += (bitmap[-1] & ((1 << (total % 8 or 8)) - 1)).bit_count()
     return NTFSBitmapUsage(total, used, info.cluster_size)
 
 
@@ -149,7 +156,7 @@ def free_ntfs_ranges(f, partition_offset, source_size, *, cancel=None):
     total = info.total_sectors // info.sectors_per_cluster
     if partition_offset + info.total_sectors * info.bytes_per_sector > source_size:
         raise BitmapUnavailable('NTFS-Volume reicht über das Image-Ende hinaus.')
-    used = sum(x.bit_count() for x in bitmap[:-1])
+    used = sum(x.bit_count() for x in memoryview(bitmap)[:-1])
     used += (bitmap[-1] & ((1 << (total % 8 or 8)) - 1)).bit_count()
     def ranges():
         start = None

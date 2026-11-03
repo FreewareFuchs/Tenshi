@@ -105,7 +105,10 @@ class FreeNTFSSignatureTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.scan()
 
     def test_pause_restart_revalidates_scope_and_skips_completed_free_bytes(self):
-        self.volume(clusters=4096)
+        data=self.volume(clusters=4096)
+        payload=picture('PNG');boundary=120*SECTOR+1024**2-3
+        data[boundary:boundary+len(payload)]=payload
+        self.source.write_bytes(data)
         stopped=[]
         with self.assertRaises(ScanCancelled):
             self.scan(checkpoint_path=self.checkpoint,progress=lambda d,t:stopped.append(d),cancel=lambda:bool(stopped))
@@ -116,6 +119,7 @@ class FreeNTFSSignatureTests(unittest.TestCase):
         resumed=scan_signatures(str(self.source),checkpoint_path=self.checkpoint,resume=True,progress=lambda d,t:progress.append(d))
         self.assertEqual(progress[0],1024**2)
         self.assertEqual([e.name for e in resumed.entries],[e.name for e in self.scan().entries])
+        self.assertEqual(len(resumed.entries),2)
         with self.assertRaisesRegex(ValueError,'Sucheinstellungen'):
             scan_signatures(str(self.source),checkpoint_path=self.checkpoint,resume=True,search_area='all')
         state=read_checkpoint(self.checkpoint);state['bitmap_sha256']='0'*64
