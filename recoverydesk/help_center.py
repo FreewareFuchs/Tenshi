@@ -8,7 +8,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from .i18n import LANGUAGES
+from .i18n import LANGUAGES, translate
 from . import __version__
 from .version_info import display_version
 
@@ -223,7 +223,11 @@ def topic_text(topic: str, language: str) -> tuple[str, str]:
         raise ValueError('Unknown help topic')
     lang = LANG_INDEX.get(language, 0)
     labels, bodies = DATA[topic]
-    return labels[lang], bodies[lang].format(version=display_version())
+    body = bodies[lang].format(version=display_version())
+    if topic == 'browser':
+        body += '\n\n' + translate('Kategorien gemeinsam suchen…', language) + ': ' + translate(
+            'Ausgewählte Kategorien werden in einem Durchgang durchsucht.', language)
+    return labels[lang], body
 
 
 def available_topics(language: str, query: str = '') -> list[str]:

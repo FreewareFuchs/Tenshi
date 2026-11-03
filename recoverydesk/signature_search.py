@@ -153,10 +153,13 @@ def _snapshot(value):
     return value.st_dev,value.st_ino,value.st_size,value.st_mtime_ns
 
 
-def scan_signatures(source,*,category='images',cancel=None,progress=None):
-    """Search a regular image for bounded, contiguous candidates in one category."""
-    if category not in ('images','office','archives','audio','video','all'):
+def scan_signatures(source,*,category='images',categories=None,cancel=None,progress=None):
+    """Search selected categories in a single sequential pass over a regular image."""
+    available = ('images','office','archives','audio','video')
+    selected = frozenset(categories) if categories is not None else frozenset(available if category == 'all' else (category,))
+    if not selected or not selected.issubset(available):
         raise ValueError('Unbekannte Signaturkategorie.')
+    category = next(iter(selected)) if len(selected) == 1 else 'all'
     validate_source(source)
     if is_device_source(source):raise ValueError('Signatursuche erfordert ein reguläres Image.')
     before=os.stat(source)
@@ -171,32 +174,32 @@ def scan_signatures(source,*,category='images',cancel=None,progress=None):
             stream.seek(position);block=stream.read(min(SCAN_BLOCK,total-position))
             if len(block)!=min(SCAN_BLOCK,total-position):raise OSError('Image lieferte unvollständige Daten.')
             data=tail+block;base=position-len(tail);found=[]
-            if category in ('images','all'):
+            if 'images' in selected:
                 signatures=[(PNG,'PNG'),(JPEG,'JPEG'),(b'BM','OTHER'),
                             (b'GIF87a','OTHER'),(b'GIF89a','OTHER'),(b'RIFF','OTHER'),
                             (b'II*\0','OTHER'),(b'MM\0*','OTHER')]
             else:signatures=[]
-            if category in ('office','archives','all'):
+            if selected.intersection(('office','archives')):
                 signatures.append((b'PK\x03\x04','OTHER'))
-            if category in ('archives','all'):
+            if 'archives' in selected:
                 signatures.append((b'7z\xbc\xaf\x27\x1c','OTHER'))
-            if category in ('audio','video','all'):
+            if selected.intersection(('audio','video')):
                 signatures.append((b'RIFF','OTHER'))
-            if category in ('audio','all'):
+            if 'audio' in selected:
                 signatures.extend(((b'OggS','OTHER'),(b'ID3','OTHER')))
-            if category in ('video','all'):
+            if 'video' in selected:
                 for marker in (b'ftyp',):
                     at=data.find(marker)
                     while at>=4:
                         if base+at-4>last:found.append((base+at-4,'OTHER'))
                         at=data.find(marker,at+1)
-            if category in ('archives','all'):
+            if 'archives' in selected:
                 at=data.find(b'ustar')
                 while at>=0:
                     start=base+at-257
                     if start>=0 and start>last:found.append((start,'OTHER'))
                     at=data.find(b'ustar',at+1)
-            for signature,kind in signatures:
+            for signature,kind in dict.fromkeys(signatures):
                 at=data.find(signature);count=0
                 while at>=0 and count<=MAX_CANDIDATES:
                     if base+at>last:found.append((base+at,kind))
@@ -212,7 +215,7 @@ def scan_signatures(source,*,category='images',cancel=None,progress=None):
                         size=(_png if kind=='PNG' else _jpeg)(reader)
                     else:
                         size,kind,found_category=parse_format(stream,start,total,budget,category)
-                        if category!='all' and found_category!=category:continue
+                        if found_category not in selected:continue
                 except (FormatLimit, _Limit):limited=True;break
                 except (FormatInvalid, _Invalid):continue
                 extension={'PNG':'png','JPEG':'jpg','BMP':'bmp','GIF':'gif','WebP':'webp','TIFF':'tiff',
@@ -234,4 +237,5 @@ def scan_signatures(source,*,category='images',cancel=None,progress=None):
     index.signature_scanned_bytes=position;index.signature_source_bytes=total
     index.signature_candidates=candidates;index.signature_complete=not limited
     index.signature_category=category
+    index.signature_categories=tuple(key for key in available if key in selected)
     return index

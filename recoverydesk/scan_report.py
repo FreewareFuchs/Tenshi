@@ -8,7 +8,7 @@ def format_scan_report(source, index) -> str:
              "Quelle: " + source, "Quelle nur gelesen, kein Dateisystem repariert.", ""]
     fs = getattr(index, 'filesystem', 'NTFS')
     if fs in ('JPEG/PNG signatures v1','File signatures v2'):
-        category=getattr(index,'signature_category','images')
+        category=', '.join(getattr(index,'signature_categories', (getattr(index,'signature_category','images'),)))
         lines.extend([f'Signatursuche: {category}',
             f'Gefundene Dateistrukturen: {len(index.entries)}',
             f'Suchbereich gelesen: {index.signature_scanned_bytes} / {index.signature_source_bytes} Bytes',
