@@ -12,6 +12,7 @@ from .secure_target import atomic_json_checkpoint, open_regular_input
 from .sources import ensure_safe_destination
 
 SCHEMA = 'tenshi-signature-search-v1'
+FREE_SCHEMA = 'tenshi-signature-search-free-ntfs-v1'
 MAX_BYTES = 512 * 1024
 CATEGORIES = ('images', 'office', 'archives', 'audio', 'video')
 
@@ -38,7 +39,7 @@ def _plain_target(path):
 def validate_checkpoint(data):
     from .signature_search import MAX_HITS, MAX_CANDIDATES, MAX_INSPECTION, SCAN_BLOCK
     try:
-        if not isinstance(data, dict) or data['schema'] != SCHEMA:
+        if not isinstance(data, dict) or data['schema'] not in (SCHEMA,FREE_SCHEMA):
             raise ValueError()
         revision = data.get('parser_revision',1)
         if type(revision) is not int or revision not in (1,2):raise ValueError()
@@ -62,7 +63,17 @@ def validate_checkpoint(data):
             if type(data[key]) is not int or not 0 <= data[key] <= maximum:
                 raise ValueError()
         position = data['position']
-        if position != total and position % SCAN_BLOCK:
+        from .signature_search import validate_search_area
+        area=data.get('search_area','all');offset=data.get('partition_offset',0)
+        validate_search_area(area,offset)
+        if (data['schema'] == FREE_SCHEMA) != (area == 'ntfs-free'):raise ValueError()
+        if offset >= total:raise ValueError()
+        digest=data.get('bitmap_sha256')
+        if area == 'ntfs-free':
+            import re
+            if not isinstance(digest,str) or not re.fullmatch('[0-9a-f]{64}',digest):raise ValueError()
+        elif digest is not None:raise ValueError()
+        if area == 'all' and position != total and position % SCAN_BLOCK:
             raise ValueError()
         if type(data['last']) is not int or not (-1 <= data['last'] < position or (position == 0 and data['last'] == -1)):
             raise ValueError()
@@ -128,7 +139,8 @@ class CheckpointWriter:
         self.saved_time = float('-inf')
 
     def update(self, state):
-        self.pending = dict(schema=SCHEMA, source=os.path.abspath(self.source),
+        schema = FREE_SCHEMA if state.get('search_area') == 'ntfs-free' else SCHEMA
+        self.pending = dict(schema=schema, source=os.path.abspath(self.source),
                             fingerprint=self.fingerprint, **state)
         self.pending['checksum'] = checkpoint_digest(self.pending)
         if state['position'] - self.saved_position >= 16*1024**2 or time.monotonic() - self.saved_time >= 2:

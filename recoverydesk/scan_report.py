@@ -10,10 +10,11 @@ def format_scan_report(source, index) -> str:
     if fs in ('JPEG/PNG signatures v1','File signatures v2'):
         category=', '.join(getattr(index,'signature_categories', (getattr(index,'signature_category','images'),)))
         lines.extend([f'Signatursuche: {category}',
+            f'Suchbereich: {getattr(index,"signature_search_area","all")}; NTFS-Partitionsoffset: {getattr(index,"signature_partition_offset",0)} Bytes',
             f'Gefundene Dateistrukturen: {len(index.entries)}',
             f'Suchbereich gelesen: {index.signature_scanned_bytes} / {index.signature_source_bytes} Bytes',
             f'Untersuchte Anfangssignaturen: {index.signature_candidates}',
-            f'Bis zum Image-Ende gesucht: {index.signature_complete}',
+            f'Ausgewählten Suchbereich vollständig durchsucht: {index.signature_complete}',
             f'Prüfgrenze JPEG/PNG/GIF/TIFF/PDF und Office/ZIP: {getattr(index, "signature_file_limit", 32*1024**2) // 1024**2} MiB je Fund. Andere Formate können größer sein.',
             'Suchlaufgrenzen: 1000 Funde, 5000 Anfangssignaturen, 512 MiB zusätzliche Strukturprüfungen.',
             *index.scan_warnings])

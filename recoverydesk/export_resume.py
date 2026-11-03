@@ -42,6 +42,8 @@ class SavedExport:
     signature_file_limit: int | None = None
     signature_categories: tuple[str, ...] | None = None
     signature_parser_revision: int = 1
+    signature_search_area: str = 'all'
+    signature_partition_offset: int = 0
 
     @property
     def source(self): return self.identity['source']
@@ -57,6 +59,8 @@ def resume_metadata(index, selection):
         scan['signature_file_limit'] = getattr(index, 'signature_file_limit', 32*1024**2)
         scan['signature_categories'] = list(getattr(index, 'signature_categories', ('images','office','archives','audio','video')))
         scan['signature_parser_revision'] = getattr(index,'signature_parser_revision',1)
+        scan['signature_search_area'] = getattr(index,'signature_search_area','all')
+        scan['signature_partition_offset'] = getattr(index,'signature_partition_offset',0)
     return dict(schema=1,selected=[_key(e) for e in _selected_roots(index,selection)], scan=scan)
 
 
@@ -135,6 +139,12 @@ def read_saved_export(filename):
         signature_limit=scan.get('signature_file_limit')
         signature_categories=scan.get('signature_categories')
         signature_revision=scan.get('signature_parser_revision',1)
+        signature_area=scan.get('signature_search_area','all')
+        signature_offset=scan.get('signature_partition_offset',0)
+        from .signature_search import validate_search_area
+        validate_search_area(signature_area,signature_offset)
+        _require(signature_offset < identity['size'])
+        _require(signature_area == 'all' or identity['filesystem'] == SIGNATURE_FS)
         _require(type(signature_revision) is int and signature_revision in (1,2))
         if signature_limit is not None or signature_categories is not None:
             _require(identity['filesystem'] == SIGNATURE_FS)
@@ -148,7 +158,8 @@ def read_saved_export(filename):
     except (KeyError,TypeError,ValueError) as exc:
         raise ExportResumeError('Ungültige gespeicherte Exportauswahl.') from exc
     return SavedExport(str(root),identity,signature,tuple(keys),limit,tolerant,signature_limit,
-                       tuple(signature_categories) if signature_categories is not None else None,signature_revision)
+                       tuple(signature_categories) if signature_categories is not None else None,signature_revision,
+                       signature_area,signature_offset)
 
 
 def prepare_saved_export(saved, *, cancel=None, progress=None):
@@ -173,6 +184,7 @@ def prepare_saved_export(saved, *, cancel=None, progress=None):
             index=scan_signatures(source,category=('all' if identity['filesystem']==SIGNATURE_FS else 'images'),
                                   categories=saved.signature_categories, max_file_bytes=saved.signature_file_limit,
                                   parser_revision=saved.signature_parser_revision,
+                                  search_area=saved.signature_search_area,partition_offset=saved.signature_partition_offset,
                                   cancel=cancel,progress=progress)
             if identity['filesystem']==LEGACY_SIGNATURE_FS:
                 index.filesystem=LEGACY_SIGNATURE_FS

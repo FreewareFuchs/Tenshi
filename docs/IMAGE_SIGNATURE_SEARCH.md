@@ -10,6 +10,16 @@ Mit **Kategorien gemeinsam suchen…** lassen sich mehrere Kategorien auswählen
 
 ## Suchstand speichern und fortsetzen
 
+### Optional: nur freie NTFS-Bereiche
+
+**Nur freie NTFS-Bereiche** beschränkt die Suche auf eine NTFS-Partition mit verlässlich lesbarer `$Bitmap`. Den **NTFS-Partitionsoffset (Bytes)** angeben: `0` bei einem reinen Volume-Image, sonst den Partitionsanfang. Die vorhandene Partitionsauswahl überträgt diesen Offset auch ins Signaturregister. Ohne die Auswahl bleibt die bisherige Suche über das ganze Image aktiv.
+
+NTFS-Metadaten werden zuerst schreibgeschützt gelesen. Fehlende, beschädigte, nicht unterstützte oder zu große Bitmaps führen zu einer Fehlermeldung, niemals zum stillen Wechsel auf eine Vollsuche. Das vorhandene Limit von 128 MiB für die Bitmap gilt weiterhin. Nur zusammenhängende freie Bereiche werden durchsucht; Kandidaten dürfen keine belegten Grenzen überschreiten. Bereiche außerhalb des Volumes und nicht zu Clustern gehörende Restsektoren werden ausgelassen. Ein freies Cluster bestätigt keine gelöschte oder unversehrte Originaldatei. Es gibt keine Fragmentrekonstruktion.
+
+Der Fortschritt zählt freie Suchbytes statt der gesamten Image-Größe. Metadaten-, Fingerabdruck- und Strukturprüfungen verursachen zusätzliche Lesezugriffe. Suchstände und Exportaufträge behalten Bereich und Partitionsoffset bei. Beim Fortsetzen wird die Bitmap frisch gelesen; Suchstände vergleichen zusätzlich ihren Bitmap-Hash. Gespeicherte Funde müssen weiterhin vollständig in einem freien Bereich liegen und werden erneut strukturell geprüft. Ältere Suchstände und Exportaufträge bleiben Vollsuchen. Eine neue Suche ist nötig, um den Suchbereich zu wechseln. Freie Suchstände verwenden eine eigene Formatkennung, damit ältere Programmversionen sie nicht als Vollsuche öffnen.
+
+Im freien Suchmodus enden Suchabschnitte spätestens nach 1 MiB oder an einer belegten Grenze; Statuspositionen sind daher nicht zwingend Vielfache von 1 MiB.
+
 Vor einer Suche **Suchstand speichern** aktivieren und nach dem Bestätigen eine neue `.tenshi-search.json`-Datei als Ziel wählen. Tenshi sichert abgeschlossene 1-MiB-Suchabschnitte regelmäßig (nach 16 MiB oder zwei Sekunden) und beim kontrollierten Anhalten. **Anhalten** stoppt eine Suche mit aktivierter Speicherung. Ein gerade bearbeiteter Abschnitt oder Fund wird beim Fortsetzen erneut gelesen. Bei einem unerwarteten Programmende kann die zuletzt automatisch gesicherte Position etwas zurückliegen.
 
 Nach einem Programmneustart zuerst dasselbe reguläre Image auswählen und **Suchstand öffnen…** verwenden. Kategorien und Größenbegrenzung werden aus der Datei übernommen. Tenshi prüft Größe, Stichproben-Fingerabdruck und beim ursprünglichen Pfad die Änderungszeit. Gespeicherte Funde werden strukturell neu geprüft, bevor sie in die Ergebnisse gelangen. Die Stichproben sind kein vollständiger Hash des Images. Der Suchstand enthält Positionen und Metadaten, keine Dateiinhalte. Eine Prüfsumme erkennt beschädigte Statusdaten; sie ist kein Echtheitsnachweis.
