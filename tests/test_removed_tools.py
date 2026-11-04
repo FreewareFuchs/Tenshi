@@ -1,5 +1,6 @@
 """Regression checks for the streamlined RecoveryDesk GUI."""
 import unittest
+import inspect
 from pathlib import Path
 from recoverydesk.gui import RecoveryDeskApp
 import recoverydesk.core as core
@@ -21,7 +22,9 @@ class RemovedToolTests(unittest.TestCase):
         self.assertIn('text="Dateien & Ordner"', source)
         self.assertNotIn('text="Signatursuche (optional)"', source)
         self.assertNotIn('text="Sektor / Hex-Editor"', source)
-        self.assertIn("def preview_entry(self):", source)
+        self.assertTrue(callable(RecoveryDeskApp.preview_entry))
+        # Existing button/menu callers must still work without an explicit context.
+        inspect.signature(RecoveryDeskApp.preview_entry).bind(None)
 
 if __name__ == "__main__":
     unittest.main()
