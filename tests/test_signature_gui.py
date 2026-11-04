@@ -42,6 +42,125 @@ class SignatureGuiTests(unittest.TestCase):
         self.assertEqual(self.app.browser_index.signature_categories, ('images', 'audio'))
         self.assertEqual(str(self.app.signature_combined_button.cget('state')), 'normal')
 
+    def scan_for_list(self):
+        self.prepare()
+        with patch('recoverydesk.gui.messagebox.askyesno',return_value=True),patch('recoverydesk.gui.messagebox.showerror') as error:
+            self.app.start_signature_scan();self.wait_for(lambda:not self.app.ntfs_scanning)
+        error.assert_not_called()
+        return self.app.signature_results
+
+    def test_results_sort_numerically_and_keep_selection(self):
+        view=self.scan_for_list()
+        self.assertEqual(len(view.tree.get_children()),2)
+        first=self.app.browser_index.entries[0]
+        view.tree.selection_set(str(first.key));view._selection_changed()
+        view.sort('offset')
+        self.assertEqual(view.selected_entries(),(first,))
+        offsets=[view.entries[key].locator[1] for key in view.tree.get_children()]
+        self.assertEqual(offsets,sorted(offsets,reverse=True))
+        self.assertEqual(view.tree.item(str(first.key),'text'),first.name)
+        self.assertEqual(str(view.inspect.cget('state')),'normal')
+        view.select_all()
+        self.assertEqual(len(view.selected_entries()),2)
+        self.assertEqual(str(view.inspect.cget('state')),'disabled')
+
+    def test_signature_preview_reads_own_selection_without_switching_tabs(self):
+        view=self.scan_for_list()
+        self.app._select_main_tab('signatures')
+        item=self.app.browser_index.entries[1]
+        view.tree.selection_set(str(item.key))
+        with patch('recoverydesk.gui.read_preview_file',return_value=b'signature preview') as read,patch('recoverydesk.gui.content_kind',return_value=''):
+            self.app._signature_action('preview')
+            self.wait_for(lambda:read.called)
+        self.assertEqual(read.call_args.args[:4],(str(self.source),self.app.browser_index,item,FILESYSTEM))
+        windows=[w for w in self.app.winfo_children() if hasattr(w,'_preview_thread')]
+        self.assertEqual(len(windows),1)
+        self.assertIn(item.name,windows[0].title())
+        self.assertEqual(self.app.tabs.select(),str(self.app.signature_tab))
+        windows[0].destroy()
+
+    def test_export_from_signature_list_exports_only_selected_file(self):
+        from pathlib import Path
+        import hashlib
+        view=self.scan_for_list()
+        self.app._select_main_tab('signatures')
+        item=self.app.browser_index.entries[1]
+        view.tree.selection_set(str(item.key))
+        target=self.source.parent/'export';target.mkdir()
+        with patch('recoverydesk.gui.filedialog.askdirectory',return_value=str(target)),patch('recoverydesk.gui.messagebox.askyesno',return_value=True),patch('recoverydesk.gui.messagebox.showinfo'),patch('recoverydesk.gui.messagebox.showwarning'),patch('recoverydesk.gui.messagebox.showerror') as error:
+            self.app._signature_action('export')
+            self.wait_for(lambda:not self.app.export_running and self.app.export_result is not None)
+        error.assert_not_called()
+        result=self.app.export_result
+        self.assertEqual(result.exported,1)
+        self.assertFalse(result.checksum_errors)
+        self.assertEqual(self.app.tabs.select(),str(self.app.signature_tab))
+        exported=list((Path(result.root)/'files').iterdir())
+        self.assertEqual([p.name for p in exported],[item.name])
+        self.assertEqual(exported[0].read_bytes(),picture('PNG'))
+        self.assertIn(hashlib.sha256(exported[0].read_bytes()).hexdigest(),Path(result.checksums).read_text())
+
+    def test_changed_source_discards_list_before_an_action_can_read_it(self):
+        view=self.scan_for_list();view.select_all()
+        self.app.source_path.set(str(self.source)+'.other')
+        with patch.object(self.app,'preview_entry') as preview,patch.object(self.app,'export_browser_selection') as export:
+            self.app._signature_action('preview');self.app._signature_action('export')
+        preview.assert_not_called();export.assert_not_called()
+        self.assertEqual(view.tree.get_children(),())
+        self.assertIsNone(self.app.signature_result_index)
+
+    def test_signature_inspection_uses_selected_metadata(self):
+        view=self.scan_for_list();item=self.app.browser_index.entries[1]
+        view.tree.selection_set(str(item.key))
+        self.app._signature_action('inspect')
+        windows=[w for w in self.app.winfo_children() if hasattr(w,'title') and w.title().startswith('Dateiprüfung')]
+        self.assertEqual(len(windows),1)
+        self.assertIn(item.name,windows[0].title())
+        windows[0].destroy()
+
+    def test_list_is_cleared_before_replacement_scan_and_after_source_reset(self):
+        view=self.scan_for_list();self.app._clear_browser_results()
+        self.assertEqual(view.tree.get_children(),())
+        self.assertEqual(str(view.preview.cget('state')),'disabled')
+        self.assertEqual(str(view.export.cget('state')),'disabled')
+
+    def test_running_export_can_be_reopened_without_selection_or_new_job(self):
+        view=self.scan_for_list()
+        self.app.export_running=True
+        try:
+            view.tree.selection_remove(*view.tree.selection());view._selection_changed()
+            self.assertEqual(str(view.export.cget('state')),'normal')
+            with patch.object(self.app,'_show_export_progress') as progress,patch.object(self.app,'_start_export_job') as start:
+                view.export.invoke()
+            progress.assert_called_once();start.assert_not_called()
+        finally:self.app.export_running=False
+
+    def test_size_sort_is_numeric_and_full_bounded_list_can_be_selected(self):
+        from recoverydesk.signature_search import _signature_entry
+        view=self.app.signature_results
+        entries=[_signature_entry(n*4096,size,'PNG') for n,size in enumerate((9,100,1024))]
+        view.show_entries(entries);view.sort('size')
+        self.assertEqual([e.size for e in view.entries.values()],[9,100,1024])
+        self.assertEqual([view.entries[k].size for k in view.tree.get_children()],[9,100,1024])
+        view.show_entries([_signature_entry(n*4096,10,'PNG') for n in range(1000)])
+        view.select_all()
+        self.assertEqual(len(view.selected_entries()),1000)
+
+    def test_result_actions_and_list_are_visible_at_small_size_in_six_languages(self):
+        self.app.deiconify();self.app.geometry('1024x650')
+        self.app._select_main_tab('signatures')
+        for language in LANGUAGES:
+            self.app.change_language(language);self.app.update()
+            view=self.app.signature_results
+            self.assertGreaterEqual(view.tree.winfo_height(),60,language)
+            bottom=self.app.signature_tab.winfo_rooty()+self.app.signature_tab.winfo_height()
+            right=self.app.signature_tab.winfo_rootx()+self.app.signature_tab.winfo_width()
+            for widget in (view.tree,view.preview,view.inspect,view.export,view.browser):
+                self.assertTrue(widget.winfo_ismapped(),language)
+                self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),bottom,language)
+                self.assertLessEqual(widget.winfo_rootx()+widget.winfo_width(),right,language)
+            self.assertEqual(view.tree.heading('offset')['text'],translate('Fundposition (Bytes)',language))
+
     def test_decline_keeps_previous_browser(self):
         self.prepare();index=self.app.browser_index
         with patch('recoverydesk.gui.messagebox.askyesno',return_value=False),patch('recoverydesk.signature_search.scan_signatures') as scan:

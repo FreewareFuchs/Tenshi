@@ -915,6 +915,8 @@ class RecoveryDeskApp(tk.Tk):
             self.signature_result_source = None
             self.signature_status.set('')
             self.signature_results_button.configure(state='disabled')
+            self.signature_result_index = None
+            self.signature_results.clear()
 
     def _scan_source_matches(self, generation, source):
         return (generation == self._source_generation and
@@ -1828,15 +1830,10 @@ class RecoveryDeskApp(tk.Tk):
         messagebox.showinfo('Partitionsbericht', 'Bericht erfolgreich gespeichert.', parent=self)
 
     def _build_signature_tab(self):
-        panel = ttk.Frame(self.signature_tab, padding=(18, 14))
+        panel = ttk.Frame(self.signature_tab, padding=(12, 8))
         panel.pack(fill='x', anchor='nw')
-        ttk.Label(panel, text='Dateisignaturen', style='Title.TLabel').pack(anchor='w')
-        from .signature_search import SCOPE
-        self.signature_scope_label = ttk.Label(panel, text=SCOPE, justify='left', wraplength=1000)
-        self.signature_scope_label.pack(anchor='w', fill='x', pady=(8, 16))
-        ttk.Label(panel, text='Ausgewählte Quelle:', style='Sub.TLabel').pack(anchor='w')
-        ttk.Label(panel, textvariable=self.source_path, wraplength=1000,
-                  justify='left').pack(anchor='w', fill='x', pady=(2, 14))
+        self.signature_scope_label = ttk.Label(panel, justify='left', wraplength=1000)
+        self.signature_scope_label.pack(anchor='w', fill='x', pady=(0, 8))
         area = ttk.Frame(panel)
         area.pack(anchor='w', pady=(0, 10))
         self.signature_free_only = tk.BooleanVar(value=False)
@@ -1867,10 +1864,6 @@ class RecoveryDeskApp(tk.Tk):
             button.pack(side='left', padx=(0, 6))
             self.signature_search_buttons[category] = button
         self.signature_search_button = self.signature_search_buttons['images']
-        self.signature_results_button = ttk.Button(
-            actions, text='Ergebnisse in Dateien & Ordner anzeigen',
-            command=self._open_signature_results, state='disabled')
-        self.signature_results_button.pack(side='left', padx=(8, 0))
         continuation = ttk.Frame(panel)
         continuation.pack(anchor='w', fill='x', pady=(8, 0))
         self.signature_combined_button = ttk.Button(
@@ -1885,16 +1878,42 @@ class RecoveryDeskApp(tk.Tk):
         self.signature_pause_button.pack(side='left')
         self.signature_status = tk.StringVar(value='')
         ttk.Label(panel, textvariable=self.signature_status, style='Sub.TLabel',
-                  justify='left', wraplength=1000).pack(anchor='w', fill='x', pady=(14, 0))
+                  justify='left', wraplength=1000).pack(anchor='w', fill='x', pady=(8, 0))
+        from .signature_results import SignatureResults
+        self.signature_result_index = None
+        self.signature_result_generation = None
+        self.signature_results = SignatureResults(self.signature_tab,action=self._signature_action,
+            open_browser=self._open_signature_results,export_running=lambda:self.__dict__.get('export_running',False))
+        self.signature_results.pack(fill='both',expand=True)
+        self.signature_results_button = self.signature_results.browser
+        self._update_signature_scope()
 
     def _update_signature_scope(self):
-        from .signature_search import SCOPE, FREE_SCOPE
+        scope = ('Suchbereich: freie NTFS-Bereiche.' if self.signature_free_only.get()
+                 else 'Suchbereich: gesamtes Image.')
         self.signature_scope_label.configure(text=translate(
-            FREE_SCOPE if self.signature_free_only.get() else SCOPE, self.language))
+            scope,self.language)+' '+translate('Signaturfunde bestätigen keine vollständigen Originalinhalte.',self.language))
+
+    def _signature_action(self,action):
+        if action=='export' and self.export_running:
+            self._show_export_progress();return 'break'
+        index=self.signature_result_index
+        if (index is None or index is not self.browser_index or
+                not self._scan_source_matches(self.signature_result_generation,self.signature_result_source)):
+            self.signature_results.clear();self.signature_result_index=None
+            return 'break'
+        chosen=self.signature_results.selected_entries()
+        if chosen:
+            context=(self.signature_result_source,index,chosen)
+            if action=='preview':self.preview_entry(context=context)
+            elif action=='inspect':self.inspect_file(context=context)
+            elif action=='export':self.export_browser_selection(context=context)
+        return 'break'
 
     def _open_signature_results(self):
         if (self.signature_result_source != self.source_path.get().strip() or
-                self.browser_index is None):
+                self.signature_result_index is None or self.signature_result_index is not self.browser_index or
+                self.signature_result_generation != self._source_generation):
             self.signature_results_button.configure(state='disabled')
             self.signature_result_source = None
             self.signature_status.set('')
@@ -2282,6 +2301,9 @@ class RecoveryDeskApp(tk.Tk):
                         if getattr(index,'signature_parser_revision',2) == 1:
                             text+=' '+translate('Älterer Suchstand: PDF/RAR erfordern eine neue Suche.',self.language)
                         self.signature_result_source=source
+                        self.signature_result_index=index
+                        self.signature_result_generation=generation
+                        self.signature_results.show_entries(index.entries)
                         self.signature_status.set(text)
                         self.signature_results_button.configure(state='normal')
                         self.status.set(text)
@@ -2538,6 +2560,8 @@ class RecoveryDeskApp(tk.Tk):
         self.status.set('Analysesitzung geladen und Image geprüft. Dateiinhalte bleiben ungeprüft.')
 
     def _show_browser_index(self, source, index, prepared=None):
+        if getattr(self,'signature_result_index',None) is not None and index is not self.signature_result_index:
+            self.signature_results.clear();self.signature_result_index=None
         self.browser_index = index
         self.browser_source = source
         if prepared is None:
@@ -3116,6 +3140,7 @@ class RecoveryDeskApp(tk.Tk):
                     and not self.__dict__.get('_session_running'))
 
     def _refresh_export_view(self):
+        if hasattr(self,'signature_results'):self.signature_results._selection_changed()
         window = self.__dict__.get('_export_progress_window')
         if window is not None and window.winfo_exists():
             window.refresh_display()
@@ -3452,17 +3477,16 @@ class RecoveryDeskApp(tk.Tk):
         if self.export_running or not self._export_events.empty():
             self.after(110, self._drain_export_events)
 
-    def export_browser_selection(self):
+    def export_browser_selection(self,*,context=None):
         """Start a resumable batch and its separate progress/result window."""
         if self._exit_requested:return
         if self.export_running:
             self._show_export_progress()
             return
-        if not self.browser_index or not self.browser_source:
+        src,index,chosen = context if context is not None else (self.browser_source,self.browser_index,self._selected_browser_entries())
+        if not index or not src:
             messagebox.showinfo('Export', 'Zuerst ein Dateisystem einlesen.')
             return
-        src,index=self.browser_source,self.browser_index
-        chosen = self._selected_browser_entries()
         if not chosen:
             messagebox.showinfo('Export', 'Rechts Dateien/Ordner auswählen (Strg/Umschalt für mehrere).')
             return
@@ -3474,7 +3498,8 @@ class RecoveryDeskApp(tk.Tk):
         except Exception as exc:
             messagebox.showerror('Sicherer Export', str(exc))
             return
-        self._start_export_job(dict(source=src,index=index,selection=tuple(chosen),target=target,root=None))
+        self._start_export_job(dict(source=src,index=index,selection=tuple(chosen),target=target,root=None),
+                               select_file_tab=context is None)
 
     def open_saved_export(self):
         if self._exit_requested:return
@@ -3489,7 +3514,7 @@ class RecoveryDeskApp(tk.Tk):
         filename=str(Path(folder)/MANIFEST)
         self._start_export_job(dict(source='',index=None,selection=(),target='',root=None,request_file=filename))
 
-    def _start_export_job(self,job,*,resume_root=None):
+    def _start_export_job(self,job,*,resume_root=None,select_file_tab=True):
         """Use the captured job, including when the browser now shows another source."""
         if (self.export_running or self._exit_requested or self._closing or
                 self.__dict__.get('_export_report_saving') or self.__dict__.get('_session_running')):return
@@ -3516,7 +3541,7 @@ class RecoveryDeskApp(tk.Tk):
         # second worker or asks for a new selection/destination.
         self.export_button.configure(state='normal')
         # Paint the main action state before starting the worker.
-        self.tabs.select(self.ntfs_tab)
+        if select_file_tab:self.tabs.select(self.ntfs_tab)
         self.update_idletasks()
         self.status.set('Exportauftrag wird geprüft …' if self._export_restoring else 'Exportziel wird geprüft …')
         self._show_export_progress()
@@ -3660,15 +3685,15 @@ class RecoveryDeskApp(tk.Tk):
         threading.Thread(target=worker, daemon=True).start()
         self._after_window(win, 100, poll)
 
-    def inspect_file(self):
+    def inspect_file(self,*,context=None):
         """Show metadata before recovery and offer optional bounded read check."""
-        selection = self._selected_browser_entries()
+        source,index,selection = context if context is not None else (self.browser_source,self.browser_index,self._selected_browser_entries())
         if len(selection) != 1:
             messagebox.showinfo('Datei prüfen', 'Bitte genau eine Datei auswählen.', parent=self)
             return
         item = selection[0]
         quality = assess(item)
-        source, index, filesystem = self.browser_source, self.browser_index, self.browser_fs
+        filesystem = index.filesystem if context is not None else self.browser_fs
         win = tk.Toplevel(self)
         win.title('Dateiprüfung – ' + item.name)
         win.geometry('760x570')
@@ -3836,14 +3861,15 @@ class RecoveryDeskApp(tk.Tk):
         if item.is_directory or not item.recoverable or item.size > MAX_CONTENT_BYTES:
             content_btn.configure(state='disabled')
 
-    def preview_entry(self):
+    def preview_entry(self,*,context=None):
         # Capture only this selection and its source; never follow later browser changes.
-        items=tuple(item for item in self._selected_browser_entries() if not item.is_directory)
+        source,index,selection = context if context is not None else (self.browser_source,self.browser_index,self._selected_browser_entries())
+        items=tuple(item for item in selection if not item.is_directory)
         if not items:
             messagebox.showinfo('Vorschau','Bitte mindestens eine Datei auswählen.');return
         if len(items)==1 and not items[0].recoverable:
             messagebox.showwarning('Vorschau',assess(items[0]).detail);return
-        source,index,filesystem=self.browser_source,self.browser_index,self.browser_fs
+        filesystem=index.filesystem if context is not None else self.browser_fs
         win=tk.Toplevel(self);win.geometry('850x650');win.minsize(650,500)
         metadata=ttk.Label(win,wraplength=800,justify='left')
         metadata.pack(fill='x',padx=14,pady=(12,8))
