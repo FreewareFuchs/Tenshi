@@ -4,7 +4,7 @@ import os
 import re
 from pathlib import Path
 
-from .secure_target import open_regular_output, mkdir_checked, remove_owned_output, remove_empty_directory
+from .secure_target import open_regular_output, mkdir_checked, remove_owned_output, remove_empty_directory, sync_directory
 
 INDIVIDUAL='Pruefsummen_Einzeln'
 SUMMARY='SHA256SUMS.sha256'
@@ -87,7 +87,7 @@ class ExportChecksums:
         if os.name!='nt':
             from .secure_target import secure_parent
             with secure_parent(str(path),self.source) as parent_fd:
-                if parent_fd is not None:os.fsync(parent_fd)
+                if parent_fd is not None:sync_directory(parent_fd)
         record['complete']=True
         self.persist()
         return path

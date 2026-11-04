@@ -24,6 +24,13 @@ MAX_HITS=1000
 MAX_INSPECTION=512*1024**2
 MAX_CONFIGURABLE_FILE=256*1024**2
 SCOPE='Signaturfunde: erkannte zusammenhängende Dateistrukturen ohne Originalnamen oder Ordner. Belegte und freie Bereiche werden durchsucht; ein Fund beweist weder Löschung noch unversehrte Originalinhalte. Fragmente werden nicht zusammengesetzt.'
+FREE_SCOPE='Nur freie NTFS-Bereiche laut aktueller Belegungsbitmap. Belegte Grenzen werden nicht überschritten. Freier Speicher beweist weder Löschung noch unversehrte Originalinhalte; Fragmente werden nicht zusammengesetzt.'
+
+
+def validate_search_area(area, offset):
+    if (area not in ('all','ntfs-free') or type(offset) is not int or offset < 0 or offset % 512
+            or (area == 'all' and offset != 0)):
+        raise ValueError('Ungültiger Suchbereich oder NTFS-Partitionsoffset.')
 
 
 class _Invalid(ValueError):pass
@@ -166,14 +173,15 @@ def _snapshot(value):
 
 
 def scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None,
-                    checkpoint_path=None,resume=False,parser_revision=2):
+                    checkpoint_path=None,resume=False,parser_revision=2,search_area=None,partition_offset=None):
     """Optionally persist completed scan blocks and resume an explicitly selected image."""
     if checkpoint_path is None:
         if resume:
             raise ValueError('Bitte einen gespeicherten Suchstand auswählen.')
         return _scan_signatures(source,category=category,categories=categories,
                                 max_file_bytes=max_file_bytes,cancel=cancel,progress=progress,
-                                _parser_revision=parser_revision)
+                                _parser_revision=parser_revision,search_area='all' if search_area is None else search_area,
+                                partition_offset=0 if partition_offset is None else partition_offset)
     from .signature_checkpoint import read_checkpoint, CheckpointWriter
     from .session_store import fingerprint_image, check_fingerprint
     if max_file_bytes is not None and max_file_bytes not in tuple(m*1024**2 for m in (32,64,128,256)):
@@ -181,7 +189,9 @@ def scan_signatures(source,*,category='images',categories=None,max_file_bytes=No
     state = read_checkpoint(checkpoint_path) if resume else None
     if state is not None:
         if ((categories is not None and frozenset(categories) != frozenset(state['categories'])) or
-                (max_file_bytes is not None and max_file_bytes != state['file_limit'])):
+                (max_file_bytes is not None and max_file_bytes != state['file_limit']) or
+                (search_area is not None and search_area != state.get('search_area','all')) or
+                (partition_offset is not None and partition_offset != state.get('partition_offset',0))):
             raise ValueError('Suchstand oder Sucheinstellungen wurden geändert. Bitte erneut öffnen.')
         if state['limited']:
             raise ValueError('Suchstand hat eine Prüfgrenze erreicht. Bitte eine neue Suche starten.')
@@ -189,6 +199,8 @@ def scan_signatures(source,*,category='images',categories=None,max_file_bytes=No
         categories = tuple(state['categories'])
         max_file_bytes = state['file_limit']
         parser_revision = state.get('parser_revision',1)
+        search_area = state.get('search_area','all')
+        partition_offset = state.get('partition_offset',0)
     else:
         fingerprint = fingerprint_image(source,[1])
     source_snapshot = _snapshot(os.stat(source))
@@ -198,7 +210,8 @@ def scan_signatures(source,*,category='images',categories=None,max_file_bytes=No
     try:
         return _scan_signatures(source,category=category,categories=categories,max_file_bytes=max_file_bytes,
                                 cancel=cancel,progress=progress,_resume=state,_checkpoint=writer.update,
-                                _parser_revision=parser_revision)
+                                _parser_revision=parser_revision,search_area='all' if search_area is None else search_area,
+                                partition_offset=0 if partition_offset is None else partition_offset)
     finally:
         writer.flush()
 
@@ -217,9 +230,10 @@ def _signature_entry(start,size,kind):
 
 
 def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None,
-                     _resume=None,_checkpoint=None,_parser_revision=2):
+                     _resume=None,_checkpoint=None,_parser_revision=2,search_area='all',partition_offset=0):
     """Search selected categories in a single sequential pass over a regular image."""
     available = ('images','office','archives','audio','video')
+    validate_search_area(search_area,partition_offset)
     if type(_parser_revision) is not int or _parser_revision not in (1,2):
         raise ValueError('Ungültige Suchversion.')
     selected = frozenset(categories) if categories is not None else frozenset(available if category == 'all' else (category,))
@@ -238,21 +252,39 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
         opened=os.fstat(stream.fileno())
         if _snapshot(opened)!=_snapshot(before):raise ValueError('Quell-Image wurde geändert.')
         total=opened.st_size
+        ranges = lambda: iter(((0,total),))
+        search_bytes = total
+        bitmap_digest = None
+        if search_area == 'ntfs-free':
+            from .ntfs_usage import free_ntfs_ranges, BitmapUnavailable
+            try:
+                ranges,search_bytes,bitmap_digest = free_ntfs_ranges(stream,partition_offset,total,cancel=cancel)
+            except BitmapUnavailable as exc:
+                raise ValueError('Freie NTFS-Bereiche nicht sicher bestimmbar: '+str(exc)) from exc
+        if _resume is not None and _resume.get('bitmap_sha256') != bitmap_digest:
+            raise ValueError('NTFS-Belegungsbitmap wurde geändert. Bitte eine neue Suche starten.')
         if _resume is not None:
             # Reparse every cached candidate instead of trusting stored extents.
             validation = _Budget(file_limit,cancel)
+            cached_ranges = iter(ranges())
+            cached_region = next(cached_ranges,None)
             for start, expected_size, expected_kind in _resume['hits']:
                 _stop(cancel)
+                while cached_region is not None and cached_region[1] <= start:
+                    cached_region = next(cached_ranges,None)
+                if cached_region is None or not cached_region[0] <= start < start+expected_size <= cached_region[1]:
+                    raise ValueError('Gespeicherter Fund liegt außerhalb des Suchbereichs.')
+                candidate_end = cached_region[1]
                 if _parser_revision == 1 and expected_kind in ('PDF','RAR'):
                     raise ValueError('Ungültiger gespeicherter Suchstand.')
                 try:
                     if expected_kind in ('PNG','JPEG'):
                         if 'images' not in selected:raise _Invalid()
-                        reader = _Reader(stream,start,total,validation,cancel)
+                        reader = _Reader(stream,start,candidate_end,validation,cancel)
                         size = (_png if expected_kind == 'PNG' else _jpeg)(reader)
                         kind = expected_kind
                     else:
-                        size,kind,found_category = parse_format(stream,start,total,validation,category)
+                        size,kind,found_category = parse_format(stream,start,candidate_end,validation,category)
                         if found_category not in selected or (kind in ('GIF','TIFF') and size > file_limit):raise _Invalid()
                     if size != expected_size or kind != expected_kind:raise _Invalid()
                     entries.append(_signature_entry(start,size,kind))
@@ -260,81 +292,102 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
                     raise ValueError('Gespeicherte Signaturfunde konnten nicht bestätigt werden.') from exc
             position = _resume['position'];last = _resume['last']
             candidates = _resume['candidates'];budget[0] = _resume['inspection']
-            stream.seek(max(0,position-264));tail=stream.read(min(264,position))
         def save_block():
             if _checkpoint is not None:
                 _checkpoint(dict(position=position,last=last,candidates=candidates,inspection=budget[0],
                                  categories=[key for key in available if key in selected],file_limit=file_limit,
                                  parser_revision=_parser_revision,
+                                 search_area=search_area,partition_offset=partition_offset,bitmap_sha256=bitmap_digest,
                                  limited=limited,hits=[[e.locator[1],e.size,e.name.split('_',1)[0]] for e in entries]))
         save_block()
-        if _resume is not None and progress:progress(position,total)
-        while position<total:
-            _stop(cancel)
-            stream.seek(position);block=stream.read(min(SCAN_BLOCK,total-position))
-            if len(block)!=min(SCAN_BLOCK,total-position):raise OSError('Image lieferte unvollständige Daten.')
-            data=tail+block;base=position-len(tail);found=[]
-            if 'images' in selected:
-                signatures=[(PNG,'PNG'),(JPEG,'JPEG'),(b'BM','OTHER'),
-                            (b'GIF87a','OTHER'),(b'GIF89a','OTHER'),(b'RIFF','OTHER'),
-                            (b'II*\0','OTHER'),(b'MM\0*','OTHER')]
-            else:signatures=[]
-            if selected.intersection(('office','archives')):
-                signatures.append((b'PK\x03\x04','OTHER'))
-            if _parser_revision >= 2 and 'office' in selected:
-                signatures.append((b'%PDF-','OTHER'))
-            if _parser_revision >= 2 and 'archives' in selected:
-                signatures.append((b'Rar!\x1a\x07','OTHER'))
-            if 'archives' in selected:
-                signatures.append((b'7z\xbc\xaf\x27\x1c','OTHER'))
-            if selected.intersection(('audio','video')):
-                signatures.append((b'RIFF','OTHER'))
-            if 'audio' in selected:
-                signatures.extend(((b'OggS','OTHER'),(b'ID3','OTHER')))
-            if 'video' in selected:
-                for marker in (b'ftyp',):
-                    at=data.find(marker)
-                    while at>=4:
-                        if base+at-4>last:found.append((base+at-4,'OTHER'))
-                        at=data.find(marker,at+1)
-            if 'archives' in selected:
-                at=data.find(b'ustar')
-                while at>=0:
-                    start=base+at-257
-                    if start>=0 and start>last:found.append((start,'OTHER'))
-                    at=data.find(b'ustar',at+1)
-            for signature,kind in dict.fromkeys(signatures):
-                at=data.find(signature);count=0
-                while at>=0 and count<=MAX_CANDIDATES:
-                    if base+at>last:found.append((base+at,kind))
-                    count+=1
-                    at=data.find(signature,at+1)
-            for start,kind in sorted(set(found)):
+        scanned=0;done=0
+        for region_start,region_end in ranges():
+            if region_end <= position:
+                scanned += region_end-region_start
+                done=scanned
+                continue
+            position=max(position,region_start)
+            tail_start=max(region_start,position-264)
+            stream.seek(tail_start);tail=stream.read(position-tail_start)
+            if _resume is not None and progress:progress(scanned+position-region_start,search_bytes)
+            while position<region_end:
                 _stop(cancel)
-                if candidates>=MAX_CANDIDATES or len(entries)>=MAX_HITS:limited=True;break
-                candidates+=1;last=start
-                try:
-                    if kind=='PNG' or kind=='JPEG':
-                        reader=_Reader(stream,start,total,budget,cancel)
-                        size=(_png if kind=='PNG' else _jpeg)(reader)
-                    else:
-                        size,kind,found_category=parse_format(stream,start,total,budget,category)
-                        if _parser_revision == 1 and kind in ('PDF','RAR'):continue
-                        if found_category not in selected:continue
-                        if kind in ('GIF','TIFF') and size > file_limit:continue
-                except (FormatLimit, _Limit):limited=True;break
-                except (FormatInvalid, _Invalid):continue
-                entries.append(_signature_entry(start,size,kind))
-            position+=len(block);tail=data[-264:]
-            save_block()
-            if progress:progress(position,total)
+                stream.seek(position);block=stream.read(min(SCAN_BLOCK,region_end-position))
+                if len(block)!=min(SCAN_BLOCK,region_end-position):raise OSError('Image lieferte unvollständige Daten.')
+                data=tail+block;base=position-len(tail);found=[]
+                if 'images' in selected:
+                    signatures=[(PNG,'PNG'),(JPEG,'JPEG'),(b'BM','OTHER'),
+                                (b'GIF87a','OTHER'),(b'GIF89a','OTHER'),(b'RIFF','OTHER'),
+                                (b'II*\0','OTHER'),(b'MM\0*','OTHER')]
+                else:signatures=[]
+                if selected.intersection(('office','archives')):
+                    signatures.append((b'PK\x03\x04','OTHER'))
+                if _parser_revision >= 2 and 'office' in selected:
+                    signatures.append((b'%PDF-','OTHER'))
+                if _parser_revision >= 2 and 'archives' in selected:
+                    signatures.append((b'Rar!\x1a\x07','OTHER'))
+                if 'archives' in selected:
+                    signatures.append((b'7z\xbc\xaf\x27\x1c','OTHER'))
+                if selected.intersection(('audio','video')):
+                    signatures.append((b'RIFF','OTHER'))
+                if 'audio' in selected:
+                    signatures.extend(((b'OggS','OTHER'),(b'ID3','OTHER')))
+                if 'video' in selected:
+                    for marker in (b'ftyp',):
+                        at=data.find(marker)
+                        while at>=4:
+                            if base+at-4>last:found.append((base+at-4,'OTHER'))
+                            at=data.find(marker,at+1)
+                if 'archives' in selected:
+                    at=data.find(b'ustar')
+                    while at>=0:
+                        start=base+at-257
+                        if start>=0 and start>last:found.append((start,'OTHER'))
+                        at=data.find(b'ustar',at+1)
+                for signature,kind in dict.fromkeys(signatures):
+                    at=data.find(signature);count=0
+                    while at>=0 and count<=MAX_CANDIDATES:
+                        if base+at>last:found.append((base+at,kind))
+                        count+=1
+                        at=data.find(signature,at+1)
+                for start,kind in sorted(set(found)):
+                    _stop(cancel)
+                    if start < region_start or start >= region_end:continue
+                    if candidates>=MAX_CANDIDATES or len(entries)>=MAX_HITS:limited=True;break
+                    candidates+=1;last=start
+                    try:
+                        if kind=='PNG' or kind=='JPEG':
+                            reader=_Reader(stream,start,region_end,budget,cancel)
+                            size=(_png if kind=='PNG' else _jpeg)(reader)
+                        else:
+                            size,kind,found_category=parse_format(stream,start,region_end,budget,category)
+                            if _parser_revision == 1 and kind in ('PDF','RAR'):continue
+                            if found_category not in selected:continue
+                            if kind in ('GIF','TIFF') and size > file_limit:continue
+                    except (FormatLimit, _Limit):limited=True;break
+                    except (FormatInvalid, _Invalid):continue
+                    entries.append(_signature_entry(start,size,kind))
+                position+=len(block);tail=data[-264:]
+                save_block()
+                done=scanned+position-region_start
+                if progress:progress(done,search_bytes)
+                if limited:break
             if limited:break
+            scanned += region_end-region_start
+        if not limited:
+            position=total
+            done=search_bytes
+            save_block()
+        if progress and (not search_bytes or (_resume is not None and _resume['position'] == total)):
+            progress(done,search_bytes)
         after=os.fstat(stream.fileno());_stop(cancel)
         if _snapshot(opened)!=_snapshot(after) or _snapshot(opened)!=_snapshot(os.stat(source)):raise ValueError('Quell-Image wurde geändert.')
     index=GenericIndex(FILESYSTEM,0,entries,SignatureVolume(total,entries,_snapshot(opened)),children={ROOT:entries})
-    index.scan_warnings=[SCOPE]
+    index.scan_warnings=[FREE_SCOPE if search_area == 'ntfs-free' else SCOPE]
     if limited:index.scan_warnings.append('Signatursuche: Prüfgrenze erreicht; Ergebnis unvollständig.')
-    index.signature_scanned_bytes=position;index.signature_source_bytes=total
+    index.signature_scanned_bytes=done;index.signature_source_bytes=search_bytes
+    index.signature_search_area=search_area
+    index.signature_partition_offset=partition_offset
     index.signature_candidates=candidates;index.signature_complete=not limited
     index.signature_category=category
     index.signature_categories=tuple(key for key in available if key in selected)

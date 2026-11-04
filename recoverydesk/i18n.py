@@ -32,6 +32,23 @@ def add(de, en, es, zh, ru, ja):
     TRANSLATIONS[de] = dict(zip(('en', 'es', 'zh', 'ru', 'ja'), (en, es, zh, ru, ja)))
 
 add('System', 'System', 'Sistema', '系统', 'Система', 'システム')
+add('Optional nur freie Bereiche einer NTFS-Partition durchsuchen. NTFS-Partitionsoffset in Bytes eintragen: 0 bei einem reinen Volume-Image; die Partitionsauswahl übernimmt ihren Offset. Eine verlässlich lesbare Belegungsbitmap ist erforderlich. Suchstand und Exportauftrag behalten Suchbereich und Offset bei. Die Fortschrittsanzeige zählt freie Suchbytes; Metadaten und Fundstrukturen werden zusätzlich gelesen. Ohne diese Auswahl wird wie bisher das ganze Image durchsucht.',
+    'Optionally search only free areas of an NTFS partition. Enter its byte offset: 0 for a volume-only image; selecting a partition transfers its offset. A reliably readable allocation bitmap is required. Search progress and export jobs retain the area and offset. Progress counts free search bytes; metadata and candidate structures require additional reads. Without this option the entire image is searched as before.',
+    'Opcionalmente busca solo las áreas libres de una partición NTFS. Indica el desplazamiento en bytes: 0 para una imagen de volumen; seleccionar una partición transfiere su desplazamiento. Se requiere un mapa de asignación legible de forma fiable. El progreso guardado y las exportaciones conservan área y desplazamiento. El progreso cuenta bytes libres; los metadatos y las estructuras requieren lecturas adicionales. Sin esta opción se busca en toda la imagen.',
+    '可选择仅搜索 NTFS 分区的空闲区域。输入字节偏移量：仅包含卷的映像为 0；选择分区会带入其偏移量。必须能够可靠读取分配位图。搜索进度和导出任务会保留区域及偏移量。进度统计空闲搜索字节；元数据和候选结构需要额外读取。不启用此选项时仍搜索整个映像。',
+    'Можно искать только свободные области раздела NTFS. Укажите смещение в байтах: 0 для образа одного тома; выбор раздела переносит его смещение. Нужна надёжно читаемая карта размещения. Прогресс поиска и задания экспорта сохраняют область и смещение. Прогресс считает свободные байты; метаданные и структуры требуют дополнительных чтений. Без этой опции проверяется весь образ.',
+    'NTFSパーティションの空き領域だけを検索できます。バイト単位のオフセットを指定します。単一ボリュームのイメージは0で、パーティションの選択時はそのオフセットが転記されます。割り当てビットマップを確実に読み取れる必要があります。検索進捗とエクスポートジョブは領域とオフセットを保持します。進捗は空き領域の検索バイト数を示し、メタデータや候補構造は追加で読み取ります。無効の場合は従来どおりイメージ全体を検索します。')
+add('Nur freie NTFS-Bereiche', 'Only free NTFS areas', 'Solo áreas NTFS libres', '仅 NTFS 空闲区域', 'Только свободные области NTFS', 'NTFSの空き領域のみ')
+add('NTFS-Partitionsoffset (Bytes):', 'NTFS partition offset (bytes):', 'Desplazamiento de partición NTFS (bytes):', 'NTFS 分区偏移量（字节）：', 'Смещение раздела NTFS (байты):', 'NTFSパーティションのオフセット（バイト）：')
+add('Die Prüfgrenzen gelten weiterhin. Freie Bereiche jetzt durchsuchen?',
+    'Inspection limits still apply. Search free areas now?', 'Se mantienen los límites de inspección. ¿Buscar ahora en las áreas libres?',
+    '仍适用检查上限。现在搜索空闲区域吗？', 'Пределы проверки сохраняются. Искать в свободных областях?', '検査上限は引き続き適用されます。空き領域を検索しますか？')
+add('Nur freie NTFS-Bereiche laut aktueller Belegungsbitmap. Belegte Grenzen werden nicht überschritten. Freier Speicher beweist weder Löschung noch unversehrte Originalinhalte; Fragmente werden nicht zusammengesetzt.',
+    'Only free NTFS areas according to the current allocation bitmap. Allocated boundaries are not crossed. Free space proves neither deletion nor intact original contents; fragments are not reassembled.',
+    'Solo áreas NTFS libres según el mapa de asignación actual, sin cruzar áreas ocupadas. El espacio libre no prueba eliminación ni integridad del contenido original; no se reconstruyen fragmentos.',
+    '仅搜索当前分配位图标记的 NTFS 空闲区域，不跨越已分配的边界。空闲空间不能证明文件已删除或原始内容完整；不会重组碎片。',
+    'Только свободные области NTFS по текущей карте размещения, без пересечения занятых границ. Свободное место не доказывает удаление или целостность исходных данных; фрагменты не собираются.',
+    '現在の割り当てビットマップに基づくNTFSの空き領域のみを検索し、使用中の境界を越えません。空き領域は削除や元の内容の完全性を証明しません。断片は再構成しません。')
 add('Fortsetzen prüft fertige Dateien; unvollständige Dateien beginnen von vorn.',
     'Resume verifies completed files; incomplete files start from the beginning.',
     'Continuar verifica los archivos completos; los incompletos se copian desde el principio.',

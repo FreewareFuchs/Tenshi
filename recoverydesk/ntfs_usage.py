@@ -63,12 +63,13 @@ def _plain_unnamed_stream(record: bytes, total_clusters: int, name: str):
     return ('nonresident', runs, real_size)
 
 
-def inspect_ntfs_bitmap(f, partition_offset: int, *, max_bitmap_bytes: int = MAX_BITMAP_BYTES) -> NTFSBitmapUsage:
-    """Count used clusters via MFT system file #6; bounded memory and IO.
+def read_ntfs_bitmap(f, partition_offset: int, *, max_bitmap_bytes: int = MAX_BITMAP_BYTES, cancel=None, count_only=False):
+    """Read allocation evidence via MFT system file #6; bounded memory and IO.
 
     Bitmap semantics: bit 1 = allocated cluster. Unused padding bits in the
-    final byte are masked out. Returns capacity of *data clusters*, which
-    can differ slightly from the NTFS total-sector count.
+    final byte are masked by callers. count_only retains the streaming usage
+    calculation without allocating the full bitmap. The bitmap describes *data clusters*,
+    whose capacity can differ slightly from the NTFS total-sector count.
     """
     try:
         info = parse_boot_sector(f, partition_offset)
@@ -116,21 +117,64 @@ def inspect_ntfs_bitmap(f, partition_offset: int, *, max_bitmap_bytes: int = MAX
             chunks = iter_stream(f, info, payload, 0, bitmap_required,
                                  chunk_size=1024 * 1024)
 
-        # Only the valid cluster bits count, never the padding bits.
-        counted = 0
+        # Retain bounded evidence for counting and lazy free-range iteration.
+        result = bytearray()
+        used = 0
         remaining = bitmap_required
-        last_valid_bits = total_clusters % 8
         for chunk in chunks:
+            if cancel and cancel():
+                from .filesystems import ScanCancelled
+                raise ScanCancelled('Scan abgebrochen.')
             if not chunk or len(chunk) > remaining:
                 raise BitmapUnavailable('$Bitmap-Datenstrom besitzt eine ungültige Länge.')
-            if remaining == len(chunk) and last_valid_bits:
-                counted += sum(x.bit_count() for x in chunk[:-1])
-                counted += (chunk[-1] & ((1 << last_valid_bits) - 1)).bit_count()
+            if count_only:
+                if remaining == len(chunk) and total_clusters % 8:
+                    used += sum(x.bit_count() for x in memoryview(chunk)[:-1])
+                    used += (chunk[-1] & ((1 << (total_clusters % 8))-1)).bit_count()
+                else:
+                    used += sum(x.bit_count() for x in chunk)
             else:
-                counted += sum(x.bit_count() for x in chunk)
+                result.extend(chunk)
             remaining -= len(chunk)
-        if remaining or counted > total_clusters:
+        if remaining:
             raise BitmapUnavailable('$Bitmap wurde nicht vollständig gelesen.')
-        return NTFSBitmapUsage(total_clusters, counted, info.cluster_size)
+        return info, used if count_only else bytes(result)
     except (NTFSError, OSError, ValueError, OverflowError) as exc:
         raise BitmapUnavailable(str(exc)) from exc
+
+
+def inspect_ntfs_bitmap(f, partition_offset: int, *, max_bitmap_bytes: int = MAX_BITMAP_BYTES) -> NTFSBitmapUsage:
+    info, used = read_ntfs_bitmap(f, partition_offset, max_bitmap_bytes=max_bitmap_bytes,count_only=True)
+    total = info.total_sectors // info.sectors_per_cluster
+    return NTFSBitmapUsage(total, used, info.cluster_size)
+
+
+def free_ntfs_ranges(f, partition_offset, source_size, *, cancel=None):
+    """Return fresh, bounded bitmap evidence and lazy absolute free extents."""
+    import hashlib
+    info, bitmap = read_ntfs_bitmap(f, partition_offset, cancel=cancel)
+    total = info.total_sectors // info.sectors_per_cluster
+    if partition_offset + info.total_sectors * info.bytes_per_sector > source_size:
+        raise BitmapUnavailable('NTFS-Volume reicht über das Image-Ende hinaus.')
+    used = sum(x.bit_count() for x in memoryview(bitmap)[:-1])
+    used += (bitmap[-1] & ((1 << (total % 8 or 8)) - 1)).bit_count()
+    def ranges():
+        start = None
+        for byte_index, value in enumerate(bitmap):
+            if byte_index % 65536 == 0 and cancel and cancel():
+                from .filesystems import ScanCancelled
+                raise ScanCancelled('Scan abgebrochen.')
+            first = byte_index * 8
+            if value == 0 and first + 8 <= total:
+                if start is None:start = first
+                continue
+            if value == 255 and start is None:continue
+            for cluster in range(first, min(first+8,total)):
+                if not value & (1 << (cluster-first)):
+                    if start is None:start = cluster
+                elif start is not None:
+                    yield partition_offset+start*info.cluster_size, partition_offset+cluster*info.cluster_size
+                    start = None
+        if start is not None:
+            yield partition_offset+start*info.cluster_size, partition_offset+total*info.cluster_size
+    return ranges, (total-used)*info.cluster_size, hashlib.sha256(bitmap).hexdigest()

@@ -48,6 +48,31 @@ class SignatureGuiTests(unittest.TestCase):
             self.app.start_signature_scan()
         scan.assert_not_called();self.assertIs(self.app.browser_index,index)
 
+    def test_free_ntfs_scope_and_offset_are_used_and_restored(self):
+        from test_ntfs_bitmap_usage import make_volume, SECTOR
+        data=bytearray(make_volume(used_clusters=120))
+        payload=picture('PNG');data[140*SECTOR:140*SECTOR+len(payload)]=payload
+        self.source.write_bytes(b'P'*4096+data)
+        self.app.source_path.set(str(self.source))
+        self.app.signature_free_only.set(True)
+        self.app.signature_partition_offset.set('4096')
+        self.app.signature_save_checkpoint.set(True)
+        checkpoint=self.source.parent/'free.tenshi-search.json'
+        with patch('recoverydesk.gui.messagebox.askyesno',return_value=True), patch('recoverydesk.gui.messagebox.showerror') as error, patch('recoverydesk.gui.filedialog.asksaveasfilename',return_value=str(checkpoint)):
+            self.app.start_signature_scan()
+            self.wait_for(lambda:not self.app.ntfs_scanning)
+        error.assert_not_called()
+        self.assertEqual(self.app.browser_index.signature_search_area,'ntfs-free')
+        self.assertEqual(self.app.browser_index.entries[0].locator[1],4096+140*SECTOR)
+        self.app.signature_free_only.set(False)
+        self.app.signature_partition_offset.set('0')
+        with patch('recoverydesk.gui.messagebox.askyesno',return_value=True), patch('recoverydesk.gui.messagebox.showerror') as error, patch('recoverydesk.gui.filedialog.askopenfilename',return_value=str(checkpoint)):
+            self.app._resume_signature_search()
+            self.wait_for(lambda:not self.app.ntfs_scanning)
+        error.assert_not_called()
+        self.assertTrue(self.app.signature_free_only.get())
+        self.assertEqual(self.app.signature_partition_offset.get(),'4096')
+
     def test_checkpoint_save_and_reopen_from_gui(self):
         self.prepare()
         checkpoint = self.source.parent / 'saved.tenshi-search.json'

@@ -225,6 +225,10 @@ def topic_text(topic: str, language: str) -> tuple[str, str]:
     labels, bodies = DATA[topic]
     body = bodies[lang].format(version=display_version())
     if topic == 'browser':
+        body += '\n\n' + translate('Nur freie NTFS-Bereiche',language) + ': ' + translate(
+            'Optional nur freie Bereiche einer NTFS-Partition durchsuchen. NTFS-Partitionsoffset in Bytes eintragen: 0 bei einem reinen Volume-Image; die Partitionsauswahl übernimmt ihren Offset. Eine verlässlich lesbare Belegungsbitmap ist erforderlich. Suchstand und Exportauftrag behalten Suchbereich und Offset bei. Die Fortschrittsanzeige zählt freie Suchbytes; Metadaten und Fundstrukturen werden zusätzlich gelesen. Ohne diese Auswahl wird wie bisher das ganze Image durchsucht.',language)
+        from .signature_search import FREE_SCOPE
+        body += '\n\n' + translate(FREE_SCOPE,language)
         body += '\n\n' + translate(
             'Office/PDF umfasst auch PDF-Strukturkandidaten mit Querverweistabelle oder Querverweisstrom. RAR 4/5 wird über Header-Prüfsummen und Blocklängen erkannt. Mehrteilige RAR-Archive und verschlüsselte RAR-Header werden nicht unterstützt. Dokumentaktionen werden nicht ausgeführt und Archive nicht entpackt. Ältere Suchstände behalten ihren bisherigen Formatumfang; für PDF/RAR eine neue Suche starten.', language)
         body += '\n\n' + translate('Kategorien gemeinsam suchen…', language) + ': ' + translate(
