@@ -47,10 +47,20 @@ nach **Bildern**, **Office/PDF**, **Archiven**, **Audio** oder **Video**.
 Image in einem Durchgang. In der Vollsuche wird der Partitionsoffset ignoriert. Physische Geräte
 und rohe Laufwerke werden für die Signatursuche nicht direkt unterstützt.
 
-Unterstützt werden JPEG, PNG, BMP, GIF, TIFF, WebP; moderne Office-/ODF-Dateien
-und PDF; ZIP, RAR 4/5, 7z und TAR; WAV, MP3 mit ID3v2, Ogg/Opus; AVI und MP4.
+Unterstützt werden JPEG, PNG, BMP, GIF, TIFF, WebP; moderne Office-/ODF-Dateien,
+binäre DOC/XLS/PPT und PDF; ZIP, RAR 4/5, 7z und TAR; WAV, MP3 mit ID3v2,
+Ogg/Opus; AVI und MP4.
 Nicht alle Formatvarianten sind enthalten. RAR-Mehrteiler und verschlüsselte
-RAR-Header, klassische DOC/XLS/PPT-Dateien, ZIP64 und BigTIFF werden ausgelassen.
+RAR-Header, ZIP64 und BigTIFF werden ausgelassen.
+
+Bei binären Office-Dateien werden Word ab Generation 97, Excel mit BIFF8 und
+PowerPoint mit Current-User-/User-Edit-Strukturen anhand ihrer internen
+Container geprüft. Beschädigte oder ungewöhnliche Varianten können fehlen.
+Die Suche rekonstruiert keine auf dem Datenträger fragmentierten Dateien.
+Erkennung und Export enthalten keine Office-Darstellung: Vorschau und
+Inhaltsprüfung melden hier weiterhin „Nicht geprüft“. Makros werden nicht
+ausgeführt und Inhalte nicht entschlüsselt. Ältere Suchstände behalten ihren
+bisherigen Umfang; für zusätzliche DOC/XLS/PPT-Funde eine neue Suche starten.
 
 Die Prüfgrenze für JPEG/PNG/GIF/TIFF/PDF sowie Office/ZIP lässt sich auf
 **32, 64, 128 oder 256 MiB** je Fund setzen. Andere Formate können größer sein.

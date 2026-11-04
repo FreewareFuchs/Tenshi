@@ -145,7 +145,7 @@ def read_saved_export(filename):
         validate_search_area(signature_area,signature_offset)
         _require(signature_offset < identity['size'])
         _require(signature_area == 'all' or identity['filesystem'] == SIGNATURE_FS)
-        _require(type(signature_revision) is int and signature_revision in (1,2))
+        _require(type(signature_revision) is int and signature_revision in (1,2,3))
         if signature_limit is not None or signature_categories is not None:
             _require(identity['filesystem'] == SIGNATURE_FS)
             _require(type(signature_limit) is int and 0 < signature_limit <= 256*1024**2)

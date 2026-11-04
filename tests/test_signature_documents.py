@@ -150,7 +150,7 @@ class SignatureDocumentTests(unittest.TestCase):
         result=export_batch(str(self.source),index,index.entries,str(target))
         self.assertEqual(result.exported,2)
         job=read_saved_export(result.manifest)
-        self.assertEqual(job.signature_parser_revision,2)
+        self.assertEqual(job.signature_parser_revision,3)
         prepared=prepare_saved_export(job)
         self.assertEqual([e.name for e in prepared['selection']],[e.name for e in index.entries])
 
