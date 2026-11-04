@@ -3245,7 +3245,7 @@ class RecoveryDeskApp(tk.Tk):
         initial=os.path.join(folder,'files')
         path=filedialog.askopenfilename(parent=parent,title='Exportierte Datei prüfen …',
             initialdir=initial if os.path.isdir(initial) else folder,
-            filetypes=[('Bilder / PDF / Office','*.jpg *.jpeg *.png *.bmp *.gif *.pdf *.docx *.xlsx *.pptx'),('Alle Dateien','*')])
+            filetypes=[('Bilder / PDF / Office','*.jpg *.jpeg *.png *.bmp *.gif *.pdf *.doc *.xls *.ppt *.docx *.xlsx *.pptx'),('Alle Dateien','*')])
         if not path:return
         win=tk.Toplevel(parent);win.title('Inhalt prüfen');win.geometry('760x430');win.minsize(620,350)
         panel=ttk.Frame(win,padding=14);panel.pack(fill='both',expand=True)
