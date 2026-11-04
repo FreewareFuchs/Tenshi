@@ -225,6 +225,8 @@ def topic_text(topic: str, language: str) -> tuple[str, str]:
     labels, bodies = DATA[topic]
     body = bodies[lang].format(version=display_version())
     if topic == 'browser':
+        body += '\n\n' + translate(
+            'Funde stehen direkt im Reiter Dateisignaturen mit Name, Typ, Größe und Fundposition. Spaltenüberschriften sortieren; Strg+A wählt alle angezeigten Funde. Vorschau und Datei prüfen verwenden die dortige Auswahl. Mehrere Dateien lassen sich mit Vor/Zurück ansehen und gemeinsam exportieren. Stapel-Export / fortsetzen öffnet bei laufendem Auftrag dessen Fortschritt erneut. In Dateiansicht anzeigen wechselt zur bisherigen Ansicht. Eine neue Quelle oder Analyse verwirft die alte Fundliste.',language)
         body += '\n\n' + translate('Nur freie NTFS-Bereiche',language) + ': ' + translate(
             'Optional nur freie Bereiche einer NTFS-Partition durchsuchen. NTFS-Partitionsoffset in Bytes eintragen: 0 bei einem reinen Volume-Image; die Partitionsauswahl übernimmt ihren Offset. Eine verlässlich lesbare Belegungsbitmap ist erforderlich. Suchstand und Exportauftrag behalten Suchbereich und Offset bei. Die Fortschrittsanzeige zählt freie Suchbytes; Metadaten und Fundstrukturen werden zusätzlich gelesen. Ohne diese Auswahl wird wie bisher das ganze Image durchsucht.',language)
         from .signature_search import FREE_SCOPE
