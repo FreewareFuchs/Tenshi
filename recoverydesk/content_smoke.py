@@ -1,5 +1,6 @@
 """Small in-memory packaging probes; no devices, source paths or GUI."""
 import io
+import struct
 import zipfile
 
 
@@ -34,6 +35,28 @@ def office_fixture(kind='docx'):
     return stream.getvalue()
 
 
+def binary_office_fixture():
+    """Tiny CFB/BIFF8 structural probe, not a complete spreadsheet document."""
+    free, end, fat = 0xffffffff, 0xfffffffe, 0xfffffffd
+    raw = bytearray(5632)
+    raw[:8] = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'
+    struct.pack_into('<HHHHH', raw, 24, 0x3e, 3, 0xfffe, 9, 6)
+    struct.pack_into('<IIIIIIIII', raw, 40, 0, 1, 1, 0, 4096, end, 0, end, 0)
+    struct.pack_into('<109I', raw, 76, 0, *([free] * 108))
+    allocation = [fat, end] + list(range(3, 10)) + [end] + [free] * 118
+    struct.pack_into('<128I', raw, 512, *allocation)
+    for at, name, kind, first, size, child in (
+            (1024, 'Root Entry', 5, end, 0, 1),
+            (1152, 'Workbook', 2, 2, 4096, free)):
+        encoded = (name + '\0').encode('utf-16le')
+        raw[at:at+len(encoded)] = encoded
+        struct.pack_into('<HBBIII', raw, at+64, len(encoded), kind, 1, free, free, child)
+        struct.pack_into('<IQ', raw, at+116, first, size)
+    struct.pack_into('<HHHH', raw, 1536, 0x809, 16, 0x600, 5)
+    struct.pack_into('<HH', raw, 1556, 0x0a, 0)
+    return bytes(raw)
+
+
 def run():
     from PIL import Image
     from .content_check import analyze
@@ -48,3 +71,6 @@ def run():
     answer=analyze(office_fixture(),'sample.docx')
     if answer['code']!='office_container':
         raise RuntimeError('Packaged Office decoder failed')
+    answer=analyze(binary_office_fixture(),'sample.xls',preview=True)
+    if (answer['status'],answer['format'],answer['code'])!=('partial','XLS','office_binary_structure') or answer['image'] or answer['text']:
+        raise RuntimeError('Packaged binary Office structure check failed')

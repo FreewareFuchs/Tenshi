@@ -57,8 +57,11 @@ Bei binären Office-Dateien werden Word ab Generation 97, Excel mit BIFF8 und
 PowerPoint mit Current-User-/User-Edit-Strukturen anhand ihrer internen
 Container geprüft. Beschädigte oder ungewöhnliche Varianten können fehlen.
 Die Suche rekonstruiert keine auf dem Datenträger fragmentierten Dateien.
-Erkennung und Export enthalten keine Office-Darstellung: Vorschau und
-Inhaltsprüfung melden hier weiterhin „Nicht geprüft“. Makros werden nicht
+Für erkannte binäre DOC/XLS/PPT-Dateien melden Vorschau und Inhaltsprüfung
+**Teilprüfung**: Sektorketten, Verzeichnis und ausgewählte Kopfdaten sind lesbar.
+Dokumentinhalte, Seiten, Zellen, Folien, eingebettete Dateien und Makros bleiben
+ungeprüft. Eine Office-Darstellung ist nicht enthalten. Unbekannte Varianten
+bleiben „Nicht geprüft“; die Inhaltsprüfung bleibt auf 32 MiB begrenzt. Makros werden nicht
 ausgeführt und Inhalte nicht entschlüsselt. Ältere Suchstände behalten ihren
 bisherigen Umfang; für zusätzliche DOC/XLS/PPT-Funde eine neue Suche starten.
 
