@@ -25,6 +25,8 @@ MAX_XML = 2 * 1024 * 1024
 THUMBNAIL = (720, 360)
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.gif'}
 OFFICE_EXTENSIONS = {'.docx', '.xlsx', '.pptx'}
+LEGACY_OFFICE_EXTENSIONS = {'.doc', '.xls', '.ppt'}
+CFB_MAGIC = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'
 
 
 class CheckLimit(Exception):
@@ -41,7 +43,7 @@ def content_kind(data, extension=''):
         return 'image'
     if data.startswith(b'%PDF-'):
         return 'pdf'
-    if data.startswith(b'PK') or extension in OFFICE_EXTENSIONS:
+    if data.startswith((b'PK', CFB_MAGIC)) or extension in OFFICE_EXTENSIONS | LEGACY_OFFICE_EXTENSIONS:
         return 'office'
     if extension in IMAGE_EXTENSIONS:
         return 'image'
@@ -241,6 +243,35 @@ def _office(data, preview, extension):
         return answer
 
 
+def _legacy_office(data, extension):
+    # Reuse the bounded signature validator inside this disposable worker.
+    # A readable allocation graph and format headers do not validate pages,
+    # cell values, slides, embedded objects, or executable document content.
+    from .signature_cfb import _Compound
+    from .signature_formats import Invalid, Limit
+    if not data.startswith(CFB_MAGIC):
+        # The filename alone cannot distinguish older/non-CFB Office variants
+        # from damaged or unrelated bytes.
+        return result('unsupported', 'Office', 'office_ole')
+    try:
+        compound = _Compound(io.BytesIO(data), 0, len(data), [0])
+    except Limit:
+        raise CheckLimit()
+    except Invalid:
+        if extension in OFFICE_EXTENSIONS:
+            # Preserve the protected-modern-Office fallback: an unsupported
+            # encrypted package must not be reported as a corrupt DOCX.
+            return result('unsupported', 'Office', 'office_ole')
+        return result('unreadable', 'CFB', 'office_cfb_unreadable')
+    try:
+        family = compound.classify()
+    except Limit:
+        raise CheckLimit()
+    except Invalid:
+        return result('unsupported', 'CFB', 'office_ole')
+    return result('partial', family, 'office_binary_structure')
+
+
 def inspect(data, extension='', preview=False):
     kind = content_kind(data, extension)
     if len(data) > MAX_INPUT:
@@ -254,8 +285,8 @@ def inspect(data, extension='', preview=False):
                 return result('unsupported', 'PDF', 'dependency_missing')
             return _pdfium(data, preview) if backend == 'pdfium' else _poppler(data, preview)
         if kind == 'office':
-            if data.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'):
-                return result('unsupported', 'Office', 'office_ole')
+            if data.startswith(CFB_MAGIC) or (extension in LEGACY_OFFICE_EXTENSIONS and not data.startswith(b'PK')):
+                return _legacy_office(data, extension)
             return _office(data, preview, extension)
         return result('unsupported', '', 'unsupported')
     except (CheckLimit, MemoryError, subprocess.TimeoutExpired):

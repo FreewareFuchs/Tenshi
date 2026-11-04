@@ -57,6 +57,22 @@ class ContentGuiTests(unittest.TestCase):
         self.assertEqual(str(self.button(window,'Prüfung abbrechen').cget('state')),'disabled')
         self.assertEqual(self.source.read_bytes(),self.original)
 
+    def test_binary_office_preview_and_check_show_partial_scope(self):
+        from pathlib import Path
+        data=Path(__file__).parent.joinpath('fixtures/office_cfb/simple.doc').read_bytes()
+        self.fixture(data,'LEGACY  DOC')
+        for preview in (True,False):
+            if preview:self.app.preview_entry()
+            else:self.app.inspect_file()
+            window=self.window()
+            if not preview:self.button(window,'Inhalt prüfen').invoke()
+            self.wait_for(lambda:any(isinstance(widget,tk.Text) and 'Interne Sektorketten' in widget.get('1.0','end') for widget in self.widgets(window)))
+            text=next(widget.get('1.0','end') for widget in self.widgets(window) if isinstance(widget,tk.Text) and 'Interne Sektorketten' in widget.get('1.0','end'))
+            self.assertIn('Teilprüfung',text);self.assertIn('DOC',text)
+            self.assertIn('Keine Darstellung oder Entschlüsselung.',text)
+            self.assertEqual(self.source.read_bytes(),self.original)
+            window.destroy()
+
     def test_check_buttons_are_visible_at_small_size_in_six_languages(self):
         self.fixture()
         for language in LANGUAGES:
