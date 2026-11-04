@@ -25,7 +25,10 @@ jobs:
       - name: Install builder and fixture tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder desktop-file-utils appstream xvfb dosfstools mtools
+          # AppStream's optional media recommendations pull in FFmpeg and a
+          # large codec stack. This job only validates metadata and static icons.
+          # Keep Xvfb authentication and ELF stripping available explicitly.
+          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder desktop-file-utils appstream xvfb xauth elfutils dosfstools mtools
       - name: Validate desktop entry, metadata and staging
         run: |
           desktop-file-validate packaging/flatpak/*.desktop
