@@ -1,11 +1,20 @@
 """Metadata-only signature result view; actions reuse the application's readers."""
+import tkinter as tk
 from tkinter import ttk
+from .i18n import translate
 
 
 class SignatureResults(ttk.Frame):
-    def __init__(self,parent,*,action,open_browser,export_running=lambda:False):
+    def __init__(self,parent,*,action,open_browser,export_running=lambda:False,language='de'):
         super().__init__(parent,padding=(12,0,12,8))
         self.entries={}
+        self.language=language
+        self._updating=False
+        self._minimum_valid=True
+        self.query=tk.StringVar(value='')
+        self.kind=tk.StringVar(value='')
+        self.kind_display=tk.StringVar(value=translate('Alle Dateitypen',language))
+        self.minimum_kib=tk.StringVar(value='0')
         self.export_running=export_running
         self.sort_column='offset';self.reverse=False
         buttons=ttk.Frame(self);buttons.pack(side='bottom',fill='x',pady=(8,0))
@@ -19,6 +28,22 @@ class SignatureResults(ttk.Frame):
         self.export.grid(row=1,column=0,sticky='ew',padx=(0,3))
         self.browser=ttk.Button(buttons,text='In Dateiansicht anzeigen',state='disabled',command=open_browser)
         self.browser.grid(row=1,column=1,sticky='ew',padx=(3,0))
+        filters=ttk.Frame(self);filters.pack(fill='x',pady=(0,3))
+        filters.columnconfigure(1,weight=1)
+        ttk.Label(filters,text='Suchtext:').grid(row=0,column=0,sticky='w')
+        self.query_entry=ttk.Entry(filters,textvariable=self.query,width=16)
+        self.query_entry.grid(row=0,column=1,sticky='ew',padx=(4,10))
+        ttk.Label(filters,text='Typ:').grid(row=0,column=2,sticky='w')
+        self.kind_combo=ttk.Combobox(filters,textvariable=self.kind_display,state='readonly',width=12)
+        self.kind_combo.grid(row=0,column=3,padx=(4,10))
+        self.kind_combo.bind('<<ComboboxSelected>>',self._select_kind)
+        ttk.Label(filters,text='Ab (KiB):').grid(row=0,column=4,sticky='w')
+        self.minimum_entry=ttk.Entry(filters,textvariable=self.minimum_kib,width=8)
+        self.minimum_entry.grid(row=0,column=5,padx=(4,10))
+        self.reset=ttk.Button(filters,text='Zurücksetzen',command=self.reset_filters)
+        self.reset.grid(row=0,column=6)
+        self.caption=ttk.Label(self,style='Sub.TLabel',wraplength=950)
+        self.caption.pack(fill='x',pady=(0,3))
         table=ttk.Frame(self);table.pack(fill='both',expand=True)
         self.tree=ttk.Treeview(table,columns=('type','size','offset'),show='tree headings',selectmode='extended',height=5)
         for key,title,width in (('#0','Name',340),('type','Typ',100),('size','Größe (Bytes)',125),('offset','Fundposition (Bytes)',180)):
@@ -34,14 +59,18 @@ class SignatureResults(ttk.Frame):
         self.tree.bind('<Return>',lambda event:action('preview'))
         self.tree.bind('<Control-a>',self.select_all)
         self.tree.bind('<Control-A>',self.select_all)
+        for variable in (self.query,self.kind,self.minimum_kib):
+            variable.trace_add('write',lambda *_:self._apply_filters())
+        self.refresh_language(language)
 
     def show_entries(self,entries):
-        self.tree.delete(*self.tree.get_children())
+        # Detached rows also belong to this view and must not survive a new scan.
+        self.tree.delete(*self.entries)
         self.entries={str(entry.key):entry for entry in entries}
         for key,entry in self.entries.items():
             self.tree.insert('', 'end',iid=key,text=entry.name,
                 values=(entry.name.split('_',1)[0],f'{entry.size:,}',f'{entry.locator[1]:,}'))
-        self.sort(self.sort_column,toggle=False)
+        self.reset_filters()
         self.browser.configure(state='normal' if self.entries else 'disabled')
         self._selection_changed()
 
@@ -54,7 +83,7 @@ class SignatureResults(ttk.Frame):
         def value(key):
             e=self.entries[key]
             return {'#0':e.name.casefold(),'type':e.name.split('_',1)[0],'size':e.size,'offset':e.locator[1]}[column]
-        for position,key in enumerate(sorted(self.entries,key=value,reverse=self.reverse)):
+        for position,key in enumerate(sorted(self.tree.get_children(),key=value,reverse=self.reverse)):
             self.tree.move(key,'',position)
 
     def selected_entries(self):
@@ -62,10 +91,55 @@ class SignatureResults(ttk.Frame):
         return tuple(self.entries[key] for key in self.tree.get_children() if key in selected)
 
     def _selection_changed(self):
-        count=len(self.tree.selection())
+        count=len(self.selected_entries())
         self.preview.configure(state='normal' if count else 'disabled')
         self.inspect.configure(state='normal' if count==1 else 'disabled')
         self.export.configure(state='normal' if count or self.export_running() else 'disabled')
+        text=translate('{visible} von {total} Funden sichtbar · {selected} ausgewählt',self.language).format(
+            visible=len(self.tree.get_children()),total=len(self.entries),selected=count)
+        if not self._minimum_valid:
+            text+=' · '+translate('Mindestgröße: ganze Zahl von 0 bis 4294967296 KiB eingeben.',self.language)
+        self.caption.configure(text=text)
+
+    def _select_kind(self,event=None):
+        position=self.kind_combo.current()
+        if position>=0:
+            self.kind.set('' if position==0 else self.kind_display.get())
+
+    def _sync_kind_choices(self):
+        choices=[translate('Alle Dateitypen',self.language)]+sorted({e.name.split('_',1)[0] for e in self.entries.values()})
+        self.kind_combo.configure(values=choices)
+        self.kind_display.set(self.kind.get() or choices[0])
+
+    def refresh_language(self,language):
+        self.language=language
+        self._sync_kind_choices()
+        self._selection_changed()
+
+    def reset_filters(self):
+        self._updating=True
+        try:
+            self.query.set('');self.kind.set('');self.minimum_kib.set('0')
+            self._sync_kind_choices()
+        finally:self._updating=False
+        self._apply_filters()
+
+    def _apply_filters(self):
+        if self._updating:return
+        raw=self.minimum_kib.get().strip()
+        self._minimum_valid=(not raw or (raw.isascii() and raw.isdecimal() and len(raw)<=10 and int(raw)<=4294967296))
+        minimum=int(raw or '0')*1024 if self._minimum_valid else 0
+        query=self.query.get().strip().casefold();kind=self.kind.get()
+        visible={key for key,e in self.entries.items() if self._minimum_valid and e.size>=minimum and
+                 (not kind or e.name.split('_',1)[0]==kind) and query in e.name.casefold()}
+        selected=set(self.tree.selection()) & visible
+        self.tree.selection_set(tuple(selected))
+        hidden=[key for key in self.tree.get_children() if key not in visible]
+        if hidden:self.tree.detach(*hidden)
+        for key in self.entries:
+            if key in visible:self.tree.move(key,'','end')
+        self.sort(self.sort_column,toggle=False)
+        self._selection_changed()
 
     def select_all(self,event=None):
         self.tree.selection_set(self.tree.get_children())

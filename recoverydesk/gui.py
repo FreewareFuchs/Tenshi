@@ -241,6 +241,7 @@ class RecoveryDeskApp(tk.Tk):
             self.signature_pause_button.configure(text=translate('Anhalten', language))
         if hasattr(self, 'signature_scope_label'):
             self._update_signature_scope()
+            self.signature_results.refresh_language(language)
         help_window = getattr(self, '_help_window', None)
         if help_window is not None and help_window.winfo_exists():
             help_window.refresh_language(language)
@@ -1877,13 +1878,15 @@ class RecoveryDeskApp(tk.Tk):
             text=translate('Anhalten', self.language), state='disabled', command=self._pause_signature_search)
         self.signature_pause_button.pack(side='left')
         self.signature_status = tk.StringVar(value='')
-        ttk.Label(panel, textvariable=self.signature_status, style='Sub.TLabel',
-                  justify='left', wraplength=1000).pack(anchor='w', fill='x', pady=(8, 0))
+        # Search progress remains visible in the main status bar. The result
+        # view has its own visible/total/selected counter, avoiding a duplicate
+        # status row at small window sizes.
         from .signature_results import SignatureResults
         self.signature_result_index = None
         self.signature_result_generation = None
         self.signature_results = SignatureResults(self.signature_tab,action=self._signature_action,
-            open_browser=self._open_signature_results,export_running=lambda:self.__dict__.get('export_running',False))
+            open_browser=self._open_signature_results,export_running=lambda:self.__dict__.get('export_running',False),
+            language=self.language)
         self.signature_results.pack(fill='both',expand=True)
         self.signature_results_button = self.signature_results.browser
         self._update_signature_scope()
@@ -2319,6 +2322,7 @@ class RecoveryDeskApp(tk.Tk):
                 def failed(msg=export_error_message(exc,self.language)):
                     if self._scan_source_matches(generation,source):
                         self.signature_status.set('Signatursuche fehlgeschlagen.')
+                        self.status.set('Signatursuche fehlgeschlagen.')
                         messagebox.showerror(category_label,msg,parent=self)
                 self._post_scan_callback(failed)
             finally:self._post_scan_callback(self._finish_ntfs_scan)
