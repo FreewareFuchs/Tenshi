@@ -84,11 +84,17 @@ sichtbare markierte Funde. **Zurücksetzen** zeigt alle Funde wieder, ohne
 ausgeblendete Dateien erneut zu markieren. Bei neuer Quelle oder Analyse werden
 die Filter zurückgesetzt. **In Dateiansicht anzeigen** öffnet die bisherige Ansicht.
 
-Für **Nur freie NTFS-Bereiche** den **NTFS-Partitionsoffset (Bytes)** angeben:
-0 bei einem reinen Volume-Image, sonst den Anfang der NTFS-Partition.
-Die Partitionsauswahl übernimmt diesen Offset. Fehlt eine verlässlich lesbare
-Belegungsbitmap, wird die Suche mit einem Hinweis gestoppt. Funde überschreiten
-keine belegten Grenzen. Suchstand und Exportauftrag behalten Bereich und Offset bei.
+Für **Nur freie Bereiche** daneben **NTFS** oder **FAT32** auswählen und den
+**Partitionsoffset (Bytes)** angeben: 0 beim Volume-Image, sonst den Partitionsanfang.
+Die Partitionsauswahl übernimmt diesen Offset und bei NTFS/FAT32 die Dateisystemwahl.
+NTFS braucht eine lesbare Belegungsbitmap. FAT32 prüft seine aktive Tabelle;
+gespiegelte Tabellen müssen übereinstimmen. Widersprüche, unsaubere Statusmarkierungen
+oder nicht lesbare Belegungsdaten stoppen die Freiraumsuche mit einem Hinweis.
+Das FAT32-Leselimit beträgt insgesamt 128 MiB Tabellendaten. FSInfo-Schätzwerte
+bestimmen die Belegung nicht. FAT12/FAT16 sind nicht enthalten.
+Funde überschreiten keine belegten Grenzen. Suchstand und Exportauftrag behalten
+Bereich, Dateisystemwahl und Offset bei. Beim Fortsetzen werden Belegungsdaten neu
+gelesen; veränderte FAT32-Suchstände erfordern eine neue Suche.
 
 ### Suchstand nach einem Neustart fortsetzen
 

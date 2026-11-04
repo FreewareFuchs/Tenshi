@@ -10,7 +10,7 @@ def format_scan_report(source, index) -> str:
     if fs in ('JPEG/PNG signatures v1','File signatures v2'):
         category=', '.join(getattr(index,'signature_categories', (getattr(index,'signature_category','images'),)))
         lines.extend([f'Signatursuche: {category}',
-            f'Suchbereich: {getattr(index,"signature_search_area","all")}; NTFS-Partitionsoffset: {getattr(index,"signature_partition_offset",0)} Bytes',
+            f'Suchbereich: {getattr(index,"signature_search_area","all")}; Partitionsoffset: {getattr(index,"signature_partition_offset",0)} Bytes',
             f'Gefundene Dateistrukturen: {len(index.entries)}',
             f'Suchbereich gelesen: {index.signature_scanned_bytes} / {index.signature_source_bytes} Bytes',
             f'Untersuchte Anfangssignaturen: {index.signature_candidates}',

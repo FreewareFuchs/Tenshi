@@ -301,6 +301,33 @@ class SignatureGuiTests(unittest.TestCase):
         self.assertEqual(len(self.app.browser_index.entries),2)
         self.assertEqual(str(self.app.signature_pause_button.cget('state')),'disabled')
 
+    def test_free_fat32_selection_and_checkpoint_scope_are_restored(self):
+        from test_signature_free_fat32 import make_fat32
+        from pathlib import Path
+        self.source.unlink()
+        volume=make_fat32(self.source,offset=4096)
+        with self.source.open('r+b') as stream:
+            stream.seek(volume.cluster_offset(140));stream.write(picture('PNG'))
+        self.app.source_path.set(str(self.source))
+        self.app.signature_free_only.set(True)
+        self.app.signature_free_filesystem.set('FAT32')
+        self.app.signature_partition_offset.set('4096')
+        self.app.signature_save_checkpoint.set(True)
+        checkpoint=self.source.parent/'fat32.tenshi-search.json'
+        with patch('recoverydesk.gui.messagebox.askyesno',return_value=True),patch('recoverydesk.gui.messagebox.showerror') as error,patch('recoverydesk.gui.filedialog.asksaveasfilename',return_value=str(checkpoint)):
+            self.app.start_signature_scan();self.wait_for(lambda:not self.app.ntfs_scanning)
+        error.assert_not_called()
+        self.assertEqual(self.app.browser_index.signature_search_area,'fat32-free')
+        self.assertEqual(len(self.app.browser_index.entries),1)
+        self.app.signature_free_only.set(False);self.app.signature_free_filesystem.set('NTFS')
+        with patch('recoverydesk.gui.messagebox.askyesno',return_value=True),patch('recoverydesk.gui.messagebox.showerror') as error,patch('recoverydesk.gui.filedialog.askopenfilename',return_value=str(checkpoint)):
+            self.app._resume_signature_search();self.wait_for(lambda:not self.app.ntfs_scanning)
+        error.assert_not_called()
+        self.assertTrue(self.app.signature_free_only.get())
+        self.assertEqual(self.app.signature_free_filesystem.get(),'FAT32')
+        self.assertEqual(self.app.signature_partition_offset.get(),'4096')
+        self.assertIn('FAT32',self.app.signature_scope_label.cget('text'))
+
     def test_cancelled_scan_does_not_publish_an_index(self):
         self.prepare();started=threading.Event()
         def scan(*args,cancel,**kwargs):

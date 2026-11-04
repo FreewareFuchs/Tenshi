@@ -13,6 +13,8 @@ from .sources import ensure_safe_destination
 
 SCHEMA = 'tenshi-signature-search-v1'
 FREE_SCHEMA = 'tenshi-signature-search-free-ntfs-v1'
+FAT32_FREE_SCHEMA = 'tenshi-signature-search-free-fat32-v1'
+SCHEMAS = {'all':SCHEMA, 'ntfs-free':FREE_SCHEMA, 'fat32-free':FAT32_FREE_SCHEMA}
 MAX_BYTES = 512 * 1024
 CATEGORIES = ('images', 'office', 'archives', 'audio', 'video')
 
@@ -39,7 +41,7 @@ def _plain_target(path):
 def validate_checkpoint(data):
     from .signature_search import MAX_HITS, MAX_CANDIDATES, MAX_INSPECTION, SCAN_BLOCK
     try:
-        if not isinstance(data, dict) or data['schema'] not in (SCHEMA,FREE_SCHEMA):
+        if not isinstance(data, dict) or data['schema'] not in SCHEMAS.values():
             raise ValueError()
         revision = data.get('parser_revision',1)
         if type(revision) is not int or revision not in (1,2,3):raise ValueError()
@@ -66,10 +68,10 @@ def validate_checkpoint(data):
         from .signature_search import validate_search_area
         area=data.get('search_area','all');offset=data.get('partition_offset',0)
         validate_search_area(area,offset)
-        if (data['schema'] == FREE_SCHEMA) != (area == 'ntfs-free'):raise ValueError()
+        if data['schema'] != SCHEMAS[area]:raise ValueError()
         if offset >= total:raise ValueError()
         digest=data.get('bitmap_sha256')
-        if area == 'ntfs-free':
+        if area != 'all':
             import re
             if not isinstance(digest,str) or not re.fullmatch('[0-9a-f]{64}',digest):raise ValueError()
         elif digest is not None:raise ValueError()
@@ -139,7 +141,7 @@ class CheckpointWriter:
         self.saved_time = float('-inf')
 
     def update(self, state):
-        schema = FREE_SCHEMA if state.get('search_area') == 'ntfs-free' else SCHEMA
+        schema = SCHEMAS[state.get('search_area','all')]
         self.pending = dict(schema=schema, source=os.path.abspath(self.source),
                             fingerprint=self.fingerprint, **state)
         self.pending['checksum'] = checkpoint_digest(self.pending)
