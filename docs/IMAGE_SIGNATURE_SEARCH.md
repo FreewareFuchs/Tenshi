@@ -2,11 +2,30 @@
 
 ## Bedienung
 
-Ein reguläres RAW-, IMG- oder DD-Image auswählen und den Reiter **Dateisignaturen** öffnen. Die Kategorieknöpfe starten gezielt die Suche nach **Bildern**, **Office-Dateien**, **Archiven**, **Audio** oder **Video**. Für den Suchlauf wird das gesamte Image schreibgeschützt gelesen. Der eingetragene Partitionsoffset wird ignoriert; ein lesbares Dateisystem ist nicht erforderlich. Physische Geräte und rohe Windows-Laufwerke werden derzeit nicht direkt unterstützt.
+### Welche Suche zuerst?
+
+| | Dateien & Ordner, einschließlich gelöschter Dateien | Dateisignaturen |
+| --- | --- | --- |
+| Woher stammen die Informationen? | Aus Dateisystemeinträgen, etwa der NTFS-Dateitabelle. | Aus erkennbaren Dateistrukturen direkt im gespeicherten Inhalt. |
+| Namen und Ordner | Können erhalten bleiben, wenn die Einträge noch lesbar sind. | Originalnamen und Ordner sind unbekannt; Tenshi vergibt Namen aus Typ und Fundposition. |
+| Gelöschte Dateien | Noch vorhandene Löschverweise können gefunden werden. Die Markierung beweist keinen intakten Inhalt. | Ein Fund verrät nicht, ob er gelöscht war. Auch vorhandene und eingebettete Dateien können erscheinen. |
+| Beschädigtes Dateisystem | Benötigt ausreichend lesbare Metadaten. | Die Vollsuche benötigt kein lesbares Dateisystem. Nur die optionale Freiraumsuche braucht eine lesbare NTFS-Belegungsbitmap. |
+| Verteilte Dateibereiche | Kann erhaltene Zuordnungen mehrerer Bereiche nutzen, soweit das Dateisystem und die jeweilige Speicherart unterstützt werden. | Fragmente werden nicht zusammengesetzt; es werden zusammenhängende Strukturen gesucht. |
+| Dateitypen | Nicht auf die unterstützten Signaturformate beschränkt. | Auf die nachfolgend beschriebenen Formate und Varianten begrenzt. |
+
+**Empfehlung:** Zuerst unter **Dateien & Ordner** suchen. So können ursprüngliche Namen, Verzeichnisse und Dateizuordnungen erhalten bleiben. Fehlen dort Dateien oder sind die Einträge zerstört, ergänzt die **Signatursuche** diese Suche. **Nur freie NTFS-Bereiche** reduziert Treffer aus belegten Bereichen, beweist aber weder Löschung noch vollständige Wiederherstellbarkeit. Keine der beiden Sucharten garantiert unbeschädigte Originalinhalte.
+
+### Funde anzeigen und eingrenzen
+
+Ein reguläres RAW-, IMG- oder DD-Image auswählen und den Reiter **Dateisignaturen** öffnen. Die Kategorieknöpfe starten gezielt die Suche nach **Bildern**, **Office-Dateien**, **Archiven**, **Audio** oder **Video**. Standardmäßig wird das gesamte Image schreibgeschützt gelesen. In dieser Vollsuche wird der eingetragene Partitionsoffset ignoriert; ein lesbares Dateisystem ist nicht erforderlich. Die optionale freie NTFS-Suche wird unten erklärt. Physische Geräte und rohe Windows-Laufwerke werden derzeit nicht direkt unterstützt.
 
 Funde erscheinen direkt im Reiter **Dateisignaturen** mit **Name**, **Typ**, **Größe (Bytes)** und **Fundposition (Bytes)**. Spaltenüberschriften sortieren nach Text oder den numerischen Größen/Positionen. Namen setzen sich aus erkanntem Typ und absolutem Byte-Offset zusammen; es sind keine Originalnamen. Die Liste enthält höchstens die 1000 Funde des begrenzten Suchlaufs.
 
 Mit Strg/Umschalt mehrere Funde auswählen; **Strg+A** wählt die gesamte angezeigte Fundliste. **Vorschau** zeigt die Auswahl mit manueller Vor-/Zurück-Navigation. **Datei prüfen** ist für genau einen ausgewählten Fund verfügbar. **Stapel-Export / fortsetzen** exportiert ausschließlich die ausgewählten Funde über den vorhandenen Exportablauf mit Zielprüfung und Prüfsummen. Die Auswahl in **Dateien & Ordner** wird dabei nicht verändert. Ein laufender Export wird über denselben Button erneut angezeigt; ein zweiter Auftrag wird nicht gestartet.
+
+Die Liste lässt sich ohne erneutes Lesen des Images eingrenzen: **Suchtext** sucht ohne Groß-/Kleinschreibung im erzeugten Fundnamen, **Typ** wählt ein erkanntes Format und **Ab (KiB)** eine Mindestgröße. Alle Filter gelten gleichzeitig; 1 KiB sind 1024 Bytes, erlaubt sind ganze Zahlen von 0 bis 4294967296. Ungültige Größenangaben blenden die Liste bis zur Korrektur aus und zeigen einen Hinweis. Die Zähler unterscheiden sichtbare Funde, sämtliche gefundenen Einträge und die aktuelle Auswahl. Die Suchlaufgrenzen bleiben unverändert.
+
+Beim Ausblenden werden betroffene Funde aus der Auswahl entfernt. **Strg+A** erfasst nur sichtbare Zeilen; Vorschau, Dateiprüfung und Export verwenden ausschließlich die sichtbare Auswahl. **Zurücksetzen** zeigt alle Funde wieder, markiert zuvor ausgeblendete Einträge aber nicht automatisch erneut. Ein neuer Suchlauf oder Quellenwechsel setzt die Filter zurück. Ein Sprachwechsel behält Filter und Auswahl bei. Bereits laufende Exportaufträge und geöffnete Vorschauen behalten ihre ursprüngliche Auswahl. Die separate Dateiansicht hat weiterhin ihre eigenen Ansichtsoptionen.
 
 **In Dateiansicht anzeigen** öffnet weiterhin die bisherige Ansicht. Ein Quellenwechsel oder eine neue Analyse entfernt die alte Fundliste. Eine bereits geöffnete Vorschau oder ein laufender Export behält seinen ursprünglichen Quell- und Auswahlkontext sowie die vorhandenen Quellenprüfungen. Ein gespeicherter Exportauftrag wird beim Fortsetzen gegen das Image erneut aufgebaut.
 

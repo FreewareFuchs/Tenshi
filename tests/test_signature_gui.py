@@ -68,7 +68,8 @@ class SignatureGuiTests(unittest.TestCase):
         view=self.scan_for_list()
         self.app._select_main_tab('signatures')
         item=self.app.browser_index.entries[1]
-        view.tree.selection_set(str(item.key))
+        view.select_all();view.kind.set('PNG')
+        self.assertEqual(view.selected_entries(),(item,))
         with patch('recoverydesk.gui.read_preview_file',return_value=b'signature preview') as read,patch('recoverydesk.gui.content_kind',return_value=''):
             self.app._signature_action('preview')
             self.wait_for(lambda:read.called)
@@ -85,7 +86,8 @@ class SignatureGuiTests(unittest.TestCase):
         view=self.scan_for_list()
         self.app._select_main_tab('signatures')
         item=self.app.browser_index.entries[1]
-        view.tree.selection_set(str(item.key))
+        view.select_all();view.kind.set('PNG')
+        self.assertEqual(view.selected_entries(),(item,))
         target=self.source.parent/'export';target.mkdir()
         with patch('recoverydesk.gui.filedialog.askdirectory',return_value=str(target)),patch('recoverydesk.gui.messagebox.askyesno',return_value=True),patch('recoverydesk.gui.messagebox.showinfo'),patch('recoverydesk.gui.messagebox.showwarning'),patch('recoverydesk.gui.messagebox.showerror') as error:
             self.app._signature_action('export')
@@ -160,6 +162,94 @@ class SignatureGuiTests(unittest.TestCase):
                 self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),bottom,language)
                 self.assertLessEqual(widget.winfo_rootx()+widget.winfo_width(),right,language)
             self.assertEqual(view.tree.heading('offset')['text'],translate('Fundposition (Bytes)',language))
+
+    def test_filters_prune_hidden_selection_and_sort_does_not_restore_it(self):
+        view=self.scan_for_list();view.select_all()
+        before=self.source.read_bytes()
+        with patch('recoverydesk.gui.open_source',side_effect=AssertionError('Filtering must not read source')):
+            view.kind.set('PNG')
+            self.assertEqual([e.name.split('_')[0] for e in view.selected_entries()],['PNG'])
+            view.sort('size');view.sort('offset')
+            self.assertEqual(len(view.tree.get_children()),1)
+            view.reset_filters()
+            self.assertEqual(len(view.tree.get_children()),2)
+            self.assertEqual([e.name.split('_')[0] for e in view.selected_entries()],['PNG'])
+        self.assertEqual(self.source.read_bytes(),before)
+
+    def test_text_and_type_filters_combine_without_replacing_the_search_index(self):
+        view=self.scan_for_list();index=self.app.browser_index
+        view.query.set('pNg_')
+        self.assertEqual(len(view.tree.get_children()),1)
+        view.kind.set('JPEG')
+        self.assertEqual(view.tree.get_children(),())
+        self.assertEqual(len(view.entries),2)
+        self.assertIs(self.app.browser_index,index)
+        self.assertEqual(len(index.entries),2)
+        self.assertIn('0 von 2',view.caption.cget('text'))
+        view.reset_filters()
+        self.assertEqual(len(view.tree.get_children()),2)
+
+    def test_type_combobox_switches_between_format_and_all_types(self):
+        view=self.scan_for_list()
+        view.kind_combo.set('PNG');view.kind_combo.event_generate('<<ComboboxSelected>>')
+        self.app.update()
+        self.assertEqual(view.kind.get(),'PNG')
+        self.assertEqual(len(view.tree.get_children()),1)
+        view.kind_combo.current(0);view.kind_combo.event_generate('<<ComboboxSelected>>')
+        self.app.update()
+        self.assertEqual(view.kind.get(),'')
+        self.assertEqual(len(view.tree.get_children()),2)
+
+    def test_minimum_size_is_exact_and_invalid_input_cannot_export_old_selection(self):
+        from recoverydesk.signature_search import _signature_entry
+        view=self.app.signature_results
+        view.show_entries([_signature_entry(n*4096,size,'PNG') for n,size in enumerate((1023,1024,1025))])
+        view.minimum_kib.set('1');view.select_all()
+        self.assertEqual([e.size for e in view.selected_entries()],[1024,1025])
+        for value in ('-1','1.5','1,5','word','4294967297','9'*10000):
+            with self.subTest(value=value[:30]):
+                view.minimum_kib.set(value)
+                self.assertEqual(view.tree.get_children(),())
+                self.assertEqual(view.selected_entries(),())
+                self.assertIn('Mindestgröße',view.caption.cget('text'))
+                self.assertEqual(str(view.export.cget('state')),'disabled')
+        view.minimum_kib.set('0')
+        self.assertEqual(len(view.tree.get_children()),3)
+        self.assertEqual(view.selected_entries(),())
+
+    def test_new_scan_clears_detached_rows_and_resets_filters(self):
+        from recoverydesk.signature_search import _signature_entry
+        view=self.scan_for_list();keys=list(view.entries)
+        view.query.set('no match');view.minimum_kib.set('10')
+        self.assertEqual(view.tree.get_children(),())
+        view.show_entries([_signature_entry(900000,20,'PDF')])
+        self.assertEqual(len(view.tree.get_children()),1)
+        self.assertEqual(view.query.get(),'')
+        self.assertEqual(view.minimum_kib.get(),'0')
+        for key in keys:self.assertFalse(view.tree.exists(key))
+        view.query.set('no match');view.clear()
+        self.assertEqual(view.entries,{})
+        self.assertFalse(view.tree.exists(str(900100)))
+
+    def test_language_change_preserves_canonical_filter_and_visible_selection(self):
+        view=self.scan_for_list();view.query.set('pNg');view.kind.set('PNG');view.select_all()
+        for language in LANGUAGES:
+            self.app.change_language(language)
+            self.assertEqual(view.kind.get(),'PNG')
+            self.assertEqual(view.query.get(),'pNg')
+            self.assertEqual(len(view.selected_entries()),1)
+            expected=translate('{visible} von {total} Funden sichtbar · {selected} ausgewählt',language).format(visible=1,total=2,selected=1)
+            self.assertEqual(view.caption.cget('text'),expected)
+            self.assertEqual(view.kind_combo.cget('values')[0],translate('Alle Dateitypen',language))
+        view.reset_filters()
+        self.assertEqual(view.kind_display.get(),translate('Alle Dateitypen',self.app.language))
+
+    def test_detached_row_cannot_be_previewed_even_if_tk_selection_is_stale(self):
+        view=self.scan_for_list();jpeg=self.app.browser_index.entries[0]
+        view.kind.set('PNG');view.tree.selection_set(str(jpeg.key))
+        with patch.object(self.app,'preview_entry') as preview:
+            self.app._signature_action('preview')
+        preview.assert_not_called()
 
     def test_decline_keeps_previous_browser(self):
         self.prepare();index=self.app.browser_index
