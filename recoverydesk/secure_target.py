@@ -203,11 +203,14 @@ def remove_owned_output(path, source, expected_identity, expected_payload):
             _validate_output(stream.fileno(),source,expected_identity)
             if stream.read(len(expected_payload)+1)!=expected_payload:
                 raise ValueError('Prüfsummendatei wurde verändert und bleibt erhalten.')
-            named=os.stat(name,dir_fd=parent_fd,follow_symlinks=False)
-            if (named.st_dev,named.st_ino)!=expected_identity or not stat.S_ISREG(named.st_mode):
-                raise ValueError('Prüfsummendatei wurde ausgetauscht und bleibt erhalten.')
-            os.unlink(name,dir_fd=parent_fd)
-            sync_directory(parent_fd)
+        # Windows-backed shared folders can reject unlink while our readback
+        # handle is open (ETXTBSY). Close it, then recheck the named identity
+        # under the same pinned parent before removing the owned file.
+        named=os.stat(name,dir_fd=parent_fd,follow_symlinks=False)
+        if (named.st_dev,named.st_ino)!=expected_identity or not stat.S_ISREG(named.st_mode):
+            raise ValueError('Prüfsummendatei wurde ausgetauscht und bleibt erhalten.')
+        os.unlink(name,dir_fd=parent_fd)
+        sync_directory(parent_fd)
 
 def atomic_bytes_checkpoint(path: str, payload: bytes, source: str) -> None:
     """Atomically persist bytes relative to a physically verified Linux dirfd.

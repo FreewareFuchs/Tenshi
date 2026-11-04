@@ -13,6 +13,24 @@ from recoverydesk import secure_target, imaging
 
 @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux dirfd defenses only')
 class LinuxDestinationHandleTests(unittest.TestCase):
+    def test_shared_folder_cleanup_closes_own_reader_before_unlink(self):
+        import errno
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);source=root/'source.img';source.write_bytes(b'protected')
+            path=root/'file.sha256';path.write_bytes(b'owned')
+            info=path.stat();identity=(info.st_dev,info.st_ino)
+            real_fdopen=os.fdopen;real_unlink=os.unlink;readers=[]
+            def track(*args,**kwargs):
+                stream=real_fdopen(*args,**kwargs);readers.append(stream);return stream
+            def shared_unlink(*args,**kwargs):
+                if any(not stream.closed for stream in readers):
+                    raise OSError(errno.ETXTBSY,'Text file busy')
+                return real_unlink(*args,**kwargs)
+            with mock.patch.object(secure_target.os,'fdopen',side_effect=track),mock.patch.object(secure_target.os,'unlink',side_effect=shared_unlink):
+                secure_target.remove_owned_output(str(path),str(source),identity,b'owned')
+            self.assertFalse(path.exists())
+            self.assertEqual(source.read_bytes(),b'protected')
+
     def test_empty_directory_cleanup_does_not_follow_links(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);source=root/'source.img';source.write_bytes(b'protected')
