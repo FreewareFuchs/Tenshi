@@ -14,6 +14,35 @@ from contextlib import contextmanager
 import os
 import stat
 import sys
+import errno
+from functools import lru_cache
+
+
+@lru_cache(maxsize=64)
+def _note_unsupported_directory_sync(device, code):
+    from .diagnostics import log_issue
+    log_issue('directory_sync_unsupported', OSError(code, 'Directory sync unavailable'))
+
+
+def sync_directory(fd):
+    """Flush a pinned directory when supported; never suppress file IO errors.
+
+    Some shared filesystems reject directory fsync after a successful rename.
+    File data must still be flushed by the caller. Unsupported directory sync
+    weakens crash durability; record it once per filesystem and error code.
+    Permission, space and media failures remain fatal.
+    """
+    info = os.fstat(fd)
+    if not stat.S_ISDIR(info.st_mode):
+        raise ValueError('Ordnersynchronisierung erfordert ein Verzeichnis.')
+    try:
+        os.fsync(fd)
+    except OSError as exc:
+        if exc.errno not in (errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP, errno.ENOSYS):
+            raise
+        _note_unsupported_directory_sync(info.st_dev, exc.errno)
+        return False
+    return True
 
 
 def _linux() -> bool:
@@ -148,7 +177,7 @@ def remove_empty_directory(path: str, source: str) -> bool:
                 if not stat.S_ISDIR(info.st_mode):
                     raise ValueError('Prüfsummenordner wurde auf einen Link oder eine Datei umgeleitet.')
                 os.rmdir(name,dir_fd=parent_fd)
-                os.fsync(parent_fd)
+                sync_directory(parent_fd)
         else:
             raise ValueError('Sichere Ordnerbereinigung ist auf diesem System nicht verfügbar.')
     except FileNotFoundError:
@@ -178,7 +207,7 @@ def remove_owned_output(path, source, expected_identity, expected_payload):
             if (named.st_dev,named.st_ino)!=expected_identity or not stat.S_ISREG(named.st_mode):
                 raise ValueError('Prüfsummendatei wurde ausgetauscht und bleibt erhalten.')
             os.unlink(name,dir_fd=parent_fd)
-            os.fsync(parent_fd)
+            sync_directory(parent_fd)
 
 def atomic_bytes_checkpoint(path: str, payload: bytes, source: str) -> None:
     """Atomically persist bytes relative to a physically verified Linux dirfd.
@@ -222,7 +251,7 @@ def atomic_bytes_checkpoint(path: str, payload: bytes, source: str) -> None:
                         raise
                     time.sleep(delay)
             temporary = False
-            os.fsync(parent_fd)
+            sync_directory(parent_fd)
         finally:
             if temporary:
                 os.unlink(temp_name, dir_fd=parent_fd)

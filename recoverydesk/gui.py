@@ -2294,7 +2294,7 @@ class RecoveryDeskApp(tk.Tk):
                         self.signature_status.set(text);self.status.set(text)
                 self._post_scan_callback(cancelled)
             except Exception as exc:
-                def failed(msg=str(exc)):
+                def failed(msg=export_error_message(exc,self.language)):
                     if self._scan_source_matches(generation,source):
                         self.signature_status.set('Signatursuche fehlgeschlagen.')
                         messagebox.showerror(category_label,msg,parent=self)

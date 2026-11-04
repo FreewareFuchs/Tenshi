@@ -10,6 +10,8 @@ Mit **Kategorien gemeinsam suchen…** lassen sich mehrere Kategorien auswählen
 
 ## Suchstand speichern und fortsetzen
 
+Gemeinsame VM-Ordner unterstützen teilweise keine Synchronisierung des Verzeichnisses (`fsync` auf dem Ordner). Tenshi synchronisiert weiterhin die Datei selbst und ersetzt den Suchstand atomar. Ausschließlich die als nicht unterstützt gemeldete Ordnersynchronisierung wird protokolliert, ohne den erfolgreichen Speichervorgang als Fehler anzuzeigen. Die Beständigkeit der Ordneränderung bei Stromausfall hängt dann vom Dateisystem ab; für solche Fälle einen lokalen Linux-Ordner verwenden. Datei-Schreibfehler, fehlende Rechte und echte Datenträgerfehler bleiben Fehler und stoppen die Suche.
+
 ### Optional: nur freie NTFS-Bereiche
 
 **Nur freie NTFS-Bereiche** beschränkt die Suche auf eine NTFS-Partition mit verlässlich lesbarer `$Bitmap`. Den **NTFS-Partitionsoffset (Bytes)** angeben: `0` bei einem reinen Volume-Image, sonst den Partitionsanfang. Die vorhandene Partitionsauswahl überträgt diesen Offset auch ins Signaturregister. Ohne die Auswahl bleibt die bisherige Suche über das ganze Image aktiv.

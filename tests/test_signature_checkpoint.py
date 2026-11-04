@@ -58,6 +58,19 @@ class SignatureCheckpointTests(unittest.TestCase):
         self.assertEqual(self.source.read_bytes(), before)
         self.assertEqual(read_checkpoint(self.checkpoint)['position'], self.source.stat().st_size)
 
+    @unittest.skipUnless(sys.platform.startswith('linux'),'Linux shared directory sync')
+    def test_save_and_reopen_on_shared_folder_without_directory_fsync(self):
+        import errno,stat
+        real_sync=os.fsync
+        def sync(fd):
+            if stat.S_ISDIR(os.fstat(fd).st_mode):raise OSError(errno.EINVAL,'Directory sync unsupported')
+            real_sync(fd)
+        with patch('recoverydesk.secure_target.os.fsync',side_effect=sync):
+            first=search.scan_signatures(str(self.source),checkpoint_path=self.checkpoint)
+            again=search.scan_signatures(str(self.source),checkpoint_path=self.checkpoint,resume=True)
+        self.assertEqual([e.name for e in first.entries],[e.name for e in again.entries])
+        self.assertEqual(len(again.entries),3)
+
     def test_partial_block_is_repeated_after_cancellation(self):
         checks = []
         def cancel():
