@@ -1,0 +1,23 @@
+[
+  {
+    "file": "simple.doc",
+    "source": "https://github.com/apache/poi/blob/7f4d36854109efa17152b27a5fb1b2c7d842c314/test-data/document/simple.doc",
+    "bytes": 19456,
+    "sha256": "4876e828e62d490fa188c7c4e47013e2e0dfdf02f5903dfd374bc0d2b2049ca1",
+    "kind": "DOC"
+  },
+  {
+    "file": "Simple.xls",
+    "source": "https://github.com/apache/poi/blob/7f4d36854109efa17152b27a5fb1b2c7d842c314/test-data/spreadsheet/Simple.xls",
+    "bytes": 13824,
+    "sha256": "2b5ec8298bacffdca61c50f6f7607da0a4e63cf76fa011c62f203e6a66bc072a",
+    "kind": "XLS"
+  },
+  {
+    "file": "basic_test_ppt_file.ppt",
+    "source": "https://github.com/apache/poi/blob/7f4d36854109efa17152b27a5fb1b2c7d842c314/test-data/slideshow/basic_test_ppt_file.ppt",
+    "bytes": 15360,
+    "sha256": "e8fd4c38ad72ce3735acbca0b60dd5870fb60f819c169e3947d166f4f1bcc79d",
+    "kind": "PPT"
+  }
+]

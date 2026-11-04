@@ -553,6 +553,9 @@ def parse(stream, start, total, budget, category):
     """Return (size, display type, category) for a recognized candidate."""
     head = _read(stream, start, min(12, total - start), total, budget)
     parsers = []
+    if category in ('office','all') and head.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'):
+        from .signature_cfb import cfb
+        parsers.append(cfb)
     if category in ('office', 'all') and head.startswith(b'%PDF-'):
         from .signature_pdf import pdf
         parsers.append(pdf)

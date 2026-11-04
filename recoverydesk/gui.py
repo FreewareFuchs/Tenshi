@@ -2303,6 +2303,8 @@ class RecoveryDeskApp(tk.Tk):
                         if not index.signature_complete:text+=' Prüfgrenze erreicht; Ergebnis unvollständig.'
                         if getattr(index,'signature_parser_revision',2) == 1:
                             text+=' '+translate('Älterer Suchstand: PDF/RAR erfordern eine neue Suche.',self.language)
+                        if getattr(index,'signature_parser_revision',3) < 3:
+                            text+=' '+translate('Älterer Suchstand: DOC/XLS/PPT erfordern eine neue Suche.',self.language)
                         self.signature_result_source=source
                         self.signature_result_index=index
                         self.signature_result_generation=generation

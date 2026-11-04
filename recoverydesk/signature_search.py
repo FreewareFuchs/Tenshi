@@ -173,7 +173,7 @@ def _snapshot(value):
 
 
 def scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None,
-                    checkpoint_path=None,resume=False,parser_revision=2,search_area=None,partition_offset=None):
+                    checkpoint_path=None,resume=False,parser_revision=3,search_area=None,partition_offset=None):
     """Optionally persist completed scan blocks and resume an explicitly selected image."""
     if checkpoint_path is None:
         if resume:
@@ -218,7 +218,7 @@ def scan_signatures(source,*,category='images',categories=None,max_file_bytes=No
 
 def _signature_entry(start,size,kind):
     extension={'PNG':'png','JPEG':'jpg','BMP':'bmp','GIF':'gif','WebP':'webp','TIFF':'tiff',
-               'DOCX':'docx','DOCM':'docm','DOTX':'dotx','DOTM':'dotm',
+               'DOC':'doc','XLS':'xls','PPT':'ppt','DOCX':'docx','DOCM':'docm','DOTX':'dotx','DOTM':'dotm',
                'XLSX':'xlsx','XLSM':'xlsm','XLTX':'xltx','XLTM':'xltm',
                'PPTX':'pptx','PPTM':'pptm','POTX':'potx','POTM':'potm',
                'ODT':'odt','ODS':'ods','ODP':'odp','ODG':'odg','ZIP':'zip',
@@ -230,11 +230,11 @@ def _signature_entry(start,size,kind):
 
 
 def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None,
-                     _resume=None,_checkpoint=None,_parser_revision=2,search_area='all',partition_offset=0):
+                     _resume=None,_checkpoint=None,_parser_revision=3,search_area='all',partition_offset=0):
     """Search selected categories in a single sequential pass over a regular image."""
     available = ('images','office','archives','audio','video')
     validate_search_area(search_area,partition_offset)
-    if type(_parser_revision) is not int or _parser_revision not in (1,2):
+    if type(_parser_revision) is not int or _parser_revision not in (1,2,3):
         raise ValueError('Ungültige Suchversion.')
     selected = frozenset(categories) if categories is not None else frozenset(available if category == 'all' else (category,))
     if not selected or not selected.issubset(available):
@@ -276,6 +276,8 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
                     raise ValueError('Gespeicherter Fund liegt außerhalb des Suchbereichs.')
                 candidate_end = cached_region[1]
                 if _parser_revision == 1 and expected_kind in ('PDF','RAR'):
+                    raise ValueError('Ungültiger gespeicherter Suchstand.')
+                if _parser_revision < 3 and expected_kind in ('DOC','XLS','PPT'):
                     raise ValueError('Ungültiger gespeicherter Suchstand.')
                 try:
                     if expected_kind in ('PNG','JPEG'):
@@ -324,6 +326,8 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
                     signatures.append((b'PK\x03\x04','OTHER'))
                 if _parser_revision >= 2 and 'office' in selected:
                     signatures.append((b'%PDF-','OTHER'))
+                if _parser_revision >= 3 and 'office' in selected:
+                    signatures.append((b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1','OTHER'))
                 if _parser_revision >= 2 and 'archives' in selected:
                     signatures.append((b'Rar!\x1a\x07','OTHER'))
                 if 'archives' in selected:
@@ -395,4 +399,6 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
     index.signature_parser_revision=_parser_revision
     if _parser_revision == 1:
         index.scan_warnings.append('Älterer Suchstand: PDF/RAR erfordern eine neue Suche.')
+    if _parser_revision < 3:
+        index.scan_warnings.append('Älterer Suchstand: DOC/XLS/PPT erfordern eine neue Suche.')
     return index
