@@ -3042,6 +3042,10 @@ class RecoveryDeskApp(tk.Tk):
         self._show_current_directory()
 
     def _focus_browser_search(self, event=None):
+        if self.tabs.select() == str(self.signature_tab):
+            self.signature_results.query_entry.focus_set()
+            self.signature_results.query_entry.selection_range(0, 'end')
+            return 'break'
         if self.tabs.select() == str(self.ntfs_tab):
             self.browser_search_entry.focus_set()
             self.browser_search_entry.selection_range(0, 'end')

@@ -16,6 +16,8 @@ class SignatureResults(ttk.Frame):
         self.kind_display=tk.StringVar(value=translate('Alle Dateitypen',language))
         self.minimum_kib=tk.StringVar(value='0')
         self.export_running=export_running
+        self._action=action
+        self._context_menu=None
         self.sort_column='offset';self.reverse=False
         buttons=ttk.Frame(self);buttons.pack(side='bottom',fill='x',pady=(8,0))
         buttons.columnconfigure((0,1,2),weight=1,uniform='actions')
@@ -62,6 +64,9 @@ class SignatureResults(ttk.Frame):
         self.tree.bind('<Return>',lambda event:action('preview'))
         self.tree.bind('<Control-a>',self.select_all)
         self.tree.bind('<Control-A>',self.select_all)
+        self.tree.bind('<Escape>',self.clear_selection)
+        self.tree.bind('<Button-3>',self._context_popup)
+        self.tree.bind('<Shift-F10>',self._keyboard_context_popup)
         for variable in (self.query,self.kind,self.minimum_kib):
             variable.trace_add('write',lambda *_:self._apply_filters())
         self.refresh_language(language)
@@ -152,3 +157,46 @@ class SignatureResults(ttk.Frame):
         self.tree.selection_set(self.tree.get_children())
         self._selection_changed()
         return 'break'
+
+    def clear_selection(self,event=None):
+        self.tree.selection_set(())
+        self._selection_changed()
+        return 'break'
+
+    def _context_popup(self,event):
+        key=self.tree.identify_row(event.y)
+        if key not in self.tree.get_children():return 'break'
+        if key not in self.tree.selection():self.tree.selection_set(key)
+        self.tree.focus(key)
+        self._selection_changed()
+        if self._context_menu is not None:self._context_menu.destroy()
+        popup=self._context_menu=tk.Menu(self.tree,tearoff=False)
+        count=len(self.selected_entries())
+        for text,action,state in (
+                ('Vorschau','preview','normal'),
+                ('Datei prüfen','inspect','normal' if count==1 else 'disabled'),
+                ('Stapel-Export / fortsetzen','export','normal'),
+                ('Fundliste speichern…','report','normal')):
+            popup.add_command(label=translate(text,self.language),state=state,
+                command=lambda action=action:self._action(action))
+        try:popup.tk_popup(event.x_root,event.y_root)
+        finally:
+            popup.grab_release()
+        return 'break'
+
+    def _keyboard_context_popup(self,event=None):
+        visible=self.tree.get_children()
+        key=self.tree.focus()
+        if key not in visible:
+            chosen=self.selected_entries()
+            key=str(chosen[0].key) if chosen else (visible[0] if visible else '')
+        if not key:return 'break'
+        self.tree.see(key)
+        self.tree.update_idletasks()
+        box=self.tree.bbox(key)
+        if not box:return 'break'
+        from types import SimpleNamespace
+        x,y,width,height=box
+        return self._context_popup(SimpleNamespace(y=y+height//2,
+            x_root=self.tree.winfo_rootx()+x+min(width,20),
+            y_root=self.tree.winfo_rooty()+y+height))
