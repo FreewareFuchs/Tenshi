@@ -157,11 +157,43 @@ class SignatureGuiTests(unittest.TestCase):
             self.assertGreaterEqual(view.tree.winfo_height(),60,language)
             bottom=self.app.signature_tab.winfo_rooty()+self.app.signature_tab.winfo_height()
             right=self.app.signature_tab.winfo_rootx()+self.app.signature_tab.winfo_width()
-            for widget in (view.tree,view.preview,view.inspect,view.export,view.browser):
+            for widget in (view.tree,view.preview,view.inspect,view.export,view.browser,view.report):
                 self.assertTrue(widget.winfo_ismapped(),language)
                 self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),bottom,language)
                 self.assertLessEqual(widget.winfo_rootx()+widget.winfo_width(),right,language)
             self.assertEqual(view.tree.heading('offset')['text'],translate('Fundposition (Bytes)',language))
+            self.assertEqual(view.report.cget('text'),translate('Fundliste speichern…',language))
+
+    def test_csv_report_uses_filtered_sorted_rows_without_selection_or_source_reads(self):
+        import csv,io
+        view=self.scan_for_list();index=self.app.signature_result_index
+        view.kind.set('PNG')
+        target=self.source.parent/'findings.csv'
+        with patch('recoverydesk.gui.filedialog.asksaveasfilename',return_value=str(target)), \
+             patch('recoverydesk.gui.messagebox.showinfo'), \
+             patch('recoverydesk.gui.open_source',side_effect=AssertionError('No source read')), \
+             patch('recoverydesk.gui.messagebox.showerror') as error:
+            # Changing next-scan options must not relabel existing findings.
+            self.app.signature_free_only.set(True)
+            self.app.signature_free_filesystem.set('exFAT')
+            self.app._signature_action('report')
+        error.assert_not_called()
+        rows=list(csv.DictReader(io.StringIO(target.read_text(encoding='utf-8-sig')),delimiter=';'))
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0]['type'],'PNG')
+        self.assertEqual(rows[0]['total_findings'],'2')
+        self.assertEqual(rows[0]['search_area'],'all')
+        self.assertEqual(rows[0]['absolute_offset_bytes'],str(view.visible_entries()[0].locator[1]))
+        self.assertIs(index,self.app.signature_result_index)
+        view.query.set('no matches')
+        self.assertEqual(str(view.report.cget('state')),'disabled')
+
+    def test_stale_source_cannot_save_a_report(self):
+        self.scan_for_list();self.app._source_generation+=1
+        with patch('recoverydesk.gui.filedialog.asksaveasfilename') as dialog:
+            self.app._signature_action('report')
+        dialog.assert_not_called()
+        self.assertEqual(str(self.app.signature_results.report.cget('state')),'disabled')
 
     def test_filters_prune_hidden_selection_and_sort_does_not_restore_it(self):
         view=self.scan_for_list();view.select_all()

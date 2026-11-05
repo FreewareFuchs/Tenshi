@@ -1910,6 +1910,9 @@ class RecoveryDeskApp(tk.Tk):
                 not self._scan_source_matches(self.signature_result_generation,self.signature_result_source)):
             self.signature_results.clear();self.signature_result_index=None
             return 'break'
+        if action=='report':
+            self._save_signature_report(index,self.signature_result_source)
+            return 'break'
         chosen=self.signature_results.selected_entries()
         if chosen:
             context=(self.signature_result_source,index,chosen)
@@ -1917,6 +1920,28 @@ class RecoveryDeskApp(tk.Tk):
             elif action=='inspect':self.inspect_file(context=context)
             elif action=='export':self.export_browser_selection(context=context)
         return 'break'
+
+    def _save_signature_report(self,index,source):
+        from .signature_report import report_csv,save_csv
+        entries=self.signature_results.visible_entries()
+        if not entries:return
+        # Capture the scan and filtered/sorted rows before entering the file dialog.
+        text=report_csv(source,index,entries)
+        destination=filedialog.asksaveasfilename(parent=self,
+            title=translate('Fundliste speichern…',self.language),
+            initialfile='Tenshi_Signaturfunde.csv',defaultextension='.csv',
+            filetypes=[('CSV','*.csv')])
+        if not destination:return
+        try:
+            save_csv(destination,text,source)
+            messagebox.showinfo(translate('Fundliste speichern…',self.language),
+                translate('Bericht wurde gespeichert.',self.language),parent=self)
+        except FileExistsError:
+            messagebox.showerror(translate('Fundliste speichern…',self.language),
+                translate('Datei existiert bereits. Bitte anderen Namen auswählen.',self.language),parent=self)
+        except Exception as exc:
+            messagebox.showerror(translate('Fundliste speichern…',self.language),
+                export_error_message(exc,self.language),parent=self)
 
     def _open_signature_results(self):
         if (self.signature_result_source != self.source_path.get().strip() or
