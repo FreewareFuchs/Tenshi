@@ -1,8 +1,10 @@
 # Release-Paket automatisch vorbereiten
 
-**In Vorbereitung: Tenshi 3.0.14.** Die Ergebnisliste, Office-Erweiterungen und Freiraumsuche aus PR #133–#139 sind abgenommen. Versionsfelder, Benutzerhilfe und Änderungsnotizen werden gebündelt aktualisiert. Der gemeinsame Workflow baut Installer, Portable und DEB aus demselben sauberen Commit. Endgültige Paketstarts und Versionsanzeigen sowie die Veröffentlichung stehen noch aus. [Freigabestand und Änderungen](../RELEASE_NOTES_3.0.14.md).
+Aktueller stabiler Stand: [Tenshi 3.0.14](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.14), seit 05.11.2026. Funktionen und endgültige Pakete sind abgenommen; GitHub, signierte APT-Quelle und Website sind öffentlich geprüft. Die Pakete stammen unverändert aus Commit `de9a3b9733528c87a19a3fdf314462105302ac41` ([gemeinsamer Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/42047640267)). Sieben GitHub-Assets, 19 APT-Dateien und 25 abschließende öffentliche Vergleiche sind bestätigt. [Freigabestand und Änderungen](../RELEASE_NOTES_3.0.14.md).
 
-Aktueller stabiler Stand: [Tenshi 3.0.13](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.13), seit 03.11.2026. Funktions- und Paketabnahmen sind bestätigt; GitHub, signierte APT-Quelle und Website wurden öffentlich geprüft. Die unveränderten Pakete stammen aus Commit `cfac39d9d5af856000e37060ccbea819f402380c` ([gemeinsamer Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/41708439214)). [Änderungen und Prüfstand](../RELEASE_NOTES_3.0.13.md).
+Die CSV-Fundliste aus PR #141 ist bereits im Hauptzweig abgenommen, aber noch nicht veröffentlicht. Neue Release-Vorbereitungen werden bis zu einem größeren Änderungspaket zurückgestellt. [Entwicklungsstand](../CHANGELOG.md).
+
+Vorheriger stabiler Stand: [Tenshi 3.0.13](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.13), seit 03.11.2026. Funktions- und Paketabnahmen sind bestätigt; GitHub, signierte APT-Quelle und Website wurden öffentlich geprüft. Die unveränderten Pakete stammen aus Commit `cfac39d9d5af856000e37060ccbea819f402380c` ([gemeinsamer Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/41708439214)). [Änderungen und Prüfstand](../RELEASE_NOTES_3.0.13.md).
 
 Vorheriger stabiler Stand: [Tenshi 3.0.12](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.12), veröffentlicht am 30.10.2026. Pakete, APT und Website sind abgenommen und öffentlich geprüft. [Änderungen](../RELEASE_NOTES_3.0.12.md).
 
