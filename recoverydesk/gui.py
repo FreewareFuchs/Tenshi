@@ -1838,10 +1838,15 @@ class RecoveryDeskApp(tk.Tk):
         area = ttk.Frame(panel)
         area.pack(anchor='w', pady=(0, 10))
         self.signature_free_only = tk.BooleanVar(value=False)
+        self.signature_free_filesystem = tk.StringVar(value='NTFS')
         self.signature_partition_offset = tk.StringVar(value='0')
-        ttk.Checkbutton(area, text='Nur freie NTFS-Bereiche', variable=self.signature_free_only,
+        ttk.Checkbutton(area, text='Nur freie Bereiche', variable=self.signature_free_only,
                         command=self._update_signature_scope).pack(side='left')
-        ttk.Label(area, text='NTFS-Partitionsoffset (Bytes):').pack(side='left', padx=(16, 4))
+        self.signature_free_type = ttk.Combobox(area, textvariable=self.signature_free_filesystem,
+                                               values=('NTFS','FAT32'), state='readonly', width=8)
+        self.signature_free_type.pack(side='left', padx=(8,0))
+        self.signature_free_type.bind('<<ComboboxSelected>>', lambda event:self._update_signature_scope())
+        ttk.Label(area, text='Partitionsoffset (Bytes):').pack(side='left', padx=(16, 4))
         ttk.Entry(area, textvariable=self.signature_partition_offset, width=18).pack(side='left')
         limits = ttk.Frame(panel)
         limits.pack(anchor='w', pady=(0, 10))
@@ -1892,8 +1897,8 @@ class RecoveryDeskApp(tk.Tk):
         self._update_signature_scope()
 
     def _update_signature_scope(self):
-        scope = ('Suchbereich: freie NTFS-Bereiche.' if self.signature_free_only.get()
-                 else 'Suchbereich: gesamtes Image.')
+        scope = ('Suchbereich: freie FAT32-Bereiche.' if self.signature_free_filesystem.get() == 'FAT32'
+                 else 'Suchbereich: freie NTFS-Bereiche.') if self.signature_free_only.get() else 'Suchbereich: gesamtes Image.'
         self.signature_scope_label.configure(text=translate(
             scope,self.language)+' '+translate('Signaturfunde bestätigen keine vollständigen Originalinhalte.',self.language))
 
@@ -2173,6 +2178,9 @@ class RecoveryDeskApp(tk.Tk):
             return
         self.ntfs_byte_offset.set(str(part.offset_bytes))
         self.signature_partition_offset.set(str(part.offset_bytes))
+        if part.filesystem in ('NTFS','FAT32'):
+            self.signature_free_filesystem.set(part.filesystem)
+            self._update_signature_scope()
         self._select_main_tab('files')
         self.status.set(f'Partitionsanfang: Byte {part.offset_bytes}, Dateisystem: {part.filesystem}.')
         if part.filesystem not in ('NTFS', 'FAT32', 'exFAT', 'ext2', 'ext3', 'ext4', 'Btrfs', 'XFS'):
@@ -2227,7 +2235,8 @@ class RecoveryDeskApp(tk.Tk):
             state = read_checkpoint(path)
             self.signature_file_limit_mib.set(str(state['file_limit'] // 1024**2))
             self.signature_save_checkpoint.set(True)
-            self.signature_free_only.set(state.get('search_area','all') == 'ntfs-free')
+            self.signature_free_only.set(state.get('search_area','all') != 'all')
+            self.signature_free_filesystem.set('FAT32' if state.get('search_area') == 'fat32-free' else 'NTFS')
             self.signature_partition_offset.set(str(state.get('partition_offset',0)))
             self._update_signature_scope()
             self.start_signature_scan(tuple(state['categories']), checkpoint_path=path, resume=True)
@@ -2235,7 +2244,7 @@ class RecoveryDeskApp(tk.Tk):
             messagebox.showerror(translate('Suchstand öffnen…', self.language), str(exc), parent=self)
 
     def start_signature_scan(self, category='images', *, checkpoint_path=None, resume=False):
-        from .signature_search import scan_signatures,FILESYSTEM,SCOPE,FREE_SCOPE,validate_search_area
+        from .signature_search import scan_signatures,FILESYSTEM,search_scope,validate_search_area
         selected = (category,) if isinstance(category, str) else tuple(category)
         category_label = ', '.join(translate(self._signature_button_keys[key], self.language) for key in selected)
         scan_options = {'category': category} if isinstance(category, str) else {'categories': selected}
@@ -2247,17 +2256,20 @@ class RecoveryDeskApp(tk.Tk):
             file_limit_mib = int(self.signature_file_limit_mib.get())
             if file_limit_mib not in (32, 64, 128, 256):
                 raise ValueError('Ungültige Größenbegrenzung für die Signatursuche.')
-            search_area = 'ntfs-free' if self.signature_free_only.get() else 'all'
-            partition_offset = int(self.signature_partition_offset.get().strip(),0) if search_area == 'ntfs-free' else 0
+            filesystem = self.signature_free_filesystem.get()
+            if filesystem not in ('NTFS','FAT32'):
+                raise ValueError(translate('Bitte NTFS oder FAT32 für die Freiraumsuche wählen.',self.language))
+            search_area = {'NTFS':'ntfs-free','FAT32':'fat32-free'}[filesystem] if self.signature_free_only.get() else 'all'
+            partition_offset = int(self.signature_partition_offset.get().strip(),0) if search_area != 'all' else 0
             validate_search_area(search_area,partition_offset)
         except (OSError,ValueError) as exc:
             messagebox.showerror(category_label,str(exc),parent=self);return
-        note=(translate(FREE_SCOPE if search_area == 'ntfs-free' else SCOPE,self.language)+'\n\n'+translate(
+        note=(translate(search_scope(search_area),self.language)+'\n\n'+translate(
             'JPEG/PNG/GIF/TIFF/PDF und Office/ZIP: maximal {limit} MiB je Fund. Andere Formate können größer sein. Maximal 1000 Funde, 5000 Anfangssignaturen und 512 MiB zusätzliche Strukturprüfungen je Suchlauf. Die Suche liest das gesamte Image; Grenzen können Ergebnisse unvollständig machen. Jetzt starten?',self.language).format(limit=file_limit_mib))
         scan_options['max_file_bytes'] = file_limit_mib * 1024**2
         scan_options.update(search_area=search_area,partition_offset=partition_offset)
-        if search_area == 'ntfs-free':
-            note = translate(FREE_SCOPE,self.language)+'\n\n'+translate('NTFS-Partitionsoffset (Bytes):',self.language)+f' {partition_offset}\n'+translate('Die Prüfgrenzen gelten weiterhin. Freie Bereiche jetzt durchsuchen?',self.language)
+        if search_area != 'all':
+            note = translate(search_scope(search_area),self.language)+'\n\n'+translate('Partitionsoffset (Bytes):',self.language)+f' {partition_offset}\n'+translate('Die Prüfgrenzen gelten weiterhin. Freie Bereiche jetzt durchsuchen?',self.language)
         if not messagebox.askyesno(category_label,note,parent=self):return
         if checkpoint_path is None and self.signature_save_checkpoint.get():
             checkpoint_path = filedialog.asksaveasfilename(parent=self,

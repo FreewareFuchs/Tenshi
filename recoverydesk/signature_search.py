@@ -1,6 +1,6 @@
-"""Bounded carving of contiguous JPEG/PNG structures in regular images only.
+"""Bounded carving of supported contiguous structures in regular images only.
 
-This is not a free-space scan, undelete proof, decoder or fragment reassembler.
+Full-image and selected free-space scans are not undelete proof or reassembly.
 Format structure establishes a candidate extent, never original integrity.
 """
 import os
@@ -25,12 +25,17 @@ MAX_INSPECTION=512*1024**2
 MAX_CONFIGURABLE_FILE=256*1024**2
 SCOPE='Signaturfunde: erkannte zusammenhängende Dateistrukturen ohne Originalnamen oder Ordner. Belegte und freie Bereiche werden durchsucht; ein Fund beweist weder Löschung noch unversehrte Originalinhalte. Fragmente werden nicht zusammengesetzt.'
 FREE_SCOPE='Nur freie NTFS-Bereiche laut aktueller Belegungsbitmap. Belegte Grenzen werden nicht überschritten. Freier Speicher beweist weder Löschung noch unversehrte Originalinhalte; Fragmente werden nicht zusammengesetzt.'
+FAT32_FREE_SCOPE='Nur freie FAT32-Bereiche laut geprüfter Belegungstabelle. Belegte, reservierte und fehlerhafte Cluster werden ausgelassen. Freier Speicher beweist weder Löschung noch unversehrte Originalinhalte; Fragmente werden nicht zusammengesetzt.'
+
+
+def search_scope(area):
+    return {'all':SCOPE,'ntfs-free':FREE_SCOPE,'fat32-free':FAT32_FREE_SCOPE}[area]
 
 
 def validate_search_area(area, offset):
-    if (area not in ('all','ntfs-free') or type(offset) is not int or offset < 0 or offset % 512
+    if (area not in ('all','ntfs-free','fat32-free') or type(offset) is not int or offset < 0 or offset % 512
             or (area == 'all' and offset != 0)):
-        raise ValueError('Ungültiger Suchbereich oder NTFS-Partitionsoffset.')
+        raise ValueError('Ungültiger Suchbereich oder Partitionsoffset.')
 
 
 class _Invalid(ValueError):pass
@@ -261,8 +266,16 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
                 ranges,search_bytes,bitmap_digest = free_ntfs_ranges(stream,partition_offset,total,cancel=cancel)
             except BitmapUnavailable as exc:
                 raise ValueError('Freie NTFS-Bereiche nicht sicher bestimmbar: '+str(exc)) from exc
+        elif search_area == 'fat32-free':
+            from .fat32_usage import free_fat32_ranges, AllocationUnavailable
+            try:
+                ranges,search_bytes,bitmap_digest = free_fat32_ranges(stream,partition_offset,total,cancel=cancel)
+            except AllocationUnavailable as exc:
+                raise ValueError('Freie FAT32-Bereiche nicht sicher bestimmbar: '+str(exc)) from exc
         if _resume is not None and _resume.get('bitmap_sha256') != bitmap_digest:
-            raise ValueError('NTFS-Belegungsbitmap wurde geändert. Bitte eine neue Suche starten.')
+            message = ('NTFS-Belegungsbitmap wurde geändert. Bitte eine neue Suche starten.' if search_area == 'ntfs-free'
+                       else 'FAT32-Belegungstabelle wurde geändert. Bitte eine neue Suche starten.')
+            raise ValueError(message)
         if _resume is not None:
             # Reparse every cached candidate instead of trusting stored extents.
             validation = _Budget(file_limit,cancel)
@@ -387,7 +400,7 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
         after=os.fstat(stream.fileno());_stop(cancel)
         if _snapshot(opened)!=_snapshot(after) or _snapshot(opened)!=_snapshot(os.stat(source)):raise ValueError('Quell-Image wurde geändert.')
     index=GenericIndex(FILESYSTEM,0,entries,SignatureVolume(total,entries,_snapshot(opened)),children={ROOT:entries})
-    index.scan_warnings=[FREE_SCOPE if search_area == 'ntfs-free' else SCOPE]
+    index.scan_warnings=[search_scope(search_area)]
     if limited:index.scan_warnings.append('Signatursuche: Prüfgrenze erreicht; Ergebnis unvollständig.')
     index.signature_scanned_bytes=done;index.signature_source_bytes=search_bytes
     index.signature_search_area=search_area
