@@ -14,7 +14,8 @@ from .sources import ensure_safe_destination
 SCHEMA = 'tenshi-signature-search-v1'
 FREE_SCHEMA = 'tenshi-signature-search-free-ntfs-v1'
 FAT32_FREE_SCHEMA = 'tenshi-signature-search-free-fat32-v1'
-SCHEMAS = {'all':SCHEMA, 'ntfs-free':FREE_SCHEMA, 'fat32-free':FAT32_FREE_SCHEMA}
+EXFAT_FREE_SCHEMA = 'tenshi-signature-search-free-exfat-v1'
+SCHEMAS = {'all':SCHEMA, 'ntfs-free':FREE_SCHEMA, 'fat32-free':FAT32_FREE_SCHEMA, 'exfat-free':EXFAT_FREE_SCHEMA}
 MAX_BYTES = 512 * 1024
 CATEGORIES = ('images', 'office', 'archives', 'audio', 'video')
 

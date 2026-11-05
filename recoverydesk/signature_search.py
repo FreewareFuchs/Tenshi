@@ -26,14 +26,15 @@ MAX_CONFIGURABLE_FILE=256*1024**2
 SCOPE='Signaturfunde: erkannte zusammenhängende Dateistrukturen ohne Originalnamen oder Ordner. Belegte und freie Bereiche werden durchsucht; ein Fund beweist weder Löschung noch unversehrte Originalinhalte. Fragmente werden nicht zusammengesetzt.'
 FREE_SCOPE='Nur freie NTFS-Bereiche laut aktueller Belegungsbitmap. Belegte Grenzen werden nicht überschritten. Freier Speicher beweist weder Löschung noch unversehrte Originalinhalte; Fragmente werden nicht zusammengesetzt.'
 FAT32_FREE_SCOPE='Nur freie FAT32-Bereiche laut geprüfter Belegungstabelle. Belegte, reservierte und fehlerhafte Cluster werden ausgelassen. Freier Speicher beweist weder Löschung noch unversehrte Originalinhalte; Fragmente werden nicht zusammengesetzt.'
+EXFAT_FREE_SCOPE='Nur freie exFAT-Bereiche laut geprüfter Belegungsbitmap. Belegte Grenzen werden nicht überschritten. Freier Speicher beweist weder Löschung noch unversehrte Originalinhalte; Fragmente werden nicht zusammengesetzt.'
 
 
 def search_scope(area):
-    return {'all':SCOPE,'ntfs-free':FREE_SCOPE,'fat32-free':FAT32_FREE_SCOPE}[area]
+    return {'all':SCOPE,'ntfs-free':FREE_SCOPE,'fat32-free':FAT32_FREE_SCOPE,'exfat-free':EXFAT_FREE_SCOPE}[area]
 
 
 def validate_search_area(area, offset):
-    if (area not in ('all','ntfs-free','fat32-free') or type(offset) is not int or offset < 0 or offset % 512
+    if (area not in ('all','ntfs-free','fat32-free','exfat-free') or type(offset) is not int or offset < 0 or offset % 512
             or (area == 'all' and offset != 0)):
         raise ValueError('Ungültiger Suchbereich oder Partitionsoffset.')
 
@@ -272,9 +273,16 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
                 ranges,search_bytes,bitmap_digest = free_fat32_ranges(stream,partition_offset,total,cancel=cancel)
             except AllocationUnavailable as exc:
                 raise ValueError('Freie FAT32-Bereiche nicht sicher bestimmbar: '+str(exc)) from exc
+        elif search_area == 'exfat-free':
+            from .exfat_usage import free_exfat_ranges, AllocationUnavailable
+            try:
+                ranges,search_bytes,bitmap_digest = free_exfat_ranges(stream,partition_offset,total,cancel=cancel)
+            except AllocationUnavailable as exc:
+                raise ValueError('Freie exFAT-Bereiche nicht sicher bestimmbar: '+str(exc)) from exc
         if _resume is not None and _resume.get('bitmap_sha256') != bitmap_digest:
-            message = ('NTFS-Belegungsbitmap wurde geändert. Bitte eine neue Suche starten.' if search_area == 'ntfs-free'
-                       else 'FAT32-Belegungstabelle wurde geändert. Bitte eine neue Suche starten.')
+            message = {'ntfs-free':'NTFS-Belegungsbitmap wurde geändert. Bitte eine neue Suche starten.',
+                       'fat32-free':'FAT32-Belegungstabelle wurde geändert. Bitte eine neue Suche starten.',
+                       'exfat-free':'exFAT-Belegungsdaten wurden geändert. Bitte eine neue Suche starten.'}.get(search_area,'Belegungsdaten wurden geändert. Bitte eine neue Suche starten.')
             raise ValueError(message)
         if _resume is not None:
             # Reparse every cached candidate instead of trusting stored extents.

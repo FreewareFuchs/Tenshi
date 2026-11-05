@@ -1,4 +1,5 @@
 """Mount-free exFAT reference: exfatprogs format/check, FATtools population."""
+import base64
 import hashlib
 import importlib.util
 from pathlib import Path
@@ -15,6 +16,35 @@ from recoverydesk.batch_export import export_batch
                      and importlib.util.find_spec('FATtools') is not None,
                      'exfatprogs and FATtools required')
 class RealExfatImageTests(unittest.TestCase):
+    def test_external_delete_free_signature_export_and_resume(self):
+        from FATtools.Volume import vopen, vclose
+        from recoverydesk.signature_search import scan_signatures
+        from recoverydesk.export_resume import read_saved_export, prepare_saved_export
+        with tempfile.TemporaryDirectory(prefix='tenshi-exfat-free-ci-') as temporary:
+            root=Path(temporary);image=root/'new-test-image.img'
+            with image.open('xb') as stream:stream.truncate(64*1024**2)
+            subprocess.run(['mkfs.exfat','-c','4096',str(image)],check=True,capture_output=True,timeout=45)
+            # Fixed PNG seed keeps the isolated FATtools environment stdlib-only.
+            payload=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAABgAAAAQCAIAAACDRijCAAAAI0lEQVR4nGNkYPjPQA3ARBVTGEYNIgaMBjZhMBpGhMHgCyMA1j8BH9wczesAAAAASUVORK5CYII=')
+            volume=vopen(str(image),'r+b')
+            try:
+                for name in ('active.png','deleted.png'):
+                    handle=volume.create(name);handle.write(payload);handle.close()
+                volume.erase('deleted.png')
+            finally:
+                vclose(volume)
+            subprocess.run(['fsck.exfat','-n',str(image)],check=True,capture_output=True,timeout=45)
+            before=hashlib.sha256(image.read_bytes()).digest()
+            self.assertEqual(len(scan_signatures(str(image)).entries),2)
+            index=scan_signatures(str(image),search_area='exfat-free')
+            self.assertEqual(len(index.entries),1)
+            target=root/'export';target.mkdir();report=export_batch(str(image),index,index.entries,str(target))
+            self.assertEqual(next((Path(report.root)/'files').glob('*.png')).read_bytes(),payload)
+            saved=read_saved_export(report.manifest)
+            self.assertEqual(saved.signature_search_area,'exfat-free')
+            self.assertEqual(len(prepare_saved_export(saved)['index'].entries),1)
+            self.assertEqual(hashlib.sha256(image.read_bytes()).digest(),before)
+
     def test_contiguous_fragmented_nested_export_and_resume(self):
         from FATtools.Volume import vopen, vclose
         with tempfile.TemporaryDirectory(prefix='tenshi-exfat-ci-') as temporary:
