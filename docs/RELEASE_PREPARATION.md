@@ -1,8 +1,10 @@
 # Release-Paket automatisch vorbereiten
 
-**In Vorbereitung: Tenshi 3.0.13.** Die Signatursuch-Erweiterungen aus PR #126–#131 sind abgenommen. Versionsfelder, Benutzerhilfe und Änderungsnotizen werden gebündelt aktualisiert. Der gemeinsame Workflow baut Installer, Portable und DEB aus demselben sauberen Commit. Endgültige Paketstarts und Versionsanzeigen sowie die Veröffentlichung stehen noch aus. [Freigabestand und Änderungen](../RELEASE_NOTES_3.0.13.md).
+**In Vorbereitung: Tenshi 3.0.14.** Die Ergebnisliste, Office-Erweiterungen und Freiraumsuche aus PR #133–#139 sind abgenommen. Versionsfelder, Benutzerhilfe und Änderungsnotizen werden gebündelt aktualisiert. Der gemeinsame Workflow baut Installer, Portable und DEB aus demselben sauberen Commit. Endgültige Paketstarts und Versionsanzeigen sowie die Veröffentlichung stehen noch aus. [Freigabestand und Änderungen](../RELEASE_NOTES_3.0.14.md).
 
-Aktueller stabiler Stand: [Tenshi 3.0.12](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.12), veröffentlicht am 30.10.2026. Bildsignatursuche und endgültige Paketversionen sind manuell bestätigt. Die sieben GitHub-Assets, 17 APT-Dateien und 25 Website-Abschlussvergleiche sind erfolgreich geprüft. [Änderungen und Prüfstand](../RELEASE_NOTES_3.0.12.md).
+Aktueller stabiler Stand: [Tenshi 3.0.13](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.13), seit 03.11.2026. Funktions- und Paketabnahmen sind bestätigt; GitHub, signierte APT-Quelle und Website wurden öffentlich geprüft. Die unveränderten Pakete stammen aus Commit `cfac39d9d5af856000e37060ccbea819f402380c` ([gemeinsamer Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/41708439214)). [Änderungen und Prüfstand](../RELEASE_NOTES_3.0.13.md).
+
+Vorheriger stabiler Stand: [Tenshi 3.0.12](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.12), veröffentlicht am 30.10.2026. Pakete, APT und Website sind abgenommen und öffentlich geprüft. [Änderungen](../RELEASE_NOTES_3.0.12.md).
 
 Vorheriger stabiler Stand: [Tenshi 3.0.11](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.11), seit 30.10.2026.
 Vorschau, Inhaltsprüfung und manuelles Durchblättern aus PR #119 sowie die
@@ -114,7 +116,8 @@ python3 prepare_website_catalog.py --bundle release_bundle \
 
 Das Ausgabeziel darf noch nicht existieren. Die drei Paketdateien werden erneut
 vollständig gelesen und mit Byteanzahl und SHA256 aus `release_manifest.json`
-verglichen; auch `SHA256SUMS.txt` muss inhaltlich exakt zum Manifest passen.
+verglichen; auch `SHA256SUMS.sha256` muss inhaltlich exakt zum Manifest passen.
+Unveränderte ältere Bundles mit `SHA256SUMS.txt` bleiben lesbar.
 LF- und Windows-CRLF-Zeilenenden werden dabei gleich behandelt. Dies setzt das
 vertrauenswürdige, zuvor mit `prepare_release.py` geprüfte Bundle voraus. Das
 Werkzeug bestätigt weder eine digitale Signatur noch die öffentliche Erreichbarkeit

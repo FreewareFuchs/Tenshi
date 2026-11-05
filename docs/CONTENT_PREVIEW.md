@@ -41,12 +41,14 @@ verändert. Dieser Weg vermeidet zusätzliche Lesezugriffe auf das Quellmedium.
   Originalinhalte, vollständige Dokumentsemantik oder korrekte Darstellung.
 - **Teilprüfung**: Bei PDF wurde nur die erste Seite gerendert. Weitere Seiten,
   Anhänge und aktive Inhalte bleiben ungeprüft. Bei Animationen gilt das Ergebnis
-  nur für das erste Bild.
+  nur für das erste Bild. Bei binären DOC-/XLS-/PPT-Dateien werden ab 3.0.14 interne
+  Containerzuordnungen und ausgewählte Kopfdaten begrenzt geprüft; Seiten, Zellen,
+  Folien, eingebettete Dateien und Makros bleiben ungeprüft. Es gibt keine Office-Darstellung.
 - **Nicht als unterstütztes Format lesbar**: Eine Beschädigung oder ein anderer
   tatsächlicher Dateityp ist möglich. Dateiendungen allein sind kein Formatbeweis.
 - **Prüfgrenze erreicht / Nicht geprüft**: Aus dieser Anzeige darf kein
-  Dateischaden abgeleitet werden. Legacy-Office/OLE, nicht unterstützte Formate
-  und geschützte Container werden nicht als bestätigter Schaden ausgegeben.
+  Dateischaden abgeleitet werden. Unbekannte Legacy-Office-/OLE-Varianten, nicht
+  unterstützte Formate und geschützte Container werden nicht als bestätigter Schaden ausgegeben.
 - **Verschlüsselt / geschützt**: Es erfolgt keine Entschlüsselung und keine
   Passwortabfrage. Bei ZIP wird auf die vorhandene Prüfung im Exportbericht
   verwiesen.

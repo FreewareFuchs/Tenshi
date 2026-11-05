@@ -1,0 +1,44 @@
+{
+  "de": [
+    "Signaturfunde direkt im eigenen Reiter sortieren, auswählen, mit Vor/Zurück ansehen, prüfen und exportieren. Suchtext, Typ und Mindestgröße filtern ohne erneutes Lesen; nur sichtbare markierte Funde werden verwendet.",
+    "Optional nur freie Bereiche von NTFS, FAT32 oder exFAT durchsuchen. Geprüfte Belegungsdaten und Partitionsoffset bleiben beim Fortsetzen und in Exportaufträgen erhalten; Funde überschreiten keine belegten Grenzen. TexFAT bleibt ausgeschlossen.",
+    "Binäre DOC-/XLS-/PPT-Strukturen erkennen und exportieren. Vorschau und Inhaltsprüfung zeigen eine begrenzte Teilprüfung der Containerstruktur, keine Office-Darstellung oder Entschlüsselung. Die Inhaltsprüfung bleibt auf 32 MiB begrenzt.",
+    "Suchstände auf gemeinsamen VM-Ordnern melden eine nicht unterstützte Verzeichnissynchronisierung nicht mehr als Speicherfehler. Echte Schreibfehler bleiben Fehler. Temporäre Prüfsummendateien werden erst nach geschlossener Rückleseprüfung entfernt.",
+    "Hilfe in sechs Sprachen erklärt Dateisystemsuche, Signatursuche und Grenzen. Quellen bleiben schreibgeschützt; keine Fragmentrekonstruktion und kein Nachweis vollständiger Originalinhalte. Ältere Suchstände behalten ihren bisherigen Formatumfang."
+  ],
+  "en": [
+    "Sort, select, browse with Previous/Next, check and export signature findings directly in their tab. Filter by text, type and minimum size without rereading the image; only visible selected findings are used.",
+    "Optionally search only free NTFS, FAT32 or exFAT areas. Checked allocation data and partition offset are retained on resume and in export jobs; findings cannot cross allocated boundaries. TexFAT remains unsupported.",
+    "Recognize and export binary DOC/XLS/PPT structures. Preview and content checking show a bounded partial container check, without Office rendering or decryption. Content checks remain limited to 32 MiB.",
+    "Saving search progress on shared VM folders no longer treats unsupported directory synchronization as a save failure. Actual write failures remain errors. Temporary checksum files are removed only after readback handles are closed.",
+    "Help in six languages explains filesystem search, signature search and limits. Sources remain read-only; no fragment reconstruction or proof of complete original contents. Older progress files retain their previous format scope."
+  ],
+  "es": [
+    "Ordena, selecciona, recorre con Anterior/Siguiente, comprueba y exporta hallazgos de firmas desde su propia pestaña. Filtra por texto, tipo y tamaño mínimo sin releer la imagen; solo se usan hallazgos visibles seleccionados.",
+    "Busca opcionalmente solo en áreas libres de NTFS, FAT32 o exFAT. Los datos de asignación comprobados y el desplazamiento se conservan al continuar y en las exportaciones; los hallazgos no cruzan límites ocupados. TexFAT no está admitido.",
+    "Reconoce y exporta estructuras binarias DOC/XLS/PPT. La vista previa y la comprobación de contenido muestran una comprobación parcial limitada del contenedor, sin representación Office ni descifrado. Se mantiene el límite de 32 MiB.",
+    "Guardar el progreso en carpetas compartidas de la VM ya no informa un fallo al no admitirse la sincronización del directorio. Los errores reales de escritura siguen siendo errores. Las sumas temporales se eliminan después de cerrar su lectura de comprobación.",
+    "La ayuda en seis idiomas explica búsqueda del sistema de archivos, firmas y límites. Las fuentes siguen en solo lectura; sin reconstrucción de fragmentos ni garantía del contenido original completo. El progreso antiguo conserva su alcance de formatos."
+  ],
+  "zh": [
+    "可在文件签名页直接排序、选择、用上一个/下一个浏览、检查并导出候选项。按文本、类型和最小大小筛选无需重读映像；仅使用可见且选中的候选项。",
+    "可选择仅搜索 NTFS、FAT32 或 exFAT 的空闲区域。继续搜索及导出任务会保留已检查的分配信息和分区偏移，候选项不能跨越已分配边界。不支持 TexFAT。",
+    "识别并导出二进制 DOC/XLS/PPT 结构。预览和内容检查显示有限的容器结构部分检查，不提供 Office 渲染或解密。内容检查仍限于 32 MiB。",
+    "在虚拟机共享文件夹保存搜索进度时，不再把不支持目录同步误报为保存失败。真正的写入错误仍会报错。临时校验和文件仅在关闭回读检查后删除。",
+    "六种语言的帮助解释文件系统搜索、签名搜索和限制。源保持只读；不重组碎片，也不保证原始内容完整。旧搜索进度保留原有格式范围。"
+  ],
+  "ru": [
+    "Сортировка, выбор, просмотр Назад/Далее, проверка и экспорт находок доступны прямо на вкладке сигнатур. Фильтры текста, типа и минимального размера не перечитывают образ; используются только видимые выбранные находки.",
+    "Можно искать только в свободных областях NTFS, FAT32 или exFAT. Проверенные данные размещения и смещение сохраняются при продолжении и в заданиях экспорта; находки не пересекают занятые границы. TexFAT не поддерживается.",
+    "Распознавание и экспорт двоичных структур DOC/XLS/PPT. Просмотр и проверка содержимого показывают ограниченную частичную проверку контейнера без отображения Office и расшифровки. Предел проверки остаётся 32 МиБ.",
+    "Сохранение прогресса в общих папках ВМ больше не считает неподдерживаемую синхронизацию каталога ошибкой сохранения. Реальные ошибки записи остаются ошибками. Временные файлы контрольных сумм удаляются после закрытия проверочного чтения.",
+    "Справка на шести языках объясняет поиск файловой системы, сигнатур и ограничения. Источники доступны только для чтения; фрагменты не собираются, полнота исходного содержимого не гарантируется. Старый прогресс сохраняет прежний охват форматов."
+  ],
+  "ja": [
+    "シグネチャ候補の並べ替え、選択、前へ/次へによる閲覧、検査、出力を専用タブから行えます。文字、形式、最小サイズの絞り込みは再走査不要で、表示中かつ選択された候補だけを使用します。",
+    "NTFS、FAT32、exFAT の空き領域だけを検索できます。再開と出力ジョブは検査した割り当て情報とオフセットを保持し、使用中の境界を越える候補は除外します。TexFAT は未対応です。",
+    "バイナリ DOC/XLS/PPT 構造の検出と出力に対応。プレビューと内容検査は制限付きのコンテナー構造部分検査を表示し、Office の描画や復号は行いません。内容検査の上限は32 MiBのままです。",
+    "VM共有フォルダーへの検索状況保存で、未対応のディレクトリ同期を保存失敗と誤報しなくなりました。実際の書き込みエラーは引き続き報告します。一時チェックサムファイルは確認用の読み取りを閉じてから削除します。",
+    "6言語のヘルプがファイルシステム検索、シグネチャ検索と制限を説明します。ソースは読み取り専用で、断片の再構成や元の内容の完全性は保証しません。古い検索状況は従来の形式範囲を保持します。"
+  ]
+}

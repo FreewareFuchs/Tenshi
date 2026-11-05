@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 echo =====================================================
-echo  Tenshi 3.0.13 - Windows Release-Vorbereitung
+echo  Tenshi 3.0.14 - Windows Release-Vorbereitung
  echo =====================================================
 echo.
 echo Es werden Tests, EXE, Portable-ZIP und Installer erstellt.
