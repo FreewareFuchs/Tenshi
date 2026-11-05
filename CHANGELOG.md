@@ -1,5 +1,7 @@
 # Noch nicht veröffentlicht
 
+- **Suchlauf-Zusammenfassung:** Quelle, Suchbereich, Partitionsoffset, Kategorien und Prüfgrenze bleiben im Signaturreiter dem tatsächlichen Lauf zugeordnet. Filter und Optionen für den nächsten Lauf ändern diese Angaben nicht. Keine passenden Signaturen, erreichte Prüfgrenze, Anhalten und Fehler werden unterschieden; ausgefilterte Funde erhalten einen eigenen Hinweis. Sechssprachige Hilfe ergänzt.
+
 - **Signatur-Ergebnisliste bedienen:** Strg+F fokussiert den Filter des aktiven Reiters; Escape hebt nur die Fundauswahl auf. Rechtsklick und Umschalt+F10 öffnen die vorhandenen Aktionen mit derselben Auswahl- und Quellenprüfung. Die Hilfe erklärt das Verhalten in sechs Sprachen.
 
 - **CSV-Fundliste** ([PR #141](https://github.com/FreewareFuchs/Tenshi/pull/141), abgenommen): Alle sichtbaren Signaturfunde in aktueller Sortierung mit Größe, absoluter Fundposition und ursprünglichem Suchbereich speichern. Filter gelten unabhängig von der Auswahl. UTF-8 mit BOM und Semikolon; vorhandene Dateien bleiben erhalten. Hilfe in sechs Sprachen ergänzt.

@@ -49,6 +49,72 @@ class SignatureGuiTests(unittest.TestCase):
         error.assert_not_called()
         return self.app.signature_results
 
+    def test_summary_is_unchanged_by_filters_or_next_scan_options(self):
+        view=self.scan_for_list();summary=self.app.signature_summary
+        text=self.app.signature_scope_label.cget('text')
+        self.app.signature_free_only.set(True)
+        self.app.signature_free_filesystem.set('exFAT')
+        self.app.signature_partition_offset.set('8192')
+        self.app.signature_file_limit_mib.set('256')
+        self.app._update_signature_scope()
+        view.query.set('no matches')
+        self.assertIs(self.app.signature_summary,summary)
+        self.assertEqual(self.app.signature_scope_label.cget('text'),text)
+        self.assertEqual(summary.area,'all');self.assertEqual(summary.offset,0)
+        self.assertEqual(summary.file_limit,32*1024**2)
+        self.assertIn('Kein Fund passt',view.caption.cget('text'))
+        self.assertEqual(summary.count,2)
+        self.app._reset_analysis_for_source()
+        self.assertIsNone(self.app.signature_summary)
+
+    def test_no_matches_and_limit_reached_are_distinct_real_scan_outcomes(self):
+        self.source.write_bytes(b'X'*4096)
+        self.app.source_path.set(str(self.source))
+        with patch('recoverydesk.gui.messagebox.askyesno',return_value=True),patch('recoverydesk.gui.messagebox.showerror') as error:
+            self.app.start_signature_scan();self.wait_for(lambda:not self.app.ntfs_scanning)
+        error.assert_not_called()
+        self.assertEqual(self.app.signature_summary.state,'finished')
+        self.assertIn('Keine passenden Signaturen',self.app.signature_scope_label.cget('text'))
+        self.prepare()
+        with patch('recoverydesk.signature_search.MAX_HITS',1), \
+             patch('recoverydesk.gui.messagebox.askyesno',return_value=True), \
+             patch('recoverydesk.gui.messagebox.showerror') as error:
+            self.app.start_signature_scan();self.wait_for(lambda:not self.app.ntfs_scanning)
+        error.assert_not_called()
+        self.assertEqual(self.app.signature_summary.state,'limited')
+        self.assertIn('Prüfgrenze erreicht',self.app.signature_scope_label.cget('text'))
+        self.assertNotIn('Keine passenden Signaturen',self.app.signature_scope_label.cget('text'))
+
+    def test_failed_read_or_checkpoint_write_is_not_a_successful_empty_search(self):
+        self.prepare()
+        for problem in (OSError('Image lieferte unvollständige Daten.'),PermissionError('Suchstand nicht beschreibbar')):
+            with patch('recoverydesk.signature_search.scan_signatures',side_effect=problem), \
+                 patch('recoverydesk.gui.messagebox.askyesno',return_value=True), \
+                 patch('recoverydesk.gui.messagebox.showerror') as error:
+                self.app.start_signature_scan();self.wait_for(lambda:not self.app.ntfs_scanning)
+            error.assert_called_once()
+            self.assertEqual(self.app.signature_summary.state,'failed')
+            self.assertIsNone(self.app.signature_result_index)
+            text=self.app.signature_scope_label.cget('text')
+            self.assertIn('Suche fehlgeschlagen',text)
+            self.assertNotIn('Keine passenden Signaturen',text)
+
+    def test_summary_and_actions_fit_small_window_in_all_languages_and_outcomes(self):
+        from recoverydesk.signature_summary import SignatureSummary
+        self.app.deiconify();self.app.geometry('1024x650')
+        self.app._select_main_tab('signatures')
+        run=SignatureSummary('/images/'+'long-name-'*12+'.img','exfat-free',1099511627776,
+            ('images','office','archives','audio','video'),256*1024**2,count=0)
+        for language in LANGUAGES:
+            self.app.change_language(language)
+            for state in ('finished','limited','failed','cancelled'):
+                self.app._set_signature_summary(run.outcome(state));self.app.update()
+                self.assertGreaterEqual(self.app.signature_results.tree.winfo_height(),60,(language,state))
+                label=self.app.signature_scope_label
+                self.assertTrue(label.winfo_ismapped())
+                bottom=self.app.signature_tab.winfo_rooty()+self.app.signature_tab.winfo_height()
+                self.assertLessEqual(self.app.signature_results.export.winfo_rooty()+self.app.signature_results.export.winfo_height(),bottom)
+
     def test_results_sort_numerically_and_keep_selection(self):
         view=self.scan_for_list()
         self.assertEqual(len(view.tree.get_children()),2)

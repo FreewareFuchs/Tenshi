@@ -918,6 +918,7 @@ class RecoveryDeskApp(tk.Tk):
             self.signature_results_button.configure(state='disabled')
             self.signature_result_index = None
             self.signature_results.clear()
+            self._set_signature_summary(None)
 
     def _scan_source_matches(self, generation, source):
         return (generation == self._source_generation and
@@ -1831,12 +1832,14 @@ class RecoveryDeskApp(tk.Tk):
         messagebox.showinfo('Partitionsbericht', 'Bericht erfolgreich gespeichert.', parent=self)
 
     def _build_signature_tab(self):
-        panel = ttk.Frame(self.signature_tab, padding=(12, 8))
+        panel = ttk.Frame(self.signature_tab, padding=(12, 2))
         panel.pack(fill='x', anchor='nw')
         self.signature_scope_label = ttk.Label(panel, justify='left', wraplength=1000)
-        self.signature_scope_label.pack(anchor='w', fill='x', pady=(0, 8))
+        self.signature_scope_label.pack(anchor='w', fill='x', pady=(0, 2))
+        self.signature_scope_label.bind('<Configure>',self._wrap_signature_summary)
+        self.signature_summary = None
         area = ttk.Frame(panel)
-        area.pack(anchor='w', pady=(0, 10))
+        area.pack(anchor='w', pady=(0, 2))
         self.signature_free_only = tk.BooleanVar(value=False)
         self.signature_free_filesystem = tk.StringVar(value='NTFS')
         self.signature_partition_offset = tk.StringVar(value='0')
@@ -1849,7 +1852,7 @@ class RecoveryDeskApp(tk.Tk):
         ttk.Label(area, text='Partitionsoffset (Bytes):').pack(side='left', padx=(16, 4))
         ttk.Entry(area, textvariable=self.signature_partition_offset, width=18).pack(side='left')
         limits = ttk.Frame(panel)
-        limits.pack(anchor='w', pady=(0, 10))
+        limits.pack(anchor='w', pady=(0, 2))
         ttk.Label(limits, text=translate('Prüfgrenze für JPEG/PNG/GIF/TIFF/PDF und Office/ZIP (MiB):', self.language)).pack(side='left')
         self.signature_file_limit_mib = tk.StringVar(value='32')
         ttk.Combobox(limits, textvariable=self.signature_file_limit_mib,
@@ -1871,7 +1874,7 @@ class RecoveryDeskApp(tk.Tk):
             self.signature_search_buttons[category] = button
         self.signature_search_button = self.signature_search_buttons['images']
         continuation = ttk.Frame(panel)
-        continuation.pack(anchor='w', fill='x', pady=(8, 0))
+        continuation.pack(anchor='w', fill='x', pady=(4, 0))
         self.signature_combined_button = ttk.Button(
             continuation, text=translate('Kategorien gemeinsam suchen…', self.language),
             style='Accent.TButton', command=self._signature_category_dialog)
@@ -1897,10 +1900,23 @@ class RecoveryDeskApp(tk.Tk):
         self._update_signature_scope()
 
     def _update_signature_scope(self):
+        if self.signature_summary is not None:
+            from .signature_summary import summary_text
+            self.signature_scope_label.configure(text=summary_text(self.signature_summary,self.language))
+            return
         scope = {'NTFS':'Suchbereich: freie NTFS-Bereiche.', 'FAT32':'Suchbereich: freie FAT32-Bereiche.',
                  'exFAT':'Suchbereich: freie exFAT-Bereiche.'}.get(self.signature_free_filesystem.get(),'Suchbereich: gesamtes Image.') if self.signature_free_only.get() else 'Suchbereich: gesamtes Image.'
         self.signature_scope_label.configure(text=translate(
             scope,self.language)+' '+translate('Signaturfunde bestätigen keine vollständigen Originalinhalte.',self.language))
+
+    def _set_signature_summary(self,summary):
+        self.signature_summary=summary
+        self._update_signature_scope()
+
+    def _wrap_signature_summary(self,event):
+        width=max(240,event.width)
+        if int(self.signature_scope_label.cget('wraplength'))!=width:
+            self.signature_scope_label.configure(wraplength=width)
 
     def _signature_action(self,action):
         if action=='export' and self.export_running:
@@ -1909,6 +1925,7 @@ class RecoveryDeskApp(tk.Tk):
         if (index is None or index is not self.browser_index or
                 not self._scan_source_matches(self.signature_result_generation,self.signature_result_source)):
             self.signature_results.clear();self.signature_result_index=None
+            self._set_signature_summary(None)
             return 'break'
         if action=='report':
             self._save_signature_report(index,self.signature_result_source)
@@ -2306,6 +2323,9 @@ class RecoveryDeskApp(tk.Tk):
         generation=self._source_generation
         display_tmp=self.show_tmp.get()
         self.ntfs_scanning=True;self._clear_browser_results();self.browser_cancel.clear()
+        from .signature_summary import SignatureSummary
+        run_summary=SignatureSummary(source,search_area,partition_offset,tuple(selected),file_limit_mib*1024**2)
+        self._set_signature_summary(run_summary)
         self.ntfs_scan_btn.configure(state='disabled');self.ntfs_cancel_btn.configure(state='normal')
         for button in self.signature_search_buttons.values():button.configure(state='disabled')
         self.signature_combined_button.configure(state='disabled')
@@ -2345,6 +2365,7 @@ class RecoveryDeskApp(tk.Tk):
                         self.signature_result_source=source
                         self.signature_result_index=index
                         self.signature_result_generation=generation
+                        self._set_signature_summary(SignatureSummary.from_index(source,index))
                         self.signature_results.show_entries(index.entries)
                         self.signature_status.set(text)
                         self.signature_results_button.configure(state='normal')
@@ -2356,12 +2377,14 @@ class RecoveryDeskApp(tk.Tk):
                         text=(translate('Signatursuche angehalten. Suchstand: {path}', self.language).format(path=checkpoint_path)
                               if checkpoint_path else 'Signatursuche abgebrochen.')
                         self.signature_status.set(text);self.status.set(text)
+                        self._set_signature_summary(run_summary.outcome('cancelled'))
                 self._post_scan_callback(cancelled)
             except Exception as exc:
                 def failed(msg=export_error_message(exc,self.language)):
                     if self._scan_source_matches(generation,source):
                         self.signature_status.set('Signatursuche fehlgeschlagen.')
                         self.status.set('Signatursuche fehlgeschlagen.')
+                        self._set_signature_summary(run_summary.outcome('failed'))
                         messagebox.showerror(category_label,msg,parent=self)
                 self._post_scan_callback(failed)
             finally:self._post_scan_callback(self._finish_ntfs_scan)
@@ -2605,6 +2628,7 @@ class RecoveryDeskApp(tk.Tk):
     def _show_browser_index(self, source, index, prepared=None):
         if getattr(self,'signature_result_index',None) is not None and index is not self.signature_result_index:
             self.signature_results.clear();self.signature_result_index=None
+            self._set_signature_summary(None)
         self.browser_index = index
         self.browser_source = source
         if prepared is None:

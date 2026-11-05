@@ -17,6 +17,28 @@
 
 ### Funde anzeigen und eingrenzen
 
+Oberhalb der Sucheinstellungen bleibt eine **Zusammenfassung des tatsächlichen
+Suchlaufs** sichtbar: Dateiname der Quelle, Suchbereich, Partitionsoffset,
+Kategorien und die gewählte Prüfgrenze je Fund. Lange Dateinamen werden verkürzt.
+Das „Prüflimit“ betrifft die in der Einstellung genannten Bild-/PDF-/Office-/ZIP-
+Prüfungen und ist keine allgemeine Größenbegrenzung für alle Dateitypen.
+Der vollständige Quellpfad steht weiterhin oben im Hauptfenster. Einstellungen
+für den nächsten Lauf, Ergebnisfilter, Sortierung und Sprachwechsel ersetzen
+diesen Suchkontext nicht. Bei einer neuen Suche, einem Quellenwechsel oder einer
+anderen Analyse wird die Zusammenfassung ersetzt beziehungsweise entfernt.
+
+Die Anzeige unterscheidet eine beendete Suche mit Funden, **keine passenden
+Signaturen innerhalb der Prüfgrenzen**, **Prüfgrenze erreicht**, **angehalten oder
+abgebrochen** und **fehlgeschlagen**. Bei einem Fehler wird kein erfolgreiches
+leeres Ergebnis behauptet; die Fehlermeldung enthält die Ursache. Ein Fehler beim
+Schreiben des Suchstands ist dabei kein Beleg für einen Lesefehler der Quelle.
+Auch ein beendeter Lauf beweist weder das Fehlen anderer Dateien noch vollständige
+oder unbeschädigte Originalinhalte. Format-, Größen- und sonstige Prüfgrenzen
+gelten weiterhin. Aus Filtergründen ausgeblendete Funde werden gesondert mit
+„Kein Fund passt zu den aktuellen Filtern“ bezeichnet; Gesamt- und sichtbare
+Fundzahl bleiben daneben erhalten. Die Zusammenfassung ist eine Anzeige der
+aktuellen Sitzung und erzeugt keine zusätzliche Datei.
+
 Ein reguläres RAW-, IMG- oder DD-Image auswählen und den Reiter **Dateisignaturen** öffnen. Die Kategorieknöpfe starten gezielt die Suche nach **Bildern**, **Office-Dateien**, **Archiven**, **Audio** oder **Video**. Standardmäßig wird das gesamte Image schreibgeschützt gelesen. In dieser Vollsuche wird der eingetragene Partitionsoffset ignoriert; ein lesbares Dateisystem ist nicht erforderlich. Die optionale Freiraumsuche für NTFS, FAT32 oder exFAT wird unten erklärt. Physische Geräte und rohe Windows-Laufwerke werden derzeit nicht direkt unterstützt.
 
 Funde erscheinen direkt im Reiter **Dateisignaturen** mit **Name**, **Typ**, **Größe (Bytes)** und **Fundposition (Bytes)**. Spaltenüberschriften sortieren nach Text oder den numerischen Größen/Positionen. Namen setzen sich aus erkanntem Typ und absolutem Byte-Offset zusammen; es sind keine Originalnamen. Die Liste enthält höchstens die 1000 Funde des begrenzten Suchlaufs.
