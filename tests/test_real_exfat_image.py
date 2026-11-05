@@ -1,4 +1,5 @@
 """Mount-free exFAT reference: exfatprogs format/check, FATtools population."""
+import base64
 import hashlib
 import importlib.util
 from pathlib import Path
@@ -17,14 +18,15 @@ from recoverydesk.batch_export import export_batch
 class RealExfatImageTests(unittest.TestCase):
     def test_external_delete_free_signature_export_and_resume(self):
         from FATtools.Volume import vopen, vclose
-        from test_signature_search import picture
         from recoverydesk.signature_search import scan_signatures
         from recoverydesk.export_resume import read_saved_export, prepare_saved_export
         with tempfile.TemporaryDirectory(prefix='tenshi-exfat-free-ci-') as temporary:
             root=Path(temporary);image=root/'new-test-image.img'
             with image.open('xb') as stream:stream.truncate(64*1024**2)
             subprocess.run(['mkfs.exfat','-c','4096',str(image)],check=True,capture_output=True,timeout=45)
-            payload=picture('PNG');volume=vopen(str(image),'r+b')
+            # Fixed PNG seed keeps the isolated FATtools environment stdlib-only.
+            payload=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAABgAAAAQCAIAAACDRijCAAAAI0lEQVR4nGNkYPjPQA3ARBVTGEYNIgaMBjZhMBpGhMHgCyMA1j8BH9wczesAAAAASUVORK5CYII=')
+            volume=vopen(str(image),'r+b')
             try:
                 for name in ('active.png','deleted.png'):
                     handle=volume.create(name);handle.write(payload);handle.close()
