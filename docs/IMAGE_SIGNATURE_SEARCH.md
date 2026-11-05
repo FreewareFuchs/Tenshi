@@ -23,6 +23,16 @@ Funde erscheinen direkt im Reiter **Dateisignaturen** mit **Name**, **Typ**, **G
 
 Mit Strg/Umschalt mehrere Funde auswählen; **Strg+A** wählt die gesamte angezeigte Fundliste. **Vorschau** zeigt die Auswahl mit manueller Vor-/Zurück-Navigation. **Datei prüfen** ist für genau einen ausgewählten Fund verfügbar. **Stapel-Export / fortsetzen** exportiert ausschließlich die ausgewählten Funde über den vorhandenen Exportablauf mit Zielprüfung und Prüfsummen. Die Auswahl in **Dateien & Ordner** wird dabei nicht verändert. Ein laufender Export wird über denselben Button erneut angezeigt; ein zweiter Auftrag wird nicht gestartet.
 
+**Strg+F** setzt den Fokus auf den Suchtext des aktiven Datei- oder Signaturreiters.
+In der Fundliste hebt **Escape** nur die Auswahl auf; Filter und Ergebnisse bleiben
+erhalten. **Rechtsklick** auf eine Zeile öffnet die vorhandenen Aktionen Vorschau,
+Dateiprüfung, Stapel-Export und Fundliste speichern. Eine bereits markierte Zeile
+behält die Mehrfachauswahl, eine andere Zeile wird allein ausgewählt.
+**Umschalt+F10** öffnet dasselbe Menü für die fokussierte sichtbare Zeile, sonst
+die erste sichtbare Auswahl oder den ersten sichtbaren Fund. Die Dateiprüfung
+bleibt bei Mehrfachauswahl deaktiviert. Die CSV-Fundliste umfasst weiterhin alle
+sichtbaren Funde, während Vorschau und Export die Auswahl verwenden.
+
 **Fundliste speichern…** speichert alle aktuell sichtbaren Funde in der gewählten
 Sortierung als CSV, unabhängig von der markierten Auswahl. Die Filter gelten
 weiterhin; bei leerer oder ungültiger Filterung ist der Button deaktiviert.

@@ -64,6 +64,89 @@ class SignatureGuiTests(unittest.TestCase):
         self.assertEqual(len(view.selected_entries()),2)
         self.assertEqual(str(view.inspect.cget('state')),'disabled')
 
+    def test_find_shortcut_focuses_the_active_tabs_filter(self):
+        view=self.app.signature_results
+        view.query.set('PNG')
+        self.app._select_main_tab('signatures')
+        with patch.object(view.query_entry,'focus_set') as signature_focus, \
+             patch.object(self.app.browser_search_entry,'focus_set') as browser_focus:
+            self.assertEqual(self.app._focus_browser_search(),'break')
+            signature_focus.assert_called_once();browser_focus.assert_not_called()
+            self.assertEqual(view.query_entry.selection_get(),'PNG')
+            self.app._select_main_tab('files')
+            self.app._focus_browser_search()
+            browser_focus.assert_called_once()
+        self.assertEqual(view.query.get(),'PNG')
+
+    def context_event(self,view,key):
+        from types import SimpleNamespace
+        self.app.deiconify();self.app._select_main_tab('signatures');self.app.update()
+        view.tree.see(key);self.app.update_idletasks()
+        _,y,_,height=view.tree.bbox(key)
+        return SimpleNamespace(y=y+height//2,x_root=100,y_root=100)
+
+    def test_context_menu_keeps_multiselection_and_single_file_inspection_is_disabled(self):
+        view=self.scan_for_list();view.select_all()
+        keys=view.tree.get_children()
+        event=self.context_event(view,keys[0])
+        for language in LANGUAGES:
+            self.app.change_language(language)
+            with patch('recoverydesk.signature_results.tk.Menu') as menu:
+                view._context_popup(event)
+                rows=[c.kwargs for c in menu.return_value.add_command.call_args_list]
+                self.assertEqual(rows[0]['label'],translate('Vorschau',language))
+                self.assertEqual(rows[1]['state'],'disabled')
+                self.assertEqual(len(view.selected_entries()),2)
+                menu.return_value.grab_release.assert_called_once()
+                menu.return_value.destroy.assert_not_called()
+
+    def test_context_menu_stays_alive_after_posting_and_replaces_previous_menu(self):
+        from tkinter import Menu
+        view=self.scan_for_list();event=self.context_event(view,view.tree.get_children()[0])
+        # tk_popup posts without waiting for a command. Destroying in finally
+        # would close the menu before a user could choose an action.
+        with patch.object(Menu,'tk_popup'):
+            view._context_popup(event)
+            first=view._context_menu
+            self.assertTrue(first.winfo_exists())
+            view._context_popup(event)
+            self.assertFalse(first.winfo_exists())
+            self.assertTrue(view._context_menu.winfo_exists())
+
+    def test_context_menu_selects_clicked_row_and_revalidates_source_when_used(self):
+        view=self.scan_for_list();keys=view.tree.get_children()
+        event=self.context_event(view,keys[1])
+        view.tree.selection_set(keys[0])
+        with patch('recoverydesk.signature_results.tk.Menu') as menu:
+            view._context_popup(event)
+            rows=[c.kwargs for c in menu.return_value.add_command.call_args_list]
+        self.assertEqual(view.tree.selection(),(keys[1],))
+        self.assertEqual(rows[1]['state'],'normal')
+        self.app._source_generation+=1
+        with patch.object(self.app,'preview_entry') as preview:
+            rows[0]['command']()
+        preview.assert_not_called()
+        self.assertEqual(view.tree.get_children(),())
+
+    def test_escape_preserves_filters_and_keyboard_menu_uses_visible_results(self):
+        view=self.scan_for_list();view.kind.set('PNG');view.select_all()
+        key=view.tree.get_children()[0]
+        self.context_event(view,key)
+        self.assertEqual(view.clear_selection(),'break')
+        self.assertEqual(view.kind.get(),'PNG')
+        self.assertEqual(view.selected_entries(),())
+        self.assertEqual(str(view.preview.cget('state')),'disabled')
+        self.assertEqual(str(view.report.cget('state')),'normal')
+        view.tree.focus('')
+        with patch('recoverydesk.signature_results.tk.Menu') as menu:
+            self.assertEqual(view._keyboard_context_popup(),'break')
+            menu.return_value.tk_popup.assert_called_once()
+        self.assertEqual(view.tree.selection(),(key,))
+        view.query.set('no result')
+        with patch('recoverydesk.signature_results.tk.Menu') as menu:
+            view._keyboard_context_popup()
+        menu.assert_not_called()
+
     def test_signature_preview_reads_own_selection_without_switching_tabs(self):
         view=self.scan_for_list()
         self.app._select_main_tab('signatures')
