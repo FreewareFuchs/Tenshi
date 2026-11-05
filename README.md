@@ -10,17 +10,17 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 [![Tenshi: Dateien, Ordner und Exportprüfung](https://freewarefuchs.de/tenshi/screenshots/dateien.png)](https://freewarefuchs.de/tenshi/#screenshots)
 
-**3.0.13 ist veröffentlicht:** Erweiterte und fortsetzbare Signatursuche mit Kategorien, gemeinsamer Suche, einstellbaren Prüfgrenzen sowie PDF/RAR. Pakete, APT und Website sind abgenommen und öffentlich geprüft. [Änderungen](RELEASE_NOTES_3.0.13.md).
+**3.0.14 ist veröffentlicht:** Direkte und filterbare Signaturfundliste, freie NTFS-/FAT32-/exFAT-Bereiche und binäre DOC-/XLS-/PPT-Dateien mit begrenzter Strukturprüfung. Funktionen und endgültige Pakete sind abgenommen; GitHub, APT und Website sind öffentlich geprüft. [Änderungen](RELEASE_NOTES_3.0.14.md) · [Benutzerhilfe](HILFE_3.0.14.md).
 
-**3.0.14 in Vorbereitung:** Direkte und filterbare Signaturfundliste, freie NTFS-/FAT32-/exFAT-Bereiche und binäre DOC-/XLS-/PPT-Dateien mit begrenzter Strukturprüfung. Die Funktionen sind abgenommen; endgültige Paketversionen und Veröffentlichung folgen getrennt. [Änderungen](RELEASE_NOTES_3.0.14.md) · [Benutzerhilfe](HILFE_3.0.14.md).
+**Im Hauptzweig, noch nicht veröffentlicht:** Die CSV-Fundliste aus [PR #141](https://github.com/FreewareFuchs/Tenshi/pull/141) ist abgenommen. Sie speichert sichtbare Signaturfunde samt Suchbereich ohne erneutes Lesen der Dateiinhalte. Diese Funktion ist noch nicht in den stabilen 3.0.14-Downloads enthalten. [Entwicklungsstand](CHANGELOG.md).
 
 Export und Imageerstellung haben eigene, wieder aufrufbare Fortschrittsfenster mit
 Bereichsraster und Berichtaktionen. Die Dateisystemanalyse zeigt ihren Fortschritt
-weiterhin im Hauptfenster. Die folgenden Download- und APT-Angaben gelten für die veröffentlichte Version 3.0.13.
+weiterhin im Hauptfenster. Die folgenden Download- und APT-Angaben gelten für die veröffentlichte Version 3.0.14.
 
 ## Herunterladen und starten
 
-Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.13](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.13) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.sha256`.
+Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.14](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.14) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.sha256`.
 
 | Variante | Verwendung |
 | --- | --- |
@@ -34,12 +34,12 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 
 ## Unter Linux starten
 
-Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.13`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.13) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.13.md).
+Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.14`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.14) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.14.md).
 
 ### DEB-Paket für Linux Mint 22.x
 
 Die signierte [FreewareFuchs-APT-Quelle](docs/APT_REPOSITORY.md) bietet
-`tenshi-recovery 3.0.13-1` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
+`tenshi-recovery 3.0.14-1` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
 beschreibt die einmalige Einrichtung und Prüfung des Schlüsselfingerabdrucks.
 Danach:
 
@@ -49,12 +49,12 @@ sudo apt install tenshi-recovery
 tenshi-recovery
 ```
 
-Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.13-1_all.deb).
-SHA256: `c171ab9c6da31df28720c78a7a8ab0cf11f7c4128b93dd3fe6e562018b104675`.
+Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.14-1_all.deb).
+SHA256: `9a659bcb19be7889bd8db0923aea91d905ee124baf7b2b64e7249275781bd130`.
 Nach Prüfsummenvergleich im Downloadordner installieren:
 
 ```bash
-sudo apt install ./tenshi-recovery_3.0.13-1_all.deb
+sudo apt install ./tenshi-recovery_3.0.14-1_all.deb
 ```
 
 Danach **Tenshi** im Anwendungsmenü öffnen. Ohne sudo starten;

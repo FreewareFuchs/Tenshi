@@ -1,4 +1,9 @@
-# Tenshi 3.0.14 – in Vorbereitung
+# Noch nicht veröffentlicht
+
+- **CSV-Fundliste** ([PR #141](https://github.com/FreewareFuchs/Tenshi/pull/141), abgenommen): Alle sichtbaren Signaturfunde in aktueller Sortierung mit Größe, absoluter Fundposition und ursprünglichem Suchbereich speichern. Filter gelten unabhängig von der Auswahl. UTF-8 mit BOM und Semikolon; vorhandene Dateien bleiben erhalten. Hilfe in sechs Sprachen ergänzt.
+- Diese Entwicklung ist noch nicht Teil der stabilen 3.0.14-Pakete. Ein neuer Release wird erst nach einem größeren Änderungspaket vorbereitet.
+
+# Tenshi 3.0.14 – stabil veröffentlicht (05.11.2026)
 
 - Signaturfunde direkt im eigenen Reiter sortieren, auswählen, ansehen, prüfen und exportieren; Filter nach Text, Typ und Mindestgröße ohne erneutes Quelllesen.
 - Optional nur freie Bereiche von NTFS, FAT32 oder exFAT durchsuchen. Bereich, Partitionsoffset und Belegungsprüfung bleiben bei Suchstand und Export-Wiederaufnahme erhalten. TexFAT bleibt ausgeschlossen.
@@ -6,7 +11,7 @@
 - Speichern von Suchständen und Entfernen temporärer Prüfsummendateien auf gemeinsamen VM-Ordnern verbessert; echte Schreibfehler bleiben Fehler.
 - Sechssprachige Hilfe erklärt Sucharten und Grenzen. Quellen bleiben schreibgeschützt; keine Fragmentrekonstruktion oder Zusage vollständiger Originalinhalte.
 
-Die Funktionen aus PR #133–#139 sind abgenommen. Endgültige Paketversionen und Veröffentlichung stehen noch aus. [Änderungen und Grenzen](RELEASE_NOTES_3.0.14.md).
+Die Funktionen aus PR #133–#139 und die endgültigen Paketversionen sind abgenommen. GitHub, signierte APT-Quelle und Website sind veröffentlicht und öffentlich geprüft. [Änderungen und Grenzen](RELEASE_NOTES_3.0.14.md).
 
 # Tenshi 3.0.13 – stabil veröffentlicht (03.11.2026)
 
