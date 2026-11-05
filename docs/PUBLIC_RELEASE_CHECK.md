@@ -7,7 +7,8 @@ Website-Dateien noch Pakete. Es benötigt nur Python 3.11+ und dessen Standardbi
 ## Eingaben vorbereiten
 
 1. Das ursprüngliche, geprüfte Release-Bundle mit `release_manifest.json`, den drei
-   Paketen und `SHA256SUMS.txt` bereithalten. Das Manifest nicht nachträglich ändern.
+   Paketen und `SHA256SUMS.sha256` bereithalten. Das Manifest nicht nachträglich ändern.
+   Ältere Bundles mit `SHA256SUMS.txt` bleiben unverändert verwendbar.
 2. Den Website-Katalog mit `prepare_website_catalog.py` aus diesem Bundle vorbereiten;
    die freigegebenen Änderungen müssen weiterhin in allen sechs Sprachen vorliegen.
 3. Die zwölf Programm-/Anleitungsseiten aktualisieren und zusammen mit

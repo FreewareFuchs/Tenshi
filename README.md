@@ -12,17 +12,15 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 **3.0.13 ist veröffentlicht:** Erweiterte und fortsetzbare Signatursuche mit Kategorien, gemeinsamer Suche, einstellbaren Prüfgrenzen sowie PDF/RAR. Pakete, APT und Website sind abgenommen und öffentlich geprüft. [Änderungen](RELEASE_NOTES_3.0.13.md).
 
-**In Entwicklung:** Optional nur freie NTFS-Bereiche nach Dateisignaturen durchsuchen. Suchbereich und Partitionsoffset bleiben beim Fortsetzen erhalten. [Bedienung und Grenzen](docs/IMAGE_SIGNATURE_SEARCH.md#optional-nur-freie-ntfs-bereiche).
-
-**3.0.12 ist seit 30.10.2026 stabil veröffentlicht.** Die JPEG-/PNG-Signatursuche in regulären Images ohne lesbares Dateisystem ist verfügbar. Installer, Portable und Linux-DEB sind manuell bestätigt; GitHub, signierte APT-Quelle und Website sind öffentlich geprüft. [Änderungen und bestätigter Prüfstand](RELEASE_NOTES_3.0.12.md).
+**3.0.14 in Vorbereitung:** Direkte und filterbare Signaturfundliste, freie NTFS-/FAT32-/exFAT-Bereiche und binäre DOC-/XLS-/PPT-Dateien mit begrenzter Strukturprüfung. Die Funktionen sind abgenommen; endgültige Paketversionen und Veröffentlichung folgen getrennt. [Änderungen](RELEASE_NOTES_3.0.14.md) · [Benutzerhilfe](HILFE_3.0.14.md).
 
 Export und Imageerstellung haben eigene, wieder aufrufbare Fortschrittsfenster mit
 Bereichsraster und Berichtaktionen. Die Dateisystemanalyse zeigt ihren Fortschritt
-weiterhin im Hauptfenster. Die folgenden Download- und APT-Angaben gelten für 3.0.12.
+weiterhin im Hauptfenster. Die folgenden Download- und APT-Angaben gelten für die veröffentlichte Version 3.0.13.
 
 ## Herunterladen und starten
 
-Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.12](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.12) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.sha256`.
+Die [offiziellen GitHub-Releases](https://github.com/FreewareFuchs/Tenshi/releases) enthalten die veröffentlichten Downloads und Versionshinweise. Das [stabile Release v3.0.13](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.13) enthält Windows-Installer, Portable-ZIP, Linux-DEB und `SHA256SUMS.sha256`.
 
 | Variante | Verwendung |
 | --- | --- |
@@ -36,12 +34,12 @@ Installer und EXE sind nach dem dokumentierten Stand **nicht digital signiert**.
 
 ## Unter Linux starten
 
-Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.12`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.12) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.12.md).
+Seit `v3.0.2-beta.2` wird zusätzlich zu Windows-Installer und Portable-ZIP ein natives DEB-Paket angeboten. Die stabile Version [`v3.0.13`](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.13) ist veröffentlicht. [Versionshinweise](RELEASE_NOTES_3.0.13.md).
 
 ### DEB-Paket für Linux Mint 22.x
 
 Die signierte [FreewareFuchs-APT-Quelle](docs/APT_REPOSITORY.md) bietet
-`tenshi-recovery 3.0.12-1` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
+`tenshi-recovery 3.0.13-1` an. Die [Installationsanleitung](docs/APT_REPOSITORY.md)
 beschreibt die einmalige Einrichtung und Prüfung des Schlüsselfingerabdrucks.
 Danach:
 
@@ -51,12 +49,12 @@ sudo apt install tenshi-recovery
 tenshi-recovery
 ```
 
-Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.12-1_all.deb).
-SHA256: `8ca5d7d5bfd3f5e3a4fb2970d47e9aa891dfb9a4f3dc4a1ba1852eb56f882431`.
+Alternativ das [DEB direkt herunterladen](https://freewarefuchs.de/tenshi/apt/pool/main/t/tenshi-recovery/tenshi-recovery_3.0.13-1_all.deb).
+SHA256: `c171ab9c6da31df28720c78a7a8ab0cf11f7c4128b93dd3fe6e562018b104675`.
 Nach Prüfsummenvergleich im Downloadordner installieren:
 
 ```bash
-sudo apt install ./tenshi-recovery_3.0.12-1_all.deb
+sudo apt install ./tenshi-recovery_3.0.13-1_all.deb
 ```
 
 Danach **Tenshi** im Anwendungsmenü öffnen. Ohne sudo starten;
@@ -155,7 +153,7 @@ Der [Windows-Abnahmeplan](WINDOWS_ABNAHME_3.0.0.md) ist ein Prüfplan, kein Nach
 - [Versionshinweise zu 3.0.4](RELEASE_NOTES_3.0.4.md)
 - [Versionshinweise zu 3.0.3](RELEASE_NOTES_3.0.3.md)
 - [Versionshinweise zu 3.0.2](RELEASE_NOTES_3.0.2.md)
-- [Benutzerhilfe für den aktuellen Quellstand](HILFE_3.0.13.md)
+- [Benutzerhilfe für den aktuellen Quellstand](HILFE_3.0.14.md)
 - [Bisheriges README mit historischen Entwicklungsdetails](docs/README_HISTORY_2026-10-20.md)
 
 ## Aus dem Quellcode bauen

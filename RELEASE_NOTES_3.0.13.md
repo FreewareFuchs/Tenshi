@@ -1,6 +1,6 @@
-# Tenshi 3.0.13 – Veröffentlichung in Vorbereitung
+# Tenshi 3.0.13 – stabil veröffentlicht (03.11.2026)
 
-Die Erweiterungen aus PR #126–#131 sind funktional abgenommen und im Hauptstand enthalten. Die endgültigen 3.0.13-Pakete werden gemeinsam gebaut; ihre manuelle Versions- und Startbestätigung steht noch aus. GitHub-Release, APT-Quelle und Website sind für 3.0.13 noch nicht veröffentlicht.
+Die Erweiterungen aus PR #126–#131 und die endgültigen Paketversionen sind manuell bestätigt. GitHub-Release, signierte APT-Quelle und Website sind veröffentlicht und öffentlich geprüft. Die Pakete stammen unverändert aus dem sauberen Commit `cfac39d9d5af856000e37060ccbea819f402380c` ([gemeinsamer Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/41708439214)).
 
 ## Änderungen
 
@@ -31,6 +31,6 @@ Je Suchlauf gelten weiterhin höchstens 1000 Funde, 5000 Anfangssignaturen und 5
 
 Der gemeinsame Vorbereitungsworkflow baut alle Pakete mit Kennung `stable` aus demselben sauberen Commit. `release_manifest.json`, `SHA256SUMS.sha256` und die Paket-Prüfsummendateien dokumentieren Herkunft und Inhalt. Flatpak bleibt experimentell und ist nicht Bestandteil dieses stabilen Dreierpakets.
 
-Die Funktionsabnahmen sind bestätigt. Die abschließenden Paketstarts und Versionsanzeigen sowie die anschließende Veröffentlichung von Downloads, signierter APT-Quelle und Website bleiben separate Schritte.
+Funktionsabnahmen, endgültige Paketstarts und Versionsanzeigen sind bestätigt. Die Veröffentlichung von Downloads, signierter APT-Quelle und Website wurde am 03.11.2026 abgeschlossen; die öffentlichen Abschlussvergleiche sind erfolgreich. Die nachfolgenden Erweiterungen werden getrennt in 3.0.14 gebündelt.
 
 Fragen und Verbesserungsvorschläge: **kontakt@freewarefuchs.de**.

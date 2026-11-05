@@ -1,4 +1,14 @@
-# Tenshi 3.0.13 – in Vorbereitung
+# Tenshi 3.0.14 – in Vorbereitung
+
+- Signaturfunde direkt im eigenen Reiter sortieren, auswählen, ansehen, prüfen und exportieren; Filter nach Text, Typ und Mindestgröße ohne erneutes Quelllesen.
+- Optional nur freie Bereiche von NTFS, FAT32 oder exFAT durchsuchen. Bereich, Partitionsoffset und Belegungsprüfung bleiben bei Suchstand und Export-Wiederaufnahme erhalten. TexFAT bleibt ausgeschlossen.
+- Binäre DOC-/XLS-/PPT-Strukturen erkennen und exportieren. Vorschau und Inhaltsprüfung melden eine begrenzte Teilprüfung ohne Office-Darstellung; der Dateifilter enthält die neuen Endungen.
+- Speichern von Suchständen und Entfernen temporärer Prüfsummendateien auf gemeinsamen VM-Ordnern verbessert; echte Schreibfehler bleiben Fehler.
+- Sechssprachige Hilfe erklärt Sucharten und Grenzen. Quellen bleiben schreibgeschützt; keine Fragmentrekonstruktion oder Zusage vollständiger Originalinhalte.
+
+Die Funktionen aus PR #133–#139 sind abgenommen. Endgültige Paketversionen und Veröffentlichung stehen noch aus. [Änderungen und Grenzen](RELEASE_NOTES_3.0.14.md).
+
+# Tenshi 3.0.13 – stabil veröffentlicht (03.11.2026)
 
 - Eigener Signaturreiter mit Bildern, Office/PDF, Archiven, Audio und Video; mehrere Kategorien in einem Durchgang durchsuchen.
 - Erweiterte Dateitypen einschließlich PDF und RAR 4/5, blockweise Prüfung größerer Strukturen und wählbare Grenze von 32/64/128/256 MiB.
@@ -6,7 +16,7 @@
 - Gespeicherte Exportaufträge übernehmen Kategorien und Grenze; ältere Aufträge behalten ihren bisherigen Formatumfang.
 - Scanoptionen, Bedienung und Hilfe in sechs Sprachen aktualisiert. Funktionsabnahmen aus PR #126–#131 bestätigt.
 
-Endgültige Paket- und Versionsbestätigung sowie Veröffentlichung stehen noch aus. [Änderungen und Grenzen](RELEASE_NOTES_3.0.13.md).
+Funktionen und endgültige Paketversionen sind manuell bestätigt. GitHub, signierte APT-Quelle und Website sind veröffentlicht und öffentlich geprüft. [Änderungen und Grenzen](RELEASE_NOTES_3.0.13.md).
 
 # Tenshi 3.0.12 – stabil veröffentlicht (30.10.2026)
 

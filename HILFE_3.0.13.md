@@ -16,54 +16,22 @@ Hauptregisters. Das Hilfefenster kann neben dem Programm geöffnet bleiben.
 5. **Stapel-Export / fortsetzen** starten und ein separates Ziel auf einem anderen
    physischen Datenträger wählen. Fremde bestehende Dateien werden nicht überschrieben.
 
-Unter Dateien & Ordner zeigen große Listen bis zu 750 Einträge pro Seite. Strg+A wählt nur die angezeigte
+Große Listen zeigen bis zu 750 Einträge pro Seite. Strg+A wählt nur die angezeigte
 Seite. Verborgene TMP-Dateien werden nicht gelöscht und können bei rekursiven
 Ordnerexporten enthalten sein.
 
 ## Dateisignaturen ohne lesbares Dateisystem suchen
 
-### Unterschied zur Suche unter Dateien & Ordner
-
-**Dateien & Ordner** liest Dateisystemeinträge, etwa die NTFS-Dateitabelle.
-Dadurch können ursprüngliche Namen, Ordner und die Zuordnung mehrerer Dateibereiche
-erhalten bleiben, soweit die jeweilige Speicherart unterstützt wird. Auch gelöschte
-Einträge können noch vorhanden sein. Die Markierung „gelöscht“ bestätigt jedoch
-nicht, dass der frühere Dateiinhalt noch vollständig vorhanden ist.
-
-**Dateisignaturen** sucht erkennbare Strukturen direkt in den gespeicherten Daten.
-Die Vollsuche funktioniert auch ohne lesbares Dateisystem, kennt aber weder
-Originalnamen und Ordner noch den Löschstatus. Sie erkennt nur unterstützte
-Dateiformate und setzt Fragmente nicht zusammen. Auch vorhandene und eingebettete
-Dateien können als Funde erscheinen.
-
-Zuerst **Dateien & Ordner** verwenden. Fehlen dort Dateien oder sind die Einträge
-zerstört, die **Signatursuche** ergänzend einsetzen. „Nur freie NTFS-Bereiche“
-benötigt eine lesbare Belegungsbitmap und reduziert Treffer aus belegten Bereichen.
-Freier Speicher und erkennbare Strukturen garantieren keine unbeschädigten Originalinhalte.
-
 Ein reguläres Image auswählen und **Dateisignaturen** öffnen. Die Buttons suchen
 nach **Bildern**, **Office/PDF**, **Archiven**, **Audio** oder **Video**.
 **Kategorien gemeinsam suchen…** bietet eine Mehrfachauswahl und durchsucht das
-Image in einem Durchgang. In der Vollsuche wird der Partitionsoffset ignoriert. Physische Geräte
+Image in einem Durchgang. Der Partitionsoffset wird ignoriert. Physische Geräte
 und rohe Laufwerke werden für die Signatursuche nicht direkt unterstützt.
 
-Unterstützt werden JPEG, PNG, BMP, GIF, TIFF, WebP; moderne Office-/ODF-Dateien,
-binäre DOC/XLS/PPT und PDF; ZIP, RAR 4/5, 7z und TAR; WAV, MP3 mit ID3v2,
-Ogg/Opus; AVI und MP4.
+Unterstützt werden JPEG, PNG, BMP, GIF, TIFF, WebP; moderne Office-/ODF-Dateien
+und PDF; ZIP, RAR 4/5, 7z und TAR; WAV, MP3 mit ID3v2, Ogg/Opus; AVI und MP4.
 Nicht alle Formatvarianten sind enthalten. RAR-Mehrteiler und verschlüsselte
-RAR-Header, ZIP64 und BigTIFF werden ausgelassen.
-
-Bei binären Office-Dateien werden Word ab Generation 97, Excel mit BIFF8 und
-PowerPoint mit Current-User-/User-Edit-Strukturen anhand ihrer internen
-Container geprüft. Beschädigte oder ungewöhnliche Varianten können fehlen.
-Die Suche rekonstruiert keine auf dem Datenträger fragmentierten Dateien.
-Für erkannte binäre DOC/XLS/PPT-Dateien melden Vorschau und Inhaltsprüfung
-**Teilprüfung**: Sektorketten, Verzeichnis und ausgewählte Kopfdaten sind lesbar.
-Dokumentinhalte, Seiten, Zellen, Folien, eingebettete Dateien und Makros bleiben
-ungeprüft. Eine Office-Darstellung ist nicht enthalten. Unbekannte Varianten
-bleiben „Nicht geprüft“; die Inhaltsprüfung bleibt auf 32 MiB begrenzt. Makros werden nicht
-ausgeführt und Inhalte nicht entschlüsselt. Ältere Suchstände behalten ihren
-bisherigen Umfang; für zusätzliche DOC/XLS/PPT-Funde eine neue Suche starten.
+RAR-Header, klassische DOC/XLS/PPT-Dateien, ZIP64 und BigTIFF werden ausgelassen.
 
 Die Prüfgrenze für JPEG/PNG/GIF/TIFF/PDF sowie Office/ZIP lässt sich auf
 **32, 64, 128 oder 256 MiB** je Fund setzen. Andere Formate können größer sein.
@@ -72,37 +40,9 @@ Strukturlesevorgänge. Grenzen können Ergebnisse unvollständig machen. Größe
 Einstellungen können mehr Lesezeit benötigen. Vorschau und Inhaltsprüfung haben
 weiterhin eigene Grenzen.
 
-Funde enthalten Typ und Byte-Offset statt Originalnamen. Vorschau mit Vor/Zurück,
-Dateiprüfung und Stapel-Export sind direkt an der Fundliste verfügbar.
-
-Die Funde stehen auch direkt im Reiter **Dateisignaturen**. **Suchtext**, **Typ**
-und **Ab (KiB)** grenzen die Liste ein, ohne das Image erneut zu lesen.
-Die Mindestgröße ist eine ganze Zahl; 1 KiB = 1024 Bytes. Alle Filter gelten
-gleichzeitig. Zähler zeigen sichtbare Funde, Gesamtzahl und Auswahl.
-Ausgeblendete Funde werden abgewählt. Strg+A und Export erfassen ausschließlich
-sichtbare markierte Funde. **Zurücksetzen** zeigt alle Funde wieder, ohne
-ausgeblendete Dateien erneut zu markieren. Bei neuer Quelle oder Analyse werden
-die Filter zurückgesetzt. **In Dateiansicht anzeigen** öffnet die bisherige Ansicht.
-
-Für **Nur freie Bereiche** daneben **NTFS**, **FAT32** oder **exFAT** auswählen und den
-**Partitionsoffset (Bytes)** angeben: 0 beim Volume-Image, sonst den Partitionsanfang.
-Die Partitionsauswahl übernimmt diesen Offset und bei NTFS/FAT32/exFAT die Dateisystemwahl.
-NTFS braucht eine lesbare Belegungsbitmap. FAT32 prüft seine aktive Tabelle;
-gespiegelte Tabellen müssen übereinstimmen. Widersprüche, unsaubere Statusmarkierungen
-oder nicht lesbare Belegungsdaten stoppen die Freiraumsuche mit einem Hinweis.
-Das FAT32-Leselimit beträgt insgesamt 128 MiB Tabellendaten. FSInfo-Schätzwerte
-bestimmen die Belegung nicht. FAT12/FAT16 sind nicht enthalten.
-Funde überschreiten keine belegten Grenzen. Suchstand und Exportauftrag behalten
-Bereich, Dateisystemwahl und Offset bei. Beim Fortsetzen werden Belegungsdaten neu
-gelesen; veränderte FAT32-Suchstände erfordern eine neue Suche.
-
-exFAT benötigt genau eine eindeutige Belegungsbitmap und eine FAT; TexFAT ist
-nicht enthalten. Bootbereich und Sicherungskopie, Root-/Bitmap-Ketten und ihre
-belegten Metadatencluster werden geprüft. Unsaubere oder mit Medienfehler markierte
-Volumes werden abgelehnt. Alte FAT-Verweise gelöschter Dateien zählen nicht als
-Belegung. Grenzen: 128 MiB Bitmap, 32 MiB Rootverzeichnis, 192 MiB Metadaten und
-1 MiB je Cluster. Ein exFAT-Suchstand liest und vergleicht diese Metadaten beim
-Fortsetzen erneut. Das ist keine vollständige Konsistenzprüfung aller Dateien.
+Funde enthalten Typ und Byte-Offset statt Originalnamen. Mit **Ergebnisse in
+Dateien & Ordner anzeigen** zur gemeinsamen Liste wechseln. Vorschau,
+Inhaltsprüfung, Export-Vorabprüfung und Stapel-Export sind verfügbar.
 
 ### Suchstand nach einem Neustart fortsetzen
 
@@ -122,7 +62,7 @@ werden weiterhin durch erneute Suche und Abgleich der Auswahl rekonstruiert.
 
 ### Aussage der Ergebnisse
 
-In der Vollsuche werden belegte und freie Bereiche durchsucht. Auch aktive und eingebettete
+Es werden belegte und freie Bereiche durchsucht. Auch aktive und eingebettete
 Dateien können erscheinen. Originalnamen, Ordner und Löschstatus sind unbekannt.
 Zusammenhängende Strukturen bestätigen weder vollständige Originalinhalte noch
 Rettbarkeit gelöschter Daten. Fragmente werden nicht zusammengesetzt. Archive
