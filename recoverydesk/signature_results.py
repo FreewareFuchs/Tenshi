@@ -18,16 +18,19 @@ class SignatureResults(ttk.Frame):
         self.export_running=export_running
         self.sort_column='offset';self.reverse=False
         buttons=ttk.Frame(self);buttons.pack(side='bottom',fill='x',pady=(8,0))
-        buttons.columnconfigure((0,1),weight=1,uniform='actions')
+        buttons.columnconfigure((0,1,2),weight=1,uniform='actions')
         self.preview=ttk.Button(buttons,text='Vorschau',state='disabled',command=lambda:action('preview'))
         self.preview.grid(row=0,column=0,sticky='ew',padx=(0,3),pady=(0,4))
         self.inspect=ttk.Button(buttons,text='Datei prüfen',state='disabled',command=lambda:action('inspect'))
         self.inspect.grid(row=0,column=1,sticky='ew',padx=(3,0),pady=(0,4))
         self.export=ttk.Button(buttons,text='Stapel-Export / fortsetzen',style='Accent.TButton',
             state='disabled',command=lambda:action('export'))
-        self.export.grid(row=1,column=0,sticky='ew',padx=(0,3))
+        self.export.grid(row=1,column=0,columnspan=2,sticky='ew',padx=(0,3))
         self.browser=ttk.Button(buttons,text='In Dateiansicht anzeigen',state='disabled',command=open_browser)
-        self.browser.grid(row=1,column=1,sticky='ew',padx=(3,0))
+        self.browser.grid(row=1,column=2,sticky='ew',padx=(3,0))
+        self.report=ttk.Button(buttons,text='Fundliste speichern…',state='disabled',
+            command=lambda:action('report'))
+        self.report.grid(row=0,column=2,sticky='ew',padx=(3,0),pady=(0,4))
         filters=ttk.Frame(self);filters.pack(fill='x',pady=(0,3))
         filters.columnconfigure(1,weight=1)
         ttk.Label(filters,text='Suchtext:').grid(row=0,column=0,sticky='w')
@@ -90,11 +93,15 @@ class SignatureResults(ttk.Frame):
         selected=set(self.tree.selection())
         return tuple(self.entries[key] for key in self.tree.get_children() if key in selected)
 
+    def visible_entries(self):
+        return tuple(self.entries[key] for key in self.tree.get_children())
+
     def _selection_changed(self):
         count=len(self.selected_entries())
         self.preview.configure(state='normal' if count else 'disabled')
         self.inspect.configure(state='normal' if count==1 else 'disabled')
         self.export.configure(state='normal' if count or self.export_running() else 'disabled')
+        self.report.configure(state='normal' if self.tree.get_children() else 'disabled')
         text=translate('{visible} von {total} Funden sichtbar · {selected} ausgewählt',self.language).format(
             visible=len(self.tree.get_children()),total=len(self.entries),selected=count)
         if not self._minimum_valid:

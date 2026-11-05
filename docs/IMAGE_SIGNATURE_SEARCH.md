@@ -23,6 +23,26 @@ Funde erscheinen direkt im Reiter **Dateisignaturen** mit **Name**, **Typ**, **G
 
 Mit Strg/Umschalt mehrere Funde auswählen; **Strg+A** wählt die gesamte angezeigte Fundliste. **Vorschau** zeigt die Auswahl mit manueller Vor-/Zurück-Navigation. **Datei prüfen** ist für genau einen ausgewählten Fund verfügbar. **Stapel-Export / fortsetzen** exportiert ausschließlich die ausgewählten Funde über den vorhandenen Exportablauf mit Zielprüfung und Prüfsummen. Die Auswahl in **Dateien & Ordner** wird dabei nicht verändert. Ein laufender Export wird über denselben Button erneut angezeigt; ein zweiter Auftrag wird nicht gestartet.
 
+**Fundliste speichern…** speichert alle aktuell sichtbaren Funde in der gewählten
+Sortierung als CSV, unabhängig von der markierten Auswahl. Die Filter gelten
+weiterhin; bei leerer oder ungültiger Filterung ist der Button deaktiviert.
+Der Bericht enthält erzeugten Namen, Typ, Größe und absolute Fundposition in Bytes,
+Quellpfad, Suchbereich, Partitionsoffset, Kategorien, Parserrevision, Prüfgrenze je
+Fund, Vollständigkeitsstatus sowie gesamte und sichtbare Fundzahl. Er verwendet
+die Einstellungen des ursprünglichen Suchlaufs, auch wenn die Optionen für den
+nächsten Lauf inzwischen verändert wurden. `scan_complete=false` bedeutet, dass
+der Suchlauf eine Prüfgrenze erreicht hat, nicht dass einzelne Dateien beschädigt
+sind. Die CSV liest keine Imageinhalte erneut und bestätigt weder einen Export
+noch die Integrität von Originaldateien.
+
+CSV verwendet UTF-8 mit BOM und Semikolon, mit festen englischen Spaltennamen für
+den Vergleich unabhängig von der Oberflächensprache. Beim Import in eine
+Tabellenkalkulation die Byte-Spalten als ganze Zahlen oder Text behandeln.
+Zellen mit möglichen Formelführungszeichen erhalten ein führendes Apostroph.
+Ein vorhandener Bericht oder das Quellimage wird nicht überschrieben; zum
+erneuten Speichern einen neuen Dateinamen wählen. Dies erzeugt keine zusätzlichen
+Prüfsummendateien.
+
 Die Liste lässt sich ohne erneutes Lesen des Images eingrenzen: **Suchtext** sucht ohne Groß-/Kleinschreibung im erzeugten Fundnamen, **Typ** wählt ein erkanntes Format und **Ab (KiB)** eine Mindestgröße. Alle Filter gelten gleichzeitig; 1 KiB sind 1024 Bytes, erlaubt sind ganze Zahlen von 0 bis 4294967296. Ungültige Größenangaben blenden die Liste bis zur Korrektur aus und zeigen einen Hinweis. Die Zähler unterscheiden sichtbare Funde, sämtliche gefundenen Einträge und die aktuelle Auswahl. Die Suchlaufgrenzen bleiben unverändert.
 
 Beim Ausblenden werden betroffene Funde aus der Auswahl entfernt. **Strg+A** erfasst nur sichtbare Zeilen; Vorschau, Dateiprüfung und Export verwenden ausschließlich die sichtbare Auswahl. **Zurücksetzen** zeigt alle Funde wieder, markiert zuvor ausgeblendete Einträge aber nicht automatisch erneut. Ein neuer Suchlauf oder Quellenwechsel setzt die Filter zurück. Ein Sprachwechsel behält Filter und Auswahl bei. Bereits laufende Exportaufträge und geöffnete Vorschauen behalten ihre ursprüngliche Auswahl. Die separate Dateiansicht hat weiterhin ihre eigenen Ansichtsoptionen.
