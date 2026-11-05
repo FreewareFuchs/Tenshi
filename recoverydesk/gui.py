@@ -1843,7 +1843,7 @@ class RecoveryDeskApp(tk.Tk):
         ttk.Checkbutton(area, text='Nur freie Bereiche', variable=self.signature_free_only,
                         command=self._update_signature_scope).pack(side='left')
         self.signature_free_type = ttk.Combobox(area, textvariable=self.signature_free_filesystem,
-                                               values=('NTFS','FAT32'), state='readonly', width=8)
+                                               values=('NTFS','FAT32','exFAT'), state='readonly', width=8)
         self.signature_free_type.pack(side='left', padx=(8,0))
         self.signature_free_type.bind('<<ComboboxSelected>>', lambda event:self._update_signature_scope())
         ttk.Label(area, text='Partitionsoffset (Bytes):').pack(side='left', padx=(16, 4))
@@ -1897,8 +1897,8 @@ class RecoveryDeskApp(tk.Tk):
         self._update_signature_scope()
 
     def _update_signature_scope(self):
-        scope = ('Suchbereich: freie FAT32-Bereiche.' if self.signature_free_filesystem.get() == 'FAT32'
-                 else 'Suchbereich: freie NTFS-Bereiche.') if self.signature_free_only.get() else 'Suchbereich: gesamtes Image.'
+        scope = {'NTFS':'Suchbereich: freie NTFS-Bereiche.', 'FAT32':'Suchbereich: freie FAT32-Bereiche.',
+                 'exFAT':'Suchbereich: freie exFAT-Bereiche.'}.get(self.signature_free_filesystem.get(),'Suchbereich: gesamtes Image.') if self.signature_free_only.get() else 'Suchbereich: gesamtes Image.'
         self.signature_scope_label.configure(text=translate(
             scope,self.language)+' '+translate('Signaturfunde bestätigen keine vollständigen Originalinhalte.',self.language))
 
@@ -2178,7 +2178,7 @@ class RecoveryDeskApp(tk.Tk):
             return
         self.ntfs_byte_offset.set(str(part.offset_bytes))
         self.signature_partition_offset.set(str(part.offset_bytes))
-        if part.filesystem in ('NTFS','FAT32'):
+        if part.filesystem in ('NTFS','FAT32','exFAT'):
             self.signature_free_filesystem.set(part.filesystem)
             self._update_signature_scope()
         self._select_main_tab('files')
@@ -2236,7 +2236,7 @@ class RecoveryDeskApp(tk.Tk):
             self.signature_file_limit_mib.set(str(state['file_limit'] // 1024**2))
             self.signature_save_checkpoint.set(True)
             self.signature_free_only.set(state.get('search_area','all') != 'all')
-            self.signature_free_filesystem.set('FAT32' if state.get('search_area') == 'fat32-free' else 'NTFS')
+            self.signature_free_filesystem.set({'fat32-free':'FAT32','exfat-free':'exFAT'}.get(state.get('search_area'),'NTFS'))
             self.signature_partition_offset.set(str(state.get('partition_offset',0)))
             self._update_signature_scope()
             self.start_signature_scan(tuple(state['categories']), checkpoint_path=path, resume=True)
@@ -2257,9 +2257,9 @@ class RecoveryDeskApp(tk.Tk):
             if file_limit_mib not in (32, 64, 128, 256):
                 raise ValueError('Ungültige Größenbegrenzung für die Signatursuche.')
             filesystem = self.signature_free_filesystem.get()
-            if filesystem not in ('NTFS','FAT32'):
-                raise ValueError(translate('Bitte NTFS oder FAT32 für die Freiraumsuche wählen.',self.language))
-            search_area = {'NTFS':'ntfs-free','FAT32':'fat32-free'}[filesystem] if self.signature_free_only.get() else 'all'
+            if filesystem not in ('NTFS','FAT32','exFAT'):
+                raise ValueError(translate('Bitte NTFS, FAT32 oder exFAT für die Freiraumsuche wählen.',self.language))
+            search_area = {'NTFS':'ntfs-free','FAT32':'fat32-free','exFAT':'exfat-free'}[filesystem] if self.signature_free_only.get() else 'all'
             partition_offset = int(self.signature_partition_offset.get().strip(),0) if search_area != 'all' else 0
             validate_search_area(search_area,partition_offset)
         except (OSError,ValueError) as exc:

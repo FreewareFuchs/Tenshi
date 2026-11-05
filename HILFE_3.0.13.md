@@ -84,9 +84,9 @@ sichtbare markierte Funde. **Zurücksetzen** zeigt alle Funde wieder, ohne
 ausgeblendete Dateien erneut zu markieren. Bei neuer Quelle oder Analyse werden
 die Filter zurückgesetzt. **In Dateiansicht anzeigen** öffnet die bisherige Ansicht.
 
-Für **Nur freie Bereiche** daneben **NTFS** oder **FAT32** auswählen und den
+Für **Nur freie Bereiche** daneben **NTFS**, **FAT32** oder **exFAT** auswählen und den
 **Partitionsoffset (Bytes)** angeben: 0 beim Volume-Image, sonst den Partitionsanfang.
-Die Partitionsauswahl übernimmt diesen Offset und bei NTFS/FAT32 die Dateisystemwahl.
+Die Partitionsauswahl übernimmt diesen Offset und bei NTFS/FAT32/exFAT die Dateisystemwahl.
 NTFS braucht eine lesbare Belegungsbitmap. FAT32 prüft seine aktive Tabelle;
 gespiegelte Tabellen müssen übereinstimmen. Widersprüche, unsaubere Statusmarkierungen
 oder nicht lesbare Belegungsdaten stoppen die Freiraumsuche mit einem Hinweis.
@@ -95,6 +95,14 @@ bestimmen die Belegung nicht. FAT12/FAT16 sind nicht enthalten.
 Funde überschreiten keine belegten Grenzen. Suchstand und Exportauftrag behalten
 Bereich, Dateisystemwahl und Offset bei. Beim Fortsetzen werden Belegungsdaten neu
 gelesen; veränderte FAT32-Suchstände erfordern eine neue Suche.
+
+exFAT benötigt genau eine eindeutige Belegungsbitmap und eine FAT; TexFAT ist
+nicht enthalten. Bootbereich und Sicherungskopie, Root-/Bitmap-Ketten und ihre
+belegten Metadatencluster werden geprüft. Unsaubere oder mit Medienfehler markierte
+Volumes werden abgelehnt. Alte FAT-Verweise gelöschter Dateien zählen nicht als
+Belegung. Grenzen: 128 MiB Bitmap, 32 MiB Rootverzeichnis, 192 MiB Metadaten und
+1 MiB je Cluster. Ein exFAT-Suchstand liest und vergleicht diese Metadaten beim
+Fortsetzen erneut. Das ist keine vollständige Konsistenzprüfung aller Dateien.
 
 ### Suchstand nach einem Neustart fortsetzen
 
