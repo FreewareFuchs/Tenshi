@@ -34,7 +34,7 @@ from .partition_scan import analyze_image, format_partition_findings
 from .device_identity import capture_device_identity, check_device_identity
 from .partition_health import inspect_partition, format_partition_details, format_partition_confidence
 from .ntfs import iter_stream
-from .recovery_quality import assess
+from .recovery_quality import assess, SIGNATURE_CHECK_GUIDE
 from .recovery_preflight import inspect_selection, MAX_DETAIL_ROWS
 from .browser_filter import (STATUS_FILTERS, FILTER_ALL, filter_entries, matches_status,
                              folder_warning_records, visual_status)
@@ -3894,6 +3894,13 @@ class RecoveryDeskApp(tk.Tk):
                        f'Gemeldete Dateigröße: {item.size:,} Bytes\n'
                        f'Status: {item.status}\nRettbarkeit: {quality.label}\n'
                        f'Einordnung: {quality.detail}')
+        is_signature = bool(getattr(item, 'locator', ()) and item.locator[0] == 'signature-v1')
+        if is_signature:
+            description = translate(
+                'Erzeugter Fundname: {name}\nErkannter Typ: {kind} · Größe: {size} Bytes\n'
+                'Fundposition im Image: {offset} Bytes\n\n{detail}', self.language).format(
+                    name=item.name, kind=item.name.split('_', 1)[0], size=f'{item.size:,}',
+                    offset=f'{item.locator[1]:,}', detail=translate(quality.detail, self.language))
         ttk.Label(panel, text=description, justify='left', wraplength=690).pack(
             anchor='w', fill='x', pady=(10, 12))
         detail = tk.StringVar(value='Noch keine vollständige Leseprüfung durchgeführt.')
@@ -3902,8 +3909,9 @@ class RecoveryDeskApp(tk.Tk):
         progress = ttk.Progressbar(panel, orient='horizontal', maximum=max(1, item.size), value=0)
         progress.pack(fill='x', pady=(5, 10))
         info = tk.Text(panel, height=4, wrap='word', font=('Consolas', 9))
-        info.insert('1.0', translate(READ_SCOPE,self.language)+'\n'+translate(
-            'Inhalt prüfen: Bilder, erste PDF-Seite und Office-Paketstruktur, höchstens 32 MiB.',self.language))
+        info.insert('1.0', translate(SIGNATURE_CHECK_GUIDE,self.language) if is_signature else
+            translate(READ_SCOPE,self.language)+'\n'+translate(
+                'Inhalt prüfen: Bilder, erste PDF-Seite und Office-Paketstruktur, höchstens 32 MiB.',self.language))
         info.configure(state='disabled')
         info.pack(fill='both', expand=True)
         buttons = ttk.Frame(panel)

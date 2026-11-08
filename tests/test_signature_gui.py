@@ -49,6 +49,34 @@ class SignatureGuiTests(unittest.TestCase):
         error.assert_not_called()
         return self.app.signature_results
 
+    def test_signature_inspection_explains_evidence_without_reading_and_fits_languages(self):
+        import tkinter as tk
+        from recoverydesk.recovery_quality import SIGNATURE_CHECK_GUIDE, SIGNATURE_DETAIL
+        from recoverydesk.help_center import topic_text
+        self.scan_for_list()
+        item=self.app.signature_result_index.entries[0]
+        original=self.source.read_bytes()
+        for language in LANGUAGES:
+            self.app.change_language(language)
+            with patch('recoverydesk.gui.verify_file') as read, patch('recoverydesk.gui.check_content_file') as content:
+                self.app.inspect_file(context=(str(self.source),self.app.signature_result_index,(item,)))
+                window=next(w for w in self.app.winfo_children() if isinstance(w,tk.Toplevel))
+                window.geometry('650x520');self.app.update()
+                widgets=list(self.widgets(window))
+                text=next(w for w in widgets if isinstance(w,tk.Text))
+                self.assertIn(translate(SIGNATURE_CHECK_GUIDE,language),text.get('1.0','end'))
+                labels='\n'.join(str(w.cget('text')) for w in widgets if isinstance(w,ttk.Label))
+                self.assertIn(translate(SIGNATURE_DETAIL,language),labels)
+                self.assertNotIn('Rettbarkeit:',labels)
+                self.assertNotIn('Dateisystem:',labels)
+                self.assertIn(translate(SIGNATURE_CHECK_GUIDE,language),topic_text('browser',language)[1])
+                for button in (w for w in widgets if isinstance(w,ttk.Button)):
+                    self.assertTrue(button.winfo_ismapped(),language)
+                    self.assertLessEqual(button.winfo_rooty()+button.winfo_height(),window.winfo_rooty()+window.winfo_height(),language)
+                read.assert_not_called();content.assert_not_called()
+                window.destroy()
+        self.assertEqual(self.source.read_bytes(),original)
+
     def test_summary_is_unchanged_by_filters_or_next_scan_options(self):
         view=self.scan_for_list();summary=self.app.signature_summary
         text=self.app.signature_scope_label.cget('text')

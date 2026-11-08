@@ -15,6 +15,23 @@ from recoverydesk.ntfs_browser import scan_ntfs_tree
 
 
 class PreviewQualityTests(unittest.TestCase):
+    def test_signature_assessment_applies_to_non_image_formats_without_integrity_claim(self):
+        from recoverydesk.filesystems import GenericEntry
+        from recoverydesk.recovery_quality import SIGNATURE_DETAIL, SIGNATURE_CHECK_GUIDE
+        from recoverydesk.i18n import LANGUAGES, translate
+        for kind in ('PNG','DOCX','ZIP','MP3','MP4'):
+            entry=GenericEntry(6,kind+'_0000000000000200.'+kind.lower(),5,False,100,('signature-v1',512,kind))
+            result=assess(entry)
+            self.assertEqual(result.grade,'uncertain')
+            self.assertEqual(result.detail,SIGNATURE_DETAIL)
+            self.assertNotIn('Bildstruktur',result.detail)
+        for language in LANGUAGES:
+            self.assertTrue(translate(SIGNATURE_DETAIL,language))
+            self.assertIn('SHA256',translate(SIGNATURE_CHECK_GUIDE,language))
+            if language!='de':
+                self.assertNotEqual(translate(SIGNATURE_DETAIL,language),SIGNATURE_DETAIL)
+                self.assertNotEqual(translate(SIGNATURE_CHECK_GUIDE,language),SIGNATURE_CHECK_GUIDE)
+
     def test_classifies_text_utf16_and_binary_without_hex(self):
         self.assertEqual(describe(b'Hallo\nWelt', 10).kind, 'text')
         self.assertEqual(describe(b'\xff\xfeH\x00i\x00', 6).text, 'Hi')
