@@ -314,6 +314,7 @@ class XFS(VolumeBase):
         self.inopblog = sb[123]
         self.agblklog = sb[124]
         self.version = be16(sb,100) & 0xf
+        self.features_incompat = be32(sb,216) if self.version == 5 else 0
         self.features2 = be32(sb,200) if len(sb)>=204 else 0  # conservative fallback
         self.root_locator = (self.root_ino,)
         if (self.blocksize not in (512,1024,2048,4096,8192,16384,32768,65536)
@@ -402,7 +403,16 @@ class XFS(VolumeBase):
         if raw[:2] != b'IN' or raw[4] not in (2,3):
             raise FileSystemError(f'XFS Inode {ino} ist beschädigt oder nicht belegt')
         mode, fmt = be16(raw,2), raw[5]
-        size, nextents = be64(raw,56), be32(raw,76)
+        size = be64(raw,56)
+        # NREXT64 repurposes offset 76 for attribute extents. Reading it as
+        # di_nextents would silently turn an allocated file into a sparse hole.
+        large_counts = raw[4] == 3 and bool(be64(raw,120) & (1 << 4))
+        if large_counts:
+            if not self.features_incompat & (1 << 5) or be16(raw,80):
+                raise FileSystemError('XFS NREXT64-Metadaten widersprüchlich')
+            nextents = be64(raw,24)
+        else:
+            nextents = be32(raw,76)
         forkoff = raw[82]
         data_start = 176 if raw[4] == 3 else 100
         data_end = min(self.inodesize, forkoff*8 if forkoff else self.inodesize)

@@ -20,7 +20,7 @@ def digest(path):
 
 
 class RealAdvancedImageTests(unittest.TestCase):
-    def exercise(self, filesystem):
+    def exercise(self, filesystem, *, nrext64=None):
         with tempfile.TemporaryDirectory(prefix='tenshi-real-fs-') as temp:
             root = Path(temp)
             seed = root / 'seed'
@@ -43,8 +43,10 @@ class RealAdvancedImageTests(unittest.TestCase):
                     f'binary.dat ---644 0 0 {seed / "nested" / "binary.dat"}\n'
                     '$\n$\n', encoding='utf-8')
                 command = ['mkfs.xfs', '-q', '-p', str(proto), str(image)]
-            subprocess.run(command, check=True, capture_output=True,
-                           text=True, timeout=60)
+                if nrext64 is not None:
+                    command[1:1]=['-i',f'nrext64={int(nrext64)}']
+            formatted=subprocess.run(command, capture_output=True,text=True,timeout=60)
+            self.assertEqual(formatted.returncode,0,formatted.stdout+'\n'+formatted.stderr)
             before = digest(image)
             report = analyze_image(str(image))
             self.assertIn(filesystem, [p.filesystem for p in report.partitions])
@@ -73,3 +75,11 @@ class RealAdvancedImageTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('mkfs.xfs'), 'xfsprogs unavailable')
     def test_real_xfs_default_format(self):
         self.exercise('XFS')
+
+    @unittest.skipUnless(shutil.which('mkfs.xfs'), 'xfsprogs unavailable')
+    def test_real_xfs_explicit_large_extent_counters(self):
+        self.exercise('XFS',nrext64=True)
+
+    @unittest.skipUnless(shutil.which('mkfs.xfs'), 'xfsprogs unavailable')
+    def test_real_xfs_explicit_legacy_extent_counters(self):
+        self.exercise('XFS',nrext64=False)
