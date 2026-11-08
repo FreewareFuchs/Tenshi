@@ -157,6 +157,46 @@ class LinuxAdvancedTests(unittest.TestCase):
     def test_xfs_metadata_and_export(self):
         self.exercise(xfs_img(),'XFS','hello.any','folder','inner.txt',b'HELLO',b'INSIDE')
 
+    def test_xfs_large_extent_counters_read_and_export_actual_data(self):
+        raw=bytearray(xfs_img())
+        struct.pack_into('>I',raw,216,1<<5)  # superblock NREXT64
+        for ino in (160,168,176,184):
+            at=(ino//8)*4096+(ino%8)*512
+            count=struct.unpack_from('>I',raw,at+76)[0]
+            struct.pack_into('>Q',raw,at+24,count)
+            struct.pack_into('>I',raw,at+76,0)  # attribute count, not data count
+            struct.pack_into('>Q',raw,at+120,1<<4)
+        self.exercise(bytes(raw),'XFS','hello.any','folder','inner.txt',b'HELLO',b'INSIDE')
+
+    def test_xfs_large_extent_count_is_bounded_by_inline_fork(self):
+        raw=bytearray(xfs_img());at=21*4096
+        struct.pack_into('>I',raw,216,1<<5)
+        struct.pack_into('>Q',raw,at+120,1<<4)
+        struct.pack_into('>Q',raw,at+24,2**32+1)
+        struct.pack_into('>I',raw,at+76,0)
+        with tempfile.TemporaryDirectory() as folder:
+            src=Path(folder)/'large-counter.img';src.write_bytes(raw)
+            index=scan_tree(str(src))
+            entry=next(e for e in index.list_dir(index.root) if e.name=='hello.any')
+            with self.assertRaisesRegex(FileSystemError,'Extent-Liste'):
+                index.preview(str(src),entry)
+
+    def test_xfs_inconsistent_large_counters_are_not_exportable(self):
+        for feature,padding in ((False,0),(True,1)):
+            with self.subTest(feature=feature,padding=padding),tempfile.TemporaryDirectory() as folder:
+                raw=bytearray(xfs_img());at=21*4096
+                struct.pack_into('>I',raw,216,(1<<5) if feature else 0)
+                struct.pack_into('>Q',raw,at+120,1<<4)
+                struct.pack_into('>Q',raw,at+24,1)
+                struct.pack_into('>I',raw,at+76,0)
+                struct.pack_into('>H',raw,at+80,padding)
+                src=Path(folder)/'bad-counter.img';src.write_bytes(raw)
+                index=scan_tree(str(src))
+                entry=next(e for e in index.list_dir(index.root) if e.name=='hello.any')
+                self.assertFalse(entry.recoverable)
+                with self.assertRaisesRegex(FileSystemError,'NREXT64'):
+                    index.preview(str(src),entry)
+
     def test_btrfs_metadata_and_export(self):
         self.exercise(btrfs_img(),'Btrfs','hello.any','folder','inside',b'HELLO',b'INSIDE')
 

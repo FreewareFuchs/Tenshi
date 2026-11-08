@@ -1,5 +1,7 @@
 # Noch nicht veröffentlicht
 
+- **XFS-Bereichszähler:** Bei v3-Inodes mit NREXT64 wird die Datenbereichsanzahl aus dem 64-Bit-Feld gelesen. Das bisherige Feld enthält dort die Attributbereichsanzahl und darf nicht zu einem scheinbar leeren Dateiinhalt führen. Widersprüchliche Kennungen und zu große Inline-Listen werden abgelehnt; Btree-Daten bleiben weiterhin nicht unterstützt. [Technische Prüfung](docs/XFS_EXTENT_COUNTERS.md).
+
 - **Suchlauf-Zusammenfassung:** Quelle, Suchbereich, Partitionsoffset, Kategorien und Prüfgrenze bleiben im Signaturreiter dem tatsächlichen Lauf zugeordnet. Filter und Optionen für den nächsten Lauf ändern diese Angaben nicht. Keine passenden Signaturen, erreichte Prüfgrenze, Anhalten und Fehler werden unterschieden; ausgefilterte Funde erhalten einen eigenen Hinweis. Sechssprachige Hilfe ergänzt.
 
 - **Signatur-Ergebnisliste bedienen:** Strg+F fokussiert den Filter des aktiven Reiters; Escape hebt nur die Fundauswahl auf. Rechtsklick und Umschalt+F10 öffnen die vorhandenen Aktionen mit derselben Auswahl- und Quellenprüfung. Die Hilfe erklärt das Verhalten in sechs Sprachen.
