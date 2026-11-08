@@ -240,6 +240,7 @@ class RecoveryDeskApp(tk.Tk):
             self.signature_resume_button.configure(text=translate('Suchstand öffnen…', language))
             self.signature_pause_button.configure(text=translate('Anhalten', language))
         if hasattr(self, 'signature_scope_label'):
+            self._refresh_signature_partitions()
             self._update_signature_scope()
             self.signature_results.refresh_language(language)
         help_window = getattr(self, '_help_window', None)
@@ -866,6 +867,8 @@ class RecoveryDeskApp(tk.Tk):
         if hasattr(self, 'partition_quality_summary'):
             self.partition_quality_summary.set('')
         self._clear_browser_results()
+        if hasattr(self,'signature_partition_combo'):
+            self._clear_signature_partitions(reset_options=True)
         if hasattr(self, 'browser_status_filter'):
             self.browser_status_filter.set(FILTER_ALL)
             if hasattr(self, 'browser_status_display'):
@@ -1566,6 +1569,8 @@ class RecoveryDeskApp(tk.Tk):
         self.partition_details = {}
         self._source_generation += 1
         generation = self._source_generation
+        if hasattr(self,'signature_partition_combo'):
+            self._clear_signature_partitions()
         self.quick_btn.configure(state="disabled")
         self.deep_btn.configure(state="disabled")
         self.status.set("Suche läuft – RAW-Abbild wird ausschließlich gelesen …")
@@ -1617,6 +1622,12 @@ class RecoveryDeskApp(tk.Tk):
         self.last_partition_report = report
         self._partition_fingerprint = fingerprint
         self.partitions = report.partitions
+        if hasattr(self,'signature_partition_combo'):
+            self._signature_partition_report=report
+            self._signature_partition_source=source or self.partition_source
+            self._signature_partition_generation=self._source_generation
+            self._signature_partition_fingerprint=fingerprint
+            self._refresh_signature_partitions()
         self.partition_details = {}
         self._usage_for_chart = None
         self._draw_usage_bar()
@@ -1839,18 +1850,30 @@ class RecoveryDeskApp(tk.Tk):
         self.signature_scope_label.bind('<Configure>',self._wrap_signature_summary)
         self.signature_summary = None
         area = ttk.Frame(panel)
-        area.pack(anchor='w', pady=(0, 2))
+        area.pack(anchor='w', fill='x', pady=(0, 2))
         self.signature_free_only = tk.BooleanVar(value=False)
         self.signature_free_filesystem = tk.StringVar(value='NTFS')
         self.signature_partition_offset = tk.StringVar(value='0')
-        ttk.Checkbutton(area, text='Nur freie Bereiche', variable=self.signature_free_only,
-                        command=self._update_signature_scope).pack(side='left')
+        self._signature_partition_report=None
+        self._signature_partition_source=None
+        self._signature_partition_generation=None
+        self._signature_partition_fingerprint=None
+        self._signature_partition_rows=[]
+        self._signature_chosen_partition=None
+        self._signature_syncing_area=False
+        self.signature_partition_choice=tk.StringVar()
+        ttk.Label(area,text='Suchbereich:').pack(side='left')
+        self.signature_partition_combo=ttk.Combobox(area,
+            textvariable=self.signature_partition_choice,state='readonly',width=27)
+        self.signature_partition_combo.pack(side='left',padx=(4,0),fill='x',expand=True)
+        self.signature_partition_combo.bind('<<ComboboxSelected>>',self._choose_signature_partition)
         self.signature_free_type = ttk.Combobox(area, textvariable=self.signature_free_filesystem,
                                                values=('NTFS','FAT32','exFAT'), state='readonly', width=8)
         self.signature_free_type.pack(side='left', padx=(8,0))
         self.signature_free_type.bind('<<ComboboxSelected>>', lambda event:self._update_signature_scope())
         ttk.Label(area, text='Partitionsoffset (Bytes):').pack(side='left', padx=(16, 4))
-        ttk.Entry(area, textvariable=self.signature_partition_offset, width=18).pack(side='left')
+        self.signature_offset_entry=ttk.Entry(area, textvariable=self.signature_partition_offset, width=18)
+        self.signature_offset_entry.pack(side='left')
         limits = ttk.Frame(panel)
         limits.pack(anchor='w', pady=(0, 2))
         ttk.Label(limits, text=translate('Prüfgrenze für JPEG/PNG/GIF/TIFF/PDF und Office/ZIP (MiB):', self.language)).pack(side='left')
@@ -1897,7 +1920,84 @@ class RecoveryDeskApp(tk.Tk):
             language=self.language)
         self.signature_results.pack(fill='both',expand=True)
         self.signature_results_button = self.signature_results.browser
+        for variable in (self.signature_free_only,self.signature_free_filesystem,self.signature_partition_offset):
+            variable.trace_add('write',lambda *_:self._signature_area_changed())
+        self._refresh_signature_partitions()
         self._update_signature_scope()
+
+    def _signature_partition_context_valid(self):
+        return (self._signature_partition_report is not None and
+            self._signature_partition_report is self.last_partition_report and
+            self._signature_partition_source==self.partition_source==self.source_path.get().strip() and
+            self._signature_partition_generation==self._source_generation and
+            self._signature_partition_fingerprint is not None)
+
+    def _refresh_signature_partitions(self):
+        rows=[]
+        if self._signature_partition_context_valid():
+            for position,part in enumerate(self.partitions):
+                if (part.filesystem in ('NTFS','FAT32','exFAT') and
+                        part.offset_bytes>=0 and part.offset_bytes%512==0):
+                    label=translate('Freie Bereiche',self.language)+f': #{position+1} {part.filesystem} · {part.offset_bytes} B'
+                    if part.warning:label+=' ⚠'
+                    rows.append((label,part))
+        self._signature_partition_rows=rows
+        if not any(part is self._signature_chosen_partition for _,part in rows):
+            self._signature_chosen_partition=None
+        values=[translate('Gesamtes Image',self.language),translate('Manuell: freie Bereiche',self.language)]
+        values.extend(label for label,_ in rows)
+        self.signature_partition_combo.configure(values=values)
+        selected=next((i+2 for i,(_,part) in enumerate(rows) if part is self._signature_chosen_partition),
+                      1 if self.signature_free_only.get() else 0)
+        self.signature_partition_combo.current(selected)
+        self.signature_free_type.configure(state='readonly' if self.signature_free_only.get() else 'disabled')
+        self.signature_offset_entry.configure(state='normal' if self.signature_free_only.get() else 'disabled')
+
+    def _signature_area_changed(self):
+        if self._signature_syncing_area:return
+        part=self._signature_chosen_partition
+        if part is not None and (not self.signature_free_only.get() or
+                self.signature_free_filesystem.get()!=part.filesystem or
+                self.signature_partition_offset.get()!=str(part.offset_bytes)):
+            self._signature_chosen_partition=None
+        self._refresh_signature_partitions()
+        self._update_signature_scope()
+
+    def _clear_signature_partitions(self,reset_options=False):
+        self._signature_partition_report=None
+        self._signature_partition_source=None
+        self._signature_partition_generation=None
+        self._signature_partition_fingerprint=None
+        self._signature_chosen_partition=None
+        if reset_options:
+            self._signature_syncing_area=True
+            try:
+                self.signature_free_only.set(False)
+                self.signature_partition_offset.set('0')
+            finally:self._signature_syncing_area=False
+        self._signature_area_changed()
+
+    def _choose_signature_partition(self,event=None):
+        position=self.signature_partition_combo.current()
+        if position<0:return
+        part=None
+        if position>=2:
+            if not self._signature_partition_context_valid() or position-2>=len(self._signature_partition_rows):
+                self._refresh_signature_partitions()
+                messagebox.showerror(translate('Dateisignaturen',self.language),translate(
+                    'Partitionsauswahl veraltet. Bitte die Quelle erneut analysieren.',self.language),parent=self)
+                return
+            part=self._signature_partition_rows[position-2][1]
+        self._signature_syncing_area=True
+        try:
+            self._signature_chosen_partition=part
+            self.signature_free_only.set(position!=0)
+            if part is not None:
+                self.signature_free_filesystem.set(part.filesystem)
+                self.signature_partition_offset.set(str(part.offset_bytes))
+            elif position==0:self.signature_partition_offset.set('0')
+        finally:self._signature_syncing_area=False
+        self._signature_area_changed()
 
     def _update_signature_scope(self):
         if self.signature_summary is not None:
@@ -2295,6 +2395,16 @@ class RecoveryDeskApp(tk.Tk):
         try:
             source=self.get_source()
             if is_device_source(source):raise ValueError('Signatursuche erfordert ein reguläres Image.')
+            partition_fingerprint=None
+            if self._signature_chosen_partition is not None:
+                part=self._signature_chosen_partition
+                if (not self._signature_partition_context_valid() or
+                        not any(part is candidate for candidate in self.partitions) or
+                        not self.signature_free_only.get() or
+                        self.signature_free_filesystem.get()!=part.filesystem or
+                        self.signature_partition_offset.get()!=str(part.offset_bytes)):
+                    raise ValueError(translate('Partitionsauswahl veraltet. Bitte die Quelle erneut analysieren.',self.language))
+                partition_fingerprint=self._signature_partition_fingerprint
             file_limit_mib = int(self.signature_file_limit_mib.get())
             if file_limit_mib not in (32, 64, 128, 256):
                 raise ValueError('Ungültige Größenbegrenzung für die Signatursuche.')
@@ -2312,6 +2422,10 @@ class RecoveryDeskApp(tk.Tk):
         scan_options.update(search_area=search_area,partition_offset=partition_offset)
         if search_area != 'all':
             note = translate(search_scope(search_area),self.language)+'\n\n'+translate('Partitionsoffset (Bytes):',self.language)+f' {partition_offset}\n'+translate('Die Prüfgrenzen gelten weiterhin. Freie Bereiche jetzt durchsuchen?',self.language)
+            if self._signature_chosen_partition is not None:
+                note=self.signature_partition_choice.get()+'\n'+note
+                if self._signature_chosen_partition.warning:
+                    note+='\n\n'+translate(self._signature_chosen_partition.warning,self.language)
         if not messagebox.askyesno(category_label,note,parent=self):return
         if checkpoint_path is None and self.signature_save_checkpoint.get():
             checkpoint_path = filedialog.asksaveasfilename(parent=self,
@@ -2345,6 +2459,8 @@ class RecoveryDeskApp(tk.Tk):
             self._post_scan_callback(update)
         def worker():
             try:
+                if partition_fingerprint is not None:
+                    check_fingerprint(source,partition_fingerprint,original=source)
                 # Keep two distinct sample points even for images below 64 KiB.
                 fingerprint=fingerprint_image(source,[1])
                 index=scan_signatures(source,**scan_options,cancel=self.browser_cancel.is_set,progress=progress)

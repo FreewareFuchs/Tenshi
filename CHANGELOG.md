@@ -1,5 +1,7 @@
 # Noch nicht veröffentlicht
 
+- **Suchbereich direkt wählen:** Im Signaturreiter zwischen gesamtem Image, manuell eingegebenen freien Bereichen und erkannten NTFS-/FAT32-/exFAT-Partitionen wählen. Dateisystem und Offset werden bei einer Partitionswahl übernommen; veraltete Analysen und geänderte Quellimages werden abgefangen. Die Zusammenfassung des vorherigen Laufs bleibt erhalten.
+
 - **XFS-Bereichszähler:** Bei v3-Inodes mit NREXT64 wird die Datenbereichsanzahl aus dem 64-Bit-Feld gelesen. Das bisherige Feld enthält dort die Attributbereichsanzahl und darf nicht zu einem scheinbar leeren Dateiinhalt führen. Widersprüchliche Kennungen und zu große Inline-Listen werden abgelehnt; Btree-Daten bleiben weiterhin nicht unterstützt. [Technische Prüfung](docs/XFS_EXTENT_COUNTERS.md).
 
 - **Suchlauf-Zusammenfassung:** Quelle, Suchbereich, Partitionsoffset, Kategorien und Prüfgrenze bleiben im Signaturreiter dem tatsächlichen Lauf zugeordnet. Filter und Optionen für den nächsten Lauf ändern diese Angaben nicht. Keine passenden Signaturen, erreichte Prüfgrenze, Anhalten und Fehler werden unterschieden; ausgefilterte Funde erhalten einen eigenen Hinweis. Sechssprachige Hilfe ergänzt.

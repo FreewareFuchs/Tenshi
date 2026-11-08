@@ -89,7 +89,29 @@ Gemeinsame VM-Ordner unterstützen teilweise keine Synchronisierung des Verzeich
 
 ### Optional: nur freie NTFS-, FAT32- oder exFAT-Bereiche
 
-**Nur freie Bereiche** aktivieren und daneben **NTFS**, **FAT32** oder **exFAT** wählen. Den **Partitionsoffset (Bytes)** angeben: `0` bei einem reinen Volume-Image, sonst den Partitionsanfang. Die vorhandene Partitionsauswahl überträgt diesen Offset und bei NTFS/FAT32/exFAT auch die Dateisystemwahl ins Signaturregister. Ohne die Auswahl bleibt die Suche über das ganze Image aktiv. Die Dateisystemwahl wird nicht erraten und bei Fehlern erfolgt kein stiller Wechsel auf eine Vollsuche.
+Unter **Suchbereich** direkt eine erkannte NTFS-, FAT32- oder exFAT-Partition
+wählen. Die Liste stammt aus der aktuellen Partitionsanalyse derselben Quelle;
+Dateisystem und Byte-Offset werden übernommen und die Freiraumsuche aktiviert.
+Warnmarkierungen aus der Analyse bleiben sichtbar. Ein Eintrag ist ein Kandidat,
+kein Nachweis gültiger Belegungsdaten. Andere Dateisysteme werden nicht angeboten.
+Bei fehlenden Einträgen im Reiter **Partitionen** die Schnell- oder Tiefensuche
+ausführen oder **Manuell: freie Bereiche** wählen.
+
+Im manuellen Modus **NTFS**, **FAT32** oder **exFAT** und den
+**Partitionsoffset (Bytes)** angeben: `0` bei einem reinen Volume-Image, sonst
+den Partitionsanfang. Änderungen an Dateisystem oder Offset nach einer
+Partitionswahl wechseln in den manuellen Modus. **Gesamtes Image** deaktiviert
+diese Felder und durchsucht die ganze Quelle mit internem Offset `0`.
+Die Startbestätigung nennt den tatsächlichen Bereich und Offset.
+
+Ein Quellenwechsel entfernt die alte Partitionsliste. Veraltete Analysekontexte
+können nicht als Partitionswahl übernommen werden. Vor dem Lesen einer gewählten
+Partition wird der Quellenfingerabdruck der Partitionsanalyse erneut geprüft;
+bei geändertem Image ist eine neue Analyse nötig. Die Optionen für den nächsten
+Lauf ändern weiterhin nicht die Zusammenfassung des vorherigen Laufs.
+Manuelle Eingaben und ältere Suchstände bleiben verwendbar; Parser und
+gespeicherte Suchbereichskennungen ändern sich nicht. Die Dateisystemwahl wird
+nicht erraten und bei Fehlern erfolgt kein stiller Wechsel auf eine Vollsuche.
 
 **exFAT:** Unterstützt wird ein einzelnes FAT-/Bitmap-Paar, kein TexFAT und keine mehrdeutigen Bitmap-Einträge. Anders als bei FAT32 bestimmt die Belegungsbitmap freie Cluster; erhaltene FAT-Verweise gelöschter Dateien sind kein Beleg für eine aktuelle Belegung. Haupt- und Sicherungsbootbereich werden über ihre Prüfsummen und übereinstimmende Geometrie geprüft. Die laut Format veränderlichen Status-/Belegungsfelder der Sicherungskopie dürfen abweichen; maßgeblich ist der Hauptbootbereich. Unsaubere oder mit Medienfehler markierte Volumes werden abgelehnt. Root- und Bitmap-FAT-Ketten müssen innerhalb des Volumes liegen und dürfen weder zyklisch sein noch überlappen. Ihre eigenen Metadatencluster müssen in der Bitmap belegt sein.
 
