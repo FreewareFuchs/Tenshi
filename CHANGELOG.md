@@ -1,4 +1,4 @@
-# Noch nicht veröffentlicht
+# Tenshi 3.0.15 – in Vorbereitung
 
 - **Suchbereich direkt wählen:** Im Signaturreiter zwischen gesamtem Image, manuell eingegebenen freien Bereichen und erkannten NTFS-/FAT32-/exFAT-Partitionen wählen. Dateisystem und Offset werden bei einer Partitionswahl übernommen; veraltete Analysen und geänderte Quellimages werden abgefangen. Die Zusammenfassung des vorherigen Laufs bleibt erhalten.
 
@@ -9,7 +9,7 @@
 - **Signatur-Ergebnisliste bedienen:** Strg+F fokussiert den Filter des aktiven Reiters; Escape hebt nur die Fundauswahl auf. Rechtsklick und Umschalt+F10 öffnen die vorhandenen Aktionen mit derselben Auswahl- und Quellenprüfung. Die Hilfe erklärt das Verhalten in sechs Sprachen.
 
 - **CSV-Fundliste** ([PR #141](https://github.com/FreewareFuchs/Tenshi/pull/141), abgenommen): Alle sichtbaren Signaturfunde in aktueller Sortierung mit Größe, absoluter Fundposition und ursprünglichem Suchbereich speichern. Filter gelten unabhängig von der Auswahl. UTF-8 mit BOM und Semikolon; vorhandene Dateien bleiben erhalten. Hilfe in sechs Sprachen ergänzt.
-- Diese Entwicklung ist noch nicht Teil der stabilen 3.0.14-Pakete. Ein neuer Release wird erst nach einem größeren Änderungspaket vorbereitet.
+Funktionen und Bedienung sind abgenommen. Endgültige Paketversionen, Starts und Veröffentlichung stehen noch aus. Bis dahin bleiben die stabilen 3.0.14-Downloads aktuell. [Änderungen und Freigabestand](RELEASE_NOTES_3.0.15.md).
 
 # Tenshi 3.0.14 – stabil veröffentlicht (05.11.2026)
 

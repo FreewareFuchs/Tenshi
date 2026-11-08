@@ -1,8 +1,10 @@
 # Release-Paket automatisch vorbereiten
 
+**In Vorbereitung: Tenshi 3.0.15.** Das gebündelte Bedienungsupdate umfasst CSV-Fundliste, Kontextmenü/Tastatur, Suchlauf-Zusammenfassung, direkte Partitionsauswahl und die XFS-NREXT64-Korrektur. Die Funktionen sind abgenommen; der gemeinsame stabile Build und die endgültige Paketabnahme folgen. [Änderungen und Freigabestand](../RELEASE_NOTES_3.0.15.md).
+
 Aktueller stabiler Stand: [Tenshi 3.0.14](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.14), seit 05.11.2026. Funktionen und endgültige Pakete sind abgenommen; GitHub, signierte APT-Quelle und Website sind öffentlich geprüft. Die Pakete stammen unverändert aus Commit `de9a3b9733528c87a19a3fdf314462105302ac41` ([gemeinsamer Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/42047640267)). Sieben GitHub-Assets, 19 APT-Dateien und 25 abschließende öffentliche Vergleiche sind bestätigt. [Freigabestand und Änderungen](../RELEASE_NOTES_3.0.14.md).
 
-Die CSV-Fundliste aus PR #141 ist bereits im Hauptzweig abgenommen, aber noch nicht veröffentlicht. Neue Release-Vorbereitungen werden bis zu einem größeren Änderungspaket zurückgestellt. [Entwicklungsstand](../CHANGELOG.md).
+Die Funktionen aus PR #141, #143–#146 sind im Hauptzweig enthalten und abgenommen beziehungsweise anhand unabhängiger Formatprüfungen bestätigt. Sie gehören noch nicht zu den veröffentlichten 3.0.14-Paketen. [Entwicklungsstand](../CHANGELOG.md).
 
 Vorheriger stabiler Stand: [Tenshi 3.0.13](https://github.com/FreewareFuchs/Tenshi/releases/tag/v3.0.13), seit 03.11.2026. Funktions- und Paketabnahmen sind bestätigt; GitHub, signierte APT-Quelle und Website wurden öffentlich geprüft. Die unveränderten Pakete stammen aus Commit `cfac39d9d5af856000e37060ccbea819f402380c` ([gemeinsamer Build](https://github.com/FreewareFuchs/Tenshi/actions/runs/41708439214)). [Änderungen und Prüfstand](../RELEASE_NOTES_3.0.13.md).
 

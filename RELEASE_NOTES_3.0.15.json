@@ -1,0 +1,44 @@
+{
+  "de": [
+    "CSV-Fundliste speichert alle sichtbaren Signaturfunde in aktueller Sortierung mit Quelle, Typ, Byte-Größe, absoluter Position und ursprünglichen Sucheinstellungen. UTF-8 mit BOM und Semikolon; bestehende Berichte werden nicht überschrieben und keine zusätzlichen Prüfsummendateien erzeugt.",
+    "Rechtsklick und Umschalt+F10 öffnen Vorschau, Dateiprüfung, Stapel-Export und Fundliste. Strg+F fokussiert den Filter des aktiven Reiters; Escape hebt nur die Auswahl auf. Bei mehreren markierten Funden bleibt die Dateiprüfung deaktiviert.",
+    "Die dauerhafte Suchlauf-Zusammenfassung bleibt dem tatsächlichen Lauf zugeordnet, auch nach Filter- oder Optionsänderungen. Keine passenden Signaturen, ausgefilterte Funde, erreichte Prüfgrenze, Anhalten und Fehler werden klar unterschieden.",
+    "NTFS-, FAT32- und exFAT-Partitionen direkt als freien Suchbereich auswählen und Dateisystem sowie Byte-Offset übernehmen. Die Auswahl ist an die aktuelle Quellanalyse gebunden; geänderte Images werden erneut geprüft. Gesamtes Image und manuelle Eingabe bleiben verfügbar.",
+    "XFS-NREXT64-v3-Inodes verwenden nun den richtigen 64-Bit-Datenbereichszähler, damit ein Attributzähler von null keine scheinbar leeren Dateiinhalte erzeugt. Unabhängige Formatprüfungen für Standard und nrext64=0/1 sind erfolgreich. Inline-Grenzen bleiben bestehen; keine zusätzliche Btree-Unterstützung."
+  ],
+  "en": [
+    "CSV findings lists save all visible signature results in the current sort order with source, type, byte size, absolute position and original scan settings. UTF-8 with BOM and semicolons; existing reports are not overwritten and no extra checksum files are created.",
+    "Right-click and Shift+F10 open Preview, Check file, Batch export and Save findings. Ctrl+F focuses the active tab filter; Escape clears only selection. File inspection stays disabled when multiple findings are selected.",
+    "The persistent scan summary retains the actual run context after filter or option changes. No matching signatures, filtered-out findings, inspection limits, stopping and errors are clearly distinguished.",
+    "Select detected NTFS, FAT32 or exFAT partitions directly for free-space searching and copy their filesystem and byte offset. Selection is bound to the current source analysis and changed images are checked again. Entire-image and manual modes remain available.",
+    "XFS NREXT64 v3 inodes now use the correct 64-bit data extent counter, preventing a zero attribute counter from producing apparently empty file contents. Independent default and nrext64=0/1 format checks pass. Inline bounds remain; no additional Btree data support."
+  ],
+  "es": [
+    "La lista CSV guarda todos los hallazgos visibles en su orden actual, con origen, tipo, tamaño en bytes, posición absoluta y ajustes originales. Usa UTF-8 con BOM y punto y coma; no sobrescribe informes ni crea sumas adicionales.",
+    "Clic derecho y Mayús+F10 abren vista previa, comprobación, exportación por lotes y lista de hallazgos. Ctrl+F enfoca el filtro activo; Escape solo quita la selección. La comprobación queda desactivada al seleccionar varios hallazgos.",
+    "El resumen permanente conserva el contexto de la búsqueda real aunque cambien filtros u opciones. Distingue ninguna firma encontrada, resultados ocultos, límite alcanzado, detención y errores.",
+    "Selecciona directamente particiones NTFS, FAT32 o exFAT para buscar espacio libre y tomar sistema y desplazamiento en bytes. La selección depende del análisis actual y se comprueban de nuevo imágenes modificadas. Siguen disponibles imagen completa y modo manual.",
+    "Los inodos XFS NREXT64 v3 usan el contador de extensiones de datos de 64 bits correcto; un contador de atributos cero ya no produce contenido aparentemente vacío. Pasan pruebas independientes del formato predeterminado y nrext64=0/1. Se conservan límites internos; no se añade lectura de datos Btree."
+  ],
+  "zh": [
+    "CSV 发现列表按当前排序保存全部可见签名结果，包括来源、类型、字节大小、绝对位置和原始搜索设置。使用 UTF-8 BOM 和分号，不覆盖现有报告，也不生成额外校验和文件。",
+    "右键或 Shift+F10 打开预览、文件检查、批量导出和保存发现列表。Ctrl+F 聚焦当前选项卡过滤框，Escape 仅取消选择。多选时文件检查保持禁用。",
+    "持久显示的搜索摘要保留实际搜索上下文，不受后续过滤条件或选项更改影响。明确区分未找到签名、过滤隐藏结果、达到检查限制、停止及错误。",
+    "可直接选择检测到的 NTFS、FAT32 或 exFAT 分区搜索空闲区域，并自动填写文件系统和字节偏移量。选择绑定当前来源分析，来源映像改变后会再次检查。仍支持整个映像和手动模式。",
+    "XFS NREXT64 v3 inode 现在读取正确的 64 位数据区段计数器，避免将为零的属性计数器误作空文件内容。默认格式及 nrext64=0/1 的独立检查均通过。保留内联范围限制，不增加 Btree 文件数据支持。"
+  ],
+  "ru": [
+    "CSV-список сохраняет все видимые сигнатурные находки в текущем порядке: источник, тип, размер в байтах, абсолютную позицию и исходные параметры поиска. UTF-8 с BOM и точкой с запятой; отчёты не перезаписываются, дополнительные суммы не создаются.",
+    "Правый щелчок и Shift+F10 открывают предпросмотр, проверку файла, пакетный экспорт и сохранение списка. Ctrl+F переводит фокус на фильтр активной вкладки; Escape только снимает выбор. Проверка отключена при выборе нескольких находок.",
+    "Постоянная сводка сохраняет фактический контекст поиска после изменения фильтров или параметров. Различаются отсутствие сигнатур, скрытые фильтром находки, достижение предела, остановка и ошибки.",
+    "Обнаруженные разделы NTFS, FAT32 и exFAT можно выбрать прямо для поиска свободных областей с переносом системы и смещения в байтах. Выбор привязан к текущему анализу источника; изменённый образ проверяется повторно. Сохраняются режимы всего образа и ручного ввода.",
+    "Для XFS NREXT64 v3 читается правильный 64-битный счётчик экстентов данных: нулевой счётчик атрибутов больше не даёт кажущийся пустым файл. Независимые проверки стандартного формата и nrext64=0/1 проходят. Ограничения встроенного списка сохранены; поддержка данных Btree не добавлена."
+  ],
+  "ja": [
+    "CSV一覧は表示中の全署名結果を現在の順序で保存し、ソース、種類、バイトサイズ、絶対位置、元の検索設定を含みます。UTF-8 BOMとセミコロンを使用し、既存の報告は上書きせず、追加のチェックサムも作りません。",
+    "右クリックまたはShift+F10でプレビュー、ファイル検査、一括エクスポート、一覧保存を開きます。Ctrl+Fで現在のタブのフィルターへ移動し、Escapeは選択だけを解除します。複数選択時のファイル検査は無効です。",
+    "検索概要は実際の検索条件を保持し、後でフィルターや設定を変えても変化しません。署名なし、フィルターで非表示、検査上限、停止、エラーを区別します。",
+    "検出したNTFS、FAT32、exFATのパーティションを空き領域検索に直接選び、形式とバイトオフセットを自動入力できます。選択は現在のソース解析に対応し、変更されたイメージは再検査します。全体検索と手動入力も利用できます。",
+    "XFS NREXT64 v3 inodeの正しい64ビットデータエクステント数を読み、属性数がゼロの場合に内容が空と誤認される問題を修正しました。標準形式とnrext64=0/1の独立検査に合格しています。インライン上限は維持し、Btreeデータへの対応は追加しません。"
+  ]
+}
