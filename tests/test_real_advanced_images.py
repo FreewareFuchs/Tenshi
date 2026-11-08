@@ -44,9 +44,9 @@ class RealAdvancedImageTests(unittest.TestCase):
                     '$\n$\n', encoding='utf-8')
                 command = ['mkfs.xfs', '-q', '-p', str(proto), str(image)]
                 if nrext64 is not None:
-                    command[1:1]=['-m',f'nrext64={int(nrext64)}']
-            subprocess.run(command, check=True, capture_output=True,
-                           text=True, timeout=60)
+                    command[1:1]=['-i',f'nrext64={int(nrext64)}']
+            formatted=subprocess.run(command, capture_output=True,text=True,timeout=60)
+            self.assertEqual(formatted.returncode,0,formatted.stdout+'\n'+formatted.stderr)
             before = digest(image)
             report = analyze_image(str(image))
             self.assertIn(filesystem, [p.filesystem for p in report.partitions])
