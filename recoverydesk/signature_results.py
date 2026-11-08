@@ -111,6 +111,8 @@ class SignatureResults(ttk.Frame):
             visible=len(self.tree.get_children()),total=len(self.entries),selected=count)
         if not self._minimum_valid:
             text+=' · '+translate('Mindestgröße: ganze Zahl von 0 bis 4294967296 KiB eingeben.',self.language)
+        elif self.entries and not self.tree.get_children():
+            text+=' · '+translate('Kein Fund passt zu den aktuellen Filtern.',self.language)
         self.caption.configure(text=text)
 
     def _select_kind(self,event=None):
