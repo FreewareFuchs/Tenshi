@@ -12,7 +12,7 @@ Tenshi ist ein kostenloses, quelloffenes Programm von **FreewareFuchs** zum Unte
 
 **3.0.14 ist veröffentlicht:** Direkte und filterbare Signaturfundliste, freie NTFS-/FAT32-/exFAT-Bereiche und binäre DOC-/XLS-/PPT-Dateien mit begrenzter Strukturprüfung. Funktionen und endgültige Pakete sind abgenommen; GitHub, APT und Website sind öffentlich geprüft. [Änderungen](RELEASE_NOTES_3.0.14.md) · [Benutzerhilfe](HILFE_3.0.14.md).
 
-**Im Hauptzweig, noch nicht veröffentlicht:** Die CSV-Fundliste aus [PR #141](https://github.com/FreewareFuchs/Tenshi/pull/141) ist abgenommen. Sie speichert sichtbare Signaturfunde samt Suchbereich ohne erneutes Lesen der Dateiinhalte. Diese Funktion ist noch nicht in den stabilen 3.0.14-Downloads enthalten. [Entwicklungsstand](CHANGELOG.md).
+**3.0.15 in Vorbereitung:** CSV-Fundliste, Kontextmenü und Tastaturbedienung, dauerhafte Suchlauf-Zusammenfassung, direkte Partitionsauswahl und XFS-NREXT64-Korrektur sind abgenommen. Die endgültigen Paketversionen und die Veröffentlichung werden getrennt geprüft. [Änderungen](RELEASE_NOTES_3.0.15.md) · [Benutzerhilfe](HILFE_3.0.15.md).
 
 Export und Imageerstellung haben eigene, wieder aufrufbare Fortschrittsfenster mit
 Bereichsraster und Berichtaktionen. Die Dateisystemanalyse zeigt ihren Fortschritt
