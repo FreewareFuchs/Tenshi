@@ -13,6 +13,48 @@ from recoverydesk.batch_export import export_batch
 @unittest.skipUnless(all(shutil.which(tool) for tool in ('mkfs.fat', 'mcopy', 'mmd', 'mdel')),
                      'dosfstools and mtools required')
 class RealFat32ImageTests(unittest.TestCase):
+    def test_external_delete_recovers_bytes_and_parent_via_directory_entries(self):
+        with tempfile.TemporaryDirectory(prefix='tenshi-fat32-deleted-ci-') as temporary:
+            root = Path(temporary)
+            image = root / 'new-test-image.img'
+            with image.open('xb') as stream:
+                stream.truncate(64 * 1024**2)
+
+            def run(*args):
+                subprocess.run(args, check=True, capture_output=True, timeout=45)
+
+            originals = {
+                'ACTIVE.BIN': hashlib.shake_256(b'FAT32 active').digest(9001),
+                'RESTORE.BIN': hashlib.shake_256(b'FAT32 deleted').digest(9001),
+            }
+            run('mkfs.fat', '-F', '32', '-s', '1', str(image))
+            run('mmd', '-i', str(image), '::/FOLDER')
+            for name, data in originals.items():
+                seed = root / name
+                seed.write_bytes(data)
+                run('mcopy', '-i', str(image), str(seed), '::/FOLDER/' + name)
+            run('mdel', '-i', str(image), '::/FOLDER/RESTORE.BIN')
+
+            before = hashlib.sha256(image.read_bytes()).digest()
+            index = scan_tree(str(image))
+            folder, = index.list_dir(index.root)
+            self.assertEqual(folder.name.upper(), 'FOLDER')
+            entries = index.list_dir(folder.record_number)
+            active, = index.list_dir(folder.record_number, show_deleted=False)
+            deleted, = [entry for entry in entries if entry.is_deleted]
+            self.assertEqual(active.name.upper(), 'ACTIVE.BIN')
+            self.assertEqual(deleted.name.upper(), '?ESTORE.BIN')
+            self.assertTrue(deleted.recoverable, deleted.unsupported_reason)
+
+            target = root / 'export'
+            target.mkdir()
+            report = export_batch(str(image), index, [deleted], str(target))
+            self.assertEqual(report.errors, [])
+            self.assertEqual(report.exported, 1)
+            exported, = [path for path in (Path(report.root) / 'files').rglob('*') if path.is_file()]
+            self.assertEqual(exported.read_bytes(), originals['RESTORE.BIN'])
+            self.assertEqual(hashlib.sha256(image.read_bytes()).digest(), before)
+
     def test_external_delete_then_free_signature_search_exports_only_deleted_payload(self):
         from test_signature_search import picture
         from recoverydesk.signature_search import scan_signatures

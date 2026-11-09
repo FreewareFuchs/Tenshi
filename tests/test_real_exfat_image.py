@@ -16,6 +16,54 @@ from recoverydesk.batch_export import export_batch
                      and importlib.util.find_spec('FATtools') is not None,
                      'exfatprogs and FATtools required')
 class RealExfatImageTests(unittest.TestCase):
+    def test_external_delete_recovers_long_name_and_bytes_via_directory_entries(self):
+        from FATtools.Volume import vopen, vclose
+
+        with tempfile.TemporaryDirectory(prefix='tenshi-exfat-deleted-ci-') as temporary:
+            root = Path(temporary)
+            image = root / 'new-test-image.img'
+            with image.open('xb') as stream:
+                stream.truncate(64 * 1024**2)
+            subprocess.run(['mkfs.exfat', '-c', '4096', str(image)],
+                           check=True, capture_output=True, timeout=45)
+
+            deleted_name = 'Grüne gelöschte Referenz.bin'
+            originals = {
+                'active.bin': hashlib.shake_256(b'exFAT active').digest(9001),
+                deleted_name: hashlib.shake_256(b'exFAT deleted').digest(9001),
+            }
+            volume = vopen(str(image), 'r+b')
+            try:
+                for name, data in originals.items():
+                    handle = volume.create(name)
+                    try:
+                        handle.write(data)
+                        self.assertTrue(handle.File.nofat, 'Reference must be contiguous')
+                    finally:
+                        handle.close()
+                volume.erase(deleted_name)
+            finally:
+                vclose(volume)
+            subprocess.run(['fsck.exfat', '-n', str(image)],
+                           check=True, capture_output=True, timeout=45)
+
+            before = hashlib.sha256(image.read_bytes()).digest()
+            index = scan_tree(str(image))
+            active, = index.list_dir(index.root, show_deleted=False)
+            deleted, = [entry for entry in index.list_dir(index.root) if entry.is_deleted]
+            self.assertEqual(active.name, 'active.bin')
+            self.assertEqual(deleted.name, deleted_name)
+            self.assertTrue(deleted.recoverable, deleted.unsupported_reason)
+
+            target = root / 'export'
+            target.mkdir()
+            report = export_batch(str(image), index, [deleted], str(target))
+            self.assertEqual(report.errors, [])
+            self.assertEqual(report.exported, 1)
+            exported = Path(report.root) / 'files' / deleted_name
+            self.assertEqual(exported.read_bytes(), originals[deleted_name])
+            self.assertEqual(hashlib.sha256(image.read_bytes()).digest(), before)
+
     def test_external_delete_free_signature_export_and_resume(self):
         from FATtools.Volume import vopen, vclose
         from recoverydesk.signature_search import scan_signatures
