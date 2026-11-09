@@ -13,6 +13,81 @@ from recoverydesk.batch_export import export_batch
 @unittest.skipUnless(all(shutil.which(tool) for tool in ('mkfs.fat', 'mcopy', 'mmd', 'mdel')),
                      'dosfstools and mtools required')
 class RealFat32ImageTests(unittest.TestCase):
+    def test_external_delete_leaves_long_names_with_ambiguous_short_name_checksum(self):
+        with tempfile.TemporaryDirectory(prefix='tenshi-fat32-long-name-ci-') as temporary:
+            root = Path(temporary)
+            image = root / 'new-test-image.img'
+            with image.open('xb') as stream:
+                stream.truncate(64 * 1024**2)
+
+            def run(*args):
+                subprocess.run(args, check=True, capture_output=True, timeout=45)
+
+            names = {'FIRST': 'Reference name Alpha.bin',
+                     'SECOND': 'Reference name Bravo.bin'}
+            originals = {folder: hashlib.shake_256(name.encode('ascii')).digest(9001)
+                         for folder, name in names.items()}
+            run('mkfs.fat', '-F', '32', '-s', '1', str(image))
+            for folder, name in names.items():
+                seed = root / name
+                seed.write_bytes(originals[folder])
+                run('mmd', '-i', str(image), '::/' + folder)
+                run('mcopy', '-i', str(image), str(seed), f'::/{folder}/{name}')
+
+            initial = scan_tree(str(image))
+            folders = {entry.name.upper(): entry for entry in initial.list_dir(initial.root)}
+            self.assertEqual(set(folders), set(names))
+
+            def read_name_records(folder):
+                # The only file follows the two dot entries in this fresh directory.
+                offset = initial.volumes.cluster_offset(folders[folder].locator[0]) + 64
+                with image.open('rb') as stream:
+                    stream.seek(offset)
+                    return tuple(stream.read(32) for _ in range(3))
+
+            short_names = set()
+            checksums = set()
+            for folder, name in names.items():
+                active, = initial.list_dir(folders[folder].record_number)
+                self.assertEqual(active.name, name)
+                outer, inner, short = read_name_records(folder)
+                self.assertEqual((outer[0], inner[0]), (0x42, 0x01))
+                self.assertEqual((outer[11], inner[11]), (0x0F, 0x0F))
+                self.assertEqual(outer[13], inner[13])
+                short_names.add(short[:11])
+                checksums.add(inner[13])
+
+                run('mdel', '-i', str(image), f'::/{folder}/{name}')
+                deleted = read_name_records(folder)
+                self.assertEqual([record[0] for record in deleted], [0xE5] * 3)
+                self.assertEqual(tuple(record[1:] for record in deleted[:2]),
+                                 (outer[1:], inner[1:]))
+                name_bytes = b''.join(record[1:11] + record[14:26] + record[28:32]
+                                      for record in reversed(deleted[:2]))
+                self.assertEqual(name_bytes.decode('utf-16le').split('\0', 1)[0], name)
+
+            # Distinct long names can have identical short names and checksums.
+            self.assertEqual(len(short_names), 1)
+            self.assertEqual(len(checksums), 1)
+            before = hashlib.sha256(image.read_bytes()).digest()
+            index = scan_tree(str(image))
+            selected = index.list_dir(index.root)
+            for folder in selected:
+                entry, = index.list_dir(folder.record_number)
+                self.assertTrue(entry.is_deleted)
+                self.assertTrue(entry.name.startswith('?'))
+                self.assertTrue(entry.recoverable, entry.unsupported_reason)
+
+            target = root / 'export'
+            target.mkdir()
+            report = export_batch(str(image), index, selected, str(target))
+            self.assertEqual(report.errors, [])
+            self.assertEqual(report.exported, 2)
+            for folder in selected:
+                recovered, = (Path(report.root) / 'files' / folder.name).iterdir()
+                self.assertEqual(recovered.read_bytes(), originals[folder.name.upper()])
+            self.assertEqual(hashlib.sha256(image.read_bytes()).digest(), before)
+
     def test_external_delete_recovers_bytes_and_parent_via_directory_entries(self):
         with tempfile.TemporaryDirectory(prefix='tenshi-fat32-deleted-ci-') as temporary:
             root = Path(temporary)
