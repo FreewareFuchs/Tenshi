@@ -1,5 +1,7 @@
 # Noch nicht veröffentlicht
 
+- **Lesbare Größen in der Signaturfundliste:** Die Tabelle zeigt Größen passend in B, KiB, MiB und größeren Einheiten. Die Auswahlzeile nennt die Gesamtgröße der markierten Funde. Die Dateiprüfung und die CSV-Fundliste enthalten die exakten Bytewerte.
+
 - **Signaturfunde verständlich einordnen:** Die Dateiprüfung zeigt erzeugten Fundnamen, erkannten Typ und Fundposition statt Dateisystem-Datensatz und einer vermeintlichen Rettbarkeitsbewertung. Die Erklärung unterscheidet Fund, Lesetest und Inhaltsprüfung. Sie gilt für alle Dateitypen; Hilfe und Erklärung stehen in sechs Sprachen bereit. Keine zusätzlichen Inhaltslesevorgänge oder Änderungen an Such-, Export- und Prüfverfahren.
 
 # Tenshi 3.0.15 – stabil veröffentlicht (08.11.2026)

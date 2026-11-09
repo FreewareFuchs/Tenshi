@@ -1,6 +1,7 @@
 """Metadata-only signature result view; actions reuse the application's readers."""
 import tkinter as tk
 from tkinter import ttk
+from .explorer import display_size
 from .i18n import translate
 
 
@@ -51,7 +52,7 @@ class SignatureResults(ttk.Frame):
         self.caption.pack(fill='x',pady=(0,3))
         table=ttk.Frame(self);table.pack(fill='both',expand=True)
         self.tree=ttk.Treeview(table,columns=('type','size','offset'),show='tree headings',selectmode='extended',height=5)
-        for key,title,width in (('#0','Name',340),('type','Typ',100),('size','Größe (Bytes)',125),('offset','Fundposition (Bytes)',180)):
+        for key,title,width in (('#0','Name',340),('type','Typ',100),('size','Größe',125),('offset','Fundposition (Bytes)',180)):
             self.tree.heading(key,text=title,command=lambda col=key:self.sort(col))
             self.tree.column(key,width=width,minwidth=80,stretch=(key=='#0'))
         ys=ttk.Scrollbar(table,orient='vertical',command=self.tree.yview)
@@ -77,7 +78,7 @@ class SignatureResults(ttk.Frame):
         self.entries={str(entry.key):entry for entry in entries}
         for key,entry in self.entries.items():
             self.tree.insert('', 'end',iid=key,text=entry.name,
-                values=(entry.name.split('_',1)[0],f'{entry.size:,}',f'{entry.locator[1]:,}'))
+                values=(entry.name.split('_',1)[0],display_size(entry.size),f'{entry.locator[1]:,}'))
         self.reset_filters()
         self.browser.configure(state='normal' if self.entries else 'disabled')
         self._selection_changed()
@@ -102,13 +103,16 @@ class SignatureResults(ttk.Frame):
         return tuple(self.entries[key] for key in self.tree.get_children())
 
     def _selection_changed(self):
-        count=len(self.selected_entries())
+        selected = self.selected_entries()
+        count = len(selected)
         self.preview.configure(state='normal' if count else 'disabled')
         self.inspect.configure(state='normal' if count==1 else 'disabled')
         self.export.configure(state='normal' if count or self.export_running() else 'disabled')
         self.report.configure(state='normal' if self.tree.get_children() else 'disabled')
         text=translate('{visible} von {total} Funden sichtbar · {selected} ausgewählt',self.language).format(
             visible=len(self.tree.get_children()),total=len(self.entries),selected=count)
+        if selected:
+            text += f' ({display_size(sum(entry.size for entry in selected))})'
         if not self._minimum_valid:
             text+=' · '+translate('Mindestgröße: ganze Zahl von 0 bis 4294967296 KiB eingeben.',self.language)
         elif self.entries and not self.tree.get_children():
