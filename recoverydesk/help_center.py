@@ -225,6 +225,8 @@ def topic_text(topic: str, language: str) -> tuple[str, str]:
     labels, bodies = DATA[topic]
     body = bodies[lang].format(version=display_version())
     if topic == 'browser':
+        from .recovery_quality import SIGNATURE_CHECK_GUIDE
+        body += '\n\n' + translate(SIGNATURE_CHECK_GUIDE, language)
         body += '\n\n' + translate(
             'Unter Suchbereich direkt eine erkannte NTFS-, FAT32- oder exFAT-Partition wählen: Tenshi übernimmt Dateisystem und Partitionsoffset und durchsucht nur deren freie Bereiche. Die Liste stammt aus der aktuellen Partitionsanalyse derselben Quelle. Warnmarkierungen bleiben sichtbar; ein erkannter Eintrag ist keine Zusage gültiger Belegungsdaten. Andere Dateisysteme werden hier nicht angeboten. Falls nichts Passendes erscheint, im Reiter Partitionen die Schnell- oder Tiefensuche verwenden oder Manuell: freie Bereiche wählen. Manuelle Änderungen an Dateisystem oder Offset wechseln in den manuellen Modus. Gesamtes Image durchsucht dagegen die vollständige Quelle; Dateisystem und Offset sind dort deaktiviert. Vor dem Start zeigt die Bestätigung den tatsächlich gewählten Bereich und Offset. Eine geänderte Quelle muss neu analysiert werden. Die Zusammenfassung des vorherigen Suchlaufs bleibt davon unberührt.',language)
         body += '\n\n' + translate(

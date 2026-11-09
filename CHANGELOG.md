@@ -1,4 +1,8 @@
-# Tenshi 3.0.15 – in Vorbereitung
+# Noch nicht veröffentlicht
+
+- **Signaturfunde verständlich einordnen:** Die Dateiprüfung zeigt erzeugten Fundnamen, erkannten Typ und Fundposition statt Dateisystem-Datensatz und einer vermeintlichen Rettbarkeitsbewertung. Die Erklärung unterscheidet Fund, Lesetest und Inhaltsprüfung. Sie gilt für alle Dateitypen; Hilfe und Erklärung stehen in sechs Sprachen bereit. Keine zusätzlichen Inhaltslesevorgänge oder Änderungen an Such-, Export- und Prüfverfahren.
+
+# Tenshi 3.0.15 – stabil veröffentlicht (08.11.2026)
 
 - **Suchbereich direkt wählen:** Im Signaturreiter zwischen gesamtem Image, manuell eingegebenen freien Bereichen und erkannten NTFS-/FAT32-/exFAT-Partitionen wählen. Dateisystem und Offset werden bei einer Partitionswahl übernommen; veraltete Analysen und geänderte Quellimages werden abgefangen. Die Zusammenfassung des vorherigen Laufs bleibt erhalten.
 
@@ -9,7 +13,7 @@
 - **Signatur-Ergebnisliste bedienen:** Strg+F fokussiert den Filter des aktiven Reiters; Escape hebt nur die Fundauswahl auf. Rechtsklick und Umschalt+F10 öffnen die vorhandenen Aktionen mit derselben Auswahl- und Quellenprüfung. Die Hilfe erklärt das Verhalten in sechs Sprachen.
 
 - **CSV-Fundliste** ([PR #141](https://github.com/FreewareFuchs/Tenshi/pull/141), abgenommen): Alle sichtbaren Signaturfunde in aktueller Sortierung mit Größe, absoluter Fundposition und ursprünglichem Suchbereich speichern. Filter gelten unabhängig von der Auswahl. UTF-8 mit BOM und Semikolon; vorhandene Dateien bleiben erhalten. Hilfe in sechs Sprachen ergänzt.
-Funktionen und Bedienung sind abgenommen. Endgültige Paketversionen, Starts und Veröffentlichung stehen noch aus. Bis dahin bleiben die stabilen 3.0.14-Downloads aktuell. [Änderungen und Freigabestand](RELEASE_NOTES_3.0.15.md).
+Funktionen, Paketversionen und Starts unter Windows und Linux sind abgenommen. GitHub, APT und Website sind veröffentlicht und geprüft; direkte Downloads wurden vom Benutzer bestätigt. [Änderungen](RELEASE_NOTES_3.0.15.md).
 
 # Tenshi 3.0.14 – stabil veröffentlicht (05.11.2026)
 
