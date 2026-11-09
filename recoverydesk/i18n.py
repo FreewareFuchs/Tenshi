@@ -160,6 +160,9 @@ add('Mindestgröße: ganze Zahl von 0 bis 4294967296 KiB eingeben.',
     'Минимальный размер: целое число от 0 до 4294967296 KiB.',
     '最小サイズ：0～4294967296 KiBの整数を入力してください。')
 add('Größe (Bytes)', 'Size (bytes)', 'Tamaño (bytes)', '大小（字节）', 'Размер (байты)', 'サイズ（バイト）')
+add('Möglicher Originalname · {name}', 'Possible original name · {name}',
+    'Posible nombre original · {name}', '可能的原始名称 · {name}',
+    'Возможное исходное имя · {name}', '元の名前の候補 · {name}')
 add('Funde stehen direkt im Reiter Dateisignaturen mit Name, Typ, Größe und Fundposition. Spaltenüberschriften sortieren; Strg+A wählt alle angezeigten Funde. Vorschau und Datei prüfen verwenden die dortige Auswahl. Mehrere Dateien lassen sich mit Vor/Zurück ansehen und gemeinsam exportieren. Stapel-Export / fortsetzen öffnet bei laufendem Auftrag dessen Fortschritt erneut. In Dateiansicht anzeigen wechselt zur bisherigen Ansicht. Eine neue Quelle oder Analyse verwirft die alte Fundliste.',
     'Findings appear directly in File signatures with name, type, size and position. Click column headings to sort; Ctrl+A selects all displayed findings. Preview and Check file use this selection. Browse several files with Previous/Next or export them together. Batch export / resume reopens the progress of a running job. Show in file browser opens the existing view. A new source or analysis discards the old findings.',
     'Los hallazgos aparecen en Firmas de archivos con nombre, tipo, tamaño y posición. Las cabeceras ordenan; Ctrl+A selecciona todos los hallazgos mostrados. Vista previa y Comprobar archivo usan esta selección. Recorre varios archivos con Anterior/Siguiente o expórtalos juntos. La exportación por lotes vuelve a abrir el progreso del trabajo en curso. Mostrar en vista de archivos abre la vista habitual. Una nueva fuente o análisis descarta los hallazgos anteriores.',

@@ -19,7 +19,7 @@ from .sources import is_device_source, open_source
 from .partition_scan import AnalysisReport, Partition
 from .ntfs import NTFSInfo, DataRun, parse_boot_sector
 from .ntfs_browser import FileEntry, FileIndex
-from .filesystems import GenericEntry, GenericIndex, detect_volume
+from .filesystems import GenericEntry, GenericIndex, detect_volume, valid_fat32_name_hint
 
 FORMAT = 'tenshi-analysis-session'
 VERSION = 1
@@ -146,8 +146,14 @@ def _encode_index(index) -> dict:
     if isinstance(index, GenericIndex):
         props = {f.name: getattr(index, f.name) for f in fields(GenericIndex)
                  if f.name not in ('filesystem', 'offset', 'entries', 'volumes', 'children')}
+        entries = []
+        for entry in index.entries:
+            data = asdict(entry)
+            if entry.possible_original_name is None:
+                del data['possible_original_name']
+            entries.append(data)
         return {'type': 'generic', 'filesystem': index.filesystem, 'offset': index.offset,
-                'entries': [asdict(e) for e in index.entries],
+                'entries': entries,
                 'children': _entry_map(index.entries, index.children), 'properties': props}
     raise SessionError('Unbekannter Dateisystemindex.')
 
@@ -422,14 +428,19 @@ def _decode_index(raw: dict, source: str):
         if volume.label != raw.get('filesystem'):
             raise SessionError('Das gespeicherte Dateisystem passt nicht mehr zum Image.')
         allowed = {f.name for f in fields(GenericEntry)}
+        required = allowed - {'valid_data_length', 'possible_original_name'}
         for d in rows:
-            if not isinstance(d, dict) or set(d) not in (allowed, allowed - {'valid_data_length'}):
+            if not isinstance(d, dict) or not required <= d.keys() <= allowed:
                 raise SessionError('Ungültiger Dateisystemeintrag.')
             d = dict(d)
             d['locator'] = _decode_locator(d['locator'])
             entry = GenericEntry(**d)
             if not isinstance(entry.name, str) or len(entry.name) > MAX_NAME:
                 raise SessionError('Ungültiger Dateiname in Sitzung.')
+            if entry.possible_original_name is not None and (
+                    volume.label != 'FAT32' or entry.is_deleted is not True or entry.is_directory is not False
+                    or not valid_fat32_name_hint(entry.possible_original_name)):
+                raise SessionError('Ungültiger FAT32-Namenshinweis in Sitzung.')
             if (type(entry.size) is not int or not 0 <= entry.size <= (1 << 44) or
                 type(entry.record_number) is not int or entry.record_number < 0 or
                 type(entry.parent_record) is not int or entry.parent_record < -1):
