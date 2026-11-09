@@ -321,6 +321,14 @@ class SignatureGuiTests(unittest.TestCase):
         view.show_entries(entries);view.sort('size')
         self.assertEqual([e.size for e in view.entries.values()],[9,100,1024])
         self.assertEqual([view.entries[k].size for k in view.tree.get_children()],[9,100,1024])
+        self.assertEqual([view.tree.set(k,'size') for k in view.tree.get_children()],
+                         ['9 B','100 B','1.0 KiB'])
+        view.select_all()
+        self.assertIn('3 ausgewählt (1.1 KiB)',view.caption.cget('text'))
+        view.minimum_kib.set('1')
+        self.assertIn('1 ausgewählt (1.0 KiB)',view.caption.cget('text'))
+        view.clear_selection()
+        self.assertTrue(view.caption.cget('text').endswith('0 ausgewählt'))
         view.show_entries([_signature_entry(n*4096,10,'PNG') for n in range(1000)])
         view.select_all()
         self.assertEqual(len(view.selected_entries()),1000)
@@ -339,6 +347,7 @@ class SignatureGuiTests(unittest.TestCase):
                 self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),bottom,language)
                 self.assertLessEqual(widget.winfo_rootx()+widget.winfo_width(),right,language)
             self.assertEqual(view.tree.heading('offset')['text'],translate('Fundposition (Bytes)',language))
+            self.assertEqual(view.tree.heading('size')['text'],translate('Größe',language))
             self.assertEqual(view.report.cget('text'),translate('Fundliste speichern…',language))
 
     def test_csv_report_uses_filtered_sorted_rows_without_selection_or_source_reads(self):
@@ -448,6 +457,7 @@ class SignatureGuiTests(unittest.TestCase):
             self.assertEqual(view.query.get(),'pNg')
             self.assertEqual(len(view.selected_entries()),1)
             expected=translate('{visible} von {total} Funden sichtbar · {selected} ausgewählt',language).format(visible=1,total=2,selected=1)
+            expected+=f' ({view.selected_entries()[0].size} B)'
             self.assertEqual(view.caption.cget('text'),expected)
             self.assertEqual(view.kind_combo.cget('values')[0],translate('Alle Dateitypen',language))
         view.reset_filters()
