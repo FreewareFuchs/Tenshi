@@ -21,7 +21,7 @@ from typing import Callable, Iterable
 from .resilience import atomic_replace_json, is_transient_lock
 from .diagnostics import traced, log_issue
 from .ntfs_browser import safe_name, export_file as export_ntfs_file
-from .filesystems import export_file as export_other_file
+from .filesystems import export_file as export_other_file, valid_fat32_name_hint
 from .export_io import ExportCancelled
 from .export_errors import export_error_message
 from .export_target import assess_target, TargetReviewDeclined
@@ -189,8 +189,15 @@ def _atomic_json(dest: Path, data: dict, *, source: str | None = None):
         atomic_replace_json(dest, data)
 
 
-def _write_log(path: Path, state: dict, result: BatchResult):
+def _write_log(path: Path, state: dict, result: BatchResult, *, plan=()):
     from .verification_labels import EXPORT_SCOPE, RESUME_SCOPE, export_status_label
+    name_hints = {}
+    if state['identity']['filesystem'] == 'FAT32':
+        for task in plan:
+            hint = getattr(task.entry, 'possible_original_name', None)
+            if (not task.is_directory and task.entry.is_deleted
+                    and valid_fat32_name_hint(hint)):
+                name_hints[task.path] = hint
     rows = [f'Tenshi Exportbericht — {datetime.now(timezone.utc).isoformat()}',
             f'Quelle: {state["identity"]["source"]}',
             f'Dateisystem: {state["identity"]["filesystem"]}',
@@ -203,6 +210,8 @@ def _write_log(path: Path, state: dict, result: BatchResult):
             '', EXPORT_SCOPE, RESUME_SCOPE, '', 'Einzelergebnisse:']
     for key, item in sorted(state['results'].items()):
         rows.append(f'{export_status_label(item["status"])}\t{key}\t{item.get("detail", "")}')
+        if key in name_hints:
+            rows.append(f'  Möglicher Originalname (Namenshinweis): {name_hints[key]}')
         confirmed = item.get('sha256')
         copied = item.get('copied_sha256')
         if (item['status'] == 'Erfolgreich' and not item.get('verification_pending')
@@ -651,7 +660,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
             if checksums.summary_verified:result.checksums=str(root/'SHA256SUMS.sha256')
             result.checksum_errors.append(export_error_message(exc))
     if cancel and cancel():result.cancelled=True
-    _write_log(log_path, state, result)
+    _write_log(log_path, state, result, plan=plan)
     result.errors = [f'{k}: {v.get("detail", "")}' for k,v in state['results'].items()
                      if v.get('status') in ('Fehler', 'Übersprungen', 'Abgebrochen')]
     result.errors.extend(result.checksum_errors)
