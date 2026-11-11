@@ -3889,7 +3889,11 @@ class RecoveryDeskApp(tk.Tk):
         panel.pack(fill='both', expand=True)
         ttk.Label(panel, text='Datei vor der Wiederherstellung prüfen',
                   font=('Segoe UI', 14, 'bold')).pack(anchor='w')
-        description = (f'Name: {item.name}\nDateisystem: {filesystem}\n'
+        name_line = f'Name: {item.name}'
+        name_hint = getattr(item, 'possible_original_name', None)
+        if name_hint:
+            name_line += '\n' + translate('Möglicher Originalname · {name}', self.language).format(name=name_hint)
+        description = (f'{name_line}\nDateisystem: {filesystem}\n'
                        f'Eintrag: {item.record_number}\n'
                        f'Gemeldete Dateigröße: {item.size:,} Bytes\n'
                        f'Status: {item.status}\nRettbarkeit: {quality.label}\n'

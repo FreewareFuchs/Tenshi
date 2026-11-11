@@ -76,6 +76,7 @@ class RealFat32ImageTests(unittest.TestCase):
                 entry, = index.list_dir(folder.record_number)
                 self.assertTrue(entry.is_deleted)
                 self.assertTrue(entry.name.startswith('?'))
+                self.assertEqual(entry.possible_original_name, names[folder.name.upper()])
                 self.assertTrue(entry.recoverable, entry.unsupported_reason)
 
             target = root / 'export'

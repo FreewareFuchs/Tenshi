@@ -194,6 +194,10 @@ def compile_search(criteria: SearchCriteria):
     kind = criteria.kind
     in_path = criteria.in_path
 
+    def matches_name(candidate):
+        candidate = candidate.casefold()
+        return fnmatchcase(candidate, term) if wildcard else term in candidate
+
     def match(entry, path=''):
         is_dir = entry.is_directory
         if kind == 'Nur Dateien' and is_dir:
@@ -201,12 +205,16 @@ def compile_search(criteria: SearchCriteria):
         if kind == 'Nur Ordner' and not is_dir:
             return False
         if term:
-            candidate = (path if in_path else str(entry.name)).casefold()
-            if wildcard:
-                if not fnmatchcase(candidate, term):
+            candidate = path if in_path else str(entry.name)
+            if not matches_name(candidate):
+                hint = getattr(entry, 'possible_original_name', None)
+                if not hint:
                     return False
-            elif term not in candidate:
-                return False
+                if in_path:
+                    folder, separator, _ = path.rpartition('\\')
+                    hint = folder + separator + hint
+                if not matches_name(hint):
+                    return False
         if check_extensions and (is_dir or file_extension(entry) not in extensions):
             return False
         if min_size is not None or max_size is not None:

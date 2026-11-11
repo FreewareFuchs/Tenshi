@@ -44,6 +44,46 @@ def read_exact(f, where, n):
     return data
 
 
+def valid_fat32_name_hint(name: str) -> bool:
+    return (isinstance(name, str) and 0 < len(name) <= 255 and name.isprintable()
+            and not any(char in '<>:"/\\|?*' for char in name)
+            and name == name.rstrip(' .') and len(name.encode('utf-16le')) <= 510)
+
+
+def _deleted_fat32_name(records: list[bytes], short: bytes) -> str | None:
+    if not 1 <= len(records) <= 20:
+        return None
+    checksum = records[0][13]
+    if any(record[12] or record[26:28] != b'\0\0' or record[13] != checksum
+           for record in records):
+        return None
+
+    # Reverse the checksum across the ten surviving bytes of the short name.
+    # A plausible first byte is a consistency check, not proof of association.
+    first = checksum
+    for byte in reversed(short[1:11]):
+        first = (first - byte) & 0xFF
+        first = ((first << 1) | (first >> 7)) & 0xFF
+    if first != 0x05 and (first <= 0x20 or first in b'"*+,./:;<=>?[\\]|\x7f\xe5'):
+        return None
+
+    raw = b''.join(record[1:11] + record[14:26] + record[28:32]
+                   for record in reversed(records))
+    units = [unit for (unit,) in struct.iter_unpack('<H', raw)]
+    # Deletion removed the start marker. Require the terminator in the final
+    # fragment, with only padding after it, to reject incomplete or mixed runs.
+    end = units.index(0) if 0 in units else -1
+    if end < 13 * (len(records) - 1) or any(unit != 0xFFFF for unit in units[end+1:]):
+        return None
+    if 0xFFFF in units[:end]:
+        return None
+    try:
+        name = raw[:2*end].decode('utf-16le')
+    except UnicodeDecodeError:
+        return None
+    return name if valid_fat32_name_hint(name) else None
+
+
 @dataclass(slots=True)
 class GenericEntry:
     record_number: int
@@ -56,6 +96,7 @@ class GenericEntry:
     unsupported_reason: str = ''
     link_index: int = 0
     valid_data_length: int | None = None  # exFAT initialized prefix; None requires a rescan
+    possible_original_name: str | None = None
     @property
     def key(self): return f'{self.record_number}:{self.link_index}'
     @property
@@ -261,21 +302,27 @@ class FAT32(VolumeBase):
                 break
         rows=[]
         lfn=[]
+        deleted_lfn = []
         for i in range(0, len(content)-31, 32):
             e=content[i:i+32]
             if e[0]==0: break
             deleted = e[0] == 0xE5
             if e[11] == 0x0F:
                 if deleted:
-                    lfn.clear()  # Original LFN sequence number was erased.
+                    lfn.clear()
+                    if len(deleted_lfn) <= 20:
+                        deleted_lfn.append(bytes(e))
                     continue
+                deleted_lfn.clear()
                 order=e[0] & 0x1F
                 units=e[1:11]+e[14:26]+e[28:32]
                 if order:
                     lfn.append((order,e[13],bytes(units)))
                 continue
             if e[11] & 0x08:
-                lfn.clear(); continue
+                lfn.clear()
+                deleted_lfn.clear()
+                continue
             cluster_id=(u16(e,20)<<16)|u16(e,26)
             size=u32(e,28)
             directory=bool(e[11]&0x10)
@@ -298,6 +345,8 @@ class FAT32(VolumeBase):
                     raw=b''.join(fragment for _,_,fragment in sorted(lfn))
                     name=raw.decode('utf-16le','replace').split('\x00')[0].rstrip('\uffff')
             lfn.clear()
+            possible_original_name = _deleted_fat32_name(deleted_lfn, e) if deleted and not directory else None
+            deleted_lfn.clear()
             if name in ('.','..') or not name:
                 continue
             unsupported='' if directory or size==0 or cluster_id>=2 else 'Datei ohne gültigen Startcluster'
@@ -314,7 +363,7 @@ class FAT32(VolumeBase):
                         entry_locator = (cluster_id, 'mirror', mirror_chain)
                     elif not self.deleted_range_is_free(f, cluster_id, size):
                         unsupported = 'Freigegebene FAT32-Cluster sind bereits belegt oder nicht plausibel'
-            rows.append((name,directory,size,entry_locator,unsupported,deleted))
+            rows.append((name,directory,size,entry_locator,unsupported,deleted,None,possible_original_name))
         return rows
 
 
@@ -1020,7 +1069,10 @@ def scan_tree(path: str, offset: int = 0, max_entries: int = MAX_ENTRIES,
                 continue
             for row in rows:
                 valid_data_length = None
-                if len(row) == 7:
+                possible_original_name = None
+                if len(row) == 8:
+                    name, directory, size, loc, reason, deleted, valid_data_length, possible_original_name = row
+                elif len(row) == 7:
                     name, directory, size, loc, reason, deleted, valid_data_length = row
                 elif len(row) == 6:
                     name, directory, size, loc, reason, deleted = row
@@ -1033,7 +1085,8 @@ def scan_tree(path: str, offset: int = 0, max_entries: int = MAX_ENTRIES,
                 serial += 1
                 entry = GenericEntry(serial, name, parent, directory, size, loc,
                                      is_deleted=deleted, unsupported_reason=reason,
-                                     valid_data_length=valid_data_length)
+                                     valid_data_length=valid_data_length,
+                                     possible_original_name=possible_original_name)
                 entries.append(entry)
                 by_id[entry.record_number] = entry
                 children[parent].append(entry)
