@@ -1,5 +1,7 @@
 # Noch nicht veröffentlicht
 
+- **FAT32-Namenshinweis im Exportbericht:** Der mögliche Originalname steht beim jeweiligen Einzelergebnis. Auch beim Fortsetzen eines vorhandenen Auftrags wird der aktuelle Namenshinweis ergänzt.
+
 - **Namenshinweis für gelöschte FAT32-Dateien:** „Datei prüfen“ zeigt einen möglichen Originalnamen, wenn die erhaltenen Namensfragmente plausibel zusammenpassen. Die Namenssuche findet auch diesen Hinweis. Der Kurzname bleibt der Name für den Export.
 
 - **Lesbare Größen in der Signaturfundliste:** Die Tabelle zeigt Größen passend in B, KiB, MiB und größeren Einheiten. Die Auswahlzeile nennt die Gesamtgröße der markierten Funde. Die Dateiprüfung und die CSV-Fundliste enthalten die exakten Bytewerte.
