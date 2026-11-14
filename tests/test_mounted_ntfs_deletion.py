@@ -4,6 +4,7 @@ Opt-in privileged integration test. Never accepts an external source path.
 """
 import errno
 import hashlib
+import json
 import os
 from pathlib import Path
 import shutil
@@ -29,7 +30,7 @@ class MountedNtfsDeletionTests(unittest.TestCase):
     def test_os_deleted_fragmented_file_preserves_original_bytes(self):
         self._check_deletion(remove_directories=False, fragmented=True)
 
-    def test_os_reused_deleted_clusters_do_not_confirm_original_content(self):
+    def test_os_reused_deleted_clusters_are_blocked_by_batch_export(self):
         self._check_deletion(remove_directories=False, overwrite=True)
 
     def _check_deletion(self, *, remove_directories, fragmented=False, overwrite=False):
@@ -193,6 +194,35 @@ class MountedNtfsDeletionTests(unittest.TestCase):
             batch = root / 'batch'
             batch.mkdir()
             first = export_batch(str(image), index, selected, str(batch))
+            if overwrite:
+                from recoverydesk.recovery_preflight import inspect_metadata
+                from recoverydesk.verification_labels import EXPORT_SCOPE
+                large = next(relative for relative in originals if len(relative.parts) > 1)
+                entry = index.by_record[active[large].record_number]
+                self.assertEqual(inspect_metadata(index, str(large), entry).state, 'Gesperrt')
+                # Low-level copying proves the bytes have actually changed;
+                # the application batch path must reject this metadata conflict.
+                raw_copy = (output / folder.name / large).read_bytes()
+                self.assertEqual(raw_copy, b'R' * len(originals[large]))
+                self.assertNotEqual(hashlib.sha256(raw_copy).digest(),
+                                    hashlib.sha256(originals[large]).digest())
+                for attempt in (first, export_batch(str(image), index, selected, str(batch))):
+                    self.assertEqual(attempt.skipped, 1)
+                    self.assertEqual(attempt.failed, 0)
+                    self.assertEqual(len(attempt.errors), 1)
+                    self.assertIn('bereits von einer vorhandenen Datei genutzt', attempt.errors[0])
+                    self.assertEqual(attempt.exported + attempt.verified_existing, 1)
+                    self.assertFalse((Path(attempt.root) / 'files' / folder.name / large).exists())
+                    state = json.loads(Path(attempt.manifest).read_text(encoding='utf-8'))
+                    item = state['results'][(Path(folder.name) / large).as_posix()]
+                    self.assertEqual(item['status'], 'Übersprungen')
+                    self.assertNotIn('sha256', item)
+                    report = Path(attempt.log).read_text(encoding='utf-8')
+                    self.assertIn(EXPORT_SCOPE, report)
+                    self.assertNotIn(hashlib.sha256(originals[large]).hexdigest(), report)
+                    self.assertNotIn(hashlib.sha256(raw_copy).hexdigest(), report)
+                self.assertEqual(hashlib.sha256(image.read_bytes()).digest(), before)
+                return
             self.assertEqual(first.errors, [])
             self.assertEqual(first.exported, len(originals))
             for relative, original in originals.items():
@@ -200,17 +230,8 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                     actual_path = (base / relative.name if remove_directories
                                    else base / folder.name / relative)
                     actual = actual_path.read_bytes()
-                    expected = b'R' * len(original) if overwrite and len(relative.parts) > 1 else original
-                    self.assertEqual(actual, expected)
-                    digest = hashlib.sha256(actual).hexdigest()
-                    self.assertEqual(digest, hashlib.sha256(expected).hexdigest())
-                    if overwrite and len(relative.parts) > 1:
-                        self.assertNotEqual(digest, hashlib.sha256(original).hexdigest())
-                        report = Path(first.log).read_text(encoding='utf-8')
-                        self.assertIn('SHA256 (Zieldatei bestätigt): ' + digest, report)
-                        self.assertNotIn(hashlib.sha256(original).hexdigest(), report)
-                        from recoverydesk.verification_labels import EXPORT_SCOPE
-                        self.assertIn(EXPORT_SCOPE, report)
+                    self.assertEqual(actual, original)
+                    self.assertEqual(hashlib.sha256(actual).digest(), hashlib.sha256(original).digest())
             resumed = export_batch(str(image), index, selected, str(batch))
             self.assertEqual(resumed.errors, [])
             self.assertEqual(resumed.exported, 0)
