@@ -191,6 +191,12 @@ def save_session(destination: str, source: str, report=None, index=None,
                 for entry in getattr(index, 'entries', ()))):
         raise SessionError('Signaturfunde werden nicht als Analysesitzung gespeichert. Das Image erneut durchsuchen oder einen gespeicherten Exportauftrag öffnen.')
     source, _ = _plain_image(source)
+    if isinstance(index, FileIndex):
+        from .ntfs_browser import validate_index_source, NTFSError
+        try:
+            validate_index_source(source, index)
+        except NTFSError as exc:
+            raise SessionError(str(exc)) from exc
     dest = os.path.abspath(destination)
     if os.path.normcase(dest) == os.path.normcase(source):
         raise SessionError('Sitzungsdatei und Quell-Image dürfen nicht identisch sein.')
@@ -203,6 +209,11 @@ def save_session(destination: str, source: str, report=None, index=None,
     fingerprint = fingerprint_image(source, offsets)
     if expected_fingerprint is not None:
         check_fingerprint(source, expected_fingerprint, original=source)
+    if isinstance(index, FileIndex):
+        try:
+            validate_index_source(source, index)
+        except NTFSError as exc:
+            raise SessionError(str(exc)) from exc
     if report and report.image_size != fingerprint['size']:
         raise SessionError('Die Partitionsanalyse passt nicht mehr zur Image-Größe.')
     payload = {
@@ -501,6 +512,9 @@ def load_session(filename: str, *, source_override: str | None = None) -> Restor
             raise SessionError('Gespeichertes Dateisystem ist inkonsistent.')
     else:
         offset, fs = 0, None
+    if isinstance(index, FileIndex):
+        from .ntfs_browser import ntfs_image_stamp
+        index._image_stamp = ntfs_image_stamp(source)
     # Reject a source that changed during the deserialization / boot checks.
     check_fingerprint(source, manifest['fingerprint'], original=manifest['source'])
     return RestoredSession(source, report, index, fs, offset, verified)

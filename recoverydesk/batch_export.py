@@ -20,7 +20,8 @@ from typing import Callable, Iterable
 
 from .resilience import atomic_replace_json, is_transient_lock
 from .diagnostics import traced, log_issue
-from .ntfs_browser import safe_name, export_file as export_ntfs_file
+from .ntfs_browser import (safe_name, export_file as export_ntfs_file,
+                           validate_index_source, NTFSError)
 from .filesystems import export_file as export_other_file, valid_fat32_name_hint
 from .export_io import ExportCancelled
 from .export_errors import export_error_message
@@ -362,6 +363,7 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
     if not os.path.isdir(target_dir):
         raise ValueError('Zielordner nicht vorhanden.')
     ensure_safe_destination(source, target_dir)
+    validate_index_source(source, index)
     selection = tuple(selection)
     plan = plan_selection(index, selection)
     if not plan:
@@ -372,8 +374,13 @@ def export_batch(source: str, index, selection: Iterable[object], target_dir: st
     def check_device(force=False):
         nonlocal last_device_check
         now = time.monotonic()
-        if device_snapshot is not None and (force or now - last_device_check >= .5):
-            check_device_identity(source, device_snapshot)
+        if force or now - last_device_check >= .5:
+            try:
+                validate_index_source(source, index)
+            except NTFSError as exc:
+                raise DeviceSourceChanged(str(exc)) from exc
+            if device_snapshot is not None:
+                check_device_identity(source, device_snapshot)
             last_device_check = now
     source_changed = False
     signature = _digest({'identity': identity, 'tasks': [_task_desc(i) for i in plan]})

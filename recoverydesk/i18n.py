@@ -1697,3 +1697,11 @@ add('Erzeugter Fundname: {name}\nErkannter Typ: {kind} · Größe: {size} Bytes\
     '生成的发现名称：{name}\n识别类型：{kind} · 大小：{size} 字节\n镜像中的位置：{offset} 字节\n\n{detail}',
     'Созданное имя находки: {name}\nТип: {kind} · Размер: {size} байт\nПозиция в образе: {offset} байт\n\n{detail}',
     '生成された検出名：{name}\n検出形式：{kind} · サイズ：{size} バイト\nイメージ内の位置：{offset} バイト\n\n{detail}')
+
+# Cached NTFS image analysis cannot be reused after an observable image change.
+add('Das Image wurde seit der Analyse geändert oder ausgetauscht. Quelle erneut einlesen.',
+    'The image has changed or been replaced since the scan. Scan the source again.',
+    'La imagen ha cambiado o se ha sustituido desde el análisis. Vuelva a analizar el origen.',
+    '映像自分析后已更改或被替换。请重新扫描源。',
+    'Образ изменён или заменён после анализа. Повторно просканируйте источник.',
+    'スキャン後にイメージが変更または置換されました。ソースを再スキャンしてください。')

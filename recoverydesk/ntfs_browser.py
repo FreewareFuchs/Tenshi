@@ -282,6 +282,28 @@ def _salvage_mft_batch(f, info: NTFSInfo, runs: list[DataRun],
                 work.append((rec, half))
     return found, sorted(missing)
 
+_IMAGE_CHANGED = 'Das Image wurde seit der Analyse geändert oder ausgetauscht. Quelle erneut einlesen.'
+
+
+def ntfs_image_stamp(path):
+    """Cheap regular-image change indicator, not a content-integrity proof."""
+    if is_device_source(path):
+        return None
+    meta = os.stat(path)
+    return (os.path.normcase(os.path.abspath(path)), meta.st_dev, meta.st_ino,
+            meta.st_size, meta.st_mtime_ns, meta.st_ctime_ns)
+
+
+def validate_index_source(source, index):
+    expected = getattr(index, '_image_stamp', None)
+    if expected is not None:
+        try:
+            current = ntfs_image_stamp(source)
+        except OSError as exc:
+            raise NTFSError(_IMAGE_CHANGED) from exc
+        if current != expected:
+            raise NTFSError(_IMAGE_CHANGED)
+
 
 def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
                    progress: Callable[[int,int],None] | None = None,
@@ -299,6 +321,7 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
         raise NTFSError('Fehlertolerante Suche erfordert eine Image-Datei. '
                         'Bitte zuerst ein sektorweises Abbild erstellen; '
                         'defekte Datenträger nicht mehrfach lesen.')
+    image_stamp = ntfs_image_stamp(path)
     entries = []
     damaged_records = 0
     record_error_reasons = {}
@@ -521,6 +544,10 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
         warnings.append(f'{len(detached)} zyklische NTFS-Elternketten unter „Nicht zugeordnet“ angezeigt.')
     if allocation_parse_failures and len(warnings) < 20:
         warnings.append(f'{allocation_parse_failures} NTFS-Indexbereiche konnten nicht vollständig gelesen werden.')
+    if ntfs_image_stamp(path) != image_stamp:
+        raise NTFSError(_IMAGE_CHANGED)
+    # Runtime-only: session files retain their existing schema/fingerprint.
+    result._image_stamp = image_stamp
     return result
 
 
@@ -618,6 +645,7 @@ def export_selection(source: str, index: FileIndex, selection: Iterable[FileEntr
     if not os.path.isdir(target_dir):
         raise ValueError('Der Zielordner existiert nicht.')
     ensure_safe_destination(source, target_dir)
+    validate_index_source(source, index)
     report = ExportReport()
     selected = list(selection)
     stack: list[tuple[FileEntry, str, frozenset[int]]] = [(e, target_dir, frozenset()) for e in reversed(selected)]
