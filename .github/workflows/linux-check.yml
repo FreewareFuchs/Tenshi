@@ -96,6 +96,8 @@ jobs:
           command -v mkntfs
           command -v ntfscp
           python3 -m unittest discover -s tests -p 'test_real_ntfs_image.py' -v
+      - name: Real OS deletion on a disposable NTFS image
+        run: sudo env TENSHI_TEST_MOUNTED_NTFS=1 python3 -m unittest discover -s tests -p 'test_mounted_ntfs_deletion.py' -v
       - name: Independently formatted exFAT reference and resume test
         run: |
           command -v mkfs.exfat
