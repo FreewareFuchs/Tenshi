@@ -29,7 +29,10 @@ class MountedNtfsDeletionTests(unittest.TestCase):
     def test_os_deleted_fragmented_file_preserves_original_bytes(self):
         self._check_deletion(remove_directories=False, fragmented=True)
 
-    def _check_deletion(self, *, remove_directories, fragmented=False):
+    def test_os_reused_deleted_clusters_do_not_confirm_original_content(self):
+        self._check_deletion(remove_directories=False, overwrite=True)
+
+    def _check_deletion(self, *, remove_directories, fragmented=False, overwrite=False):
         # In the opt-in CI step, missing privileges/tools are failures, not skips.
         self.assertEqual(os.geteuid(), 0, 'mounted image test requires root')
         for tool in ('mkntfs', 'ntfs-3g', 'umount'):
@@ -63,6 +66,11 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                 Path('Unterordner') / 'Große Datei mit langem Originalnamen.bin':
                     hashlib.shake_256(b'Tenshi OS deleted NTFS reference').digest(2 * 1024**2 + 137),
             }
+            if overwrite:
+                # Reserve a live MFT record before deletion; growing this file
+                # later reuses clusters without creating/reusing file records.
+                replacement = mount / 'replacement.bin'
+                replacement.write_bytes(b'R')
             if fragmented:
                 # Exhaust this newly created image, then free alternating
                 # 1-MiB files. Retained guards separate the reusable holes.
@@ -122,6 +130,18 @@ class MountedNtfsDeletionTests(unittest.TestCase):
             for relative in originals:
                 (folder / relative).unlink()
                 self.assertFalse((folder / relative).exists())
+            if overwrite:
+                with replacement.open('ab', buffering=0) as stream:
+                    for _ in range(80):
+                        try:
+                            stream.write(b'R' * 1024**2)
+                            os.fsync(stream.fileno())
+                        except OSError as exc:
+                            if exc.errno != errno.ENOSPC:
+                                raise
+                            break
+                    else:
+                        self.fail('Replacement did not exhaust the fresh image')
             if remove_directories:
                 nested.rmdir()
                 folder.rmdir()
@@ -141,6 +161,18 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                 self.assertEqual(entry.size, len(originals[relative]))
                 self.assertEqual(entry.data_runs, previous.data_runs)
                 self.assertNotIn(entry, index.list_dir(entry.parent_record, show_deleted=False))
+            if overwrite:
+                replacement_entry = next(e for e in index.list_dir(5)
+                                         if e.name == replacement.name and not e.is_deleted)
+                replaced = next(e for relative, e in active.items() if len(relative.parts) > 1)
+                # Prove every original physical cluster now belongs to the live
+                # replacement file, rather than assuming allocator behaviour.
+                for old in replaced.data_runs:
+                    self.assertIsNotNone(old.lcn)
+                    coverage = sum(max(0, min(old.lcn + old.clusters, new.lcn + new.clusters)
+                                          - max(old.lcn, new.lcn))
+                                   for new in replacement_entry.data_runs if new.lcn is not None)
+                    self.assertEqual(coverage, old.clusters)
             selected = [deleted_folder]
             if remove_directories:
                 # ntfs-3g increments the freed directory record sequence.
@@ -168,8 +200,17 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                     actual_path = (base / relative.name if remove_directories
                                    else base / folder.name / relative)
                     actual = actual_path.read_bytes()
-                    self.assertEqual(actual, original)
-                    self.assertEqual(hashlib.sha256(actual).digest(), hashlib.sha256(original).digest())
+                    expected = b'R' * len(original) if overwrite and len(relative.parts) > 1 else original
+                    self.assertEqual(actual, expected)
+                    digest = hashlib.sha256(actual).hexdigest()
+                    self.assertEqual(digest, hashlib.sha256(expected).hexdigest())
+                    if overwrite and len(relative.parts) > 1:
+                        self.assertNotEqual(digest, hashlib.sha256(original).hexdigest())
+                        report = Path(first.log).read_text(encoding='utf-8')
+                        self.assertIn('SHA256 (Zieldatei bestätigt): ' + digest, report)
+                        self.assertNotIn(hashlib.sha256(original).hexdigest(), report)
+                        from recoverydesk.verification_labels import EXPORT_SCOPE
+                        self.assertIn(EXPORT_SCOPE, report)
             resumed = export_batch(str(image), index, selected, str(batch))
             self.assertEqual(resumed.errors, [])
             self.assertEqual(resumed.exported, 0)
