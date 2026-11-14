@@ -1,0 +1,38 @@
+{
+  "de": [
+    "Die Dateiprüfung erklärt bei Signaturfunden den Unterschied zwischen erkanntem Dateityp, vollständigem Lesetest und Inhaltsprüfung. Erzeugter Fundname, Typ, Größe und Fundposition sind im Dialog sichtbar.",
+    "Die Signaturfundliste zeigt Größen in passenden Einheiten und die Gesamtgröße der markierten Funde. Dateiprüfung und CSV-Fundliste enthalten die exakten Bytewerte.",
+    "Bei gelöschten FAT32-Dateien kann ein möglicher Originalname aus plausiblen Langnamenresten angezeigt werden. Namenssuche und Analysesitzungen berücksichtigen den Hinweis. Die Zuordnung bleibt unsicher, der Export verwendet den bisherigen Kurznamen.",
+    "Der mögliche Originalname erscheint auch beim Einzelergebnis im Exportbericht, einschließlich fortgesetzter Aufträge. Unabhängige FAT32- und exFAT-Testimages prüfen gelöschte Dateien mit bekannten Originalinhalten."
+  ],
+  "en": [
+    "For signature findings, file inspection explains the difference between a detected file type, a full read check and content inspection. The dialog shows the generated name, type, size and image position.",
+    "The signature list displays readable size units and the total size of selected findings. File inspection and CSV lists retain exact byte counts.",
+    "Deleted FAT32 files may show a possible original name from plausible long-name remnants. Name searches and analysis sessions include the hint. The association remains uncertain and exports use the existing short name.",
+    "The possible original name is included beside the individual export result, including resumed jobs. Independent FAT32 and exFAT test images compare recovered deleted files with known original contents."
+  ],
+  "es": [
+    "La comprobación de hallazgos por firma explica la diferencia entre tipo detectado, lectura completa y comprobación del contenido. El diálogo muestra nombre generado, tipo, tamaño y posición en la imagen.",
+    "La lista de firmas muestra unidades de tamaño legibles y el tamaño total de los hallazgos seleccionados. La comprobación y la lista CSV conservan los valores exactos en bytes.",
+    "Los archivos FAT32 eliminados pueden mostrar un posible nombre original a partir de fragmentos plausibles del nombre largo. La búsqueda y las sesiones incluyen la pista. La asociación sigue siendo incierta y la exportación usa el nombre corto existente.",
+    "El posible nombre original aparece junto al resultado individual del informe de exportación, también al continuar trabajos. Imágenes de prueba FAT32 y exFAT independientes comparan archivos eliminados recuperados con contenidos originales conocidos."
+  ],
+  "zh": [
+    "对签名发现的文件，检查对话框说明已识别文件类型、完整读取检查和内容检查的区别，并显示生成的名称、类型、大小和镜像中的位置。",
+    "签名列表使用易读的大小单位，并显示所选发现的总大小。文件检查和 CSV 列表保留精确的字节数。",
+    "已删除的 FAT32 文件可根据合理的长文件名残留显示可能的原始名称。名称搜索和分析会话包含该线索。名称关联仍不确定，导出继续使用现有短文件名。",
+    "导出报告的单项结果也显示可能的原始名称，包括继续执行的任务。独立的 FAT32 和 exFAT 测试镜像将恢复的已删除文件与已知原始内容比较。"
+  ],
+  "ru": [
+    "Проверка находок по сигнатурам поясняет различие между обнаруженным типом файла, полной проверкой чтения и проверкой содержимого. Диалог показывает созданное имя, тип, размер и позицию в образе.",
+    "Список сигнатур использует удобные единицы размера и показывает общий размер выделенных находок. Проверка файла и CSV сохраняют точные значения в байтах.",
+    "Для удалённых файлов FAT32 возможно отображение исходного имени по правдоподобным остаткам длинного имени. Поиск и сеансы анализа учитывают подсказку. Соответствие остаётся неопределённым, при экспорте используется прежнее короткое имя.",
+    "Возможное исходное имя указывается рядом с отдельным результатом в отчёте экспорта, в том числе при продолжении задания. Независимые образы FAT32 и exFAT проверяют восстановленные удалённые файлы сравнением с известными исходными данными."
+  ],
+  "ja": [
+    "署名による検出結果のファイル検査では、検出形式、全体読み取り検査、内容検査の違いを説明します。生成された名前、形式、サイズ、イメージ内の位置を表示します。",
+    "署名一覧は読みやすいサイズ単位と選択した検出結果の合計サイズを表示します。ファイル検査と CSV 一覧には正確なバイト数を記録します。",
+    "削除された FAT32 ファイルでは、妥当な長い名前の残存部分から元の名前の候補を表示できます。名前検索と解析セッションも候補を扱います。対応関係は未確定のため、書き出しには従来の短い名前を使用します。",
+    "書き出しレポートの各結果にも元の名前の候補を表示し、再開した処理にも対応します。独立した FAT32 と exFAT のテストイメージで、復元した削除済みファイルを既知の元データと比較します。"
+  ]
+}
