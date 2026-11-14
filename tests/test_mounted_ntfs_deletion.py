@@ -33,7 +33,11 @@ class MountedNtfsDeletionTests(unittest.TestCase):
     def test_os_reused_deleted_clusters_are_blocked_by_batch_export(self):
         self._check_deletion(remove_directories=False, overwrite=True)
 
-    def _check_deletion(self, *, remove_directories, fragmented=False, overwrite=False):
+    def test_os_partially_reused_deleted_clusters_are_blocked(self):
+        self._check_deletion(remove_directories=False, overwrite=True, partial=True)
+
+    def _check_deletion(self, *, remove_directories, fragmented=False, overwrite=False,
+                        partial=False):
         # In the opt-in CI step, missing privileges/tools are failures, not skips.
         self.assertEqual(os.geteuid(), 0, 'mounted image test requires root')
         for tool in ('mkntfs', 'ntfs-3g', 'umount'):
@@ -125,13 +129,36 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                                     for left, right in zip(runs, runs[1:])),
                                 f'Driver did not create physical fragmentation: {runs}')
             # Delete through Linux filesystem calls, then unmount before Tenshi.
-            # No manual MFT flags, bitmap edits, or subsequent volume writes.
+            # No manual MFT flags or bitmap edits; reuse below uses the driver.
             run('ntfs-3g', '-o', 'no_def_opts,norecover', str(image), str(mount))
             self.assertTrue(os.path.ismount(mount))
             for relative in originals:
                 (folder / relative).unlink()
                 self.assertFalse((folder / relative).exists())
-            if overwrite:
+            if partial:
+                original_entry = next(e for relative, e in active.items() if len(relative.parts) > 1)
+                # Grow in bounded increments, unmount before every analysis,
+                # and stop as soon as some (but not all) original clusters are reused.
+                for _ in range(80):
+                    with replacement.open('ab', buffering=0) as stream:
+                        self.assertEqual(stream.write(b'R' * 1024**2), 1024**2)
+                        os.fsync(stream.fileno())
+                    run('umount', str(mount))
+                    self.assertFalse(os.path.ismount(mount))
+                    interim = scan_ntfs_tree(str(image))
+                    owner = next(e for e in interim.list_dir(5) if e.name == replacement.name)
+                    claimed = sum(max(0, min(old.lcn + old.clusters, new.lcn + new.clusters)
+                                          - max(old.lcn, new.lcn))
+                                  for old in original_entry.data_runs for new in owner.data_runs
+                                  if old.lcn is not None and new.lcn is not None)
+                    run('ntfs-3g', '-o', 'no_def_opts,norecover', str(image), str(mount))
+                    self.assertTrue(os.path.ismount(mount))
+                    if claimed:
+                        self.assertLess(claimed, sum(r.clusters for r in original_entry.data_runs))
+                        break
+                else:
+                    self.fail('Driver did not create partial cluster reuse')
+            elif overwrite:
                 with replacement.open('ab', buffering=0) as stream:
                     for _ in range(80):
                         try:
@@ -166,14 +193,20 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                 replacement_entry = next(e for e in index.list_dir(5)
                                          if e.name == replacement.name and not e.is_deleted)
                 replaced = next(e for relative, e in active.items() if len(relative.parts) > 1)
-                # Prove every original physical cluster now belongs to the live
-                # replacement file, rather than assuming allocator behaviour.
+                # Verify actual reuse rather than assuming allocator behaviour.
+                claimed = 0
                 for old in replaced.data_runs:
                     self.assertIsNotNone(old.lcn)
                     coverage = sum(max(0, min(old.lcn + old.clusters, new.lcn + new.clusters)
                                           - max(old.lcn, new.lcn))
                                    for new in replacement_entry.data_runs if new.lcn is not None)
-                    self.assertEqual(coverage, old.clusters)
+                    claimed += coverage
+                total_clusters = sum(run.clusters for run in replaced.data_runs)
+                self.assertGreater(claimed, 0)
+                if partial:
+                    self.assertLess(claimed, total_clusters)
+                else:
+                    self.assertEqual(claimed, total_clusters)
             selected = [deleted_folder]
             if remove_directories:
                 # ntfs-3g increments the freed directory record sequence.
@@ -203,7 +236,31 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                 # Low-level copying proves the bytes have actually changed;
                 # the application batch path must reject this metadata conflict.
                 raw_copy = (output / folder.name / large).read_bytes()
-                self.assertEqual(raw_copy, b'R' * len(originals[large]))
+                expected = bytearray(originals[large])
+                logical = 0
+                cluster_size = index.info.cluster_size
+                for old in replaced.data_runs:
+                    owner_logical = 0
+                    for new in replacement_entry.data_runs:
+                        if new.lcn is None:
+                            continue
+                        start = max(old.lcn, new.lcn)
+                        end = min(old.lcn + old.clusters, new.lcn + new.clusters)
+                        if start < end:
+                            first_byte = min(len(expected), logical + (start - old.lcn) * cluster_size)
+                            last_byte = min(len(expected), logical + (end - old.lcn) * cluster_size)
+                            # The driver zeroes the newly allocated final-cluster
+                            # tail beyond the replacement's initialized bytes.
+                            owner_start = owner_logical + (start - new.lcn) * cluster_size
+                            written = min(last_byte - first_byte,
+                                          max(0, replacement_entry.initialized_size - owner_start))
+                            expected[first_byte:last_byte] = (b'R' * written
+                                                             + bytes(last_byte - first_byte - written))
+                        owner_logical += new.clusters * cluster_size
+                    logical += old.clusters * cluster_size
+                self.assertEqual(raw_copy, bytes(expected))
+                if partial:
+                    self.assertNotEqual(raw_copy, b'R' * len(raw_copy))
                 self.assertNotEqual(hashlib.sha256(raw_copy).digest(),
                                     hashlib.sha256(originals[large]).digest())
                 for attempt in (first, export_batch(str(image), index, selected, str(batch))):
