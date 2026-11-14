@@ -10,7 +10,7 @@ import sys
 import tempfile
 import unittest
 
-from recoverydesk.filesystems import scan_tree
+from recoverydesk.filesystems import scan_tree, export_file, FileSystemError
 from recoverydesk.batch_export import export_batch
 
 
@@ -24,7 +24,10 @@ class MountedFatDeletionTests(unittest.TestCase):
     def test_real_fragmented_exfat_deletion(self):
         self._check_reference('exFAT')
 
-    def _check_reference(self, filesystem):
+    def test_real_exfat_reuse_rejects_stale_scan_and_interrupted_export(self):
+        self._check_reference('exFAT', reuse=True)
+
+    def _check_reference(self, filesystem, *, reuse=False):
         self.assertEqual(os.geteuid(), 0)
         formatter = 'mkfs.fat' if filesystem == 'FAT32' else 'mkfs.exfat'
         for tool in (formatter, 'mount', 'umount'):
@@ -159,6 +162,89 @@ class MountedFatDeletionTests(unittest.TestCase):
                 recovered = Path(result.root) / 'files' / deleted.name
                 self.assertEqual(recovered.read_bytes(), original)
                 self.assertEqual(hashlib.sha256(recovered.read_bytes()).digest(), hashlib.sha256(original).digest())
+                if reuse:
+                    interrupted_out = root / 'interrupted-export'
+                    interrupted_out.mkdir()
+                    copied = [0]
+
+                    def on_bytes(amount):
+                        copied[0] += amount
+
+                    interrupted = export_batch(str(image), index, [deleted], str(interrupted_out),
+                                               byte_progress=on_bytes, cancel=lambda: copied[0] > 0)
+                    self.assertTrue(interrupted.cancelled)
+                    self.assertGreater(copied[0], 0)
+                    self.assertFalse((Path(interrupted.root) / 'files' / deleted.name).exists())
+                    # Grow an existing live guard: the deleted directory record
+                    # is not reused, while the allocator reuses data clusters.
+                    writer = allocated[1]
+                    original_clusters = set(chain)
+                    for _ in range(80):
+                        attach()
+                        with writer.open('ab', buffering=0) as stream:
+                            self.assertEqual(stream.write(b'R' * 1024**2), 1024**2)
+                            os.fsync(stream.fileno())
+                        detach()
+                        changed = scan_tree(str(image))
+                        guard_parent = next(e for e in changed.list_dir(changed.root)
+                                            if e.name.upper() == 'GUARDS')
+                        owner = next(e for e in changed.list_dir(guard_parent.record_number)
+                                     if e.name.upper() == writer.name)
+                        with image.open('rb') as stream:
+                            owner_chain = set(changed.volumes.clusters(
+                                stream, owner.locator[0], owner.locator[1],
+                                (owner.size + volume.cluster_size - 1) // volume.cluster_size))
+                        reused = original_clusters & owner_chain
+                        if reused:
+                            self.assertLess(len(reused), len(chain))
+                            break
+                    else:
+                        self.fail('Driver did not create partial exFAT reuse')
+                    changed_bytes = read_original_clusters()
+                    self.assertNotEqual(changed_bytes, original)
+                    for number, cluster in enumerate(chain):
+                        if cluster not in reused:
+                            start = number * volume.cluster_size
+                            end = min(len(original), start + volume.cluster_size)
+                            self.assertEqual(changed_bytes[start:end], original[start:end])
+                    changed_hash = hashlib.sha256(image.read_bytes()).digest()
+                    stale_target = root / 'must-not-exist.bin'
+                    with self.assertRaises(FileSystemError):
+                        export_file(str(image), index, deleted, str(stale_target))
+                    self.assertFalse(stale_target.exists())
+                    for previous, destination in ((result, out), (interrupted, interrupted_out)):
+                        checkpoint = Path(previous.manifest).read_bytes()
+                        with self.assertRaisesRegex(ValueError, 'Quelle|Auswahl|Exportordner'):
+                            export_batch(str(image), index, [deleted], str(destination),
+                                         expected_root=previous.root)
+                        self.assertEqual(Path(previous.manifest).read_bytes(), checkpoint)
+                        rejected = export_batch(str(image), index, [deleted], str(destination))
+                        self.assertNotEqual(rejected.root, previous.root)
+                        self.assertEqual(rejected.exported, 0)
+                        self.assertEqual(rejected.verified_existing, 0)
+                        self.assertEqual(rejected.failed, 1)
+                        self.assertEqual(len(rejected.errors), 1)
+                        self.assertFalse((Path(rejected.root) / 'files' / deleted.name).exists())
+                    # Existing confirmed output remains valid and untouched;
+                    # the changed source must not certify a new export.
+                    self.assertEqual(recovered.read_bytes(), original)
+                    changed_parent = next(e for e in changed.list_dir(changed.root)
+                                          if e.name.upper() == 'FOLDER')
+                    damaged, = changed.list_dir(changed_parent.record_number)
+                    self.assertTrue(damaged.is_deleted)
+                    self.assertEqual(damaged.name, deleted.name)
+                    self.assertFalse(damaged.recoverable)
+                    fresh_out = root / 'fresh-export'
+                    fresh_out.mkdir()
+                    fresh = export_batch(str(image), changed, [damaged], str(fresh_out))
+                    self.assertEqual(fresh.skipped, 1)
+                    self.assertEqual(fresh.exported, 0)
+                    self.assertEqual(len(fresh.errors), 1)
+                    self.assertFalse((Path(fresh.root) / 'files' / damaged.name).exists())
+                    self.assertEqual(hashlib.sha256(image.read_bytes()).digest(), changed_hash)
+                    print(f'exFAT partial reuse: {len(reused)}/{len(chain)} original clusters; '
+                          'stale scan, interrupted export and fresh scan reject', flush=True)
+                    return
                 resumed = export_batch(str(image), index, [deleted], str(out))
                 self.assertEqual(resumed.errors, [])
                 self.assertEqual(resumed.verified_existing, 1)
