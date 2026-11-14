@@ -4,6 +4,7 @@ import hashlib
 import os
 from pathlib import Path
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -132,6 +133,23 @@ class MountedFatDeletionTests(unittest.TestCase):
             self.assertEqual(deleted.name.upper(), '?ARGET.BIN' if filesystem == 'FAT32' else 'TARGET.BIN')
             self.assertEqual(deleted.size, len(original))
             self.assertEqual(index.list_dir(parent.record_number, show_deleted=False), [])
+            if filesystem == 'exFAT':
+                # The tested Linux driver retains the fragmented FAT links.
+                self.assertTrue(deleted.recoverable, deleted.unsupported_reason)
+                self.assertFalse(deleted.locator[1])
+                self.assertEqual(deleted.locator[3], tuple(chain))
+            else:
+                # The tested Linux driver clears every original FAT link in
+                # both copies. The old physical bytes alone cannot prove order.
+                self.assertFalse(deleted.recoverable)
+                self.assertIn('FAT32', deleted.unsupported_reason)
+                with image.open('rb') as stream:
+                    for number in range(volume.fats):
+                        stream.seek(volume.fat_offset + number * volume.fat_bytes)
+                        table = stream.read(volume.fat_bytes)
+                        self.assertEqual(len(table), volume.fat_bytes)
+                        self.assertTrue(all(struct.unpack_from('<I', table, c * 4)[0] & 0x0FFFFFFF == 0
+                                            for c in chain))
             out = root / 'deleted-export'
             out.mkdir()
             result = export_batch(str(image), index, [deleted], str(out))
