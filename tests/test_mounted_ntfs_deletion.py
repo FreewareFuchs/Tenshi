@@ -2,6 +2,7 @@
 
 Opt-in privileged integration test. Never accepts an external source path.
 """
+import errno
 import hashlib
 import os
 from pathlib import Path
@@ -25,7 +26,10 @@ class MountedNtfsDeletionTests(unittest.TestCase):
     def test_os_deleted_parent_folders_leave_conservative_orphans(self):
         self._check_deletion(remove_directories=True)
 
-    def _check_deletion(self, *, remove_directories):
+    def test_os_deleted_fragmented_file_preserves_original_bytes(self):
+        self._check_deletion(remove_directories=False, fragmented=True)
+
+    def _check_deletion(self, *, remove_directories, fragmented=False):
         # In the opt-in CI step, missing privileges/tools are failures, not skips.
         self.assertEqual(os.geteuid(), 0, 'mounted image test requires root')
         for tool in ('mkntfs', 'ntfs-3g', 'umount'):
@@ -59,6 +63,33 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                 Path('Unterordner') / 'Große Datei mit langem Originalnamen.bin':
                     hashlib.shake_256(b'Tenshi OS deleted NTFS reference').digest(2 * 1024**2 + 137),
             }
+            if fragmented:
+                # Exhaust this newly created image, then free alternating
+                # 1-MiB files. Retained guards separate the reusable holes.
+                # Allocation is performed entirely by the filesystem driver.
+                guards = mount / 'allocation-guards'
+                guards.mkdir()
+                allocated = []
+                for number in range(80):
+                    guard = guards / f'guard-{number:03d}.bin'
+                    try:
+                        with guard.open('xb', buffering=0) as stream:
+                            stream.write(b'G' * 1024**2)
+                            os.fsync(stream.fileno())
+                    except OSError as exc:
+                        if exc.errno != errno.ENOSPC:
+                            raise
+                        guard.unlink(missing_ok=True)
+                        break
+                    allocated.append(guard)
+                else:
+                    self.fail('Fresh 64-MiB image was not exhausted')
+                self.assertGreater(len(allocated), 20)
+                for guard in allocated[::2]:
+                    guard.unlink()
+                # Guard files remain allocated until the image is discarded.
+                large = next(relative for relative in originals if len(relative.parts) > 1)
+                originals[large] = hashlib.shake_256(b'Tenshi fragmented original').digest(8 * 1024**2 + 137)
             for relative, data in originals.items():
                 (folder / relative).write_bytes(data)
                 self.assertEqual((folder / relative).read_bytes(), data)
@@ -78,6 +109,12 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                 self.assertTrue(entry.recoverable, entry.unsupported_reason)
                 active[relative] = entry
             self.assertEqual({e.data_kind for e in active.values()}, {'resident', 'nonresident'})
+            if fragmented:
+                runs = active[large].data_runs
+                self.assertTrue(all(run.lcn is not None for run in runs))
+                self.assertTrue(any(left.lcn + left.clusters != right.lcn
+                                    for left, right in zip(runs, runs[1:])),
+                                f'Driver did not create physical fragmentation: {runs}')
             # Delete through Linux filesystem calls, then unmount before Tenshi.
             # No manual MFT flags, bitmap edits, or subsequent volume writes.
             run('ntfs-3g', '-o', 'no_def_opts,norecover', str(image), str(mount))
@@ -102,6 +139,7 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                 self.assertTrue(entry.is_deleted)
                 self.assertTrue(entry.recoverable, entry.unsupported_reason)
                 self.assertEqual(entry.size, len(originals[relative]))
+                self.assertEqual(entry.data_runs, previous.data_runs)
                 self.assertNotIn(entry, index.list_dir(entry.parent_record, show_deleted=False))
             selected = [deleted_folder]
             if remove_directories:
