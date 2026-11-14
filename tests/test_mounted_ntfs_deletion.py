@@ -240,6 +240,7 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                 logical = 0
                 cluster_size = index.info.cluster_size
                 for old in replaced.data_runs:
+                    owner_logical = 0
                     for new in replacement_entry.data_runs:
                         if new.lcn is None:
                             continue
@@ -248,7 +249,14 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                         if start < end:
                             first_byte = min(len(expected), logical + (start - old.lcn) * cluster_size)
                             last_byte = min(len(expected), logical + (end - old.lcn) * cluster_size)
-                            expected[first_byte:last_byte] = b'R' * (last_byte - first_byte)
+                            # The driver zeroes the newly allocated final-cluster
+                            # tail beyond the replacement's initialized bytes.
+                            owner_start = owner_logical + (start - new.lcn) * cluster_size
+                            written = min(last_byte - first_byte,
+                                          max(0, replacement_entry.initialized_size - owner_start))
+                            expected[first_byte:last_byte] = (b'R' * written
+                                                             + bytes(last_byte - first_byte - written))
+                        owner_logical += new.clusters * cluster_size
                     logical += old.clusters * cluster_size
                 self.assertEqual(raw_copy, bytes(expected))
                 if partial:
