@@ -11,7 +11,7 @@ import sys
 import tempfile
 import unittest
 
-from recoverydesk.ntfs_browser import scan_ntfs_tree, export_selection
+from recoverydesk.ntfs_browser import scan_ntfs_tree, export_selection, ORPHANS
 from recoverydesk.batch_export import export_batch
 
 
@@ -19,7 +19,13 @@ from recoverydesk.batch_export import export_batch
                      os.environ.get('TENSHI_TEST_MOUNTED_NTFS') == '1',
                      'explicit Linux mounted-image integration test only')
 class MountedNtfsDeletionTests(unittest.TestCase):
-    def test_os_deleted_resident_nonresident_names_folders_and_bytes(self):
+    def test_os_deleted_files_with_retained_parent_folders(self):
+        self._check_deletion(remove_directories=False)
+
+    def test_os_deleted_parent_folders_leave_conservative_orphans(self):
+        self._check_deletion(remove_directories=True)
+
+    def _check_deletion(self, *, remove_directories):
         # In the opt-in CI step, missing privileges/tools are failures, not skips.
         self.assertEqual(os.geteuid(), 0, 'mounted image test requires root')
         for tool in ('mkntfs', 'ntfs-3g', 'umount'):
@@ -79,14 +85,15 @@ class MountedNtfsDeletionTests(unittest.TestCase):
             for relative in originals:
                 (folder / relative).unlink()
                 self.assertFalse((folder / relative).exists())
-            nested.rmdir()
-            folder.rmdir()
+            if remove_directories:
+                nested.rmdir()
+                folder.rmdir()
             run('umount', str(mount))
             self.assertFalse(os.path.ismount(mount))
             before = hashlib.sha256(image.read_bytes()).digest()
             index = scan_ntfs_tree(str(image))
             deleted_folder = index.by_record[active_folder.record_number]
-            self.assertTrue(deleted_folder.is_deleted)
+            self.assertEqual(deleted_folder.is_deleted, remove_directories)
             self.assertEqual(deleted_folder.name, folder.name)
             for relative, previous in active.items():
                 entry = index.by_record[previous.record_number]
@@ -96,22 +103,36 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                 self.assertTrue(entry.recoverable, entry.unsupported_reason)
                 self.assertEqual(entry.size, len(originals[relative]))
                 self.assertNotIn(entry, index.list_dir(entry.parent_record, show_deleted=False))
+            selected = [deleted_folder]
+            if remove_directories:
+                # ntfs-3g increments the freed directory record sequence.
+                # Stale references must remain orphaned: a matching record
+                # number alone cannot prove that a parent was not reused.
+                selected = [index.by_record[e.record_number] for e in active.values()]
+                for entry in selected:
+                    parent = index.by_record[entry.parent_record]
+                    self.assertTrue(parent.is_deleted)
+                    self.assertEqual(parent.sequence, entry.parent_sequence + 1)
+                    self.assertIn(entry, index.list_dir(ORPHANS))
+                    self.assertNotIn(entry, index.list_dir(parent.record_number))
             output = root / 'export'
             output.mkdir()
-            result = export_selection(str(image), index, [deleted_folder], str(output))
+            result = export_selection(str(image), index, selected, str(output))
             self.assertEqual(result.errors, [])
             self.assertEqual(result.exported, len(originals))
             batch = root / 'batch'
             batch.mkdir()
-            first = export_batch(str(image), index, [deleted_folder], str(batch))
+            first = export_batch(str(image), index, selected, str(batch))
             self.assertEqual(first.errors, [])
             self.assertEqual(first.exported, len(originals))
             for relative, original in originals.items():
                 for base in (output, Path(first.root) / 'files'):
-                    actual = (base / folder.name / relative).read_bytes()
+                    actual_path = (base / relative.name if remove_directories
+                                   else base / folder.name / relative)
+                    actual = actual_path.read_bytes()
                     self.assertEqual(actual, original)
                     self.assertEqual(hashlib.sha256(actual).digest(), hashlib.sha256(original).digest())
-            resumed = export_batch(str(image), index, [deleted_folder], str(batch))
+            resumed = export_batch(str(image), index, selected, str(batch))
             self.assertEqual(resumed.errors, [])
             self.assertEqual(resumed.exported, 0)
             self.assertEqual(resumed.verified_existing, len(originals))
