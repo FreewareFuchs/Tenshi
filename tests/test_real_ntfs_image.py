@@ -2,6 +2,7 @@
 import hashlib
 from pathlib import Path
 import shutil
+import struct
 import subprocess
 import tempfile
 import unittest
@@ -14,6 +15,14 @@ from recoverydesk.batch_export import export_batch
                      'ntfs-3g tools required')
 class RealNtfsImageTests(unittest.TestCase):
     def test_external_resident_and_nonresident_export_and_resume(self):
+        self._check_export(synthetic_deleted=False)
+
+    def test_external_contents_with_synthetic_deleted_flags(self):
+        # This is NOT an OS deletion: directory indexes and allocation bitmaps
+        # remain intact. Only MFT in-use flags in a disposable image are cleared.
+        self._check_export(synthetic_deleted=True)
+
+    def _check_export(self, *, synthetic_deleted):
         with tempfile.TemporaryDirectory(prefix='tenshi-ntfs-ci-') as temporary:
             root = Path(temporary)
             image = root / 'new-test-image.img'
@@ -34,6 +43,28 @@ class RealNtfsImageTests(unittest.TestCase):
                 seed = root / name
                 seed.write_bytes(data)
                 run('ntfscp', str(image), str(seed), '/' + name)
+            if synthetic_deleted:
+                active = scan_ntfs_tree(str(image))
+                mft = next(entry for entry in active.entries if entry.name == '$MFT')
+                targets = {entry.name: entry for entry in active.list_dir(5)}
+                # Translate each record through the actual MFT runlist; never
+                # assume the MFT is contiguous or overwrite fixup bytes.
+                with image.open('r+b') as stream:
+                    for name in originals:
+                        logical = targets[name].record_number * active.info.record_size + 22
+                        for run in mft.data_runs:
+                            length = run.clusters * active.info.cluster_size
+                            if logical < length:
+                                self.assertIsNotNone(run.lcn)
+                                stream.seek(run.lcn * active.info.cluster_size + logical)
+                                flags = struct.unpack('<H', stream.read(2))[0]
+                                self.assertTrue(flags & 1)
+                                stream.seek(-2, 1)
+                                stream.write(struct.pack('<H', flags & ~1))
+                                break
+                            logical -= length
+                        else:
+                            self.fail('Reference record outside MFT runlist')
             before = hashlib.sha256(image.read_bytes()).digest()
             index = scan_ntfs_tree(str(image))
             roots = {entry.name: entry for entry in index.list_dir(5)}
@@ -43,8 +74,11 @@ class RealNtfsImageTests(unittest.TestCase):
             selected = [roots[name] for name in originals]
             for entry in selected:
                 self.assertEqual(entry.size, len(originals[entry.name]))
-                self.assertFalse(entry.is_deleted)
+                self.assertEqual(entry.is_deleted, synthetic_deleted)
                 self.assertFalse(entry.unsupported_reason)
+            visible = {entry.name for entry in index.list_dir(5, show_deleted=False)}
+            self.assertEqual(set(originals) & visible,
+                             set() if synthetic_deleted else set(originals))
             output = root / 'export'
             output.mkdir()
             result = export_selection(str(image), index, selected, str(output))
