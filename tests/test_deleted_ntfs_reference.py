@@ -11,6 +11,37 @@ from recoverydesk.batch_export import export_batch
 
 
 class DeletedNtfsReferenceTests(unittest.TestCase):
+    def test_deleted_empty_file_is_created_and_verified_on_resume(self):
+        raw = bytearray(image_with_folders())
+        name = 'Leere gelöschte Datei ohne Endung'
+        start = MFT_LCN * CLUSTER + 7 * SIZE
+        raw[start:start + SIZE] = record(
+            [filename(name, 6, parent_sequence=1), resident_attr(0x80, b'')], flags=0)
+        with tempfile.TemporaryDirectory(prefix='tenshi-empty-deleted-ntfs-') as temporary:
+            root = Path(temporary)
+            source = root / 'synthetic.img'
+            source.write_bytes(raw)
+            before = hashlib.sha256(source.read_bytes()).digest()
+            index = scan_ntfs_tree(str(source))
+            entry = index.by_record[7]
+            self.assertTrue(entry.is_deleted)
+            self.assertTrue(entry.recoverable, entry.unsupported_reason)
+            self.assertEqual(entry.size, 0)
+            self.assertEqual(entry.name, name)
+            target = root / 'export'
+            target.mkdir()
+            first = export_batch(str(source), index, [entry], str(target))
+            self.assertEqual(first.errors, [])
+            self.assertEqual(first.exported, 1)
+            exported = Path(first.root) / 'files' / name
+            self.assertTrue(exported.is_file())
+            self.assertEqual(exported.read_bytes(), b'')
+            resumed = export_batch(str(source), index, [entry], str(target))
+            self.assertEqual(resumed.errors, [])
+            self.assertEqual(resumed.exported, 0)
+            self.assertEqual(resumed.verified_existing, 1)
+            self.assertEqual(hashlib.sha256(source.read_bytes()).digest(), before)
+
     def test_deleted_folder_long_names_fragmented_bytes_and_resume(self):
         resident_name = 'Grüße und bekannte Originalinhalte.txt'
         fragmented_name = 'Langer Dateiname mit verteilten Bereichen.bin'
