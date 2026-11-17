@@ -118,10 +118,14 @@ def _selected_roots(index, selection: Iterable[object]) -> list:
     unique = {_key(e): e for e in selection}
     # If an ancestor directory is selected, drop descendants from top-level selection.
     by_id = {int(e.record_number): e for e in index.entries if e.is_directory}
+    # Use the validated tree, not stale on-disk parent references. In NTFS a
+    # reused directory record can have the same number but a new sequence.
+    parents = {_key(child): int(parent)
+               for parent, children in index.children.items() for child in children}
     chosen_dirs = {int(e.record_number) for e in unique.values() if e.is_directory}
     result = []
     for e in unique.values():
-        p = int(e.parent_record)
+        p = parents.get(_key(e))
         trail = {int(e.record_number)}
         covered = False
         while p not in trail and p in by_id:
@@ -129,7 +133,7 @@ def _selected_roots(index, selection: Iterable[object]) -> list:
                 covered = True
                 break
             trail.add(p)
-            p = int(by_id[p].parent_record)
+            p = parents.get(_key(by_id[p]))
         if not covered:
             result.append(e)
     return sorted(result, key=lambda e: (e.name.casefold(), _key(e)))
