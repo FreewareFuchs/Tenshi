@@ -155,3 +155,22 @@ class NtfsStaleImageTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'Image.*geändert'):
                     export_batch(str(image), index, [entry], str(target))
             self.assertEqual(list(target.iterdir()), [])
+
+    def test_prefix_change_is_detected_even_when_metadata_is_unchanged(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            image = root / 'source.img'
+            image.write_bytes(make_image())
+            original = image.stat()
+            with patch('recoverydesk.ntfs_browser.os.fstat', return_value=original), \
+                 patch('recoverydesk.ntfs_browser._windows_image_change_time', return_value=123):
+                index = scan_ntfs_tree(str(image))
+                entry = next(e for e in index.entries if e.name == 'fragmentiert.bin')
+                with image.open('r+b') as stream:
+                    stream.seek(40 * CLUSTER)
+                    stream.write(b'Z' * CLUSTER)
+                target = root / 'export'
+                target.mkdir()
+                with self.assertRaisesRegex(ValueError, 'Image.*geändert'):
+                    export_batch(str(image), index, [entry], str(target))
+                self.assertEqual(list(target.iterdir()), [])

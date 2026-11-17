@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable
 import os
+import hashlib
 import re
 import struct
 
@@ -286,7 +287,7 @@ _IMAGE_CHANGED = 'Das Image wurde seit der Analyse geändert oder ausgetauscht. 
 
 
 
-def _windows_image_change_time(path):
+def _windows_image_change_time(source):
     """Read native ChangeTime; Windows stat ctime is the creation time.
 
     COPY can preserve LastWriteTime while changing content. Query only a
@@ -304,23 +305,27 @@ def _windows_image_change_time(path):
     query = ctypes.WinDLL('kernel32', use_last_error=True).GetFileInformationByHandleEx
     query.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
     query.restype = wintypes.BOOL
-    with open(path, 'rb') as source:
-        info = FileBasicInfo()
-        handle = msvcrt.get_osfhandle(source.fileno())
-        if not query(handle, 0, ctypes.byref(info), ctypes.sizeof(info)):
-            raise ctypes.WinError(ctypes.get_last_error())
-        return info.change
+    info = FileBasicInfo()
+    handle = msvcrt.get_osfhandle(source.fileno())
+    if not query(handle, 0, ctypes.byref(info), ctypes.sizeof(info)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    return info.change
 
 
 def ntfs_image_stamp(path):
-    """Cheap regular-image change indicator, not a content-integrity proof."""
+    """Bounded regular-image change indicator, not a full integrity proof."""
     if is_device_source(path):
         return None
-    meta = os.stat(path)
-    change_time = (_windows_image_change_time(path) if os.name == 'nt'
-                   else meta.st_ctime_ns)
+    with open(path, 'rb') as source:
+        meta = os.fstat(source.fileno())
+        change_time = (_windows_image_change_time(source) if os.name == 'nt'
+                       else meta.st_ctime_ns)
+        # Timestamp-preserving copies can defeat metadata-only checks, even
+        # with native ChangeTime on some Windows configurations. Keep a small
+        # bounded prefix fingerprint, not an entire-image integrity promise.
+        prefix_hash = hashlib.sha256(source.read(64 * 1024)).hexdigest()
     return (os.path.normcase(os.path.abspath(path)), meta.st_dev, meta.st_ino,
-            meta.st_size, meta.st_mtime_ns, change_time)
+            meta.st_size, meta.st_mtime_ns, change_time, prefix_hash)
 
 
 def validate_index_source(source, index):
