@@ -14,6 +14,41 @@ from test_filesystems import fat_img
 
 
 class BatchExportTests(unittest.TestCase):
+    def test_selected_orphan_is_not_dropped_with_reused_parent_record(self):
+        from test_browser import record, filename
+        from test_ntfs import CLUSTER, MFT_LCN, SIZE, resident_attr
+        from recoverydesk.ntfs_browser import ORPHANS
+        for sequence, deleted in ((2, False), (1, True)):
+            with self.subTest(sequence=sequence, parent_deleted=deleted), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                raw = bytearray(image_with_folders())
+                records = {
+                    6: record([filename('Anderer Ordner', 5)],
+                              flags=2 if deleted else 3, sequence=sequence),
+                    7: record([filename('Ausgewaehlte Datei.txt', 6, parent_sequence=1),
+                               resident_attr(0x80, b'KNOWN ORIGINAL')],
+                              flags=1 if deleted else 0),
+                }
+                for number, data in records.items():
+                    start = MFT_LCN * CLUSTER + number * SIZE
+                    raw[start:start + SIZE] = data
+                source = root / 'synthetic.img'
+                source.write_bytes(raw)
+                index = scan_ntfs_tree(str(source))
+                entry = index.by_record[7]
+                self.assertIn(entry, index.list_dir(ORPHANS))
+                target = root / 'export'
+                target.mkdir()
+                selection = [index.by_record[6], entry]
+                first = export_batch(str(source), index, selection, str(target))
+                self.assertEqual(first.errors, [])
+                self.assertEqual((Path(first.root) / 'files' / entry.name).read_bytes(), b'KNOWN ORIGINAL')
+                resumed = export_batch(str(source), index, selection, str(target))
+                self.assertEqual(resumed.errors, [])
+                self.assertEqual(resumed.exported, 0)
+                self.assertGreaterEqual(resumed.verified_existing, 1)
+                self.assertEqual(source.read_bytes(), raw)
+
     def test_expected_resume_root_prevents_silent_new_job_after_source_change(self):
         import os
         with tempfile.TemporaryDirectory() as temp:
