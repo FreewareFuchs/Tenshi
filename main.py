@@ -39,6 +39,24 @@ def smoke_test() -> int:
                 raise RuntimeError('Offline help translation is missing.')
     from recoverydesk.content_smoke import run as check_content_package
     check_content_package()
+    # Exercise the native image-change query inside the packaged executable,
+    # including a content overwrite whose last-write timestamp is restored.
+    # Only this newly created disposable regular file is touched.
+    import os
+    import tempfile
+    import time
+    from pathlib import Path
+    from recoverydesk.ntfs_browser import ntfs_image_stamp
+    with tempfile.TemporaryDirectory(prefix='tenshi-image-guard-smoke-') as temporary:
+        source = Path(temporary) / 'new-test-image.img'
+        source.write_bytes(b'before')
+        previous = source.stat()
+        stamp = ntfs_image_stamp(str(source))
+        time.sleep(0.01)  # Do not depend on sub-tick filesystem timestamps.
+        source.write_bytes(b'after!')
+        os.utime(source, ns=(previous.st_atime_ns, previous.st_mtime_ns))
+        if ntfs_image_stamp(str(source)) == stamp:
+            raise RuntimeError('Packaged image-change guard did not detect an overwrite.')
     return 0
 
 
