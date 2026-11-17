@@ -1,8 +1,10 @@
 """A cached NTFS analysis must not export from a changed regular image."""
 import os
+import subprocess
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from test_ntfs import make_image, CLUSTER
 from recoverydesk.ntfs_browser import scan_ntfs_tree, export_selection
@@ -106,3 +108,50 @@ class NtfsStaleImageTests(unittest.TestCase):
             self.assertEqual(result.failed, 1)
             self.assertIn('Image', result.errors[0])
             self.assertFalse((Path(result.root) / 'files' / entry.name).exists())
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows CopyFile timestamp semantics')
+    def test_windows_copy_with_unchanged_stat_times_rejects_old_analysis(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            image = root / 'source.img'
+            replacement = root / 'changed.img'
+            raw = make_image()
+            changed = bytearray(raw)
+            changed[40 * CLUSTER:41 * CLUSTER] = b'Z' * CLUSTER
+            replacement.write_bytes(changed)
+            image.write_bytes(raw)
+            stamp = image.stat()
+            # COPY preserves the source's last-write timestamp. Start with an
+            # identical timestamp so all ordinary Windows stat fields survive.
+            os.utime(image, ns=(stamp.st_atime_ns, replacement.stat().st_mtime_ns))
+            before = image.stat()
+            index = scan_ntfs_tree(str(image))
+            entry = next(e for e in index.entries if e.name == 'fragmentiert.bin')
+            subprocess.run(['cmd.exe', '/d', '/c', 'copy', '/b', '/y',
+                            str(replacement), str(image)], check=True, capture_output=True)
+            after = image.stat()
+            def ordinary(meta):
+                return meta.st_dev, meta.st_ino, meta.st_size, meta.st_mtime_ns, meta.st_ctime_ns
+            self.assertEqual(ordinary(before), ordinary(after))
+            self.assertNotEqual(image.read_bytes(), raw)
+            target = root / 'export'
+            target.mkdir()
+            with self.assertRaisesRegex(ValueError, 'Image.*geändert'):
+                export_batch(str(image), index, [entry], str(target))
+            self.assertEqual(list(target.iterdir()), [])
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows native change-time query')
+    def test_unavailable_native_change_time_does_not_allow_export(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            image = root / 'source.img'
+            image.write_bytes(make_image())
+            index = scan_ntfs_tree(str(image))
+            entry = next(e for e in index.entries if e.name == 'fragmentiert.bin')
+            target = root / 'export'
+            target.mkdir()
+            with patch('recoverydesk.ntfs_browser._windows_image_change_time',
+                       side_effect=OSError('native metadata unavailable')):
+                with self.assertRaisesRegex(ValueError, 'Image.*geändert'):
+                    export_batch(str(image), index, [entry], str(target))
+            self.assertEqual(list(target.iterdir()), [])

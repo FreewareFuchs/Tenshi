@@ -285,13 +285,42 @@ def _salvage_mft_batch(f, info: NTFSInfo, runs: list[DataRun],
 _IMAGE_CHANGED = 'Das Image wurde seit der Analyse geändert oder ausgetauscht. Quelle erneut einlesen.'
 
 
+
+def _windows_image_change_time(path):
+    """Read native ChangeTime; Windows stat ctime is the creation time.
+
+    COPY can preserve LastWriteTime while changing content. Query only a
+    regular image's read handle; failure must not silently disable the guard.
+    """
+    import ctypes
+    from ctypes import wintypes
+    import msvcrt
+
+    class FileBasicInfo(ctypes.Structure):
+        _fields_ = [('creation', ctypes.c_longlong), ('access', ctypes.c_longlong),
+                    ('write', ctypes.c_longlong), ('change', ctypes.c_longlong),
+                    ('attributes', wintypes.DWORD)]
+
+    query = ctypes.WinDLL('kernel32', use_last_error=True).GetFileInformationByHandleEx
+    query.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    query.restype = wintypes.BOOL
+    with open(path, 'rb') as source:
+        info = FileBasicInfo()
+        handle = msvcrt.get_osfhandle(source.fileno())
+        if not query(handle, 0, ctypes.byref(info), ctypes.sizeof(info)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return info.change
+
+
 def ntfs_image_stamp(path):
     """Cheap regular-image change indicator, not a content-integrity proof."""
     if is_device_source(path):
         return None
     meta = os.stat(path)
+    change_time = (_windows_image_change_time(path) if os.name == 'nt'
+                   else meta.st_ctime_ns)
     return (os.path.normcase(os.path.abspath(path)), meta.st_dev, meta.st_ino,
-            meta.st_size, meta.st_mtime_ns, meta.st_ctime_ns)
+            meta.st_size, meta.st_mtime_ns, change_time)
 
 
 def validate_index_source(source, index):
