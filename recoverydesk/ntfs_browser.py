@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable
 import os
+import hashlib
 import re
 import struct
 
@@ -282,6 +283,61 @@ def _salvage_mft_batch(f, info: NTFSInfo, runs: list[DataRun],
                 work.append((rec, half))
     return found, sorted(missing)
 
+_IMAGE_CHANGED = 'Das Image wurde seit der Analyse geändert oder ausgetauscht. Quelle erneut einlesen.'
+
+
+
+def _windows_image_change_time(source):
+    """Read native ChangeTime; Windows stat ctime is the creation time.
+
+    COPY can preserve LastWriteTime while changing content. Query only a
+    regular image's read handle; failure must not silently disable the guard.
+    """
+    import ctypes
+    from ctypes import wintypes
+    import msvcrt
+
+    class FileBasicInfo(ctypes.Structure):
+        _fields_ = [('creation', ctypes.c_longlong), ('access', ctypes.c_longlong),
+                    ('write', ctypes.c_longlong), ('change', ctypes.c_longlong),
+                    ('attributes', wintypes.DWORD)]
+
+    query = ctypes.WinDLL('kernel32', use_last_error=True).GetFileInformationByHandleEx
+    query.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    query.restype = wintypes.BOOL
+    info = FileBasicInfo()
+    handle = msvcrt.get_osfhandle(source.fileno())
+    if not query(handle, 0, ctypes.byref(info), ctypes.sizeof(info)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    return info.change
+
+
+def ntfs_image_stamp(path):
+    """Bounded regular-image change indicator, not a full integrity proof."""
+    if is_device_source(path):
+        return None
+    with open(path, 'rb') as source:
+        meta = os.fstat(source.fileno())
+        change_time = (_windows_image_change_time(source) if os.name == 'nt'
+                       else meta.st_ctime_ns)
+        # Timestamp-preserving copies can defeat metadata-only checks, even
+        # with native ChangeTime on some Windows configurations. Keep a small
+        # bounded prefix fingerprint, not an entire-image integrity promise.
+        prefix_hash = hashlib.sha256(source.read(64 * 1024)).hexdigest()
+    return (os.path.normcase(os.path.abspath(path)), meta.st_dev, meta.st_ino,
+            meta.st_size, meta.st_mtime_ns, change_time, prefix_hash)
+
+
+def validate_index_source(source, index):
+    expected = getattr(index, '_image_stamp', None)
+    if expected is not None:
+        try:
+            current = ntfs_image_stamp(source)
+        except OSError as exc:
+            raise NTFSError(_IMAGE_CHANGED) from exc
+        if current != expected:
+            raise NTFSError(_IMAGE_CHANGED)
+
 
 def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
                    progress: Callable[[int,int],None] | None = None,
@@ -299,6 +355,7 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
         raise NTFSError('Fehlertolerante Suche erfordert eine Image-Datei. '
                         'Bitte zuerst ein sektorweises Abbild erstellen; '
                         'defekte Datenträger nicht mehrfach lesen.')
+    image_stamp = ntfs_image_stamp(path)
     entries = []
     damaged_records = 0
     record_error_reasons = {}
@@ -521,6 +578,10 @@ def scan_ntfs_tree(path: str, partition_offset: int = 0, max_records: int = 0,
         warnings.append(f'{len(detached)} zyklische NTFS-Elternketten unter „Nicht zugeordnet“ angezeigt.')
     if allocation_parse_failures and len(warnings) < 20:
         warnings.append(f'{allocation_parse_failures} NTFS-Indexbereiche konnten nicht vollständig gelesen werden.')
+    if ntfs_image_stamp(path) != image_stamp:
+        raise NTFSError(_IMAGE_CHANGED)
+    # Runtime-only: session files retain their existing schema/fingerprint.
+    result._image_stamp = image_stamp
     return result
 
 
@@ -618,6 +679,7 @@ def export_selection(source: str, index: FileIndex, selection: Iterable[FileEntr
     if not os.path.isdir(target_dir):
         raise ValueError('Der Zielordner existiert nicht.')
     ensure_safe_destination(source, target_dir)
+    validate_index_source(source, index)
     report = ExportReport()
     selected = list(selection)
     stack: list[tuple[FileEntry, str, frozenset[int]]] = [(e, target_dir, frozenset()) for e in reversed(selected)]

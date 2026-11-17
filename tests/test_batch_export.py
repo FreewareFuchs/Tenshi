@@ -21,6 +21,8 @@ class BatchExportTests(unittest.TestCase):
             first=export_batch(str(src),index,[parent],str(target))
             original=src.read_bytes();before=set(target.iterdir());stamp=src.stat()
             os.utime(src,ns=(stamp.st_atime_ns,stamp.st_mtime_ns+1000000000))
+            index = scan_ntfs_tree(str(src))
+            parent = index.by_record[parent.record_number]
             with patch('recoverydesk.batch_export.export_ntfs_file') as writer:
                 with self.assertRaisesRegex(ValueError,'bisherige Export'):
                     export_batch(str(src),index,[parent],str(target),expected_root=first.root)
@@ -265,6 +267,10 @@ class BatchExportTests(unittest.TestCase):
             # Use an independent image with a different name but equivalent metadata.
             other = Path(temp)/'other.raw'
             other.write_bytes(src.read_bytes())
+            with self.assertRaisesRegex(ValueError, 'Image.*geändert'):
+                export_batch(str(other), index, [parent], str(dest))
+            index = scan_ntfs_tree(str(other))
+            parent = index.by_record[parent.record_number]
             second = export_batch(str(other), index, [parent], str(dest))
             self.assertNotEqual(second.root, first.root)
             self.assertFalse(second.resumed)
@@ -282,6 +288,10 @@ class BatchExportTests(unittest.TestCase):
             src, index, parent, dest = self.fixture(Path(temp))
             first = export_batch(str(src), index, [parent], str(dest))
             src.write_bytes(src.read_bytes() + b'1')
+            with self.assertRaisesRegex(ValueError, 'Image.*geändert'):
+                export_batch(str(src), index, [parent], str(dest))
+            index = scan_ntfs_tree(str(src))
+            parent = index.by_record[parent.record_number]
             second = export_batch(str(src), index, [parent], str(dest))
             self.assertNotEqual(second.root, first.root)
 

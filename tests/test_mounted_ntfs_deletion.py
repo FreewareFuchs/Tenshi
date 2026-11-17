@@ -36,8 +36,11 @@ class MountedNtfsDeletionTests(unittest.TestCase):
     def test_os_partially_reused_deleted_clusters_are_blocked(self):
         self._check_deletion(remove_directories=False, overwrite=True, partial=True)
 
+    def test_real_ntfs_reuse_rejects_previously_scanned_image(self):
+        self._check_deletion(remove_directories=False, overwrite=True, stale=True)
+
     def _check_deletion(self, *, remove_directories, fragmented=False, overwrite=False,
-                        partial=False):
+                        partial=False, stale=False):
         # In the opt-in CI step, missing privileges/tools are failures, not skips.
         self.assertEqual(os.geteuid(), 0, 'mounted image test requires root')
         for tool in ('mkntfs', 'ntfs-3g', 'umount'):
@@ -135,6 +138,19 @@ class MountedNtfsDeletionTests(unittest.TestCase):
             for relative in originals:
                 (folder / relative).unlink()
                 self.assertFalse((folder / relative).exists())
+            if stale:
+                run('umount', str(mount))
+                self.assertFalse(os.path.ismount(mount))
+                cached = scan_ntfs_tree(str(image))
+                cached_folder = cached.by_record[active_folder.record_number]
+                snapshot_out = root / 'snapshot-export'
+                snapshot_out.mkdir()
+                snapshot = export_batch(str(image), cached, [cached_folder], str(snapshot_out))
+                self.assertEqual(snapshot.errors, [])
+                self.assertEqual(snapshot.exported, len(originals))
+                checkpoint = Path(snapshot.manifest).read_bytes()
+                run('ntfs-3g', '-o', 'no_def_opts,norecover', str(image), str(mount))
+                self.assertTrue(os.path.ismount(mount))
             if partial:
                 original_entry = next(e for relative, e in active.items() if len(relative.parts) > 1)
                 # Grow in bounded increments, unmount before every analysis,
@@ -176,6 +192,13 @@ class MountedNtfsDeletionTests(unittest.TestCase):
             run('umount', str(mount))
             self.assertFalse(os.path.ismount(mount))
             before = hashlib.sha256(image.read_bytes()).digest()
+            if stale:
+                with self.assertRaisesRegex(ValueError, 'geändert|erneut'):
+                    export_batch(str(image), cached, [cached_folder], str(snapshot_out),
+                                 expected_root=snapshot.root)
+                self.assertEqual(Path(snapshot.manifest).read_bytes(), checkpoint)
+                for relative, original in originals.items():
+                    self.assertEqual((Path(snapshot.root) / 'files' / folder.name / relative).read_bytes(), original)
             index = scan_ntfs_tree(str(image))
             deleted_folder = index.by_record[active_folder.record_number]
             self.assertEqual(deleted_folder.is_deleted, remove_directories)
