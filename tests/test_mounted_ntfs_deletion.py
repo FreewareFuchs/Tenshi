@@ -39,8 +39,11 @@ class MountedNtfsDeletionTests(unittest.TestCase):
     def test_real_ntfs_reuse_rejects_previously_scanned_image(self):
         self._check_deletion(remove_directories=False, overwrite=True, stale=True)
 
+    def test_os_deleted_empty_files_are_exported_and_verified_on_resume(self):
+        self._check_deletion(remove_directories=False, empty=True)
+
     def _check_deletion(self, *, remove_directories, fragmented=False, overwrite=False,
-                        partial=False, stale=False):
+                        partial=False, stale=False, empty=False):
         # In the opt-in CI step, missing privileges/tools are failures, not skips.
         self.assertEqual(os.geteuid(), 0, 'mounted image test requires root')
         for tool in ('mkntfs', 'ntfs-3g', 'umount'):
@@ -74,6 +77,9 @@ class MountedNtfsDeletionTests(unittest.TestCase):
                 Path('Unterordner') / 'Große Datei mit langem Originalnamen.bin':
                     hashlib.shake_256(b'Tenshi OS deleted NTFS reference').digest(2 * 1024**2 + 137),
             }
+            if empty:
+                originals[Path('Leere gelöschte Datei.txt')] = b''
+                originals[Path('Unterordner') / 'Leere Datei ohne Endung'] = b''
             if overwrite:
                 # Reserve a live MFT record before deletion; growing this file
                 # later reuses clusters without creating/reusing file records.
