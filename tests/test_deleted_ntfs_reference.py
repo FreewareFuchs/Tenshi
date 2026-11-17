@@ -1,5 +1,6 @@
 """Synthetic deleted NTFS references, not evidence of an operating-system deletion."""
 import hashlib
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -11,6 +12,50 @@ from recoverydesk.batch_export import export_batch
 
 
 class DeletedNtfsReferenceTests(unittest.TestCase):
+    def test_deleted_sparse_stream_is_refused_without_successful_output(self):
+        # Synthetic metadata: data, a logical hole, then another data cluster.
+        # Also cover a missing sparse flag: the runlist alone must block export.
+        for flags in (0x8000, 0):
+            with self.subTest(flags=flags), tempfile.TemporaryDirectory() as temporary:
+                raw = bytearray(image_with_folders())
+                name = 'Gelöschte Sparse-Datei.bin'
+                start = MFT_LCN * CLUSTER + 7 * SIZE
+                raw[start:start + SIZE] = record([
+                    filename(name, 6, parent_sequence=1),
+                    nonresident_attr(0x80, b'\x11\x01\x28\x01\x01\x11\x01\x14\x00',
+                                     3 * CLUSTER, 2, flags=flags)], flags=0)
+                root = Path(temporary)
+                source = root / 'synthetic.img'
+                source.write_bytes(raw)
+                before = hashlib.sha256(source.read_bytes()).digest()
+                index = scan_ntfs_tree(str(source))
+                entry = index.by_record[7]
+                self.assertTrue(entry.is_deleted)
+                self.assertEqual(entry.name, name)
+                self.assertEqual(entry.size, 3 * CLUSTER)
+                self.assertEqual([run.lcn for run in entry.data_runs], [40, None, 60])
+                self.assertFalse(entry.recoverable)
+                self.assertIn('Sparse', entry.unsupported_reason)
+                target = root / 'selection'
+                target.mkdir()
+                result = export_selection(str(source), index, [entry], str(target))
+                self.assertEqual(result.exported, 0)
+                self.assertEqual(result.skipped, 1)
+                self.assertEqual(list(target.iterdir()), [])
+                batch = root / 'batch'
+                batch.mkdir()
+                for _ in range(2):
+                    result = export_batch(str(source), index, [entry], str(batch))
+                    self.assertEqual(result.exported, 0)
+                    self.assertEqual(result.verified_existing, 0)
+                    self.assertEqual(result.skipped, 1)
+                    self.assertFalse((Path(result.root) / 'files' / name).exists())
+                    manifest = json.loads(Path(result.manifest).read_text(encoding='utf-8'))
+                    item = manifest['results'][name]
+                    self.assertEqual(item['status'], 'Übersprungen')
+                    self.assertNotIn('sha256', item)
+                self.assertEqual(hashlib.sha256(source.read_bytes()).digest(), before)
+
     def test_deleted_empty_file_is_created_and_verified_on_resume(self):
         raw = bytearray(image_with_folders())
         name = 'Leere gelöschte Datei ohne Endung'
