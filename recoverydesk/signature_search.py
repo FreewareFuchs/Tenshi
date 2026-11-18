@@ -4,6 +4,7 @@ Full-image and selected free-space scans are not undelete proof or reassembly.
 Format structure establishes a candidate extent, never original integrity.
 """
 import os
+import re
 import stat
 import struct
 import zlib
@@ -178,6 +179,59 @@ def _snapshot(value):
     return value.st_dev,value.st_ino,value.st_size,value.st_mtime_ns
 
 
+def _candidate_matcher(selected, revision):
+    signatures=[]
+    if 'images' in selected:
+        signatures.extend(((PNG,'PNG'),(JPEG,'JPEG'),(b'BM','OTHER'),
+                           (b'GIF87a','OTHER'),(b'GIF89a','OTHER'),(b'RIFF','OTHER'),
+                           (b'II*\0','OTHER'),(b'MM\0*','OTHER')))
+    if selected.intersection(('office','archives')):
+        signatures.append((b'PK\x03\x04','OTHER'))
+    if revision >= 2 and 'office' in selected:
+        signatures.append((b'%PDF-','OTHER'))
+    if revision >= 3 and 'office' in selected:
+        signatures.append((b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1','OTHER'))
+    if revision >= 2 and 'archives' in selected:
+        signatures.append((b'Rar!\x1a\x07','OTHER'))
+    if 'archives' in selected:
+        signatures.append((b'7z\xbc\xaf\x27\x1c','OTHER'))
+    if selected.intersection(('audio','video')):
+        signatures.append((b'RIFF','OTHER'))
+    if 'audio' in selected:
+        signatures.extend(((b'OggS','OTHER'),(b'ID3','OTHER')))
+    kinds=dict(signatures)
+    # A small marker set is faster with individual native byte searches.
+    return (re.compile(b'|'.join(re.escape(s) for s in kinds)) if len(kinds)>=12 else None),kinds
+
+
+def _block_candidates(data, base, last, matcher, cancel=None):
+    pattern,kinds=matcher
+    found=[];counts={};position=0
+    if pattern is None:
+        for signature,kind in kinds.items():
+            _stop(cancel)
+            at=data.find(signature);count=0
+            while at>=0 and count<=MAX_CANDIDATES:
+                if base+at>last:found.append((base+at,kind))
+                count+=1;at=data.find(signature,at+1)
+        return found
+    while pattern is not None:
+        match=pattern.search(data,position)
+        if match is None:break
+        _stop(cancel)
+        signature=match.group()
+        start=base+match.start()
+        if start>last:found.append((start,kinds[signature]))
+        position=match.start()+1  # Preserve overlapping BMP/TIFF etc. headers.
+        counts[signature]=counts.get(signature,0)+1
+        if counts[signature]>MAX_CANDIDATES:
+            # Match the old per-signature enumeration bound (limit + 1),
+            # without walking the rest of a dense, already capped signature.
+            remaining=[s for s in kinds if counts.get(s,0)<=MAX_CANDIDATES]
+            pattern=re.compile(b'|'.join(re.escape(s) for s in remaining)) if remaining else None
+    return found
+
+
 def scan_signatures(source,*,category='images',categories=None,max_file_bytes=None,cancel=None,progress=None,
                     checkpoint_path=None,resume=False,parser_revision=3,search_area=None,partition_offset=None):
     """Optionally persist completed scan blocks and resume an explicitly selected image."""
@@ -249,6 +303,7 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
     if type(file_limit) is not int or not 0 < file_limit <= MAX_CONFIGURABLE_FILE:
         raise ValueError('Ungültige Größenbegrenzung für die Signatursuche.')
     category = next(iter(selected)) if len(selected) == 1 else 'all'
+    matcher=_candidate_matcher(selected,_parser_revision)
     validate_source(source)
     if is_device_source(source):raise ValueError('Signatursuche erfordert ein reguläres Image.')
     before=os.stat(source)
@@ -338,25 +393,6 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
                 stream.seek(position);block=stream.read(min(SCAN_BLOCK,region_end-position))
                 if len(block)!=min(SCAN_BLOCK,region_end-position):raise OSError('Image lieferte unvollständige Daten.')
                 data=tail+block;base=position-len(tail);found=[]
-                if 'images' in selected:
-                    signatures=[(PNG,'PNG'),(JPEG,'JPEG'),(b'BM','OTHER'),
-                                (b'GIF87a','OTHER'),(b'GIF89a','OTHER'),(b'RIFF','OTHER'),
-                                (b'II*\0','OTHER'),(b'MM\0*','OTHER')]
-                else:signatures=[]
-                if selected.intersection(('office','archives')):
-                    signatures.append((b'PK\x03\x04','OTHER'))
-                if _parser_revision >= 2 and 'office' in selected:
-                    signatures.append((b'%PDF-','OTHER'))
-                if _parser_revision >= 3 and 'office' in selected:
-                    signatures.append((b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1','OTHER'))
-                if _parser_revision >= 2 and 'archives' in selected:
-                    signatures.append((b'Rar!\x1a\x07','OTHER'))
-                if 'archives' in selected:
-                    signatures.append((b'7z\xbc\xaf\x27\x1c','OTHER'))
-                if selected.intersection(('audio','video')):
-                    signatures.append((b'RIFF','OTHER'))
-                if 'audio' in selected:
-                    signatures.extend(((b'OggS','OTHER'),(b'ID3','OTHER')))
                 if 'video' in selected:
                     for marker in (b'ftyp',):
                         at=data.find(marker)
@@ -369,12 +405,7 @@ def _scan_signatures(source,*,category='images',categories=None,max_file_bytes=N
                         start=base+at-257
                         if start>=0 and start>last:found.append((start,'OTHER'))
                         at=data.find(b'ustar',at+1)
-                for signature,kind in dict.fromkeys(signatures):
-                    at=data.find(signature);count=0
-                    while at>=0 and count<=MAX_CANDIDATES:
-                        if base+at>last:found.append((base+at,kind))
-                        count+=1
-                        at=data.find(signature,at+1)
+                found.extend(_block_candidates(data,base,last,matcher,cancel))
                 for start,kind in sorted(set(found)):
                     _stop(cancel)
                     if start < region_start or start >= region_end:continue
